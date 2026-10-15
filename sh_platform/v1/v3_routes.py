@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 
 from sh_platform.profile.api import _plane
-from sh_platform.v1 import v3_harbor as H
+from sh_platform.v1 import v3_harbor as H, v3_signoff as SO
 from sh_platform.v1.e0c_routes import _multipart
 
 router = APIRouter()
@@ -35,9 +35,9 @@ async def _json(request: Request) -> dict:
 
 @router.get("/api/v3/desk")
 def get_desk(request: Request):
-    app, plane, _ = _ctx(request)
+    app, plane, acct = _ctx(request)
     H.scan(app, plane)
-    return H.desk(plane)
+    return SO.desk_for(app, plane, acct)
 
 
 @router.get("/api/v3/threads")
@@ -52,12 +52,13 @@ async def new_thread(request: Request):
     text = str((await _json(request)).get("text") or "").strip()
     if not text:
         raise HTTPException(400, "Say what you want to know first.")
-    return H.view(await run_in_threadpool(H.create, app, plane, text, acct))
+    return SO.decorate(app, plane, H.view(await run_in_threadpool(H.create, app, plane, text, acct)), acct)
 
 
 @router.get("/api/v3/threads/{tid}")
 def get_thread(tid: str, request: Request):
-    return H.view(_thread(_ctx(request)[1], tid))
+    app, plane, acct = _ctx(request)
+    return SO.decorate(app, plane, H.view(_thread(plane, tid)), acct)
 
 
 @router.post("/api/v3/threads/{tid}/say")
@@ -67,7 +68,7 @@ async def say(tid: str, request: Request):
     text = str((await _json(request)).get("text") or "").strip()
     if not text:
         raise HTTPException(400, "Say something first.")
-    return H.view(await run_in_threadpool(H.say, app, plane, tid, text, acct))
+    return SO.decorate(app, plane, H.view(await run_in_threadpool(H.say, app, plane, tid, text, acct)), acct)
 
 
 @router.post("/api/v3/threads/{tid}/decide")
@@ -75,13 +76,16 @@ async def decide(tid: str, request: Request):
     app, plane, acct = _ctx(request)
     _thread(plane, tid)
     b = await _json(request)
-    if b.get("n") not in (1, 2, 3) or b.get("answer") not in ("confirm", "carry_on", "go_live", "not_yet", "retry"):
+    if b.get("n") not in (1, 2, 3) or b.get("answer") not in ("confirm", "carry_on", "go_live", "not_yet", "retry", "send_for_signature"):
         raise HTTPException(400, "Choose one of the answers on the card.")
+    answers = dict(b["answers"]) if isinstance(b.get("answers"), dict) else {}
+    if isinstance(b.get("to"), str):
+        answers["to"] = b["to"]
     try:
-        th = await run_in_threadpool(H.decide, app, plane, tid, b["n"], b["answer"], b.get("answers") if isinstance(b.get("answers"), dict) else {}, acct)
+        th = await run_in_threadpool(H.decide, app, plane, tid, b["n"], b["answer"], answers, acct)
     except ValueError as e:
         raise HTTPException(409, str(e)) from None
-    return H.view(th)
+    return SO.decorate(app, plane, H.view(th), acct)
 
 
 @router.post("/api/v3/threads/{tid}/discard")

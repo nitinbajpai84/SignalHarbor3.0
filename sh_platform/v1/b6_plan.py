@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timezone
+from functools import lru_cache
 
 import sqlglot
 from sqlglot import exp
@@ -137,6 +138,43 @@ def _out_type(sel, schema: dict, name: str, node) -> str:
     return "date" if isinstance(node, exp.DateTrunc) and "date" in node.sql().lower() else "varchar"
 
 
+@lru_cache(maxsize=1)
+def _warehouse_functions() -> frozenset[str]:
+    """Every function name the warehouse (DuckDB) knows, read from DuckDB itself."""
+    import duckdb
+    with duckdb.connect() as con:
+        return frozenset(r[0].lower() for r in con.execute("select distinct function_name from duckdb_functions()").fetchall())
+
+
+def _bind(name: str, sel, schema: dict[str, dict[str, str]]) -> None:
+    """Bind the select in DuckDB against empty copies of the tables it reads. sqlglot's qualify sees every table of a FROM at once, so
+    `join cash_movements cm on cm.portfolio_id = p.id` before `join portfolios p` passed it; DuckDB binds joins left to right and stopped the run
+    on the copy (c2 ops_lead: Referenced table "p" not found; then: column "likely_cause" must appear in the GROUP BY clause; then: a literal
+    'Entity B' compared with an id, Could not convert string 'Entity B' to INT128). With the model's types each table gets one row of nulls and the
+    select runs, so a literal that cannot be cast shows. A binder or conversion error refuses; a type mismatch does not, as a gold table's column
+    types here are the plan check's guess. Anything else is left to the run, which has the data."""
+    import duckdb
+    typed = True
+    with duckdb.connect() as con:
+        for t, cols in schema.items():
+            body = ", ".join(f'"{c}" {ty}' for c, ty in cols.items())
+            try:
+                con.execute(f'create table "{t}" ({body})')
+                con.execute(f'insert into "{t}" default values')
+            except duckdb.Error:  # a type DuckDB does not know: text keeps the names bindable
+                typed = False
+                con.execute(f'drop table if exists "{t}"')
+                con.execute(f'create table "{t}" ({", ".join(chr(34) + c + chr(34) + " varchar" for c in cols)})')
+        try:
+            con.execute(("" if typed else "explain ") + sel.sql(dialect="duckdb"))
+        except (duckdb.BinderException, duckdb.ConversionException) as e:
+            msg = " ".join(str(e).split())
+            if isinstance(e, duckdb.ConversionException) or not re.search(r"No function matches|Cannot compare|cannot be cast|Cannot mix|type", msg, re.I):
+                raise Refused(400, f"The SQL for {name} does not run in the warehouse (DuckDB): {msg[:300]}") from None
+        except duckdb.Error:  # noqa: S110 - anything else (a type, a cast) is the run's to report with the data in hand
+            pass
+
+
 def _check_sql(table: dict, schema: dict, known: set[str]) -> tuple[list[dict], set[str]]:
     """Parse one table's SQL; return its output columns and the tables it reads. Refuses anything that is not a plain select into the table."""
     name, sql = table["name"], str(table.get("sql") or "").strip().rstrip(";")
@@ -150,6 +188,9 @@ def _check_sql(table: dict, schema: dict, known: set[str]) -> tuple[list[dict], 
     if st.find(*_BAD) is not None or not isinstance(st, (exp.Create, exp.Insert)):
         raise Refused(400, f"The SQL for {name} may only create a table from a select or insert from a select. It cannot drop, delete or update.")
     sel = st.expression
+    unknown = sorted({f.name for f in st.find_all(exp.Anonymous) if f.name.lower() not in _warehouse_functions()})
+    if unknown:  # c1 fund_accountant: Postgres's uuid_generate_v4() passed this check and stopped the run on the copy
+        raise Refused(400, f"The SQL for {name} calls {', '.join(unknown)}, which the warehouse (DuckDB) does not have. Use a DuckDB function instead.")
     if isinstance(st, exp.Create) and (str(st.args.get("kind")).upper() != "TABLE" or not isinstance(sel, exp.Query)):
         raise Refused(400, f"The SQL for {name} must be create table as select.")
     if isinstance(st, exp.Insert) and not isinstance(sel, exp.Query):
@@ -169,6 +210,7 @@ def _check_sql(table: dict, schema: dict, known: set[str]) -> tuple[list[dict], 
     except SqlglotError as e:
         has = "; ".join(f"{t} has {', '.join(list(schema[t])[:25])}" for t in sorted(reads))[:700]  # SPAN-CH2-02: the next draft can be right
         raise Refused(400, f"The SQL for {name} uses a column that is not in the data model: {str(e).splitlines()[0][:160]}. {has}.") from None
+    _bind(name, sel, {t: schema[t] for t in reads})
     first = q if isinstance(q, exp.Select) else q.find(exp.Select)
     cols = [{"name": n, "type": _out_type(first, schema, n, p), "from": ", ".join(sorted({f"{c.table}.{c.name}" for c in p.find_all(exp.Column)}))}
             for n, p in zip(q.named_selects, first.expressions)]

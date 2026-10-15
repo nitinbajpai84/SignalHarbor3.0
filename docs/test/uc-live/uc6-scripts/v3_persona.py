@@ -138,6 +138,26 @@ def run(role: dict, build: dict, n: int) -> None:
                     s["gaps_said"] = True
                     save()
                     p.post(f"/api/v3/threads/{tid}/say", {"text": "use the usual practice"})
+                elif (th.get("signoff") or {}).get("state") == "fill":
+                    # the signer could not sign it as it stands: Harbor names what this person must still say; the usual practice once, then STUCK
+                    q = th["signoff"].get("message") or ""
+                    if q in s["retried"]:
+                        s["stuck_at"] = f"decision1 gaps: {q[:300]}"
+                        save()
+                        print("STUCK", s["stuck_at"])
+                        report(th, stage, False)
+                        return None
+                    s["retried"].append(q)
+                    save()
+                    print("gaps named for", role["person"], "->", q[:200], flush=True)
+                    p.post(f"/api/v3/threads/{tid}/say", {"text": "use the usual practice"})
+                elif (th.get("signoff") or {}).get("state") in ("send", "waiting"):
+                    # this person may not sign: send the brief to the signer, who confirms it from Action
+                    so = th["signoff"]
+                    if so["state"] == "send":
+                        p.post(f"/api/v3/threads/{tid}/decide", {"n": 1, "answer": "send_for_signature"})
+                        p.shot(f"/v3/thread/{tid}", f"team-{rid}-sent-to-signer")
+                    return so["signer"]["name"].split()[0].lower()  # Playwright can't nest: the caller confirms as the signer
                 else:
                     p.post(f"/api/v3/threads/{tid}/decide", {"n": 1, "answer": "confirm"})
                 time.sleep(3)
@@ -199,4 +219,18 @@ if __name__ == "__main__":
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     role, build = load_plan(a.role, a.build)
-    dry_run(role, build, a.build) if a.dry_run else run(role, build, a.build)
+    if a.dry_run:
+        dry_run(role, build, a.build)
+    else:
+        tries = 0
+        while (signer := run(role, build, a.build)) and tries < 2:
+            tries += 1
+            from uc6 import Person
+            tid = json.loads(Path(f"D:/Temp/sh3-team-{role['id']}.json").read_text())["tid"]
+            with Person(signer) as q:
+                q.shot("/v3/action", f"team-{role['id']}-signer-action")
+                st, out = q.post(f"/api/v3/threads/{tid}/decide", {"n": 1, "answer": "confirm"})
+                print("signer", signer, "confirmed:", st)
+                q.shot(f"/v3/thread/{tid}", f"team-{role['id']}-signed-record")
+                if st >= 400:
+                    raise SystemExit(f"signer could not confirm: {st} {str(out)[:300]}")

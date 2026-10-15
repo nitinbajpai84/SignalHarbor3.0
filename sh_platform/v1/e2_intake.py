@@ -147,7 +147,7 @@ def _previous(con, org: str, instrument_id: str | None, vdate: date | None) -> d
 
 
 def register(plane, file_path, viewer, source_code: str = "manager_email", received_at: datetime | None = None,
-             data: bytes | None = None, filename: str | None = None) -> str:
+             data: bytes | None = None, filename: str | None = None, names: list[str] | None = None) -> str:
     """Register a statement and return its document id. The same file again returns the same id (hash). `data`/`filename` stand in
     for reading `file_path` (an upload); `received_at` defaults to now (the demo seed and tests set it)."""
     name = filename or Path(str(file_path)).name
@@ -169,7 +169,7 @@ def register(plane, file_path, viewer, source_code: str = "manager_email", recei
         if dup:
             return str(dup[0])
         source = _source(con, org, source_code)
-    instrument = _find_instrument(plane, source, fund_names(name, lines))
+    instrument = _find_instrument(plane, source, [*(names or []), *fund_names(name, lines)])  # `names`: fund names the caller read from the page (Harbor, v3_pdf)
     vdate = valuation_date_of(name, lines)
     rel = _stored(plane, name, data, sha)
     pii = bool(k1_classify.scan_pii(name, data).get("found"))

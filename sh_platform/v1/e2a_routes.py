@@ -41,7 +41,8 @@ async def upload(request: Request):
     plane = _plane(request)
 
     def go():
-        did = E.register(plane, None, viewer, str(body.get("source_code") or "manager_email"), received_at=received, data=data, filename=name)
+        did = E.register(plane, None, viewer, str(body.get("source_code") or "manager_email"), received_at=received, data=data, filename=name,
+                     names=[str(n)[:200] for n in (body.get("fund_names") or [])[:3]] if isinstance(body.get("fund_names"), list) else None)
         return {"id": did, "document": S.detail(plane, did, viewer)}
     return _answer(go)
 

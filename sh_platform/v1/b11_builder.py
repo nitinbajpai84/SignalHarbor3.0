@@ -572,11 +572,27 @@ def variance(plane, viewer, pid: str, pack: dict, bm: dict) -> dict:
 
 # ---- 5. go live, or send back to the architect --------------------------------------------------------------------------------------
 
+def run_trouble(cur: dict | None) -> str | None:
+    """The failing step of the round's run, in plain words: which table, what it is for, and the warehouse's reason. None when it did not fail."""
+    run = (cur or {}).get("run") or {}
+    if run.get("status") != "failed":
+        return None
+    err = str(run.get("error") or "")
+    table, _, why = err.partition(" could not be built: ")
+    why = re.sub(r"^\w+ Error:\s*", "", why or err).strip().rstrip("!")
+    m = re.search(r"Function with name (\w+) does not exist", why)
+    why = f"it calls {m[1]}, which the warehouse does not have" if m else why or "the warehouse gave no reason"
+    step = next((s for s in run.get("steps") or [] if s.get("status") == "failed"), {})
+    what = f" ({str(step['label']).rstrip('.')})" if step.get("label") else ""
+    return (f"The run on the copy stopped at the step that builds {table or 'a table'}{what}: {why}. "
+            "Send the design back to the architect to correct that step.")
+
+
 def _current(plane, pid: str) -> dict:
     rec = load(plane, pid)
     cur = rec["rounds"][-1] if rec["rounds"] else None
     if not cur or cur["state"] not in ("checked", "ran") or not cur["run"] or cur["run"]["status"] != "ok":
-        raise Refused(409, "The run on the copy has not finished cleanly yet.")
+        raise Refused(409, run_trouble(cur) or "The run on the copy has not finished cleanly yet.")
     return cur
 
 

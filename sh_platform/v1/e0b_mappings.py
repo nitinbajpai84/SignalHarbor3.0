@@ -93,13 +93,13 @@ def _write(plane, m: dict) -> None:
 def save_proposal(plane, mapping: dict) -> str:
     """Store a proposed mapping and return its id. `mapping`: file_name, sheet, header_row, columns [{source, target_table, target_field,
     transform}], purpose?, owner?, proposed_by? ({kind, name, account_id}; default the data agent). Invented targets are refused."""
-    from sh_platform.v1 import e0a_catalogue
+    from sh_platform.v1 import e0a_catalogue, e0b_tools
     file_name, sheet = str(mapping.get("file_name") or ""), str(mapping.get("sheet") or "")
     cols = [dict(c) for c in mapping.get("columns") or []]
     if not file_name or not sheet or not cols:
         raise Refused(400, "A mapping needs a file name, a sheet and columns.")
     bad = [f"{c.get('source')} -> {c.get('target_table')}.{c.get('target_field')}" for c in cols
-           if c.get("target_table") and not e0a_catalogue.has_field(plane, c["target_table"], c.get("target_field", ""))]
+           if c.get("target_table") and f"{c['target_table']}.{c.get('target_field')}" not in e0b_tools.DEBIT_CREDIT and not e0a_catalogue.has_field(plane, c["target_table"], c.get("target_field", ""))]
     if bad:
         raise Refused(400, "These targets are not in the data model: " + "; ".join(bad) + ".")
     layout = [str(c["source"]) for c in cols]

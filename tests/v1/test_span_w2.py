@@ -79,7 +79,7 @@ def test_nu11_a_silver_table_the_plan_fills_keeps_every_catalogue_column(world):
 def test_nu14_the_replayed_qualify_before_group_by_sql_is_refused_before_approval(world):  # noqa: F811
     plane, pid = world
     sql = NU14_SQL.format(n=f"{PFX}exposure_by_manager_summary")
-    with pytest.raises(ToolRefused, match="syntax error at or near"):
+    with pytest.raises(ToolRefused, match="syntax error at or near|does not run in the warehouse"):  # c2: the plan check's DuckDB bind may catch it first
         tools(plane, pid).propose_plan_change(**propose(f"{PFX}exposure_by_manager_summary", sql,
                                                         ("valuation_observations", "instruments", "portfolios", "legal_entities")).arguments)
     assert ST.select_text(sql).startswith("SELECT i.manager_name") and "QUALIFY" in ST.select_text(sql)  # tried as written, not re-printed

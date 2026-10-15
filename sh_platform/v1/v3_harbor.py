@@ -8,6 +8,7 @@ import base64
 import json
 import os
 import re
+import sys
 import threading
 import time
 import uuid
@@ -15,6 +16,8 @@ from contextlib import ExitStack, contextmanager, nullcontext
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
+
+from sh_platform.v1 import v3_pdf as V  # PDFs go down the document path
 
 LOCK = threading.RLock()
 SYNC = False  # tests run chains inline
@@ -94,7 +97,7 @@ def summary(th) -> dict:
 
 
 def view(th) -> dict:
-    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief")}
+    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief"), "process": _P.view_of(th)}
 
 
 # ---- acting as the 2.0 seats ------------------------------------------------------------------------------------------------------
@@ -213,14 +216,16 @@ def _team_up(x, pid: str) -> None:
 
 
 def a_sign(x):
+    from sh_platform.v1 import v3_signoff as SO
+    SO.check_signer(x)  # signs as the person at the screen; one who may not sign is told who may
     iid = x.th["iid"]
     pid = x.api("me", "GET", f"/api/v1/intents/{iid}/chat", soft=True).get("project_id")
     if pid:
         _team_up(x, pid)
-    for pr in x.api("me", "GET", f"/api/v1/intents/{iid}/proposals", soft=True).get("pending", []):
-        x.api("me", "POST", f"/api/v1/intents/{iid}/proposals/{pr['id']}/accept", soft=True)
     sow = x.api("me", "GET", f"/api/v1/intents/{iid}/sow")
     if sow.get("state") != "signed":  # a retry after a later step failed must not sign twice
+        SO.before_sign(x)  # the self-signer's gap fill, for every signer; a gap only a person can say goes to the raiser, named
+        sow = x.api("me", "GET", f"/api/v1/intents/{iid}/sow")
         x.api("me", "POST", f"/api/v1/intents/{iid}/sow/sign", {"confirm": True, "version": sow["version"], "note": "Confirmed in Harbor, Decision 1."})
     x.api("me", "POST", f"/api/v1/intents/{iid}/send-to-build", soft=True)
     x.th["pid"] = x.api("me", "GET", f"/api/v1/intents/{iid}/chat").get("project_id")
@@ -230,7 +235,11 @@ def a_sign(x):
     sig = (x.api("me", "GET", f"/api/v1/intents/{iid}/sow", soft=True) or {}).get("signature") or {}
     x.th["record"] = {"started_by": x.th.get("started_by"), "started_at": x.th.get("created"), "signed_by": sig.get("name"), "role": sig.get("role"),
                       "signed_at": sig.get("at"), "version": (x.api("me", "GET", f"/api/v1/intents/{iid}/sow", soft=True) or {}).get("version"),
-                      "document": f"/api/v1/projects/{x.th['pid']}/artefacts/intent/export?format=docx"}
+                      "document": f"/api/v1/projects/{x.th['pid']}/artefacts/intent/export?format=docx",
+                      "sent_at": (x.th.get("signoff") or {}).get("at"), "line": SO.record_line(x.th, sig.get("name"))}
+    signed = x.api("me", "GET", f"/api/v1/intents/{iid}/chat", soft=True).get("sow") or {}
+    x.th["sources"] = [s.get("name", "") for s in signed.get("sources") or []] or x.th.get("sources") or []  # the signed brief's sources
+    SO.claim_files(x)  # files dropped before the sign-off are this thread's
     return "signed and sent to Build"
 
 
@@ -272,7 +281,9 @@ def a_samples(x):
             continue
         if f["name"].lower().endswith(".pdf"):
             x.api("leo", "POST", f"{A}/samples/{sys_['id']}/pdf", {"name": f["name"], "data": _b(blob(x.plane, f["name"]))})
-            raise Q(f"{f['name']} is a notice PDF. Tell me which lines hold the fund, the amount and the due date.")  # not chained: field marking is a judgement
+            continue  # the lines of a PDF are marked once per layout in Decision 2 (v3_pdf), not asked here
+        if not f["name"].lower().endswith((".csv", ".xlsx", ".xls")):
+            continue  # an email or a note is not a table sample (the table sample refuses it)
         x.api("leo", "POST", f"{A}/samples/{sys_['id']}/table", {"name": f["name"], "data": _b(blob(x.plane, f["name"]))})
     return f"{len(fs)} files given to Span as samples"
 
@@ -285,6 +296,8 @@ def a_pack(x):
     for m in pk["pack"].get("mapping") or []:
         if m.get("needs_person") and not m.get("resolved"):
             x.api("leo", "PUT", A + "/pack/edit", {"section": "mapping", "key": m["id"], "changes": {"resolve": "Mapped at intake from the uploaded file and approved by the head of data."}, "note": "Harbor settles this row."})
+    from sh_platform.v1 import v3_figures as F
+    F.cover(x, "draft")  # a figure of the brief with no ready table gets one designed before the pack is submitted
     x.api("leo", "POST", A + "/pack/submit", {})
     vs = x.api("leo", "GET", A + "/pack").get("versions") or [{"version": 1}]
     x.api("anita", "POST", A + "/pack/approve", {"version": vs[-1]["version"], "note": "Approved by the head of data."})
@@ -294,7 +307,14 @@ def a_pack(x):
 def a_intake(x):
     th, mp = x.th, {}
     th["intake"] = {}
+    from sh_platform.v1 import v3_docs as D
+    D.intake(x)  # emails and notes: document intake, never table intake (v3_docs)
+    V.intake(x)  # PDFs: document intake and reading by layout; the loop below is for spreadsheets
+    from sh_platform.v1 import v3_loads as L
+    L.intake(x)  # labelled-figures workbooks (a report's summary) are kept as a document's figures, not mapped as rows
     for f in my_files(x, "source"):
+        if V.is_pdf(f["name"]) or D.is_doc(f["name"]) or L.skip(x, f["name"]):
+            continue
         r = x.api("leo", "POST", "/api/v1/intake/upload", files={"file": (f["name"], blob(x.plane, f["name"]))}, data={"source_code": re.sub(r"\W+", "_", f["source"] or "upload").lower()[:24]})
         th["intake"][f["name"]] = r.get("file_id")
         if r.get("file_id"):  # 2.0 proposes a mapping when a load finds none; nothing loads without an approved one
@@ -326,6 +346,12 @@ def d2(x) -> dict:
             left = m.get("unmapped") or []
             reason = f" No place yet for: {', '.join(left[:4])}." if left else ""
             qs.append({"id": f"map:{i}", "text": f"I am not sure how to read {m['name']}.{reason} Use my reading?", "options": ["Use my reading", "Leave this file out"], "assumed": "Use my reading"})
+    from sh_platform.v1 import v3_loads as L
+    from sh_platform.v1 import v3_docs as D
+    files += V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
+    qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
+    from sh_platform.v1 import v3_figures as F
+    qs += F.account_questions(x)  # "Which entity owns account X?": an account number no portfolio has holds back the whole bank statement
     csvs = [f["name"] for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
     if csvs and not my_files(x, "benchmark"):
         qs.append({"id": "check:file", "text": "Which file should I check the numbers against before going live? Pick the statement that comes from someone else, not one I load.",
@@ -343,6 +369,14 @@ def b_answers(x):
             x.th["check_file"] = None if val == "No check this time" else val
         elif kind == "span" and val and not str(val).startswith("Something else"):
             x.api("leo", "POST", f"{A}/questions/{key}", {"value": val}, soft=True)
+        elif kind == "doc":
+            from sh_platform.v1 import v3_docs as D
+            D.answer(x, key, val)
+        elif kind == "pdf":
+            V.answer(x, key, val)
+        elif kind == "acct" and val:
+            from sh_platform.v1 import v3_figures as F
+            F.tie_account(x, key, val)
         elif kind == "map" and val == "Leave this file out":
             x.api("leo", "POST", f"/api/v1/model/mappings/{key}/reject", {"reason": "Left out by the person."}, soft=True)
             x.th["maps"].pop(key, None)
@@ -354,19 +388,29 @@ def b_load(x):
         x.api("anita", "POST", f"/api/v1/model/mappings/{i}/approve", {"note": "Approved by the head of data."}, soft=True)
     loaded, aside = 0, []
     for name, fid in (x.th.get("intake") or {}).items():
+        if V.is_pdf(name) or str(fid).startswith("doc:"):
+            continue  # loaded below under its layout; an email or a note below as a document (v3_docs)
         try:  # one file that will not load is set aside and named to the person; the others still load
-            out = x.api("leo", "POST", f"/api/v1/intake/files/{fid}/load", {})
-            if isinstance(out, dict) and out.get("state") in ("failed", "blocked", "refused"):
-                raise Q(f"{out.get('note') or out.get('state')}")
+            from sh_platform.v1 import v3_figures as F
+            ok, why = F.load_file(x, name, fid)  # what the load really said: a file that was held back or rejected is not "loaded"
+            if not ok:
+                raise Q(why)
         except Exception as e:  # noqa: BLE001
             set_status(x.plane, name, "question")
             aside.append({"title": f"{name} did not load", "text": str(getattr(e, "text", e))[:200]})
             continue
         set_status(x.plane, name, "loaded")
         loaded += 1
-    x.th["exceptions"] = [*(x.th.get("exceptions") or []), *aside]
-    if not loaded and aside:
-        raise Q("None of the files would load: " + "; ".join(a["title"] for a in aside))
+    n_pdf, a_pdf = V.load(x)
+    from sh_platform.v1 import v3_loads as L
+    n_fig, a_fig = L.load(x)  # labelled figures (report workbooks and report PDFs) go to the document's extracted fields
+    from sh_platform.v1 import v3_docs as D
+    n_doc, a_doc = D.load(x)  # a value an email or a note states loads only once the person confirmed its line; the rest is context
+    loaded, aside = loaded + n_pdf + n_fig + n_doc, aside + a_pdf + a_fig + a_doc
+    titles = {a["title"] for a in aside}  # a retry replaces the lines of the last try, it does not repeat them
+    x.th["exceptions"] = [*(e for e in x.th.get("exceptions") or [] if e.get("title") not in titles), *aside]
+    if not loaded and aside:  # nothing at all loaded: each file with its reason, in one line each
+        raise Q("None of the files would load. " + " ".join(f"{a['title']}: {a['text']}" for a in aside)[:900])
     return f"{loaded} files loaded" + (f", {len(aside)} set aside" if aside else "")
 
 
@@ -386,6 +430,9 @@ def b_run(x):
         v = x.api("leo", "POST", B + "/start", {}, soft=True) or x.api("leo", "GET", B)
         cur = v.get("round") or {}
     x.th["run_id"] = (cur.get("run") or {}).get("run_id")
+    from sh_platform.v1.b11_builder import run_trouble
+    if why := run_trouble(cur):  # the failing step in plain words, here, not a generic refusal at go-live
+        raise Q(why)
     if cur.get("state") == "blocked" or not cur:
         raise Q("The run on a copy is stuck: " + "; ".join(str(n.get("text") or n) for n in v.get("needs") or [])[:300])
     return "ran on a copy"
@@ -517,6 +564,8 @@ def c_note(x):
                 figs.append({"label": f"Available cash {code}", "value": str(e["available_cash"]), "change": ""})
             if (buckets.get("30") or {}).get("calls") is not None:
                 figs.append({"label": f"Calls due in 30 days {code}", "value": str(buckets["30"]["calls"]), "change": ""})
+    from sh_platform.v1 import v3_figures as F
+    figs += F.note_figures(x)  # the brief's own figures, read from their ready tables
     title = " ".join(str(x.th["title"]).split())
     short = " ".join(title[:60].rsplit(" ", 1)[0].split()) if len(title) > 60 else title
     short = re.sub(r"\s+(from|to|of|the|and|with|whether|that|a|an|in|on|for)$", "", short).rstrip(" ,:;") or "The check"
@@ -574,7 +623,7 @@ def run_chain(app, plane, tid, name, account_id, at=0) -> None:
         save(plane, th)
     ev(th, "chips", chips=chips)
     try:
-        th["decision"] = DECISIONS[final](x) if final in DECISIONS else None
+        th["decision"] = (_P.DECISIONS if name[0] == "P" else DECISIONS)[final](x) if final in DECISIONS else None
     except Exception as e:  # noqa: BLE001
         step(x, "Harbor", "Prepared the next decision", False, str(e)[:300])
         ev(th, "question", f"I could not prepare the next decision: {str(e)[:200]}. Say retry to try again.")
@@ -585,7 +634,7 @@ def run_chain(app, plane, tid, name, account_id, at=0) -> None:
         ev(th, "harbor", "It is live. " + (th.get("note") or {}).get("text", ""))
     else:
         th["asked"] = th.get("asked", 0) + len((th["decision"] or {}).get("questions") or [])
-        ev(th, "harbor", {"decision2": "Here is what I understood. Check the files and answer anything I was unsure of.", "decision3": "I have checked the numbers. Take a look."}[final])
+        ev(th, "harbor", _P.SAY.get(name) or {"decision2": "Here is what I understood. Check the files and answer anything I was unsure of.", "decision3": "I have checked the numbers. Take a look."}[final])
     th["stage"] = final
     save(plane, th)
 
@@ -726,8 +775,8 @@ def _no_earlier_figures(app, plane, iid: str) -> None:
 
 
 def _gaps(x, iid: str) -> list[str]:
-    for pr in x.api("me", "GET", f"/api/v1/intents/{iid}/proposals", soft=True).get("pending", []):  # drafted lines count as filled;
-        x.api("me", "POST", f"/api/v1/intents/{iid}/proposals/{pr['id']}/accept", soft=True)  # the person still reviews them in Decision 1
+    from sh_platform.v1 import v3_signoff as SO
+    SO.accept_drafts(x, iid)  # drafted lines count as filled; the person still reviews them in Decision 1
     from sh_platform.v1 import i6_chat as I6
     return [g.strip() for g in I6._sign_gaps(x.plane, iid).split(";") if g.strip()]
 
@@ -812,6 +861,11 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
         return say(app, plane, tid, "retry", account_id)
     if th["stage"] != f"decision{n}" or cur != n:
         raise ValueError(f"Decision {n} is not waiting for you.")
+    from sh_platform.v1 import v3_signoff as SO
+    if answer == "send_for_signature":
+        SO.send(app, plane, th, (answers or {}).get("to"), account_id)
+        return save(plane, th) or th
+    SO.guard(app, plane, th, n, answer, account_id)
     if answer == "not_yet":
         ev(th, "decision_done", f"Not yet. Decision {n} stays open.")
         th["stage"] = "drafting" if n == 1 else th["stage"]
@@ -831,7 +885,7 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
     th["decision"], th["stage"] = None, "working"
     ev(th, "harbor", INTRO["ABC"[n - 1]])
     save(plane, th)
-    start_chain(app, plane, tid, "ABC"[n - 1], account_id)
+    start_chain(app, plane, tid, _P.chain_name(plane, th, n), account_id)  # A/B/C, or PA/PB/PC for a process-only thread
     return load(plane, tid)
 
 
@@ -879,6 +933,11 @@ def recognise(plane, name: str, threads: list[dict]):
         if len(open_) == 1 and name.lower().rsplit(".", 1)[-1] in ("csv", "xlsx", "xls", "pdf", "txt"):  # one thread is being built: an unnamed file goes to it, and Decision 2 shows it to the person
             return "recognised", re.sub(r"[_\-]?\d[\d\-]*", "", name.rsplit(".", 1)[0]).replace("_", " ").strip() or name, open_[0]["id"]
         return "waiting", "", None
+    if len({h[0] for h in hits}) == 1 and len({h[1] for h in hits}) > 1:  # one thread, two sources equally likely: the file's own words decide, when they clearly do
+        from sh_platform.v1 import v3_figures as F
+        pick = F.pick_source(plane, name, [h[1] for h in hits], next(t for t in threads if t["id"] == hits[0][0]))
+        if pick:
+            return "recognised", pick, hits[0][0]
     if len({h[0] for h in hits}) > 1 or len({h[1] for h in hits}) > 1:  # two threads, or two sources equally likely: ask, never guess
         return "question", hits[0][1], None
     return "recognised", hits[0][1], hits[0][0]
@@ -904,16 +963,19 @@ def scan(app, plane) -> list[dict]:
         _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
     for f in new:  # monthly: a file for a live thread runs it and only exceptions come back
         t = next((t for t in ths if t["id"] == f["thread"] and t["stage"] == "live"), None)
-        if t and f["source"] != "benchmark":
+        if t and f["source"] != "benchmark" and t.get("mode") != "process":  # a process-only thread has no monthly load
             start_chain(app, plane, t["id"], "M", None)
     return fs
 
 
 def m_load(x):
     B, pid = None, x.th["pid"]
-    x.th["file_problems"], done = [], 0
+    x.th["file_problems"], done, pdfs, docs = [], 0, [], []
     for f in my_files(x, "source"):
         if f["status"] != "recognised":
+            continue
+        if V.is_pdf(f["name"]) or f["name"].lower().endswith((".eml", ".md", ".txt", ".docx")):
+            (pdfs if V.is_pdf(f["name"]) else docs).append(f["name"])
             continue
         try:  # one file that will not load is named to the person; the others still load and the run still happens
             r = x.api("leo", "POST", "/api/v1/intake/upload", files={"file": (f["name"], blob(x.plane, f["name"]))}, data={"source_code": re.sub(r"\W+", "_", f["source"]).lower()[:24]})
@@ -923,6 +985,10 @@ def m_load(x):
         except Exception as e:  # noqa: BLE001
             set_status(x.plane, f["name"], "question")
             x.th["file_problems"].append({"title": f"{f['name']} did not load", "text": str(getattr(e, "text", e))[:200]})
+    n_pdf, a_pdf = V.load_files(x, pdfs, monthly=True)  # a PDF of a remembered layout loads without a question
+    from sh_platform.v1 import v3_docs as D
+    a_pdf += D.monthly(x, docs)  # an email or a note is a document: context, or a stated value waiting in Evidence
+    done, x.th["file_problems"] = done + n_pdf, x.th["file_problems"] + a_pdf
     x.api("anita", "POST", f"/api/v1/build/p/{pid}/run?mode=live", {})
     return f"{done} files loaded, {len(x.th['file_problems'])} set aside, monthly run done"
 
@@ -936,6 +1002,11 @@ def m_exceptions(x):
 
 
 CHAINS["M"] = ([("Flow", "Loaded the new files", m_load), ("Flow", "Looked for exceptions", m_exceptions)], "live")
+
+from sh_platform.v1 import v3_process as _P  # noqa: E402 - process-only builds (UC9): chains PA/PB/PC, the cards and the SOP
+_P.register(sys.modules[__name__])
+from sh_platform.v1 import v3_figures as _F  # noqa: E402 - every figure of the brief ends in a filled ready table (chain B steps, Decision 3 lines)
+_F.install(sys.modules[__name__])
 
 
 def _recover(app) -> None:

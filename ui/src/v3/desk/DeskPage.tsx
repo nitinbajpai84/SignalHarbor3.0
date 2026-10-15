@@ -7,10 +7,10 @@ import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
 import RoleSuggest from "./RoleSuggest";
 import { when } from "../thread/ThreadPage";
-import { decide, getDesk, getThread, say, startThread, type Card, type Desk, type Event, type Stage } from "../api";
+import { decide, sendForSignature, getDesk, getThread, say, startThread, type Card, type Desk, type Event, type Stage } from "../api";
 import "./desk.css";
 
-const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3 };
+const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3, send_for_signature: 1 };
 const KIND: Record<Card["kind"], string> = { decision: "Decision", exception: "Exception", question: "Question" };
 const DOTS = ["Brief", "Understanding", "Numbers", "Live"];
 /** Index of the current dot for each stage; dots before it are reached. */
@@ -58,7 +58,8 @@ export default function DeskPage() {
     setBusy(true);
     setProblem("");
     try {
-      if (n) await decide(c.thread, n, answer);
+      if (answer === "send_for_signature") await sendForSignature(c.thread);
+      else if (n) await decide(c.thread, n, answer);
       else await say(c.thread, answer);
       load();
     } catch {

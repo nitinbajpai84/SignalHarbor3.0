@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from sh_platform.v1 import v3_harbor as H
+from sh_platform.v1 import v3_process
 
 log = logging.getLogger(__name__)
 LOCK = threading.Lock()
@@ -70,7 +71,7 @@ GOLDEN = ["What is our cash by entity today?", "Which entity has the least cash?
 
 def golden(plane) -> list[str]:
     from sh_platform.v1 import v3_model
-    return list(dict.fromkeys(GOLDEN + [g["q"] for g in v3_model.language(plane)["golden"] if g.get("q")]))
+    return list(dict.fromkeys(GOLDEN + [g["q"] for g in v3_model.language(plane)["golden"] if g.get("q")] + v3_process.golden(plane)))
 
 
 def figure_of(answer: str, question: str) -> dict | None:
@@ -269,7 +270,7 @@ def office_name(plane) -> str:
 def consume(plane, viewer, boards: list[dict], note: dict | None = None) -> dict:
     """{office, as_of, figures, watchlist, boards, note, reports, golden, answer}. The note headline is built from the figures (None when there are none);
     `answer` is the first golden question already answered, by the fast liquidity path only (never a slow model call from a page load)."""
-    live = next((t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid")), None)
+    live = next((t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid") and t.get("mode") != "process"), None)
     day, figs, watch = _read(plane, viewer)
     g = golden(plane)
     note, first = None, None
@@ -284,5 +285,5 @@ def consume(plane, viewer, boards: list[dict], note: dict | None = None) -> dict
         except LookupError:
             first = None
     return {"office": office_name(plane), "as_of": day.isoformat() if day else None, "figures": figs, "watchlist": watch, "boards": boards, "note": note,
-            "reports": [{"name": "Run book (Word)", "href": f"/api/v1/projects/{live['pid']}/artefacts/run_book/export?format=docx"}] if live else [],
+            "reports": [{"name": "Run book (Word)", "href": f"/api/v1/projects/{live['pid']}/artefacts/run_book/export?format=docx"}] if live else v3_process.reports(plane),
             "golden": [{"q": q} for q in g], "answer": first}

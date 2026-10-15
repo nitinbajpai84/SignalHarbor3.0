@@ -55,17 +55,23 @@ async def _multipart(request: Request, cap: int = TOO_BIG) -> dict | JSONRespons
         raw += chunk
         if len(raw) > cap:
             return _plain(413, "too_big", f"That file is too large. The limit is {L.MAX_BYTES // 1_000_000} MB.")
-    msg = BytesParser(policy=policy.default).parsebytes(b"Content-Type: " + ctype.encode("latin-1") + b"\r\n\r\n" + bytes(raw))
+    boundary = BytesParser(policy=policy.default).parsebytes(b"Content-Type: " + ctype.encode("latin-1") + b"\r\n\r\n", headersonly=True).get_boundary()
     out: dict = {}
-    for part in msg.iter_parts() if msg.is_multipart() else []:
-        name = part.get_param("name", header="content-disposition")
+    # Each part's bytes are cut at the boundary, never decoded by the email parser: a part sent as message/rfc822 (an .eml file) has no
+    # decodable payload there and arrived as an empty file (cycle 2, cio and fund_accountant).
+    for seg in bytes(raw).split(b"--" + boundary.encode("latin-1"))[1:] if boundary else []:
+        head, sep, body = seg.removeprefix(b"\r\n").partition(b"\r\n\r\n")
+        if not sep:
+            continue  # the closing "--"
+        part = BytesParser(policy=policy.default).parsebytes(head + b"\r\n\r\n", headersonly=True)
+        name, body = part.get_param("name", header="content-disposition"), body.removesuffix(b"\r\n")
         if not name:
             continue
         if part.get_filename():
-            out["filename"], out["data"] = part.get_filename(), part.get_payload(decode=True) or b""
+            out["filename"], out["data"] = part.get_filename(), body
             out.setdefault("files", []).append((out["filename"], out["data"]))
         else:
-            out[name] = part.get_content()
+            out[name] = body.decode("utf-8", errors="replace")
     return out
 
 

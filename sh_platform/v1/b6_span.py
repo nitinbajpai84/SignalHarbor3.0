@@ -410,6 +410,70 @@ def _keeps_grain(t: dict, kpis: list[dict], notes: list[str]) -> bool:
     return not miss
 
 
+def org_only_join(sql: str) -> str | None:
+    """A message when a join links two tables on the organisation alone: every row of one meets every row of the other of the same company, so a
+    figure grouped by the second table (entity, portfolio) repeats the company's total for each. None when every join has a real key."""
+    import sqlglot
+    from sqlglot import exp
+    try:
+        tree = sqlglot.parse_one(sql, read="duckdb")
+    except Exception:  # noqa: BLE001 - the plan check says what is wrong with the text
+        return None
+    for j in tree.find_all(exp.Join):
+        on = j.args.get("on")
+        cols = {c.name.lower() for c in on.find_all(exp.Column)} if on is not None else set()
+        if cols == {"organization_id"}:
+            return (f"it joins {j.this.name} on organization_id alone, so every row meets every row of the company and each group would repeat the same total; "
+                    "join through the key that links the two (for example portfolio_id to the portfolio, and the portfolio to its entity)")
+    return None
+
+
+def reads_nothing_loaded(plane, plan: dict, sql: str) -> str | None:
+    """A message when a gold table reads only company-model tables that no file load fills and that hold no rows (c2 risk_officer: concentration on
+    metric_values and metric_definitions, which nothing fills, while the positions were loaded): it would show nothing. Names the tables a load fills,
+    with their rows, so the repair round builds on them. None when it reads a table a load fills, one with rows, or one of the plan's own."""
+    import sqlglot
+    from sqlglot import exp
+    from sh_platform.v1 import e0c_load, wh
+    loadable = {*e0c_load._TABLES, "transactions"}
+    own = {t["name"]: t for t in plan.get("tables") or []}
+    try:
+        with wh.connect(plane, read_only=True) as con:
+            have = {r[0] for r in con.execute("select table_name from information_schema.tables where table_schema = 'main'").fetchall()}
+            count = lambda t: con.execute(f'select count(*) from "{t}"').fetchone()[0] if t in have and re.fullmatch(r"\w+", t) else 0  # noqa: E731
+            rows = {t: count(t) for t in have if t in loadable or not t.startswith(("gold_", "bronze_"))}
+    except Exception:  # noqa: BLE001 - a warehouse that cannot be read decides nothing here
+        return None
+
+    def reads_of(q) -> set[str]:
+        try:
+            tr = sqlglot.parse_one(q, read="duckdb")
+        except Exception:  # noqa: BLE001 - the plan check says what is wrong with the text
+            return set()
+        ctes = {c.alias for c in tr.find_all(exp.CTE)}
+        target = tr.this.this if isinstance(tr.this, exp.Schema) else tr.this
+        return {t.name for t in tr.find_all(exp.Table) if t.name not in ctes and t.name != getattr(target, "name", None)}
+
+    def filled(t: str, seen: frozenset = frozenset()) -> bool:
+        """True when a load can put rows in `t`, following the plan's own tables to what they read (c3 risk_officer: a gold table on silver tables that
+        a proposed model change adds and nothing fills)."""
+        if t in loadable or t in seen:
+            return t in loadable
+        if t in own:
+            src = own[t].get("sql") or ""
+            return not src or not (r := reads_of(src)) or any(filled(x, seen | {t}) for x in r)  # no sql: a bronze table, filled by file loads
+        if t in have:
+            return bool(rows.get(t)) or t.startswith(("gold_", "bronze_"))
+        return t.startswith("gold_")  # not in the warehouse: an earlier gold table of the draft is built by the plan; any other name is nothing
+
+    reads = reads_of(sql)
+    if not reads or any(filled(t) for t in reads):
+        return None
+    fill = sorted(loadable, key=lambda t: (-(rows.get(t) or 0), t))
+    return (f"it reads only {', '.join(sorted(reads))}, which no file load fills and which hold no rows, so it would show nothing; build it on a table a "
+            "load fills: " + ", ".join(f"{t} ({rows.get(t) or 0} rows)" for t in fill))
+
+
 def keep_valid(plane, plan: dict, extra: list[dict], notes: list[str], drops: tuple = ()) -> list[dict]:
     """The tables of `extra` that pass the plan check with the plan (less `drops`, the tables they replace) and the ones kept before them."""
     from sh_platform.v1.span_tools import gold_name_problem
@@ -418,6 +482,8 @@ def keep_valid(plane, plan: dict, extra: list[dict], notes: list[str], drops: tu
         try:
             if t.get("layer") == "gold" and (bad := gold_name_problem(plan, t.get("name"))):
                 raise Refused(400, bad)  # NU-24: Approve would refuse it later with no cause on the screen
+            if t.get("layer") == "gold" and (bad := org_only_join(t.get("sql") or "") or reads_nothing_loaded(plane, plan, t.get("sql") or "")):
+                raise Refused(400, bad)
             B.validate(plane, {**plan, "tables": base + ok + [t]}, {t.get("name")})
             ok.append(t)
         except Refused as e:

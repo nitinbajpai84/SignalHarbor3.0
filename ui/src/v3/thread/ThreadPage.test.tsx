@@ -11,11 +11,13 @@ const getThread = vi.fn();
 const say = vi.fn();
 const decide = vi.fn();
 const editBrief = vi.fn();
+const sendForSignature = vi.fn();
 vi.mock("../api", () => ({
   editBrief: (...a: unknown[]) => editBrief(...a),
   getThread: (i: string) => getThread(i),
   say: (...a: unknown[]) => say(...a),
   decide: (...a: unknown[]) => decide(...a),
+  sendForSignature: (...a: unknown[]) => sendForSignature(...a),
 }));
 vi.mock("../Frame", () => ({ default: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
 
@@ -138,4 +140,21 @@ test("decision1 brief: every line has its own edit and saves that line", async (
   fireEvent.click(screen.getByText("Save"));
   await waitFor(() => expect(editBrief).toHaveBeenCalledWith("t1", line, "Mei, Daniel"));
   expect(await screen.findByText("Mei, Daniel")).toBeInTheDocument();
+});
+
+const brief = { question: "Q?", files: [], read_by: "Mei", refresh: "Monthly", cases_when: "x" };
+const daniel = { id: "d", name: "Daniel Foo" };
+
+test("a person who may not sign gets Send to the signer, not Confirm", async () => {
+  sendForSignature.mockResolvedValue(base("decision1"));
+  show(base("decision1", { decision: { n: 1, title: "", brief }, signoff: { state: "send", signers: [daniel], signer: daniel } }));
+  fireEvent.click(await screen.findByText("Send to Daniel Foo to confirm"));
+  await waitFor(() => expect(sendForSignature).toHaveBeenCalledWith("t1"));
+  expect(screen.queryByText("Confirm")).toBeNull();
+});
+
+test("after sending, the raiser sees waiting for the signer and no Confirm", async () => {
+  show(base("decision1", { decision: { n: 1, title: "", brief }, signoff: { state: "waiting", signers: [daniel], signer: daniel, mine: true } }));
+  expect(await screen.findByText(/Waiting for Daniel Foo to confirm/)).toBeInTheDocument();
+  expect(screen.queryByText("Confirm")).toBeNull();
 });

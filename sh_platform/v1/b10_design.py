@@ -8,6 +8,8 @@ as a model change (e0a), one proposal per project, linked to the pack and approv
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
 import logging
 import os
@@ -145,6 +147,8 @@ _WINDOW = re.compile(r"\b(?:(?:within|in the next|next)\s+(\d+)|(\d+)\s*(?:to|-)
 _NOT = re.compile(r"\b(?:but\s+)?(?:not|no|without|excluding|except)\s+(?:yet\s+)?([a-z]+)", re.I)
 # UC6 H1: a closing balance, or one figure minus another, is never the plain total of a table's rows
 _LEVEL = re.compile(r"\b(minus|closing|opening|balance)\b|\bless\b(?!\s+than)", re.I)
+# c3 ops_lead: a break or a difference between two sources is one source against the other, never the plain total of one table's movements
+_COMPARE = re.compile(r"\b(breaks?|differences?|differ(?:s|ent)?|variances?|mismatch(?:es)?|reconcil\w*|against|versus|vs)\b", re.I)
 
 
 # UC6 G: uncalled commitment = commitment - called to date (kept on the commitment from the file) - confirmed calls received after the file's as-at date.
@@ -194,9 +198,22 @@ def _enum(note) -> list[str]:
     return items if len(items) >= 3 and all(re.fullmatch(r"[a-z_ ]{2,30}", x) for x in items) else []
 
 
+_PREFER: contextvars.ContextVar[frozenset] = contextvars.ContextVar("prefer_tables", default=frozenset())
+
+
+@contextlib.contextmanager
+def prefer(tables):
+    """While the block runs, a table that already holds the loaded data outranks an equal fit (v3_figures: design on what the load filled)."""
+    token = _PREFER.set(frozenset(tables))
+    try:
+        yield
+    finally:
+        _PREFER.reset(token)
+
+
 def rank_tables(plane, words: set[str]) -> list[dict]:
     """The company model's tables, best fit first: {table, score, matched, missing}. A word in a table's name counts most, then a listed value of one of its
-    columns (calls: movement_type lists 'call'), then its note and column names."""
+    columns (calls: movement_type lists 'call'), then its note and column names. Tables under `prefer(...)` that match at all get +3."""
     out = []
     for t in E.current(plane)["tables"]:
         name, note = _toks(t["name"].replace("_", " ")), _toks(t.get("note") or "")
@@ -208,7 +225,7 @@ def rank_tables(plane, words: set[str]) -> list[dict]:
             score += got
             if got:
                 hit.add(w)
-        out.append({"table": t["name"], "score": score, "matched": sorted(hit), "missing": sorted(words - hit)})
+        out.append({"table": t["name"], "score": score + (3 if score and t["name"] in _PREFER.get() else 0), "matched": sorted(hit), "missing": sorted(words - hit)})
     return sorted(out, key=lambda r: (-r["score"], r["table"]))
 
 
@@ -338,7 +355,7 @@ def _rules_design(plane, slug: str, kpis: list[dict], grain: dict, notes: list[s
         have = {c["name"] for c in cat[fit["table"]]["columns"]}
         if fit["table"] == "commitments" and _UNCALLED.search(str(k.get("name"))) and {"called_to_date", "called_as_at"} <= have and not fit["window"]:
             fit = {**fit, "measure_expr": _UNCALLED_SQL}  # UC6 G: a stored called-to-date lets the rules write it
-        elif _LEVEL.search(d):  # UC6 H1: closing cash is not the sum of movements; uncalled is commitment minus called
+        elif _LEVEL.search(d) or _COMPARE.search(f"{k.get('name')} {d}"):  # UC6 H1: closing cash is not the sum of movements; uncalled is commitment minus called
             notes.append(f"Define the KPI '{k.get('name')}': it is a closing balance or one figure minus another, which a plain total of the "
                          f"{fit['table'].replace('_', ' ')} cannot give, so it is not in a gold table yet.")
             continue
@@ -381,11 +398,19 @@ def _rules_design(plane, slug: str, kpis: list[dict], grain: dict, notes: list[s
 SYSTEM = ("You are Span, the architect. The company's silver tables are its data model and stay stable: REUSE them. Design the gold tables this use case "
           "needs from the signed intent's figures (kpis), reading only tables in model. Every figure in unplaced must be a column of one gold table, at the grain "
           "the intent states (one row per ...); add a table that lists each exception when the figures count exceptions (compare two sources by their source "
-          "system). Gold SQL is DuckDB 'create table <name> as select ...'; write 'group by all', never column positions. Only when NO table or column of model can hold a needed fact, list a silver change "
+          "system: cash_movements rows reach their source through source_record_id -> source_records.source_batch_id -> source_batches.source_system_id). A difference between two sources where one reports balances (position_snapshots: a cash position per portfolio and day) and the other reports movements (cash_movements of that source system) is, per entity and day, the change in the balance since the first day both cover minus the sum of the movements after that day up to this one (join portfolios to legal_entities for the entity; the cash instrument is the instruments row of type cash); one row per entity and day with the entity as a column; build it on the loaded rows, never on an empty table. Gold SQL is DuckDB 'create table <name> as select ...'; write 'group by all', never column positions. Only when NO table or column of model can hold a needed fact, list a silver change "
           "in silver: prefer table = an existing table with the new columns; a new table only if no existing table fits; say what you looked_for and, for each "
-          "considered table, why_not. Types from silver_types. Gold names start with gold_prefix. Never write a digit that is not in the intent. Reply with ONLY "
+          "considered table, why_not. Types from silver_types. Gold names start with gold_prefix. Never write a digit that is not in the intent. When tables_with_data is given, build on those tables: a gold table that reads only other, empty tables shows nothing. Reply with ONLY "
           "JSON {\"gold\": [{\"name\", \"purpose\", \"grain\", \"keys\": [], \"kpis\": [names], \"sql\", \"depends_on\": [tables], \"columns\": [{\"name\", "
           "\"definition\"}]}], \"silver\": [{\"table\", \"purpose\", \"looked_for\", \"considered\": [{\"table\", \"why_not\"}], \"columns\": [{\"name\", \"type\", \"note\"}]}]}.")
+
+
+def _intent_numbers(ctx: dict) -> str:
+    """The numbers the intent itself states ("over 5,000", "between 60 and 90"), put in the ask: the number guard lets through a number that is in the question,
+    and would otherwise blank a threshold in the SQL ("amount > not available yet")."""
+    found = list(dict.fromkeys(re.findall(r"\d[\d,]*(?:\.\d+)?", json.dumps({k: ctx.get(k) for k in ("kpis", "goal")}, ensure_ascii=False))))
+    found = list(dict.fromkeys([*found, "100"]))  # c3 risk_officer: a share is a part over a whole times 100; without it the guard blanked the 100 and the SQL broke
+    return " The intent states these numbers, which you may write in the SQL: " + ", ".join(found) + " (100 is only for turning a share into a percentage)."
 
 
 def _ask_design(plane, model, viewer, pid: str, ctx: dict, ask: str = "Design the gold tables.") -> dict | None:
@@ -399,7 +424,7 @@ def _ask_design(plane, model, viewer, pid: str, ctx: dict, ask: str = "Design th
         from sh_platform.v1.egress_fit import fit
         from sh_platform.v1.router import route
         res = run_agent(route(model, "span", "plan", "", plane, want_json=True), ToolRegistry(OpenGate()), plane.company_id, "m3_connect", "Span", SYSTEM,
-                        fit(ctx), ask, recorder=RunRegistry(plane))
+                        fit(ctx), ask + _intent_numbers(ctx), recorder=RunRegistry(plane))
         a, b = res.text.find("{"), res.text.rfind("}")
         return json.loads(res.text[a:b + 1]) if res.status == "done" and 0 <= a < b else None
     except Exception:  # noqa: BLE001 - a failed call leaves the rules' design
@@ -454,7 +479,7 @@ def design(plane, viewer, pid: str, sow: dict, plan: dict, grain: dict, model=No
     schema = {t["name"]: [c["name"] for c in t["columns"]] for t in E.current(plane)["tables"]}
     ctx = {"unplaced": [k["name"] for k in kpis], "kpis": [{x: k.get(x) for x in ("name", "definition", "unit", "period", "benchmark_by")} for k in kpis],
            "goal": (sow.get("goal") or {}).get("line"), "model": {r["table"]: schema[r["table"]] for r in ranked[:12] if r["score"]} or {t: [] for t in schema},
-           "model_tables": sorted(schema), "gold_prefix": f"gold_{slug}_", "silver_types": SILVER_TYPES}
+           "model_tables": sorted(schema), "gold_prefix": f"gold_{slug}_", "silver_types": SILVER_TYPES, **({"tables_with_data": sorted(_PREFER.get())} if _PREFER.get() else {})}
     got = _ask_design(plane, model, viewer, pid, ctx)
     mine = _from_model(plane, got, slug, words) if got else {"silver": [], "gold": []}
     rules = None

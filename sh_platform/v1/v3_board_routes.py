@@ -6,6 +6,7 @@ GET /api/v3/consume -> {office, answer, as_of, figures, watchlist, boards, note,
 GET /api/v3/note -> {text, figures, history:[{at, headline}]}. Every failure answers a plain message, never a trace."""
 import json
 import logging
+import re
 import threading
 from datetime import date
 
@@ -18,6 +19,7 @@ from sh_platform.v1 import cx_dash as D
 from sh_platform.v1 import e6_trace, k10_note as N, talk as T, teach
 from sh_platform.v1 import v3_consume as C
 from sh_platform.v1 import v3_harbor as H
+from sh_platform.v1 import v3_process as P
 from sh_platform.v1.p1_project import Refused
 from sh_platform.v1.seats import viewer_of
 
@@ -28,7 +30,7 @@ STEP = {"model": "Wrote the answer", "rules": "Answered by fixed rules from the 
 
 
 def _live(plane) -> dict | None:
-    return next((t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid")), None)
+    return next((t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid") and t.get("mode") != "process"), None)  # a procedure has no board
 
 
 def _source(th: dict) -> str | None:
@@ -95,16 +97,79 @@ def _trace(plane, trace_id: str | None) -> list[dict]:
 
 
 def _ask(plane, viewer, text: str, pid: str | None) -> dict:
-    fast = C.liquidity_answer(plane, viewer, text, pid)  # cash, calls due, can we meet them: a tool call, ahead of Lumen
+    fast = P.answer(plane, text) or C.liquidity_answer(plane, viewer, text, pid)  # the steps of a live procedure (the SOP); cash, calls due: tool calls, ahead of Lumen
     if fast:
         return fast
+    from sh_platform.v1 import v3_figures as F  # the ready table of the figure the question names, ahead of Lumen's free answer
+    fig = F.figure_answer(plane, viewer, text, pid, _live(plane))
+    if fig:
+        return fig
     s, token = teach.open_scope("lumen", text, plane=plane)
     try:
         got = T.ask(plane, viewer, "lumen", text, pid)
     finally:
         teach.close_scope(token)
     used = [] if got.get("rules_only") else [u["line"] for u in s.used]  # a reply worded by the fixed rules used no taught passage
-    return {"answer": got["reply"], "trace": _trace(plane, got.get("trace_id")), "used": used}
+    out = {"answer": got["reply"], "trace": _trace(plane, got.get("trace_id")), "used": used}
+    return honest(plane, text, _live(plane), out)
+
+
+# ---- the last guard on Lumen's reply (c2: "could you share the previous status", "the variance is minimal", "the data may still be loading") ------------
+# talk.ask's number guard already blanks a figure no tool returned, and a blanked reply becomes the rules reply; a reply with no figure at all, one that asks
+# the person for records, or one that guesses why, passed it. For a question about the project's figures that reply becomes the thread's own record.
+_MONTH = r"(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
+_DATES = re.compile(rf"\b\d{{4}}-\d{{2}}(?:-\d{{2}})?\b|\b\d{{1,2}}(?:st|nd|rd|th)?\s+{_MONTH}\b(?:,?\s+\d{{4}})?|\b{_MONTH}\s+\d{{1,2}}?(?:,?\s*\d{{4}})?\b"
+                    r"|\b(?:19|20)\d{2}\b|\b[QH][1-4]\b", re.I)
+_NUMBER = re.compile(r"(?<![\w./-])-?\d[\d,]*(?:\.\d+)?(?![\w/-])")
+FIGURE_Q = re.compile(r"\b(?:how (?:much|many)|worth|differ\w*|variance|break|total|balance|amount|value|figure|percent\w*|nav|p&l|cash|limit|"
+                      r"return|exposure|concentration|uncalled|overdue)\b", re.I)
+HOW_TO = re.compile(r"^\s*(?:how (?:do|can|should|would) (?:i|we|you)|what (?:does|do) .{1,60} mean|explain|define|what is meant)\b", re.I)
+ASKS_BACK = re.compile(r"\b(?:could|can|would) you (?:please )?(?:share|send|provide|upload|tell me)|\bplease (?:share|send|provide|upload)\b"
+                       r"|\bmay (?:still )?be loading\b|\bstill loading\b", re.I)
+
+
+LEFT_OUT = "could not check a figure in my answer"  # talk.ask's rules reply after the number guard blanked a figure: "1 set of figures" in it is a count, not the answer
+
+
+def has_figure(reply: str) -> bool:
+    """A number in the reply that is not a date, a year or part of a name (a file name, a trade id)."""
+    from sh_platform.v1.talk import untraced
+    return not untraced(reply) and LEFT_OUT not in (reply or "") and bool(_NUMBER.search(_DATES.sub(" ", reply or "")))
+
+
+def asks_figure(text: str, kpis: list[dict]) -> bool:
+    from sh_platform.v1 import v3_figures as F
+    return not HOW_TO.search(text) and bool(F.kpi_for(text, kpis) or FIGURE_Q.search(text) or F.CHANGE_Q.search(text))
+
+
+def honest_line(text: str, th: dict, kpis: list[dict]) -> str:
+    """"Not available yet: <figure> ... <what is missing>", from the thread's own record: the figure's reason and the files that did not load."""
+    from sh_platform.v1 import v3_figures as F
+    k = F.kpi_for(text, kpis)
+    if k:
+        f = next((f for f in th.get("figures") or [] if f.get("kpi") == k["name"]), {})
+        why = str(f.get("reason") or (th.get("figure_notes") or {}).get(k["name"]) or "")
+        say = f"Not available yet: {k['name']} has no figure in the ready tables." + (f" {why}" if why else "")
+    else:
+        names = ", ".join(k["name"] for k in kpis)
+        say = "Not available yet: no ready table of this project holds that figure" + (f" (its figures are {names})." if names else ".")
+    return say if " Not loaded:" in say else say + F._not_loaded(th)
+
+
+def honest(plane, text: str, th: dict | None, out: dict) -> dict:
+    """Lumen's reply, or for a question about the live project's figures that holds no figure (or asks the person for records) the honest line."""
+    if not th or not th.get("pid"):
+        return out
+    from sh_platform.v1 import v3_figures as F, v3_skills as SK
+    kpis = F.kpis_of(plane, th.get("iid"))
+    reply = str(out.get("answer") or "")
+    if not asks_figure(text, kpis) or (has_figure(reply) and not ASKS_BACK.search(reply)):
+        return out
+    with SK.record(plane, th.get("id"), C.SKILL) as rec:
+        line = honest_line(text, th, kpis)
+        rec["detail"] = "the reply held no figure from the rows: " + line[:200]
+    return {"answer": line, "figure": None, "rows": [], "source": "The project's own record", "used": [],
+            "trace": out.get("trace", []) + [{"kind": "guard", "label": "The reply held no figure from the data, so it says what is missing"}]}
 
 
 @router.post("/api/v3/ask")

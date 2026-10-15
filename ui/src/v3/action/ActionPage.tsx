@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import V3Frame from "../Frame";
-import { decide, getDesk, getThread, say, type Card, type Event } from "../api";
+import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event } from "../api";
 import { listSkills, when, type SkillRow } from "./actionApi";
 import "./action.css";
 
@@ -14,7 +14,7 @@ interface Done { by: string; at: string; text: string; thread: string }
 interface Loaded { items: Item[]; done: Done[]; skillsFailed: boolean }
 interface ThreadEvents { id: string; title: string; events: Event[] }
 
-const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3 };
+const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3, send_for_signature: 1 };
 const LABEL: Record<Kind, string> = { decision: "Decision", exception: "Exception", question: "Question", skill: "New skill to review" };
 const PLURAL: Record<Kind, string> = { decision: "Decisions", exception: "Exceptions", question: "Questions", skill: "New skills" };
 const KINDS: Kind[] = ["decision", "exception", "question", "skill"];
@@ -70,7 +70,8 @@ export default function ActionPage() {
     setProblem("");
     try {
       const n = STEP[answer];
-      if (n) await decide(c.thread, n, answer);
+      if (answer === "send_for_signature") await sendForSignature(c.thread);
+      else if (n) await decide(c.thread, n, answer);
       else await say(c.thread, answer);
       setSel(null);
       reload();

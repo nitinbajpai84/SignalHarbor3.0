@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointer
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError } from "../../api/client";
-import { decide, editBrief, getThread, say, type Event, type Thread, type ThreadRecord } from "../api";
+import { decide, editBrief, sendForSignature, getThread, say, type Event, type Thread, type ThreadRecord } from "../api";
 import { EditLine } from "../build/IntentGraph";
 import "../build/build.css";
 import V3Frame from "../Frame";
 import Discard from "./Discard";
+import { SignNote, signAction } from "./SignOff";
 import { MicButton, combineText } from "../../v1/voice";
 
 const POLL_MS = 3000;
@@ -34,7 +35,8 @@ function RecordCard({ r, startedBy, startedAt }: { r?: ThreadRecord | null; star
     <div className={`v3-card v3-record${r?.signed_by ? " signed" : ""}`}>
       <span className="v3-kicker">The record</span>
       <dl>
-        <dt>Started by</dt><dd>{r?.started_by ?? startedBy ?? "You"}{(r?.started_at ?? startedAt) && <> · {when(r?.started_at ?? startedAt)}</>}</dd>
+        <dt>Raised by</dt><dd>{r?.started_by ?? startedBy ?? "You"}{(r?.started_at ?? startedAt) && <> · {when(r?.started_at ?? startedAt)}</>}</dd>
+        {r?.sent_at && <><dt>Sent to the signer</dt><dd>{when(r.sent_at)}</dd></>}
         {r?.signed_by ? (
           <><dt>Confirmed and signed by</dt><dd><span className="v3-pill done">Signed</span> {r.signed_by}{r.role && ` (${({ raiser: "raised it", sponsor: "sponsor", company_admin: "office admin" } as Record<string, string>)[r.role] ?? r.role})`} · {when(r.signed_at)}</dd>
             <dt>Version</dt><dd>{r.version ?? 1}</dd></>
@@ -198,8 +200,9 @@ export default function ThreadPage() {
           </dl>
         )}
         {d.gaps?.length ? <p className="v3-gap">Still needed before you confirm: {d.gaps.join("; ")}.</p> : null}
+        <SignNote s={t.signoff} />
         <div className="v3-row">
-          <button className="go" disabled={busy || updating} onClick={() => void run(decide(id, 1, "confirm"))}>Confirm</button>
+          {signAction(t.signoff, "Confirm", busy || updating, () => void run(decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
           <button onClick={() => composer.current?.focus()}>Change something</button>
         </div>
         <small className="v3-mute">or just say it, for example "use 90 days"</small>
@@ -273,6 +276,7 @@ export default function ThreadPage() {
           </tbody>
         </table>
         {d.summary && <p className="v3-mute">{d.summary}</p>}
+        {d.sop && <p><a href={d.sop.download.docx}>Download the procedure (Word)</a> · <a href={d.sop.download.md}>Markdown</a></p>}
         <div className="v3-row">
           <button className="go" disabled={busy} onClick={() => void run(decide(id, 3, "go_live"))}>Go live</button>
           <button disabled={busy} onClick={() => void run(decide(id, 3, "not_yet"))}>Not yet</button>
@@ -283,7 +287,8 @@ export default function ThreadPage() {
     panel = (
       <div className="v3-card b3-live">
         <span className="v3-pill done">Live</span>
-        <p>{t.next_run ? `Next run: ${t.next_run}` : "Runs on its own when the next files arrive."}</p>
+        <p>{t.process ? `${t.process.title}: ${t.process.steps} steps, kept here as a document.` : t.next_run ? `Next run: ${t.next_run}` : "Runs on its own when the next files arrive."}</p>
+        {t.process && <p><a href={t.process.download.docx}>Download the procedure (Word)</a> · <a href={t.process.download.md}>Markdown</a></p>}
         <div className="v3-row"><Link to="/v3/board">Board</Link><Link to="/v3/files">Files</Link></div>
       </div>
     );

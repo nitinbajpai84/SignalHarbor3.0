@@ -14,9 +14,15 @@ export interface Question { id: string; text: string; options: string[]; assumed
 export interface Check { label: string; value: string; ok: boolean; note: string }
 export interface Decision {
   n: 1 | 2 | 3; title: string; brief?: Brief; files?: DecisionFile[]; questions?: Question[]; checks?: Check[]; summary?: string; gaps?: string[];
+  sop?: { title: string; download: { docx: string; md: string } };
 }
-export interface ThreadRecord { started_by?: string | null; started_at?: string; signed_by?: string; role?: string; signed_at?: string; version?: number; document?: string }
-export interface Thread extends ThreadSummary { events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null }
+export interface Signer { id: string; name: string; email?: string }
+export interface SignOff {
+  state: "can_sign" | "send" | "fill" | "waiting" | "awaiting_you" | "none"; signers: Signer[]; signer?: Signer | null; raised_by?: string | null;
+  sent_at?: string; sent_by?: string; mine?: boolean; message?: string; gaps?: string[];
+}
+export interface ThreadRecord { started_by?: string | null; started_at?: string; sent_at?: string | null; line?: string | null; signed_by?: string; role?: string; signed_at?: string; version?: number; document?: string }
+export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
 export interface CardAction { label: string; answer: string }
 export interface Card { kind: "decision" | "exception" | "question"; thread: string; title: string; text: string; actions: CardAction[] }
 export interface Figure { label: string; value: string; change: string }
@@ -38,6 +44,7 @@ export const say = (id: string, text: string) => apiSend<Thread>("POST", `${t(id
 export const editBrief = (id: string, line: BriefLine, value: string) =>
   apiSend<Thread>("POST", `${t(id)}/brief`, { section: line.section, index: line.index, field: line.field, value });
 export const discardThread = (id: string, reason: string) => apiSend<Thread>("POST", `${t(id)}/discard`, { reason });
+export const sendForSignature = (id: string, to?: string) => apiSend<Thread>("POST", `${t(id)}/decide`, to ? { n: 1, answer: "send_for_signature", to } : { n: 1, answer: "send_for_signature" });
 export const decide = (id: string, n: 1 | 2 | 3, answer: string, answers?: Record<string, string>) =>
   apiSend<Thread>("POST", `${t(id)}/decide`, answers ? { n, answer, answers } : { n, answer });
 export const listFiles = () => apiGet<{ files: FileRow[] }>("/api/v3/files");

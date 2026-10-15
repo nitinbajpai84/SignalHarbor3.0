@@ -20,9 +20,10 @@ from pathlib import Path
 from sh_platform.v1.e0b_mappings import col_key
 
 log = logging.getLogger(__name__)
-MONEY = {"source_market_value", "value_amount", "amount", "nav_amount", "commitment_amount"}
+MONEY = {"source_market_value", "value_amount", "amount", "debit", "credit", "nav_amount", "commitment_amount"}
 DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "observed_at", "weight_effective_from", "committed_on"}
 IGNORE = "ignore"
+DEBIT_CREDIT = {"cash_movements.debit", "cash_movements.credit"}
 _UNIT_WORDS = {"usd", "eur", "gbp", "sgd", "000", "thousand", "thousands", "k"}
 _STATUS_WORDS = ("in progress", "draft", "not for use")
 
@@ -38,7 +39,7 @@ DOMAINS: dict[str, dict] = {
                     ("fund id|fund code|isin|identifier|security id|instrument id|code", "instrument_identifiers.identifier_value"),
                     ("portfolio|account|portfolio code|entity", "portfolios.portfolio_code"),
                     ("units|quantity|shares|holding units", "position_snapshots.quantity"),
-                    ("market value|mkt value|mv|value|book value|closing cash|administrator closing cash|closing balance|cash balance", "position_snapshots.source_market_value"),
+                    ("market value|mkt value|mv|value|valuation amount|book value|closing cash|administrator closing cash|closing balance|cash balance", "position_snapshots.source_market_value"),
                     ("currency|ccy", "position_snapshots.currency"),
                     ("entity code|legal entity", "legal_entities.entity_code")),
     "valuations": _d(("valuation date|value date|nav date", "valuation_observations.valuation_date"),
@@ -51,6 +52,8 @@ DOMAINS: dict[str, dict] = {
                ("portfolio|account|entity", "portfolios.portfolio_code"),
                ("type|movement type|transaction type", "cash_movements.movement_type"),
                ("amount|cash amount|net movement|movement", "cash_movements.amount"),
+               ("debit|debits|withdrawal|withdrawals|money out", "cash_movements.debit"),
+               ("credit|credits|deposit|deposits|money in", "cash_movements.credit"),
                ("currency|ccy", "cash_movements.currency"),
                ("portfolio code", "portfolios.portfolio_code"),
                ("entity code|legal entity", "legal_entities.entity_code")),
@@ -76,7 +79,11 @@ DOMAINS: dict[str, dict] = {
                       ("series|series key|index|ticker", "market_observations.series_key"),
                       ("level|value|price|close", "market_observations.value"),
                       ("kind|observation type|type", "market_observations.observation_type"),
-                      ("base ccy|base currency|currency|ccy", "market_observations.base_currency")),
+                      ("base ccy|base currency|currency|ccy", "market_observations.base_currency"),
+                      # an FX fixing file (Date, Pair, Rate): the model keeps FX as market observations of type fx (e0c_load sets it from the pair)
+                      ("pair|currency pair|fx pair", "market_observations.series_key"),
+                      ("rate|fx rate|exchange rate|fixing rate|spot rate|mid rate", "market_observations.value"),
+                      ("fixing|fixing time|source|rate source", IGNORE)),
     "benchmark": _d(("index|series|component|benchmark", "benchmark_components.market_series_key"),
                     ("weight|weight pct|target weight", "benchmark_components.component_weight"),
                     ("spread|spread bps", "benchmark_components.spread_bps"),
@@ -244,6 +251,8 @@ def _split(target: str) -> tuple[str, str]:
 def _valid(plane, target) -> bool:
     from sh_platform.v1 import e0a_catalogue
     t, f = _split(target)
+    if target in DEBIT_CREDIT:  # read columns the loader folds into the one signed amount (e0c_load); the model has no such fields
+        return True
     return bool(t and f and e0a_catalogue.has_field(plane, t, f))
 
 

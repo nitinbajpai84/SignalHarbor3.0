@@ -4,11 +4,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError } from "../../api/client";
 import { MicButton, combineText } from "../../v1/voice";
 import {
-  decide, editBrief, getThread, listThreads, say, startThread,
+  decide, editBrief, getThread, listThreads, say, sendForSignature, startThread,
   type BriefLine, type FileRow, type Stage, type Thread, type ThreadRecord, type ThreadSummary,
 } from "../api";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
+import { SignNote, signAction } from "../thread/SignOff";
 import { Row } from "../thread/ThreadPage";
 import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
@@ -148,7 +149,8 @@ function RecordCard({ r, startedBy, startedAt }: { r?: ThreadRecord | null; star
     <div className={`v3-card v3-record${r?.signed_by ? " signed" : ""}`}>
       <span className="v3-kicker">The record</span>
       <dl>
-        <dt>Started by</dt><dd>{r?.started_by ?? startedBy ?? "You"}{(r?.started_at ?? startedAt) && <> · {when(r?.started_at ?? startedAt)}</>}</dd>
+        <dt>Raised by</dt><dd>{r?.started_by ?? startedBy ?? "You"}{(r?.started_at ?? startedAt) && <> · {when(r?.started_at ?? startedAt)}</>}</dd>
+        {r?.sent_at && <><dt>Sent to the signer</dt><dd>{when(r.sent_at)}</dd></>}
         {r?.signed_by ? (
           <><dt>Confirmed and signed by</dt><dd><span className="v3-pill done">Signed</span> {r.signed_by} · {when(r.signed_at)}</dd><dt>Version</dt><dd>{r.version ?? 1}</dd></>
         ) : (
@@ -260,8 +262,9 @@ function Case({ id }: { id: string }) {
       <div className="v3-dec">
         {updating && <p className="v3-updating" role="status">Updating the brief with what you just said. Changed boxes glow.</p>}
         {d?.gaps?.length ? <p className="v3-gap">Still needed before you confirm: {d.gaps.join("; ")}.</p> : null}
+        <SignNote s={t.signoff} />
         <div className="v3-row">
-          <button className="go" disabled={busy || updating || !doc?.length} onClick={() => void run(decide(id, 1, "confirm"))}>Confirm the brief</button>
+          {signAction(t.signoff, "Confirm the brief", busy || updating || !doc?.length, () => void run(decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
           <button onClick={() => composer.current?.focus()}>Change something</button>
         </div>
       </div>

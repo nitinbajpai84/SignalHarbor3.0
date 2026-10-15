@@ -1220,6 +1220,9 @@ def ask(model, plane, iid: str, thread: dict, sow: dict, files: list, latest: st
         info["status"] = "unreadable"
         return None
     _fold_proposals(got, res.proposals, sow)
+    sp = got.get("sow_patch")
+    if isinstance(sp, dict) and not isinstance(got.get("process_steps"), list) and isinstance(sp.get("process_steps"), list):
+        got["process_steps"] = sp.pop("process_steps")  # test cycle 1: the model put the process steps inside sow_patch, where merge never reads them
     if meta or plain_question(latest):  # NM2-6 (A4, A10): a question is not an answer; "what did you mean" drafts nothing
         got["sow_patch"], got["process_steps"] = {}, None
         if meta:

@@ -42,11 +42,12 @@ _TABLES = {
     "market_observations": (("series_key", "observed_at"), "supersedes_observation_id"),
     "commitments": (("legal_entity_id", "instrument_id"), "supersedes_commitment_id"),
 }
+_REQUIRED_DATE = {"position_snapshots": "position_date", "valuation_observations": "valuation_date", "cash_movements": "effective_date", "nav_snapshots": "nav_period_end"}
 _NEEDS_PORTFOLIO = {"position_snapshots", "cash_movements", "nav_snapshots"}
 _NEEDS_INSTRUMENT = {"position_snapshots", "valuation_observations", "commitments"}
 _DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "committed_on"}
 _STAMP_FIELDS = {"observed_at", "as_of_at"}
-_NUMERIC = {"quantity", "source_market_value", "value_amount", "amount", "nav_amount", "value", "commitment_amount"}
+_NUMERIC = {"quantity", "source_market_value", "value_amount", "amount", "nav_amount", "value", "commitment_amount", "debit", "credit"}
 _SIDE = {("instruments", "canonical_name"), ("instrument_identifiers", "identifier_value"), ("portfolios", "portfolio_code"), ("legal_entities", "entity_code")}
 
 
@@ -141,12 +142,15 @@ def _read(path: Path, sheet: str | None, header_row: int, cols: dict[str, dict])
     title, grid = _mod("e0b_tools").read_grid(path, sheet)
     cell = lambda r, i: (grid[r - 1][i - 1] if r <= len(grid) and i <= len(grid[r - 1]) else None)  # noqa: E731 - 1-based like Excel
     heads = {i: str(c).strip() for i, c in enumerate(grid[header_row - 1] if header_row <= len(grid) else [], 1) if c not in (None, "")}
-    rows, totals, block = [], None, None
+    rows, totals, block, gap = [], None, None, False
     for r in range(header_row + 1, len(grid) + 1):
         vals = {h: cell(r, i) for i, h in heads.items()}
         if all(v in (None, "") for v in vals.values()):
+            gap = bool(rows)
             continue
         first = next((v for v in (cell(r, i) for i in sorted(heads)) if v not in (None, "")), None)
+        if gap and block is None and not (isinstance(first, str) and "total" in first.strip().lower()):
+            break  # the table ends at its first blank row: the notes below it ("Rows: 29 ...", "Closing balance at period end") are not data (as the profile reads it)
         if block is not None:  # UC5: under a totals block every row is one group's stated total, never a data row
             if first not in (None, ""):
                 block[str(first).strip()] = {h: v for h, v in vals.items() if v not in (None, "") and h != heads[min(heads)]}
@@ -362,6 +366,7 @@ def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> 
         funds_wait: dict[str, dict] = {}  # fund names that need a person's approval (shown on the file page)
         ports_wait: set[str] = set()
         held, obs_rows, supers = [], [], []
+        sheet_account = _heading_account(path, sheet_name)
         now = wh.now()
         for r, raw, (c0, c1), f, side in parsed:
             if r in done:
@@ -369,6 +374,10 @@ def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> 
             rid = wh.new_id()
             reason = None
             row = dict(f)
+            if obs == "cash_movements":
+                dr, cr = row.pop("debit", None), row.pop("credit", None)
+                if row.get("amount") is None and (dr is not None or cr is not None):  # Debit/Credit columns: the statement's signed convention, money in positive, out negative
+                    row["amount"] = (cr or Decimal(0)) - (dr or Decimal(0))
             labels = [side[k] for k in ("instrument_identifiers.identifier_value", "instruments.canonical_name") if side.get(k) not in (None, "")]
             tried = []
             for label in labels:
@@ -400,11 +409,17 @@ def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> 
                     reason = reason or f"{code}: portfolio not approved yet (not in the company's master data)"
             elif ecode not in (None, "") and len(by_ent.get(str(ent.get(str(ecode).strip().lower())), [])) == 1:
                 row["portfolio_id"] = by_ent[str(ent[str(ecode).strip().lower()])][0]  # the entity's only portfolio
+            elif obs in _NEEDS_PORTFOLIO and sheet_account in pf:
+                row["portfolio_id"] = pf[sheet_account]  # the statement's own heading names the account ("Account number: X"), the rows do not
             elif obs in _NEEDS_PORTFOLIO:
                 if ecode not in (None, "") and str(ecode).strip().lower() in ent:
                     choose[str(ecode).strip()] = codes_by_ent.get(str(ent[str(ecode).strip().lower()]), [])
                 reason = reason or ("no portfolio in the row" if ecode in (None, "") else
                                     f"{ecode}: more than one portfolio. Choose one for the whole file on the file page")
+            if (need := _REQUIRED_DATE.get(obs)) and row.get(need) in (None, "") and not reason:  # a row with no date (a value "not received") is held back and named, never the whole file
+                reason = f"no {need.replace('_', ' ')} in the row"
+            if obs == "cash_movements" and row.get("amount") is None and not reason:  # an opening-balance line carries no movement: held back, named
+                reason = "no amount in the row (no debit, credit or amount value)"
             if obs == "valuation_observations":
                 row.setdefault("valuation_type", "manager_estimate"); row.setdefault("approval_status", "unapproved")
             elif obs == "position_snapshots":
@@ -415,6 +430,8 @@ def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> 
             elif obs == "nav_snapshots":
                 row.setdefault("nav_status", "approved_official" if final else "draft")
             elif obs == "market_observations":
+                if (pair := re.fullmatch(r"([A-Z]{3})\s*/\s*([A-Z]{3})", str(row.get("series_key") or "").strip())):  # USD/SGD: an FX rate, base/quote from the pair
+                    row.setdefault("observation_type", "fx"); row.setdefault("base_currency", pair[1]); row.setdefault("quote_currency", pair[2])
                 row.setdefault("observation_type", "index_level"); row.setdefault("quality_status", "loaded")
             row["source_record_id"] = rid
             if obs != "commitments":
@@ -462,10 +479,52 @@ def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> 
     return {**result, "status": "loaded", "message": msg, "rows_loaded": len(ids), "held_back": held, "observation_table": obs}
 
 
+_ACCOUNT_LINE = re.compile(r"^\s*(?:account\s*(?:number|no\.?|#)|acct\s*(?:no\.?|#)?)\s*[:\-]\s*(\S+)\s*$", re.I)
+
+
+def _heading_account(path: Path, sheet: str | None) -> str | None:
+    """The account a statement names above its table ("Account number: TCB-7730-210958"), lower-cased: on this sheet, else on a sibling sheet of the
+    workbook (the transactions sheet of a bank statement has no heading; the balances sheet beside it does). None when none names one."""
+    try:
+        for name in [sheet, *[n for n in _mod("e0c_landing").sheet_names(path) if n != sheet]]:
+            for row in _mod("e0b_tools").read_grid(path, name)[1][:15]:
+                for c in row:
+                    if isinstance(c, str) and (m := _ACCOUNT_LINE.match(c)):
+                        return m[1].strip().lower()
+    except Exception:  # noqa: BLE001 - no heading account: the rows are held back for a person, as before
+        log.info("E0c2: could not read the heading of %s", path)
+    return None
+
+
 # ---- trade files (FIXB1): the trading export and the administrator's trade file go to trade_intake; every other file takes the path above ----
 _load_sheet = _load
 
 
 def _load(plane, file_id: str, viewer, model=None, sheet: str | None = None) -> dict:  # noqa: F811 - load() above resolves _load at call time
     rec, path = _file(plane, file_id)
-    return _mod("trade_intake").dispatch(plane, rec, path, viewer) or _load_sheet(plane, file_id, viewer, model, sheet=sheet)
+    if (t := _mod("trade_intake").dispatch(plane, rec, path, viewer)):
+        return t
+    sheet, kept_out = _movement_sheet(plane, path, sheet)
+    if kept_out:
+        return {"status": "nothing_loaded", "file_id": file_id, "message": kept_out, "rows_loaded": 0, "held_back": []}
+    return _load_sheet(plane, file_id, viewer, model, sheet=sheet)
+
+
+def _movement_sheet(plane, path: Path, sheet: str | None) -> tuple[str | None, str | None]:
+    """A workbook with a balances sheet and a transactions sheet (a bank statement): the movements come from the transactions. The default sheet
+    becomes the transactions sheet; the balances sheet is kept out (loading its net movements too would count every movement twice) unless the
+    model has a table for balances. -> (sheet to load, why a balances sheet is kept out | None)."""
+    names = _mod("e0c_landing").sheet_names(path)
+    trans = next((n for n in names if n and "transaction" in n.lower()), None)
+    bal = [n for n in names if n and "balance" in n.lower()]
+    if not trans or not bal or (sheet and sheet not in bal):
+        return sheet, None
+    if sheet is None:
+        sheet = trans
+    else:
+        with wh.connect(plane, read_only=True) as con:
+            home = [t for (t,) in con.execute("select table_name from information_schema.tables").fetchall() if "balance" in t and not t.startswith(("gold_", "silver_", "bronze_"))]
+        if not home:
+            return sheet, (f"The {sheet} sheet was not loaded: it holds balances, the data model has no table for balances yet (an open question for the data team), "
+                           f"and the {trans} sheet already carries every movement.")
+    return sheet, None

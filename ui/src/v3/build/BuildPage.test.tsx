@@ -14,6 +14,7 @@ const startThread = vi.fn();
 const say = vi.fn();
 const decide = vi.fn();
 const editBrief = vi.fn();
+const sendForSignature = vi.fn();
 vi.mock("../api", () => ({
   getThread: (i: string) => getThread(i),
   listThreads: () => listThreads(),
@@ -21,6 +22,7 @@ vi.mock("../api", () => ({
   startThread: (...a: unknown[]) => startThread(...a),
   say: (...a: unknown[]) => say(...a),
   decide: (...a: unknown[]) => decide(...a),
+  sendForSignature: (...a: unknown[]) => sendForSignature(...a),
   editBrief: (...a: unknown[]) => editBrief(...a),
 }));
 vi.mock("../Frame", () => ({ default: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
@@ -120,4 +122,14 @@ test("stage colours: reached done, current needs or harbor, later info", () => {
   expect([0, 1, 2, 3].map((i) => stepClass({ stage: "decision2" }, i, 1))).toEqual(["done", "needs", "info", "info"]);
   expect(stepClass({ stage: "working" }, 1, 1)).toBe("harbor");
   expect(stepClass({ stage: "live" }, 3, 3)).toBe("done");
+});
+
+test("a person who may not sign sees Send to the signer on the brief", async () => {
+  const daniel = { id: "d", name: "Daniel Foo" };
+  getThread.mockResolvedValue(thread("decision1", { signoff: { state: "send", signers: [daniel], signer: daniel } }));
+  sendForSignature.mockResolvedValue(thread("decision1", { signoff: { state: "waiting", signers: [daniel], signer: daniel } }));
+  at("/v3/build/t1");
+  fireEvent.click(await screen.findByText("Send to Daniel Foo to confirm"));
+  await waitFor(() => expect(sendForSignature).toHaveBeenCalledWith("t1"));
+  expect(screen.queryByText("Confirm the brief")).toBeNull();
 });

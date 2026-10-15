@@ -154,7 +154,7 @@ def _brief(g, th, sow, uc, bsrc, at, processes, signer) -> None:
             if _slug(nf.get("label")) == _slug(k["name"]) and nf.get("value"):
                 when = (th.get("events") or [{}])[-1].get("at", "")
                 g.fact(f, f"Latest {nf['value']}" + (f" ({nf['change']})" if nf.get("change") else ""), f"Note of {th['title']}", when)
-    steps = [s for s in (sow.get("process") or {}).get("steps") or [] if isinstance(s, dict)]
+    steps = [s for s in (th.get("process") or sow.get("process") or {}).get("steps") or [] if isinstance(s, dict)]  # a process-only thread: the map filled from its documents
     if steps:
         lanes: list[str] = []
         out = []
