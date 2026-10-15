@@ -352,12 +352,22 @@ def b_answers(x):
 def b_load(x):
     for i in x.th["maps"]:
         x.api("anita", "POST", f"/api/v1/model/mappings/{i}/approve", {"note": "Approved by the head of data."}, soft=True)
+    loaded, aside = 0, []
     for name, fid in (x.th.get("intake") or {}).items():
-        out = x.api("leo", "POST", f"/api/v1/intake/files/{fid}/load", {})
-        if isinstance(out, dict) and out.get("state") in ("failed", "blocked", "refused"):
-            raise Q(f"{name} would not load: {out.get('note') or out.get('state')}")
+        try:  # one file that will not load is set aside and named to the person; the others still load
+            out = x.api("leo", "POST", f"/api/v1/intake/files/{fid}/load", {})
+            if isinstance(out, dict) and out.get("state") in ("failed", "blocked", "refused"):
+                raise Q(f"{out.get('note') or out.get('state')}")
+        except Exception as e:  # noqa: BLE001
+            set_status(x.plane, name, "question")
+            aside.append({"title": f"{name} did not load", "text": str(getattr(e, "text", e))[:200]})
+            continue
         set_status(x.plane, name, "loaded")
-    return f"{len(x.th.get('intake') or {})} files loaded"
+        loaded += 1
+    x.th["exceptions"] = [*(x.th.get("exceptions") or []), *aside]
+    if not loaded and aside:
+        raise Q("None of the files would load: " + "; ".join(a["title"] for a in aside))
+    return f"{loaded} files loaded" + (f", {len(aside)} set aside" if aside else "")
 
 
 def b_run(x):
@@ -690,6 +700,27 @@ FILL = ("Where I have not said it, propose the usual practice for an office like
 NO_EARLIER = "We don't have a benchmark for any of these figures; none were reported before."
 
 
+def _no_earlier_figures(app, plane, iid: str) -> None:
+    """A first report has no earlier figures: every figure still without a benchmark is recorded as "none" (the person's own
+    "not reported before"), so confirming never runs into "cannot be signed" for that alone. Figures with a benchmark are kept."""
+    from sh_platform.jsonfile import lock_for, write_json_atomic
+    from sh_platform.v1 import i4_sow as S
+    path = S.path_of(plane, iid)
+    try:
+        with lock_for(path):
+            sow = S.read(plane, iid)
+            if sow.get("state") == "signed":
+                return
+            changed = False
+            for k in sow.get("kpis") or []:
+                if isinstance(k, dict) and "benchmark" not in k:
+                    k["benchmark"], changed = None, True
+            if changed:
+                write_json_atomic(path, sow)
+    except Exception:  # noqa: BLE001 - never blocks the confirm; signing still says what is missing
+        log.warning("could not record no earlier figures for %s", iid, exc_info=True)
+
+
 def _gaps(x, iid: str) -> list[str]:
     for pr in x.api("me", "GET", f"/api/v1/intents/{iid}/proposals", soft=True).get("pending", []):  # drafted lines count as filled;
         x.api("me", "POST", f"/api/v1/intents/{iid}/proposals/{pr['id']}/accept", soft=True)  # the person still reviews them in Decision 1
@@ -789,6 +820,8 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
         m = (th.get("maps") or {}).get(k.partition("map:")[2]) if k.startswith("map:") else None
         if m and srcs.get(m["name"]):
             _learn(plane, th, f"file:{srcs[m['name']]}", f"{m['name']}: {v}")
+    if n == 1 and answer == "confirm" and th.get("iid"):
+        _no_earlier_figures(app, plane, th["iid"])
     if n == 1 and (th.get("decision") or {}).get("brief"):
         th["brief"] = th["decision"]["brief"]  # the confirmed brief stays on screen (the Build graph) after Decision 1 closes
     th["decision"], th["stage"] = None, "working"

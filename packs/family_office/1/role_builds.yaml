@@ -1,0 +1,192 @@
+# Team of ten: what each person acts on, what Harbor can suggest they build, and how we check it.
+# Industry suggestions, never enforced; the person decides. Schema: docs/v3/TEAM-BRIEF.md. People: docs/v3/TEAM-OF-TEN.md.
+# files: entries are folders (or globs) under tests/v1/fixtures/10uc, or "uc6:<month>" for docs/demo/uc6/sources/<month>.
+# check.expect: numbers copied exactly from docs/test/10UC-ANSWER-KEY.md or docs/demo/uc6/ANSWER-KEY.md; [] when no number applies.
+template: family_office@1
+roles:
+  - id: cio
+    title: Chief Investment Officer
+    person: Raj Patel
+    actions:
+      - "Read why the NAV or the P&L moved since the report we issued"
+      - "Decide whether a manager revision needs the committee"
+      - "Compare the portfolio with its benchmark each month"
+      - "Sign off the monthly investment report"
+    builds:
+      - id: uc1-why-nav-moved
+        title: "Why did the NAV move since the issued report?"
+        say: "Every month I want to know why our number moved between the report we issued and what we know now. Fund A sent an amended September statement, so show me what changed and by how much, and who needs to look at it. I read it, Mei checks it."
+        files: ["issued_reports/*2026-09*", "admin_exports/administrator_export_2026-09.xlsx", "emails/04_revision_notice_A_2026-09-30_amended.eml", "manager_statements/northgate_A_2026-09-30_*"]
+        skills: ["intent.restate-ask", "data.recognise-file", "data.read-pdf-fields", "check.against-source", "check.explain-difference", "consume.answer-question"]
+        dashboard: "Consume: issued versus known now, NAV bridge by portfolio"
+        check: {ask: "Why did Fund A move since the issued September report?", expect: ["10,180,000", "180,000"]}
+      - id: uc4-vs-benchmark
+        title: "How did the portfolio do against its benchmark?"
+        say: "I need to see how the Evergreen Liquid portfolio did last month against our blended benchmark, in one line I can put in front of the committee. The benchmark definition is in the workbook, the index levels are in the market data."
+        files: ["benchmark_workbook", "market_data", "admin_exports/administrator_export_2026-08.xlsx", "admin_exports/administrator_export_2026-09.xlsx"]
+        skills: ["intent.define-figure", "data.recognise-file", "build.write-formula-table", "check.adds-up", "consume.attribution", "consume.answer-question"]
+        dashboard: "Consume: portfolio against benchmark, by month"
+        check: {ask: "How did the liquid portfolio do against the benchmark in September 2026?", expect: ["4.1667", "2.7072"]}
+
+  - id: cfo
+    title: Head of Finance
+    person: Daniel Foo
+    actions:
+      - "Approve funding for a capital call"
+      - "Check each entity has cash for the calls due in 30 and 60 days"
+      - "Move cash between entities when one is short"
+      - "Confirm a call notice against the commitment before it is paid"
+      - "Report uncalled commitments to the principal"
+    builds:
+      - id: uc6-liquidity
+        title: "Can each entity meet its capital calls?"
+        say: "I want to know every morning whether each entity can meet its capital calls from cash: cash by entity, calls due in 30 and 60 days, and uncalled commitments. Mei and Raj read it; I decide. Monthly refresh."
+        files: ["uc6:2026-07"]
+        skills: ["intent.restate-ask", "data.recognise-file", "data.match-identity", "check.against-source", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: cash by entity and calls due"
+        check: {ask: "What is our cash by entity today?", expect: ["2,305,906.48", "1,252,492.34", "905,000"]}
+      - id: uc6-uncalled
+        title: "How much of our commitments is still uncalled?"
+        say: "Show me, fund by fund, what we committed, what has been called and what is still to come, so I can plan the cash for the year."
+        files: ["uc6:2026-07"]
+        skills: ["data.recognise-file", "check.adds-up", "consume.understand-words", "consume.answer-question"]
+        dashboard: "Consume: commitments, called and uncalled by fund"
+        check: {ask: "How much is uncalled across all commitments?", expect: ["13,450,000"]}
+
+  - id: head_of_data
+    title: Head of Data
+    person: Anita Rao
+    actions:
+      - "Approve the design of a new data pipeline"
+      - "Check that every figure on a board traces to a file"
+      - "Decide what happens when a file arrives with a new column"
+      - "Keep the model and the office's words in step"
+    builds:
+      - id: uc10-pipeline
+        title: "A monthly pipeline and insight from the administrator and trading files"
+        say: "I want a monthly pipeline that takes the administrator's positions and the trading export, cleans them, and gives me net worth by portfolio on a board that shows where every number came from. The administrator file changed a column name once, so it has to cope with that."
+        files: ["admin_exports", "trading_export/trading_export_2026100*.csv"]
+        skills: ["data.profile-file", "model.find-reusable", "model.design-ready-table", "map.map-file", "build.write-ready-sql", "run.on-copy", "check.adds-up", "consume.build-board"]
+        dashboard: "Consume: net worth by portfolio, where is this from"
+        check: {ask: "What was the Evergreen Liquid portfolio worth at 30 September 2026?", expect: ["41,200,000"]}
+
+  - id: principal
+    title: Principal
+    person: Mei Chen
+    actions:
+      - "Read how much the family is worth this morning"
+      - "Ask a plain question and get a plain answer with its source"
+      - "Decide what to tell the board of the family"
+      - "Be told when something needs her decision"
+    builds:
+      - id: morning-networth-note
+        title: "A morning note on what we are worth"
+        say: "Each morning I would like a short note: what we are worth, in dollars and in Singapore dollars, what changed since last time, and anything that needs me. Plain words, no jargon, one page."
+        files: ["issued_reports/*2026-09*", "market_data/fx_usdsgd_wmr4pm.csv"]
+        skills: ["intent.restate-ask", "data.recognise-file", "build.write-formula-table", "consume.write-morning-note", "consume.explain-number"]
+        dashboard: "Consume: the morning note, net worth in USD and SGD"
+        check: {ask: "What are we worth in the latest report?", expect: ["57,600,000"]}
+
+  - id: investment_analyst
+    title: Investment Analyst
+    person: Sofia Reyes
+    actions:
+      - "Prepare for a manager meeting"
+      - "See what changed at a manager since the last meeting"
+      - "Read newsletters and statements for team or process changes"
+      - "Write up a view for the investment committee"
+    builds:
+      - id: uc7-manager-diligence
+        title: "What changed at Kestrel Ridge since we last met?"
+        say: "Before I see Kestrel Ridge again I want one page of what changed since our last meeting on 12 June: statements, restatements, team changes in their newsletter. Newest first, each item with where it came from. No opinions, I'll bring those."
+        files: ["research_docs", "notes/04_kestrel_ridge_onsite_2026-06-12.md", "manager_statements/kestrel_H1_2026-0[7-9]*"]
+        skills: ["intent.read-company-doc", "data.read-pdf-fields", "data.match-identity", "check.against-source", "consume.answer-question"]
+        dashboard: "Consume: manager timeline, what changed since the last meeting"
+        check: {ask: "What changed at Kestrel Ridge since the last meeting?", expect: ["7,012,500"]}
+
+  - id: ops_lead
+    title: Operations Lead
+    person: Grace Ong
+    actions:
+      - "Run the daily cash reconciliation"
+      - "Look at each break and decide timing or error"
+      - "Chase the administrator or the bank for a missing item"
+      - "Close a break with its reason"
+      - "Hand the unresolved ones to Finance"
+    builds:
+      - id: uc2-recon-break-desk
+        title: "Daily cash reconciliation and break desk"
+        say: "Every morning I check cash for each entity: administrator against the bank and our trading desk. Anything over 5,000 I want as a break with the likely cause, and the ones that are just timing marked as timing. Entity B was off on the 8th, start there."
+        files: ["uc6:2026-10/administrator_cash_2026-10.csv", "bank_cash", "trading_export/cash_movements_trading_export_2026-09-09_to_2026-10-08.csv"]
+        skills: ["data.recognise-file", "data.match-identity", "check.against-source", "action.detect-exception", "check.explain-difference", "action.route-owner"]
+        dashboard: "Consume: cash differences by entity, open breaks"
+        check: {ask: "Which entity has a cash break on 8 October and by how much?", expect: ["12,400"]}
+
+  - id: fund_accountant
+    title: Fund Accountant
+    person: Helen Foo
+    actions:
+      - "Track which manager statements are expected and which arrived"
+      - "Flag late and missing statements"
+      - "Draft the follow-up to a manager"
+      - "Log amended statements and what they replace"
+    builds:
+      - id: uc3-statements-inbox
+        title: "Manager statements: expected against received, and late"
+        say: "For every fund I want to see the statement we expect each month against what has arrived, who is late and by how many days, and any that never came. For the missing one, draft me the chase email, I will send it myself."
+        files: ["emails", "manager_statements/*_2026-0[6-9]-*"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "action.detect-exception", "action.draft-message", "consume.answer-question"]
+        dashboard: "Consume: statements expected against received, late and missing"
+        check: {ask: "Which statement is missing and how overdue is it?", expect: ["63"]}
+
+  - id: risk_officer
+    title: Risk and Compliance Officer
+    person: Tom Hale
+    actions:
+      - "Check holdings against the signed allocation limits"
+      - "Look into a breach and say whether it is real or caused by stale data"
+      - "Tell the investment committee about a real breach"
+      - "Keep the allocation policy and its limits up to date"
+    builds:
+      - id: uc5-limits
+        title: "Allocation and limit monitoring"
+        say: "I want to test the liquid book against our signed limits every month: no single name over 5 percent, listed equity between 60 and 90. Tell me what is a real breach and what is just a stale or missing value, and anything that has no asset class."
+        files: ["policy", "admin_exports/administrator_export_2026-09.xlsx", "security_master"]
+        skills: ["intent.read-company-doc", "data.recognise-file", "build.write-formula-table", "action.detect-exception", "action.size-impact", "check.explain-difference"]
+        dashboard: "Consume: holdings against limits, breaches open"
+        check: {ask: "Which holding is over its single-name limit?", expect: ["5.75"]}
+
+  - id: hr_admin
+    title: Office and HR Manager
+    person: Priya Nair
+    actions:
+      - "Write down how a routine process works today"
+      - "Turn a process into a standard operating procedure"
+      - "Onboard a new joiner and give access"
+      - "Keep expense approval and sign-off rules current"
+    builds:
+      - id: uc9-sop
+        title: "Process map and SOP for the month-end report"
+        say: "We do the month-end investment report from memory and from Mei's email. I want the steps written down properly: who does what, in which system, what is checked, what happens when it goes wrong, and a procedure document I can hand a new joiner."
+        files: ["process_narrative"]
+        skills: ["intent.read-company-doc", "intent.draw-process-lanes", "intent.draw-process-steps", "intent.map-decision-path", "intent.write-sop"]
+        dashboard: "Consume: the process map and the SOP, steps flagged for automation"
+        # no numbers apply: pass = Harbor reaches live and answers with the process steps (SOP or map exists)
+        check: {ask: "What are the steps of the month-end report process and who does each one?", expect: []}
+
+  - id: ops_clerk
+    title: Operations Clerk
+    person: Sam Lee
+    actions:
+      - "Match each trade against the administrator's booking"
+      - "Check the FX forward confirmations against our own record"
+      - "Raise a break when quantity, price or amount differ"
+      - "Send the unmatched trades to the Operations Lead"
+    builds:
+      - id: uc8-trades-vs-admin
+        title: "Trades and FX forwards against the administrator and the confirmations"
+        say: "Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record. Show me what matches and what does not, by how much, and which ones I should send to Grace."
+        files: ["trading_export/trading_export_2026100*.csv", "trading_export/trading_export_20260915.csv", "otc_confirms", "admin_exports/administrator_export_2026-09.xlsx"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "check.against-source", "action.detect-exception", "check.explain-difference", "action.route-owner"]
+        dashboard: "Consume: trades and confirmations matched, breaks open"
+        check: {ask: "How much does the FX forward confirmation differ from our record?", expect: ["8,100"]}

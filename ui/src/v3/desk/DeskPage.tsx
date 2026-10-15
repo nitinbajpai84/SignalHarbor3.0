@@ -5,6 +5,7 @@ import { useSession } from "../../useSession";
 import { MicButton, combineText } from "../../v1/voice";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
+import RoleSuggest from "./RoleSuggest";
 import { when } from "../thread/ThreadPage";
 import { decide, getDesk, getThread, say, startThread, type Card, type Desk, type Event, type Stage } from "../api";
 import "./desk.css";
@@ -113,6 +114,8 @@ export default function DeskPage() {
               <button type="submit" className="go" disabled={busy || !text.trim()}>Start</button>
             </form>
           </section>
+
+          <RoleSuggest />
 
           <div className="desk-cols">
             <section aria-labelledby="h-action">

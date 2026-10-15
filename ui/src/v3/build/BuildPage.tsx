@@ -10,6 +10,7 @@ import {
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
 import { Row } from "../thread/ThreadPage";
+import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
 import IntentGraph, { BriefList } from "./IntentGraph";
 import "./build.css";
@@ -103,6 +104,7 @@ function Board() {
           <h1>Use cases</h1>
           <p className="v3-mute">Every use case Harbor is building or has live. Three decisions each, then only exceptions.</p>
         </div>
+        <RoleSuggest />
         <Start />
         {err && (
           <p className="v3-err" role="alert">{err} <button onClick={load}>Try again</button></p>

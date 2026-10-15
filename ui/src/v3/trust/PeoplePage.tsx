@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { getPeople, setAutonomy, type Level, type People } from "../api";
+import { getJobs, setJob, type JobPerson, type RoleOption } from "../desk/RoleSuggest";
 import { TrustPage, useLoad } from "./b/Shell";
 
 const LEVELS: [Level, string][] = [["assist", "Assist"], ["auto", "Auto"], ["silent", "Silent"]];
@@ -10,6 +11,13 @@ export default function PeoplePage() {
   const s = useLoad<People>(getPeople, "people");
   const [msg, setMsg] = useState("");
   const p = s.data;
+  const [jobs, setJobs] = useState<JobPerson[]>([]);
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  useEffect(() => { getJobs().then((j) => { setJobs(Array.isArray(j.people) ? j.people.filter((x) => x.email) : []); setRoles(Array.isArray(j.roles) ? j.roles : []); }, () => undefined); }, []);
+  const job = async (x: JobPerson, role: string) => {
+    setMsg("");
+    try { await setJob(x.email, role); setJobs((l) => l.map((y) => (y.email === x.email ? { ...y, role: role || null } : y))); } catch (e) { setMsg((e as Error).message || "Could not save"); }
+  };
   const pick = async (thread: string, level: Level) => {
     setMsg("");
     try { s.set(await setAutonomy(thread, level)); } catch (e) { setMsg((e as Error).message || "Could not save"); }
@@ -28,6 +36,19 @@ export default function PeoplePage() {
                 <span key={r} className="v3-chips"><span className={x.role === r ? "tr-on" : undefined}>{l}</span></span>
               ))}
             </div>))}
+          {roles.length > 0 && <>
+            <h3>Job</h3>
+            <p className="v3-mute">Harbor suggests actions and builds for each job. The person can change it.</p>
+            {jobs.map((x) => (
+              <div key={x.email} className="v3-row">
+                <label style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}><b style={{ minWidth: 120 }}>{x.name}</b>
+                  <select aria-label={`Job for ${x.name}`} value={x.role ?? ""} onChange={(e) => void job(x, e.target.value)}>
+                    <option value="">No job set</option>
+                    {roles.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
+                  </select>
+                </label>
+              </div>))}
+          </>}
           <p className="v3-mute">Second signer for go live: {p.second_signer ? "On" : "Off"}</p>
         </section>
         <section className="v3-card"><h2>When Harbor must ask a person</h2>

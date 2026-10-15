@@ -129,9 +129,9 @@ def due(plane) -> bool:
 # ---- the liquidity answer skill (a tool, ahead of Lumen) ----------------------------------------------------------------------------
 
 SKILL = "consume.answer-question"
-CASH = re.compile(r"\b(cash|liquidity|liquid)\b", re.I)
+CASH = re.compile(r"\b(cash|liquidity)\b", re.I)  # not "liquid": the Evergreen Liquid portfolio is not a cash question
 CALLS = re.compile(r"\bcalls?\b|capital call|drawdown", re.I)
-OTHER = re.compile(r"\b(nav|net worth|uncalled|exposure|price)\b", re.I)
+OTHER = re.compile(r"\b(nav|net worth|uncalled|exposure|price|breaks?|differences?|mismatch|reconcil\w*|worth|portfolio)\b", re.I)  # mentions cash but is about something else
 
 
 def latest_day(plane) -> date:
@@ -171,7 +171,7 @@ def _fast(plane, viewer, text: str) -> dict | None:
         return None
     day = latest_day(plane)
     ents = liquidity(plane, viewer, day)
-    if not ents:
+    if not ents or not any(e["cash"] for e in ents):  # no cash loaded yet: say nothing here; a missing figure is never shown as zero
         return None
     ver = version(plane)
     asat = f"{day:%d %b %Y}".lstrip("0")

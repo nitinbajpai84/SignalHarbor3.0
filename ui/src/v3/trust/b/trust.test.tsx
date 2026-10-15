@@ -78,3 +78,11 @@ test("connections: empty", async () => {
   at(<ConnectionsPage />);
   expect(await screen.findByText(/No sources are connected yet/)).toBeInTheDocument();
 });
+
+test("people: a job select posts the job for that person", async () => {
+  const f = vi.fn(async (u: string, i?: RequestInit) => json(String(u).endsWith("/people/jobs") ? { people: [{ email: "a@x.test", name: "Anita", role: null }], roles: [{ id: "cfo", title: "Head of Finance" }] } : i?.method === "POST" ? {} : people));
+  vi.stubGlobal("fetch", f);
+  at(<PeoplePage />);
+  await userEvent.selectOptions(await screen.findByLabelText("Job for Anita"), "cfo");
+  await waitFor(() => expect(f.mock.calls.some((c) => String(c[0]).endsWith("/people/job") && String(c[1]?.body).includes('"cfo"'))).toBe(true));
+});
