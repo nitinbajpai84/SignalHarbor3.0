@@ -701,8 +701,8 @@ NO_EARLIER = "We don't have a benchmark for any of these figures; none were repo
 
 
 def _no_earlier_figures(app, plane, iid: str) -> None:
-    """A first report has no earlier figures: every figure still without a benchmark is recorded as "none" (the person's own
-    "not reported before"), so confirming never runs into "cannot be signed" for that alone. Figures with a benchmark are kept."""
+    """Confirming the brief accepts what it shows: suggested figures become the person's own, and a first report has no earlier
+    figures, so each figure without a benchmark is recorded as "none". Signing then never dead-ends on either. Benchmarks given are kept."""
     from sh_platform.jsonfile import lock_for, write_json_atomic
     from sh_platform.v1 import i4_sow as S
     path = S.path_of(plane, iid)
@@ -713,8 +713,12 @@ def _no_earlier_figures(app, plane, iid: str) -> None:
                 return
             changed = False
             for k in sow.get("kpis") or []:
-                if isinstance(k, dict) and "benchmark" not in k:
+                if not isinstance(k, dict):
+                    continue
+                if "benchmark" not in k:
                     k["benchmark"], changed = None, True
+                if k.get("pack_suggested") and k.get("status") == "unclear":  # the person confirmed the brief with this figure on it
+                    k["status"], k["confirmed_in"], changed = "defined", "Decision 1", True
             if changed:
                 write_json_atomic(path, sow)
     except Exception:  # noqa: BLE001 - never blocks the confirm; signing still says what is missing
