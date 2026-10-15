@@ -1,0 +1,336 @@
+- id: 52.s01.area
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/new?type=pulse (q1)
+  input: The area of the series
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the organiser's area on the profile
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: naming a team in an invitation versus one tap'
+  claim: North prefills the area from the organiser's profile
+- id: 52.s01.people
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: q2
+  input: Who takes part each week
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the area's people on the profile
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: building a distribution list versus accepting names'
+  claim: North suggests the weekly reporters; the organiser picks
+- id: 52.s01.day
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: q3
+  input: The day the week closes
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's rhythm
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: agreeing a weekday by email versus one pick'
+  claim: The closing day is the organiser's choice
+- id: 52.s01.reader
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: q4
+  input: Who reads the week
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a role in a note versus one pick'
+  claim: The reader is named once for the series
+- id: 52.s01.prompts
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: series setup
+  input: The three weekly prompts
+  person: organiser
+  mode: derived
+  agent: North
+  source: the check-in catalogue
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: writing a status template versus none'
+  claim: North drafts the three weekly prompts from the catalogue
+- id: 52.s02.open
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: Pulse line, Monday 08:00
+  input: Week opens and the nudge goes out
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the series clock
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: a Monday chase email versus none'
+  claim: Each week opens and nudges by the clock with no one sending
+- id: 52.s03.prefill
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (prompts 1 and 2)
+  input: What ran well and what broke, prefilled from the run log
+  person: participant
+  mode: derived
+  agent: North
+  source: the run log, with the source line shown
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: remembering and typing last week versus a prefilled line to keep'
+  claim: North prefills from run facts only and never invents a figure; the person keeps, edits or clears
+- id: 52.s03.words
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: week prompt 2
+  input: What broke in the person's own words
+  person: participant
+  mode: manual
+  agent: null
+  source: only the person knows the why
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a status email versus a short field'
+  claim: What broke is the person's own words; a prefill is never theirs until kept
+- id: 52.s03.mind
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: week prompt 3
+  input: What is on your mind
+  person: participant
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: a side remark in a meeting versus a field or ''Nothing this week'''
+  claim: Prompt 3 is optional and an empty one writes nothing
+- id: 52.s03.kind
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: week record
+  input: 'Item kind: ran, broke or thought'
+  person: participant
+  mode: derived
+  agent: North
+  source: the prompt and the text
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: sorting by hand versus none'
+  claim: North labels each item's kind from the prompt
+- id: 52.s03.nudge
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: Pulse, Tuesday 16:00 and Wednesday 15:00
+  input: At most two reminders per week
+  person: participant
+  mode: automatic
+  agent: North
+  source: the response counts
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: chasing by email versus two lines'
+  claim: North nudges late reporters twice and no more
+- id: 52.s04.close
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: week close, Wednesday 17:00
+  input: Close the collect stage and lock edits
+  person: reader
+  mode: automatic
+  agent: North
+  source: the close day and the clock
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: someone closing the form versus a clock'
+  claim: The week closes by the clock and opens review with a digest
+- id: 52.s05.digest
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/review?week=<key>
+  input: 'The digest: ran, broke and on people''s minds'
+  person: reader
+  mode: derived
+  agent: North
+  source: the week's items; repeats grouped, originals kept
+  minutes_without: 45
+  minutes_with: 6
+  basis: 'estimate: reading and merging a dozen status emails'
+  claim: North groups repeated items across reporters and shows every original inside its group
+- id: 52.s05.count
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: digest count strip
+  input: Sent of invited and item count
+  person: reader
+  mode: automatic
+  agent: null
+  source: responded_count and items
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counting replies versus a strip'
+  claim: Responded and item counts are computed
+- id: 52.s05.repeat
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: digest card
+  input: Seen n weeks running
+  person: reader
+  mode: derived
+  agent: North
+  source: the last three week records
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: remembering whether it came up before versus a chip'
+  claim: North shows how many weeks an item has repeated, from records only
+- id: 52.s06.fate
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: review, four fate buttons
+  input: A fate for each broke item with a reason
+  person: reader
+  mode: confirm
+  agent: North
+  source: North's draft fate with a reason
+  minutes_without: 20
+  minutes_with: 6
+  basis: 'estimate: triaging a status email by hand versus confirming drafts'
+  claim: North suggests a fate and reason for each broke item; the reader decides, and the week cannot close without one
+- id: 52.s06.problem
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: review, 'Make it a Problem'
+  input: A Problem started from an item
+  person: reader
+  mode: derived
+  agent: North
+  source: the item text, area and named owner
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: re-keying an item into a ticket versus a prefilled start'
+  claim: A Problem opens prefilled from the item
+- id: 52.s06.backlog
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: review, 'Put it on the backlog'
+  input: A backlog item from an item
+  person: reader
+  mode: derived
+  agent: North
+  source: the item and the week record
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: copying into a tracker versus one tap'
+  claim: North creates the backlog item linked to the week record
+- id: 52.s07.close
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/close?week=<key>
+  input: The week closure
+  person: reader
+  mode: confirm
+  agent: North
+  source: the fates and counts
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: writing a weekly summary versus editing a draft'
+  claim: North drafts the week's closure from the fates; the reader closes it
+- id: 52.s08.feedback
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: reporter read-only view, Friday
+  input: What happened to my items
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the fates and reasons for the person's own items
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: replying individually to each reporter versus a line each'
+  claim: Each reporter sees the fate of their own words with no one writing to them
+- id: 52.s09.nextweek
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: week two opens by the clock
+  input: Next week's shell and prefill
+  person: participant
+  mode: automatic
+  agent: North
+  source: the series clock and the run log
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: creating next week''s form versus none'
+  claim: A new week opens by the clock with last week's outcome in the nudge
+- id: 52.b1.missed
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: 'digest (branch: missed week)'
+  input: Who did not send, as a count
+  person: reader
+  mode: automatic
+  agent: null
+  source: responded_count against participants
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking replies versus a count'
+  claim: Missing reporters appear as a count; no empty item is written for them
+- id: 52.b4.pause
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: series page, 'Pause the series'
+  input: Pause the series with a reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's reason
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: telling everyone not to report versus one pause'
+  claim: Pausing is the organiser's act; paused weeks never count as failures
+- id: 52.b5.restricted
+  spec: '52'
+  journey: checkin
+  stage: run
+  screen: 'week and digest (branch: restricted measure)'
+  input: A flag on an item naming a measure the reader cannot open
+  person: reader
+  mode: automatic
+  agent: North
+  source: the viewer rule
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: judging by hand what may be shared versus a flag'
+  claim: North flags such items and shows no restricted figure to anyone

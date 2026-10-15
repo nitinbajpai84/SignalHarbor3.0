@@ -1,0 +1,88 @@
+{
+  "id": "MEM-09",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "No client figure is stored as memory text - 103,405,000 is not kept.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 144,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on remember that the net worth is 103,405,000"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 97,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 17,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "103,405,000",
+          "103405000"
+        ]
+      },
+      "cleanup": false,
+      "reply": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 29,
+      "expect": null,
+      "cleanup": true,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

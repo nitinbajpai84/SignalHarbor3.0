@@ -1,0 +1,397 @@
+# Input ledger rows for spec 13: Pulse lines and notifications.
+- id: "13.lines"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "Pulse page (intent cards: invited, your turn, vote, card to confirm, signature, rating, clock, shared)"
+  input: "What an intent needs from this person today"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "the intent records that name the person, computed on each read"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: checking email, chat and trackers for what is waiting on you"
+  claim: "Each person finds out it is their turn on one page, with the action named; a line goes the moment the record changes"
+- id: "13.one_line"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "Pulse page (one line per person per intent, seven line cap)"
+  input: "Which single line an intent shows a person"
+  person: any
+  mode: automatic
+  source: "the priority order and the cap of seven lines"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: deciding what to do first across projects"
+  claim: "A busy intent cannot flood the page; the most urgent line wins and the count cut is shown"
+- id: "13.waiting_on"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "intent record (waiting_on: person, what, since)"
+  input: "Whose turn it is and the one-line ask"
+  person: any
+  mode: derived
+  agent: North
+  source: "the stage and what the open stage needs"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: working out who has the ball"
+  claim: "North writes whose turn it is when a stage opens or the turn passes"
+- id: "13.start_question_line"
+  spec: "13"
+  journey: shared
+  stage: notice
+  screen: "Pulse line 'Finish starting' for a draft"
+  input: "Required start questions still unanswered"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "start_answers against the type's required questions"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: remembering what a half-started intent still needs"
+  claim: "Nira tells a person how many start questions are left on a draft"
+- id: "13.check_card"
+  spec: "13"
+  journey: checkin
+  stage: run
+  screen: "Pulse line 'Check what North wrote for you'"
+  input: "Confirm, change or delete a card North made from the person's own words"
+  person: participant
+  mode: confirm
+  agent: North
+  source: "the person's own answer"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: writing the item up yourself versus checking a short card"
+  claim: "North turns a person's answer into a short card; the person keeps it, changes it or deletes it"
+- id: "13.vote"
+  spec: "13"
+  journey: initiative
+  stage: think
+  screen: "Pulse line 'Vote' (Define vote or Brainstorm backing)"
+  input: "Cast a vote or back up to three ideas"
+  person: participant
+  mode: manual
+  source: "the voter; counts of who has voted are shown, never who voted what"
+  minutes_without: 15
+  minutes_with: 2
+  basis: "estimate: a meeting vote versus one tap on a line"
+  claim: "Votes are cast from a Pulse line; only counts show"
+- id: "13.confirm_definition"
+  spec: "13"
+  journey: initiative
+  stage: think
+  screen: "Pulse line 'A term needs your confirmation'"
+  input: "Confirm a drafted term"
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: "the intent text and the pack suggestion"
+  minutes_without: 30
+  minutes_with: 3
+  basis: "estimate: writing a definition from scratch versus confirming a draft"
+  claim: "Lens drafts the meaning; the named owner confirms or writes their own"
+- id: "13.confirm_step"
+  spec: "13"
+  journey: initiative
+  stage: think
+  screen: "Pulse line 'A process step needs your check'"
+  input: "Confirm a drafted process step"
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: "the intent text"
+  minutes_without: 30
+  minutes_with: 3
+  basis: "estimate: mapping a process step by hand versus confirming a draft"
+  claim: "Lens drafts the process step; the business owner checks it"
+- id: "13.signature_line"
+  spec: "13"
+  journey: initiative
+  stage: decide
+  screen: "Pulse line 'A charter waits for your signature'"
+  input: "Sign the charter"
+  person: sponsor
+  mode: manual
+  source: "the sponsor; North and Lens prepared the charter"
+  minutes_without: 15
+  minutes_with: 5
+  basis: "estimate: reviewing and signing a document"
+  claim: "A named person signs; the line takes them to the charter"
+- id: "13.clock_line"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "Pulse line (2 working days left of 10; overdue)"
+  input: "Time box warning and North's proposal"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "time_box and the stages not yet closed"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: noticing a slipping project"
+  claim: "North raises time box warnings and, when it will not hold, proposes extend, close with what we have, or cancel"
+- id: "13.owner_accept"
+  spec: "13"
+  journey: problem
+  stage: think
+  screen: "Pulse line 'A problem needs an owner'"
+  input: "Take the problem or hand it back with a reason"
+  person: owner
+  mode: manual
+  source: "the owner"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: an email exchange to assign ownership"
+  claim: "An owner takes a problem in one tap or hands it back with a reason"
+- id: "13.decide_line"
+  spec: "13"
+  journey: decision
+  stage: decide
+  screen: "Pulse line 'A decision waits for you'"
+  input: "Decide, with the reason"
+  person: decider
+  mode: manual
+  source: "the decider; the options and advisers' views are counted from the stage"
+  minutes_without: 20
+  minutes_with: 5
+  basis: "estimate: collecting views and options by email"
+  claim: "The decider sees how many views are in and how many options are set out, then chooses"
+- id: "13.unanswered"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "organiser Pulse line (3 of 6 have not added ideas)"
+  input: "How many people have not yet acted in the stage"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "stages and people on the record; counts only, never who"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing responses"
+  claim: "The organiser sees how many have not answered without anyone chasing"
+- id: "13.week_line"
+  spec: "13"
+  journey: checkin
+  stage: run
+  screen: "Pulse line 'Your week for <area>'"
+  input: "Answer the three weekly questions"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 15
+  minutes_with: 5
+  basis: "estimate: preparing a weekly status"
+  claim: "Each person is asked once a week, on their Pulse, for about five minutes"
+- id: "13.drafts"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "organiser drafts list (invite, nudge, owner, decide, week, extended, close ask, rating, share)"
+  input: "Message drafts: subject, body, chat text and link"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the intent record: title, purpose, dates, link"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: writing each message"
+  claim: "North drafts every intent message with its link; the organiser copies it or sends it. Nothing is sent without a click"
+- id: "13.send"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "drafts list (Send, Copy text)"
+  input: "Send or copy a drafted message"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 2
+  minutes_with: 0.5
+  basis: "estimate: pasting into a chat"
+  claim: "One press sends or copies the message"
+- id: "13.nudge_cadence"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "North nudges (after a working day, then daily)"
+  input: "Reminder drafts for the person whose turn it is"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "north.nudges and the stage clock"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: chasing"
+  claim: "North drafts a reminder once a stage has waited a working day, at most once a day"
+- id: "13.more"
+  spec: "13"
+  journey: shared
+  stage: run
+  screen: "Pulse (And N more in the Intent Centre)"
+  input: "How many lines the cap cut"
+  person: any
+  mode: automatic
+  source: "the count in build()"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: wondering what is missing"
+  claim: "The page says how many lines were cut"
+- id: "13.invite_line"
+  spec: "13"
+  journey: initiative
+  stage: notice
+  screen: "Pulse (kind invite, row 1)"
+  input: "You were invited to an intent"
+  person: participant
+  mode: derived
+  agent: Nira
+  source: "the people on the intent"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: an email invitation read and filed"
+  claim: "The invitation is a line on the day page"
+- id: "13.close_to_sign"
+  spec: "13"
+  journey: shared
+  stage: decide
+  screen: "Pulse (rows 10 and 10a)"
+  input: "Closure to sign and Close this intent"
+  person: sponsor
+  mode: derived
+  agent: North
+  source: "the closure North drafted"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing the confirmer and the closer"
+  claim: "The confirmer reads North's draft and signs; the organiser then closes"
+- id: "13.rating_line"
+  spec: "13"
+  journey: shared
+  stage: prove
+  screen: "Pulse (row 11, rating)"
+  input: "A line asking for a 1 to 5 rating"
+  person: participant
+  mode: derived
+  agent: Nira
+  source: "the closure date and the ratings"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: a survey email"
+  claim: "The ask arrives as a one-minute line, only until seven days after closure"
+- id: "13.rating_give"
+  spec: "13"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close#rate"
+  input: "Give a score and an optional line"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: an email survey versus a one-minute line"
+  claim: "Rating takes a minute and may be anonymous"
+- id: "13.shared_line"
+  spec: "13"
+  journey: shared
+  stage: prove
+  screen: "Pulse (row 12, shared with you)"
+  input: "Closure summary shared with the person"
+  person: visitor
+  mode: derived
+  agent: Nira
+  source: "the share row and closure summary"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: forwarding a summary"
+  claim: "The outcome reaches the named person as a line"
+- id: "13.overdue_line"
+  spec: "13"
+  journey: shared
+  stage: decide
+  screen: "Pulse (row 9, overdue)"
+  input: "Overdue: extend, close or cancel"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the time box"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: noticing a date slipped"
+  claim: "The overdue line arrives with the three choices"
+- id: "13.week_open"
+  spec: "13"
+  journey: checkin
+  stage: notice
+  screen: "Pulse (row 13, check-in week)"
+  input: "Your week is open: three questions"
+  person: participant
+  mode: derived
+  agent: Nira
+  source: "the week record and the participant list"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: a weekly reminder email"
+  claim: "The week line appears on the day the week opens"
+- id: "13.line_cap"
+  spec: "13"
+  journey: shared
+  stage: notice
+  screen: "Pulse (seven line cap)"
+  input: "Which lines are shown and which are cut"
+  person: participant
+  mode: automatic
+  source: "due dates and the cap"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: prioritising a to-do list"
+  claim: "Lines are ordered by due date and capped at seven"
+- id: "13.chat_text"
+  spec: "13"
+  journey: shared
+  stage: notice
+  screen: "Pulse drafts (Chat field, Copy text)"
+  input: "Short chat text for a drafted message"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the drafted message"
+  minutes_without: 3
+  minutes_with: 0.3
+  basis: "estimate: rewriting an email as a chat message"
+  claim: "The chat text is drafted; the organiser copies it"
+  built: manual
+- id: "13.message_count"
+  spec: "13"
+  journey: shared
+  stage: notice
+  screen: "organiser Pulse panel (drafts and sent counts)"
+  input: "Drafts waiting and messages sent this week"
+  person: organiser
+  mode: automatic
+  source: "the message store"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting reminders sent"
+  claim: "Counts come from the store"
+- id: "13.waiting_on_write"
+  spec: "13"
+  journey: shared
+  stage: decide
+  screen: "intent record (waiting on)"
+  input: "Who has the next move and what is asked"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the stage and people on the intent"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: working out whose turn it is"
+  claim: "North names whose turn it is when the stage changes"

@@ -1,0 +1,159 @@
+{
+  "id": "TAL-02",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P08 explanation without a question is built by the program - same figures, no model digits.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "2625 ms",
+      "value": 2625
+    }
+  ],
+  "error": null,
+  "latency_ms": 2625,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 1,
+  "mode": "real",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/cases/{case:Cash differs|Entity B}/tally"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "12400",
+      "880400",
+      "868000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/cases/298023bc-1e75-41c8-97ff-6a3cb1991877/tally",
+      "request": null,
+      "status": 200,
+      "json": {
+        "case_id": "298023bc-1e75-41c8-97ff-6a3cb1991877",
+        "kind": "cash_break",
+        "summary": "Entity B cash on 8 Oct 2026: the administrator reports 880,400 USD and the trading export 868,000 USD, a difference of 12,400 USD. The signed tolerance is 5,000 USD, so it is 7,400 USD over it. The two sides agreed on 7 Oct 2026, so the difference is new today. The best candidate: 12,400 USD cash movement wire WIRE-20261008-B01 dated 8 Oct 2026 at the trading export equals the difference and reached the administrator only on 9 Oct 2026: a timing difference that clears that day.",
+        "findings": [
+          {
+            "key": "sides",
+            "text": "Administrator (accounting view): 880,400 USD. Trading export (operational view): 868,000 USD. The difference is 12,400 USD, the administrator being higher.",
+            "figure": "12,400 USD",
+            "chips": [
+              {
+                "label": "Fund administrator \u00b7 cash 2026-10-08 administrator \u00b7 Sheet1 row 4",
+                "kind": "position",
+                "id": "c75458be-352b-4a14-a3d5-68c714f79068"
+              },
+              {
+                "label": "Trading system export \u00b7 cash 2026-10-08 trading export \u00b7 Sheet1 row 4",
+                "kind": "position",
+                "id": "bd149aa7-80c3-491c-9304-31ada2cc2da0"
+              }
+            ]
+          },
+          {
+            "key": "tolerance",
+            "text": "The signed cash tolerance is 5,000 USD (cash_tolerance version 1). The difference is 7,400 USD over it.",
+            "figure": "5,000 USD",
+            "chips": []
+          },
+          {
+            "key": "history",
+            "text": "The two sides agreed on 7 Oct 2026, so the difference is new today.",
+            "figure": null,
+            "chips": []
+          },
+          {
+            "key": "movement",
+            "text": "Since 7 Oct 2026: the administrator rose by 1,200 USD and the trading export fell by 11,200 USD.",
+            "figure": null,
+            "chips": []
+          },
+          {
+            "key": "candidate",
+            "text": "12,400 USD cash movement wire WIRE-20261008-B01 dated 8 Oct 2026 at the trading export equals the difference and reached the administrator only on 9 Oct 2026: a timing difference that clears that day.",
+            "figure": "12,400 USD",
+            "chips": [
+              {
+                "label": "Cash movement wire WIRE-20261008-B01 \u00b7 Trading system export \u00b7 cash movements 2026-10-08 trading_export \u00b7 cash_movements_trading_export_2026-09-09_to_2026-10-08.csv row 226",
+                "kind": "cash",
+                "id": "c86d815b-141b-4b37-b8cd-5f0bf02bff69"
+              },
+              {
+                "label": "Cash movement wire WIRE-20261008-B01 \u00b7 Fund administrator \u00b7 cash movements 2026-10-09 administrator \u00b7 Sheet1 row 2",
+                "kind": "cash",
+                "id": "05d9d068-c251-4936-8b46-9190d26f0a06"
+              }
+            ]
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Confirm with the administrator that the item named above is the cause."
+          },
+          {
+            "who": "Operations",
+            "text": "Ask the administrator and the trading desk for the cash movements posted on 8 Oct 2026 for Entity B, and compare them with the two files."
+          },
+          {
+            "who": "Case owner",
+            "text": "The difference is over the signed tolerance, so record the cause on the case and send it for check by another person."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "Fund administrator \u00b7 cash 2026-10-08 administrator \u00b7 Sheet1 row 4",
+          "Trading system export \u00b7 cash 2026-10-08 trading export \u00b7 Sheet1 row 4"
+        ],
+        "worded_by": "rules",
+        "question": null,
+        "answer": null,
+        "answer_worded_by": null,
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 2557,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12189,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:32:31+0800"
+    }
+  ]
+}

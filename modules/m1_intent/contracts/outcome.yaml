@@ -1,0 +1,18 @@
+# The outcome record module 2 reads (M1-30, D-026): written once, when the charter is signed, to
+# intents/m1_intent/outcomes/<outcome id>.json in the company plane. Module 2 reads only this, never the session's files.
+# The two ids link it both ways: outcome_id is the process record's outcome, session_id the module 1 session that made it
+# (and the process record, held by sh_platform/process_record.py, links that session back to this outcome).
+kind: charter
+required: [outcome_id, session_id, module, kind, charter_version, signed_at, signatures, template, problems, later, footer]
+problem_fields: [id, title, priority, so_that, note_count, library_problem_id]
+later_fields: [id, title]
+signature_fields: [name, at, how]     # how: room | approver
+footer_fields: [date, participants, notes, later]
+# Extra keys, added beside `problems` (Nitin, 4 Oct): what hurts, what to track for the future, the levers for what-if.
+# `problems` keeps only what the room agreed to solve now (kind: intent). None of these is required: an outcome signed
+# before kinds existed has all three empty. Module 2 may read them; it must not need them.
+extra_lists:                          # outcome key -> the kind of note it holds
+  pain_points: pain_point
+  future_signals: future_signal
+  levers: lever
+extra_list_fields: [id, title, priority, so_that, note_count, details]   # details: [{label, values}] the notes of that kind said

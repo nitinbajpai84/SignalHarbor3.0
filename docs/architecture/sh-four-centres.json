@@ -1,0 +1,787 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor as built: four centres, three agents, 9 October 2026",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-four-centres.html",
+    "repository": {
+      "url": "https://github.com/nitinbajpai84/signalharborv2.0.git",
+      "link_mode": "local-only",
+      "revision": "bdf8081392f7f9ea2f2bcd94682b3b427a7fad59"
+    }
+  },
+  "components": [
+    {
+      "id": "people",
+      "type": "external",
+      "label": "Company people",
+      "sublabel": "decision maker, head of data",
+      "tag": "seven roles",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "ui/src/shell/roles.ts",
+          "line": 7,
+          "end_line": 15,
+          "label": "the one role table"
+        }
+      ]
+    },
+    {
+      "id": "shell",
+      "type": "frontend",
+      "label": "React shell",
+      "sublabel": "Intent, Action, Build, Consume",
+      "tag": "Map, Settings, mode switch",
+      "pos": [
+        320,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "ui/src/shell/CentreShell.tsx",
+          "line": 43,
+          "end_line": 78,
+          "label": "bar, redirects, ModeSwitch"
+        },
+        {
+          "path": "ui/src/shell/roles.ts",
+          "line": 25,
+          "end_line": 37,
+          "label": "barFor and canSettings"
+        },
+        {
+          "path": "ui/src/v1/index.tsx",
+          "line": 7,
+          "end_line": 8,
+          "label": "card routes by glob"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Sign-in and gates",
+      "sublabel": "session, role, project access",
+      "tag": "default deny, 60 yaml",
+      "pos": [
+        600,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/auth/permissions.py",
+          "line": 33,
+          "end_line": 41,
+          "label": "kernel yaml plus card yaml"
+        },
+        {
+          "path": "sh_platform/v1/__init__.py",
+          "line": 19,
+          "end_line": 31,
+          "label": "install: router plus intent_gate"
+        },
+        {
+          "path": "sh_platform/auth/__init__.py",
+          "line": 56,
+          "end_line": 61,
+          "label": "unclassified route refused"
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Model router",
+      "sublabel": "fast, specialist, manager",
+      "tag": "Testing / Real use",
+      "pos": [
+        880,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/router.py",
+          "line": 65,
+          "end_line": 77,
+          "label": "pick_tier, rules only"
+        },
+        {
+          "path": "sh_platform/v1/router.py",
+          "line": 185,
+          "end_line": 251,
+          "label": "RoutedModel and route()"
+        },
+        {
+          "path": "sh_platform/v1/model_modes.yaml",
+          "line": 1,
+          "end_line": 14,
+          "label": "two model sets, three agents"
+        }
+      ]
+    },
+    {
+      "id": "egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "tokenise, check, log, send",
+      "tag": "the only exit",
+      "pos": [
+        1160,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/egress/gateway.py",
+          "line": 1,
+          "end_line": 14,
+          "label": "guard order"
+        },
+        {
+          "path": "sh_platform/egress/gateway.py",
+          "line": 234,
+          "end_line": 257,
+          "label": "send_model_prompt"
+        },
+        {
+          "path": "sh_platform/egress/model.py",
+          "line": 162,
+          "end_line": 174,
+          "label": "complete() goes through it"
+        }
+      ]
+    },
+    {
+      "id": "provider",
+      "type": "cloud",
+      "label": "Model provider",
+      "sublabel": "the model provider",
+      "tag": "outside the machine",
+      "pos": [
+        1440,
+        60
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/egress/providers/__init__.py",
+          "label": "Provider adapter"
+        },
+        {
+          "path": "sh_platform/egress/providers/__init__.py",
+          "label": "Provider adapter"
+        }
+      ]
+    },
+    {
+      "id": "north",
+      "type": "backend",
+      "label": "North (Intent)",
+      "sublabel": "one chat drafts the SOW",
+      "tag": "i2, i6",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/i6_chat.py",
+          "line": 1,
+          "end_line": 6,
+          "label": "Intent Centre is one talk"
+        },
+        {
+          "path": "sh_platform/v1/i6_chat.py",
+          "line": 569,
+          "end_line": 571,
+          "label": "route() then run_agent"
+        },
+        {
+          "path": "sh_platform/v1/i2_north.py",
+          "line": 1,
+          "end_line": 5,
+          "label": "thread.json and sow.json"
+        }
+      ]
+    },
+    {
+      "id": "sow",
+      "type": "database",
+      "label": "Signed intent",
+      "sublabel": "intents/<iid>/sow.json",
+      "tag": "a person signs",
+      "pos": [
+        320,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/i4_sow.py",
+          "line": 178,
+          "label": "sign(plane, iid, name, role)"
+        }
+      ]
+    },
+    {
+      "id": "plan",
+      "type": "backend",
+      "label": "Span (Build)",
+      "sublabel": "chat and build plan",
+      "tag": "head of data approves",
+      "pos": [
+        600,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/b6_span.py",
+          "line": 1,
+          "end_line": 6,
+          "label": "rules first, model for gaps"
+        },
+        {
+          "path": "sh_platform/v1/b6_plan.py",
+          "line": 249,
+          "end_line": 287,
+          "label": "approve, never the proposer"
+        },
+        {
+          "path": "sh_platform/v1/a1_chat.py",
+          "line": 1,
+          "end_line": 6,
+          "label": "Span conversation"
+        }
+      ]
+    },
+    {
+      "id": "pipeline",
+      "type": "backend",
+      "label": "Pipeline",
+      "sublabel": "run, schedule, diagram",
+      "tag": "Airflow export",
+      "pos": [
+        880,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/b6_run.py",
+          "line": 1,
+          "end_line": 4,
+          "label": "swap per table, sandbox or live"
+        },
+        {
+          "path": "sh_platform/v1/b6_schedule.py",
+          "line": 99,
+          "end_line": 113,
+          "label": "minute thread in the server"
+        },
+        {
+          "path": "sh_platform/v1/b6_diagram.py",
+          "line": 44,
+          "label": "Sources to Gold diagram"
+        }
+      ]
+    },
+    {
+      "id": "warehouse",
+      "type": "database",
+      "label": "Company warehouse",
+      "sublabel": "DuckDB, one file per company",
+      "tag": "bronze, silver, gold",
+      "pos": [
+        1160,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/wh.py",
+          "line": 43,
+          "end_line": 56,
+          "label": "connect: every connection read-write"
+        },
+        {
+          "path": "sh_platform/v1/e0a_catalogue.py",
+          "line": 633,
+          "end_line": 704,
+          "label": "layers recorded"
+        },
+        {
+          "path": "sh_platform/v1/e1_write.py",
+          "line": 1,
+          "end_line": 3,
+          "label": "append-only writer"
+        }
+      ]
+    },
+    {
+      "id": "intake",
+      "type": "backend",
+      "label": "Intake",
+      "sublabel": "spreadsheets and statements",
+      "tag": "loads only if it adds up",
+      "pos": [
+        1440,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/e0c_load.py",
+          "line": 199,
+          "end_line": 205,
+          "label": "register_bronze, load"
+        },
+        {
+          "path": "sh_platform/v1/e2_intake.py",
+          "line": 149,
+          "label": "document register"
+        }
+      ]
+    },
+    {
+      "id": "docs",
+      "type": "database",
+      "label": "Document search",
+      "sublabel": "words and meaning, local",
+      "tag": "fastembed on this machine",
+      "pos": [
+        40,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/doc_index.py",
+          "line": 333,
+          "end_line": 372,
+          "label": "BM25 plus vectors, RRF"
+        },
+        {
+          "path": "sh_platform/v1/doc_embed.py",
+          "line": 1,
+          "end_line": 5,
+          "label": "local bge-small"
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "type": "backend",
+      "label": "Map and trail",
+      "sublabel": "flow, graph, definitions",
+      "tag": "built from records",
+      "pos": [
+        320,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/k3_map.py",
+          "line": 1,
+          "end_line": 4,
+          "label": "Map centre"
+        },
+        {
+          "path": "sh_platform/v1/i5_graph.py",
+          "line": 1,
+          "end_line": 6,
+          "label": "intents on the graph"
+        },
+        {
+          "path": "sh_platform/v1/a5_trail.py",
+          "line": 1,
+          "end_line": 4,
+          "label": "where is this from"
+        }
+      ]
+    },
+    {
+      "id": "action",
+      "type": "backend",
+      "label": "Action centre",
+      "sublabel": "Today, cases, checks, managers",
+      "tag": "liquidity, maker-checker",
+      "pos": [
+        600,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/e5_pulse.py",
+          "line": 321,
+          "label": "Today cards from pulse_items"
+        },
+        {
+          "path": "sh_platform/v1/e3_recon.py",
+          "line": 37,
+          "label": "four reconciliation checks"
+        },
+        {
+          "path": "sh_platform/v1/e4_cases.py",
+          "line": 1,
+          "end_line": 4,
+          "label": "cases, maker-checker"
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "type": "backend",
+      "label": "Share",
+      "sublabel": "one card per allowed person",
+      "tag": "nothing leaves",
+      "pos": [
+        880,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/cx_share.py",
+          "line": 1,
+          "end_line": 5,
+          "label": "dashboards reach people"
+        },
+        {
+          "path": "sh_platform/v1/cx_routes.py",
+          "line": 130,
+          "end_line": 135,
+          "label": "audience PUT notifies"
+        }
+      ]
+    },
+    {
+      "id": "lumen",
+      "type": "backend",
+      "label": "Lumen (Consume)",
+      "sublabel": "tiles from words",
+      "tag": "Vega-Lite, no figures",
+      "pos": [
+        1160,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/cx_lumen.py",
+          "line": 1,
+          "end_line": 6,
+          "label": "rules first, model optional"
+        },
+        {
+          "path": "sh_platform/v1/cx_dash.py",
+          "line": 147,
+          "label": "Vega-Lite spec, no data"
+        },
+        {
+          "path": "sh_platform/v1/c3_chat.py",
+          "line": 1,
+          "end_line": 3,
+          "label": "consumption brief chat"
+        }
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "Source files",
+      "sublabel": "exports, statements",
+      "pos": [
+        1440,
+        460
+      ],
+      "size": [
+        180,
+        72
+      ]
+    },
+    {
+      "id": "views",
+      "type": "backend",
+      "label": "Office views",
+      "sublabel": "office, benchmark, CIO brief",
+      "tag": "figures read, not written",
+      "pos": [
+        1440,
+        660
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "sh_platform/v1/k4_office.py",
+          "line": 1,
+          "end_line": 3,
+          "label": "office view"
+        },
+        {
+          "path": "sh_platform/v1/k7_benchmark.py",
+          "line": 1,
+          "end_line": 3,
+          "label": "benchmark factory"
+        },
+        {
+          "path": "sh_platform/v1/e5_brief.py",
+          "line": 165,
+          "label": "CIO brief"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Every model call",
+      "wraps": [
+        "router",
+        "egress"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "people-shell",
+      "from": "people",
+      "to": "shell",
+      "label": "talks",
+      "variant": "emphasis"
+    },
+    {
+      "id": "shell-auth",
+      "from": "shell",
+      "to": "auth",
+      "label": "every /api",
+      "variant": "security"
+    },
+    {
+      "id": "shell-north",
+      "from": "shell",
+      "to": "north",
+      "label": "Intent chat",
+      "variant": "emphasis"
+    },
+    {
+      "id": "north-sow",
+      "from": "north",
+      "to": "sow",
+      "label": "drafts",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sow-plan",
+      "from": "sow",
+      "to": "plan",
+      "label": "signed",
+      "variant": "emphasis"
+    },
+    {
+      "id": "plan-pipeline",
+      "from": "plan",
+      "to": "pipeline",
+      "label": "approved",
+      "variant": "emphasis"
+    },
+    {
+      "id": "pipeline-warehouse",
+      "from": "pipeline",
+      "to": "warehouse",
+      "label": "writes gold",
+      "variant": "emphasis"
+    },
+    {
+      "id": "warehouse-lumen",
+      "from": "warehouse",
+      "to": "lumen",
+      "label": "gold tables",
+      "variant": "emphasis"
+    },
+    {
+      "id": "lumen-share",
+      "from": "lumen",
+      "to": "share",
+      "label": "shared",
+      "variant": "emphasis"
+    },
+    {
+      "id": "share-action",
+      "from": "share",
+      "to": "action",
+      "label": "Today card",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sources-intake",
+      "from": "sources",
+      "to": "intake",
+      "label": "upload"
+    },
+    {
+      "id": "intake-warehouse",
+      "from": "intake",
+      "to": "warehouse",
+      "label": "bronze"
+    },
+    {
+      "id": "north-docs",
+      "from": "north",
+      "to": "docs",
+      "label": "searches files"
+    },
+    {
+      "id": "map-sow",
+      "from": "map",
+      "to": "sow",
+      "label": "reads records",
+      "variant": "dashed"
+    },
+    {
+      "id": "warehouse-views",
+      "from": "warehouse",
+      "to": "views",
+      "label": "reads",
+      "variant": "dashed"
+    },
+    {
+      "id": "plan-router",
+      "from": "plan",
+      "to": "router",
+      "label": "model call",
+      "variant": "dashed"
+    },
+    {
+      "id": "north-router",
+      "from": "north",
+      "to": "router",
+      "label": "model call",
+      "variant": "dashed"
+    },
+    {
+      "id": "lumen-router",
+      "from": "lumen",
+      "to": "router",
+      "label": "model call",
+      "variant": "dashed"
+    },
+    {
+      "id": "router-egress",
+      "from": "router",
+      "to": "egress",
+      "label": "every call",
+      "variant": "security"
+    },
+    {
+      "id": "egress-provider",
+      "from": "egress",
+      "to": "provider",
+      "label": "tokenised"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Shell",
+      "items": [
+        "Bar: Intent, Action, Build, Consume, Map (data team only); Settings in the avatar menu",
+        "Testing / Real use switch in the bar (ui/src/v1/router/ModeSwitch.tsx)",
+        "Card screens mount by glob from ui/src/v1/*/routes.tsx; old paths redirect in CentreShell"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Per-company data plane",
+      "items": [
+        "One DuckDB file per company: data/<company>/warehouse/evidence.duckdb",
+        "Layers recorded in model/layers.json by e0a_catalogue; gold registered on plan approval",
+        "Definitions (k2_map) and the knowledge graph (i5_graph) feed the Map page"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Gates",
+      "items": [
+        "Default deny: route_permissions.yaml plus 59 card permission files",
+        "Plan approval by the head of data seat, never the proposer (b6_plan)",
+        "Every model call: router, then the egress gateway; logs carry no content"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Changed since 6 October",
+      "items": [
+        "Three centres became four: Action added (Today, cases, checks)",
+        "Agents North, Lens, Nira became North, Span, Lumen",
+        "Build and Consume are live, not planned; scheduler runs inside the server"
+      ]
+    }
+  ]
+}

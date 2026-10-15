@@ -1,0 +1,161 @@
+# M2-P02: the owner questionnaire, the answer link and the chasing times. Read by domain/questionnaire.py and domain/requests.py.
+# Source: deck "Module 2 Baseline process and data mapping" slides 6 (request), 7 (sense), 8 (trace), 13 (no reply);
+# backlog M2-06, M2-07, M2-10, M2-11, M2-29. A number marked "chosen" is not in the spec.
+#
+# Additions to contracts/SHARED.md, all additive (a reader that knows only the SHARED keys is unaffected):
+#   requests.json rows also carry: expires_at, opened_at, answered_at, revoked_at, meeting ({by, at} when moved to a meeting)
+#   answers.json rows also carry: saved_at; a list field (upstream, in_between, downstream) is ONE provenance value whose
+#   value is the list of hops ({who, what} / {who, step, manual}); "who" is a name or "Unknown".
+#   requests.json rows also carry: samples (files attached by link, capped by limits.samples_per_link)
+#   A submitted (answered) link is read-only: save and sample give 409 until the organiser reopens it.
+#   answers.json: request_id is set for an answer by link, `meeting` ({by, at}) for one given in a meeting; both when a person
+#   started by link and finished in a meeting (each field's own "from" says which).
+
+link:
+  hours_valid: 336              # chosen: 14 days, so a link outlives the 7-day reminder with room (spec M2-07 says it expires, no length)
+reminders:
+  days: [3, 7]                  # spec M2-06 / slide 13: reminders after three and after seven days; at the last one the organiser is told
+no_reply_days: 3                # slide 6: "No reply, 3 days"
+
+limits:                         # chosen: plain size caps
+  text_chars: 500
+  hop_who_chars: 120
+  hop_what_chars: 300
+  hops: 10
+  name_chars: 120
+  samples_per_link: 5           # chosen: files one answer link may attach in its life
+  source_rows: 12               # chosen: systems or files listed under one KPI
+  list_items: 20                # chosen: tables, key fields or things to read out listed in one source row
+  item_chars: 80
+  hop_order: 99                 # the highest step number a hop may carry
+
+# The marks every answer carries (domain/provenance.py). Words are for the screen.
+marks:
+  - {value: stated, label: "I am sure"}
+  - {value: guessed, label: "My best guess"}
+  - {value: unknown, label: "I don't know"}
+
+# One question per field of an answer record (contracts/SHARED.md). kind: choice | text | hops | rows.
+# `sources` is a list of rows, one per system or file (rows: each cell a provenance value). The old single-text `source`, `data_type`,
+# `arrival` and `sla` stay readable (legacy: true, not drawn on the form); saving rows also writes them as a summary for readers that know only them.
+# A hop also carries `team` (its lane on the process map) and `order` (a step number); `what` and `step` are both accepted on any hop.
+fields:
+  - key: tracked_today
+    kind: choice
+    question: "Is it tracked today?"
+    choices:                    # same words as the KPI's own tracking field in kpis.json
+      - {value: tracked_now, label: "Yes, it is tracked"}
+      - {value: partly, label: "Partly"}
+      - {value: not_tracked, label: "No, it is not tracked"}
+  - key: could_track
+    kind: choice
+    question: "Could we track it?"
+    choices:
+      - {value: "yes", label: "Yes"}
+      - {value: with_conditions, label: "Yes, if something else is in place"}
+      - {value: "no", label: "No"}
+  - key: source
+    legacy: true               # kept readable for old answers; the form asks for `sources` instead
+    kind: text
+    question: "Where does it come from?"
+  - key: data_type
+    legacy: true               # kept readable for old answers; the form asks for `sources` instead
+    kind: choice
+    question: "Is it structured, unstructured, or both?"
+    choices:
+      - {value: structured, label: "Structured (tables, statements, feeds)"}
+      - {value: unstructured, label: "Unstructured (emails, documents, notes)"}
+      - {value: both, label: "Both"}
+  - key: arrival
+    legacy: true               # kept readable for old answers; the form asks for `sources` instead
+    kind: text
+    question: "When does it arrive?"
+  - key: sla
+    legacy: true               # kept readable for old answers; the form asks for `sources` instead
+    kind: text
+    question: "Is there an agreed time for it (an SLA)?"
+  - key: sources
+    kind: rows
+    question: "Which systems or files does it come from? Add one row for each."
+    row:                        # every cell is a provenance value; a cell left blank or marked "I don't know" is unknown
+      - {key: name, kind: text, label: "Name of the system or file"}
+      - key: kind
+        kind: choice
+        label: "What kind is it?"
+        choices:
+          - {value: excel, label: "Excel workbook"}
+          - {value: email, label: "Email or mailbox"}
+          - {value: database, label: "Database"}
+          - {value: file_drop, label: "File drop or SFTP"}
+          - {value: portal, label: "Portal"}
+          - {value: api, label: "Third-party API"}
+          - {value: document_store, label: "Document store"}
+          - {value: other, label: "Other"}
+      - key: structure
+        kind: choice
+        label: "Structured, unstructured, or both?"
+        choices:
+          - {value: structured, label: "Structured"}
+          - {value: unstructured, label: "Unstructured"}
+          - {value: both, label: "Both"}
+      - {key: lands, kind: text, label: "Where it lands or lives"}
+      - {key: owner, kind: text, label: "Who owns it"}
+      - key: connection
+        kind: choice
+        label: "How does it arrive?"
+        choices:
+          - {value: download, label: "I download it"}
+          - {value: email_forward, label: "Email forward"}
+          - {value: api, label: "API"}
+          - {value: file_drop, label: "File drop"}
+          - {value: manual_entry, label: "Typed in by hand"}
+          - {value: database, label: "Direct database connection"}
+      - key: frequency
+        kind: choice
+        label: "How often?"
+        choices:
+          - {value: real_time, label: "Real time"}
+          - {value: daily, label: "Daily"}
+          - {value: weekly, label: "Weekly"}
+          - {value: monthly, label: "Monthly"}
+          - {value: quarterly, label: "Quarterly"}
+          - {value: ad_hoc, label: "Ad hoc"}
+      - {key: sla, kind: text, label: "Expected arrival time, or the agreed time (SLA)"}
+      - {key: tables, kind: list, label: "Main tables, files or document types (a short list)"}
+      - {key: fields, kind: list, label: "Key fields, if you know them (a short list)"}
+      - {key: read_out, kind: list, label: "For documents: what should be read out of them"}
+      - key: personal
+        kind: choice
+        label: "Does it contain personal data?"
+        choices:
+          - {value: "yes", label: "Yes"}
+          - {value: "no", label: "No"}
+          - {value: not_sure, label: "Not sure"}
+  - key: dependencies
+    kind: text
+    question: "What does it depend on?"
+  - key: upstream
+    kind: hops
+    question: "Upstream: who do you ask for it, and who do you work with to get it?"
+    hop:
+      - {key: who, label: "Who"}
+      - {key: team, label: "Their team or system"}
+      - {key: what, label: "What they give you"}
+      - {key: order, label: "Step number"}
+  - key: in_between
+    kind: hops
+    question: "In between: who reshapes it, and where? Is it done by hand?"
+    hop:
+      - {key: who, label: "Who"}
+      - {key: team, label: "Their team or system"}
+      - {key: step, label: "Where and what they change (for example a workbook)"}
+      - {key: order, label: "Step number"}
+      - {key: manual, label: "Done by hand"}
+  - key: downstream
+    kind: hops
+    question: "Downstream: who asks for the result, and who uses it?"
+    hop:
+      - {key: who, label: "Who"}
+      - {key: team, label: "Their team or system"}
+      - {key: what, label: "What they use it for"}
+      - {key: order, label: "Step number"}

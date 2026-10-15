@@ -1,0 +1,39 @@
+# Production mode on your own machine: Postgres and Redis only (docs/plan/w3-landings/W3-two-modes.md).
+#   docker compose up -d
+#   set DATABASE_URL=postgresql://sh:<SH_PG_PASSWORD>@127.0.0.1:5433/signal_harbor   (variable names only here; pick your own password)
+#   set REDIS_URL=redis://:<SH_REDIS_PASSWORD>@127.0.0.1:6380/0
+# The web server and tools/worker.py run on the host, not in a container. Remove the two variables to go back to simple mode.
+# Ports 5433 and 6380 keep clear of any Postgres or Redis already on the machine. Data lives on D: and survives `docker compose down`.
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sh
+      POSTGRES_PASSWORD: ${SH_PG_PASSWORD:?set SH_PG_PASSWORD in your shell first}
+      POSTGRES_DB: signal_harbor
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - "D:/Docker/signal-harbor/postgres:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sh -d signal_harbor"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SH_REDIS_PASSWORD:?set SH_REDIS_PASSWORD in your shell first}"]
+    environment:
+      REDISCLI_AUTH: ${SH_REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - "D:/Docker/signal-harbor/redis:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

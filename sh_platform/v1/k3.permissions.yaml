@@ -1,0 +1,13 @@
+# K3 The Map centre (card K1, v4): read-only views generated from records. Every company role may open them; the handlers filter by
+# project access (G1), dashboard audience and the portfolios a person may see (E1d). Source, file and table detail and health are the data team's.
+routes:
+  GET /api/v1/centre-map/flow: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/centre-map/processes: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/centre-map/definitions: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/centre-map/model: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/centre-map/health: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  # v5 (V5W-6): the living ontology. Reading follows the same filters as the flow; the review queue is the data team's, and only the head of data (company_admin) approves.
+  GET /api/v1/centre-map/ontology: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/centre-map/review: {roles: [company_admin, analyst]}
+  POST /api/v1/centre-map/review/approve: {roles: [company_admin]}
+  POST /api/v1/centre-map/review/reject: {roles: [company_admin]}

@@ -1,0 +1,186 @@
+# Input ledger rows for spec 17: phone and projector views. Layout rules are not inputs; the rows below are inputs and computed values on those screens.
+- id: "17.add_card_phone"
+  spec: "17"
+  journey: brainstorm
+  stage: think
+  screen: "/centre/intent/<id>/session at 390 (Add an idea, Send)"
+  input: "An idea typed on a phone during a live session"
+  person: participant
+  mode: manual
+  source: "the participant's own words"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: writing an idea on a sticky note and walking to the board"
+  claim: "People add ideas from the phone in their hand, in the room or remote"
+- id: "17.next_question"
+  spec: "17"
+  journey: brainstorm
+  stage: think
+  screen: "session More menu (Next question) and projector question strip"
+  input: "The current question put up on the screen"
+  person: organiser
+  mode: confirm
+  built: manual
+  agent: North
+  source: "North's drafted question for the session"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: thinking up and writing the next prompt"
+  claim: "North drafts the next question; the organiser presses Next question to put it up"
+- id: "17.session_close"
+  spec: "17"
+  journey: brainstorm
+  stage: decide
+  screen: "session More menu (Close the session)"
+  input: "Close the live session"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: calling the end of the meeting"
+  claim: "One press ends the session and moves the intent on"
+- id: "17.projector_toggle"
+  spec: "17"
+  journey: brainstorm
+  stage: think
+  screen: "Projector view chip, /centre/intent/<id>/projector"
+  input: "Put the session on the room screen"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 10
+  minutes_with: 0.3
+  basis: "estimate: setting up a shared display of live results"
+  claim: "One press puts a names-free live view on the wall, with a QR code to join"
+- id: "17.projector_view"
+  spec: "17"
+  journey: brainstorm
+  stage: think
+  screen: "projector (lane counts, question, clock, join box, people count)"
+  input: "Lane counts, current question, clock, join code and people count"
+  person: any
+  mode: automatic
+  source: "the board counts route, the session record and the stage timer, polled every three seconds"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: counting cards and timing a session by hand"
+  claim: "The room screen shows live counts and time with no names, nothing for anyone to update"
+- id: "17.turn_on_sharing"
+  spec: "17"
+  journey: brainstorm
+  stage: think
+  screen: "projector join box (Turn on sharing)"
+  input: "Turn on the join link and short code"
+  person: organiser
+  mode: manual
+  source: "the organiser; the code is made by the system"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: preparing joining instructions"
+  claim: "A short code and QR let named invitees join from their phones"
+- id: "17.lane_move"
+  spec: "17"
+  journey: initiative
+  stage: think
+  screen: "define at 390 (Move to..., More)"
+  input: "Move a card to another cluster on a phone"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 2
+  minutes_with: 0.5
+  basis: "estimate: dragging a card"
+  claim: "Every drag has a tap equivalent so work can be done on a phone"
+- id: "17.confirm_draft"
+  spec: "17"
+  journey: initiative
+  stage: think
+  screen: "define at 390 (Confirm, after reading to the end)"
+  input: "Confirm a Lens draft on a phone"
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: "the Lens draft shown in the card sheet"
+  minutes_without: 20
+  minutes_with: 2
+  basis: "estimate: writing a definition versus confirming a draft"
+  claim: "Lens drafts; a named person reads to the end and confirms on any screen size"
+- id: "17.week_add"
+  spec: "17"
+  journey: checkin
+  stage: run
+  screen: "/centre/intent/<id>/week at 390 (Add to this week)"
+  input: "A ran, broke or thought item typed on a phone"
+  person: participant
+  mode: manual
+  source: "the person's own words"
+  minutes_without: 10
+  minutes_with: 2
+  basis: "estimate: writing a status email"
+  claim: "A check-in item is added in one short sheet from the phone"
+- id: "17.fate_decide"
+  spec: "17"
+  journey: checkin
+  stage: run
+  screen: "/centre/intent/<id>/review at 390 (Decide: Problem, Backlog, Handled, Nothing, reason)"
+  input: "Fate and reason for an item"
+  person: organiser
+  mode: manual
+  source: "the organiser; North may have drafted the fate"
+  minutes_without: 4
+  minutes_with: 1
+  basis: "estimate: deciding in a meeting"
+  claim: "Each item gets a fate and a reason in four buttons"
+- id: "17.problem_actions"
+  spec: "17"
+  journey: problem
+  stage: build
+  screen: "problem at 390 (Mark fixed, Move to closing, Confirm closure)"
+  input: "Mark fixed, move to closing, confirm closure"
+  person: owner
+  mode: manual
+  source: "the owner, organiser and approver respectively"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: updating a ticket"
+  claim: "A problem is fixed and closed from a phone with named people acting"
+- id: "17.decide_phone"
+  spec: "17"
+  journey: decision
+  stage: decide
+  screen: "decision at 390 (Decide, Add a note, Compare)"
+  input: "Decision, reason and advisers' notes"
+  person: decider
+  mode: manual
+  source: "the decider and advisers"
+  minutes_without: 20
+  minutes_with: 5
+  basis: "estimate: email chains to gather views and decide"
+  claim: "Advisers add notes and the decider decides from a phone"
+- id: "17.rating_phone"
+  spec: "17"
+  journey: shared
+  stage: prove
+  screen: "closure at 390 (Rate this: five buttons)"
+  input: "A rating on a phone"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: a feedback survey"
+  claim: "A rating is one tap on any screen size"
+- id: "17.counters"
+  spec: "17"
+  journey: admin
+  stage: prove
+  screen: "centre measures (projector openings, joins by short link)"
+  input: "Times the projector was opened; people who joined by short link"
+  person: organiser
+  mode: automatic
+  source: "events.jsonl display-on events and the session participant record"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: counting use by hand"
+  claim: "Use of the live display is counted from the log"

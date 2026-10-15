@@ -1,0 +1,234 @@
+{
+  "id": "TAL-04",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P29 missing at the administrator - sell 5,000 Harborview Semiconductor at 118.40 = 592,000, not on the administrator side.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 11702,
+  "cost": {
+    "calls": 2,
+    "tokens": 8973,
+    "usd": 0.002798,
+    "estimated": false
+  },
+  "trace_id": "tr-tally-3ae73a59-d3e46012",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Trade not matched|Harborview}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "592000"
+    ],
+    "words_any": [
+      [
+        "administrator"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/cases/1e6c4776-b028-443a-8dfc-52e73691518c/ask",
+      "request": {
+        "question": "What is wrong with this trade?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "1e6c4776-b028-443a-8dfc-52e73691518c",
+        "kind": "trade_break",
+        "summary": "Trade T-20261006-005 in Harborview Semiconductor on 6 Oct 2026: The trade is only in the trading export. The money at stake is 592,000 USD; the signed tolerance is 5,000 USD, so it is 587,000 USD over it.",
+        "findings": [
+          {
+            "key": "side",
+            "text": "The trade is in the trading export (592,000 USD, quantity 5,000) but there is no matching trade at the administrator.",
+            "figure": "592,000 USD",
+            "chips": [
+              {
+                "label": "Trading system export \u00b7 trading_export_20261006.csv \u00b7 Sheet1 row 2",
+                "kind": "transaction",
+                "id": "54718e71-9b11-48c7-a005-eafe9ba487c8"
+              }
+            ]
+          },
+          {
+            "key": "impact",
+            "text": "The money at stake is 592,000 USD; the signed tolerance is 5,000 USD, so it is 587,000 USD over it.",
+            "figure": "592,000 USD",
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Ask the administrator to confirm whether trade T-20261006-005 was booked, and with what quantity, price and settlement date."
+          },
+          {
+            "who": "Case owner",
+            "text": "Record the cause on the case and send it for check by another person."
+          }
+        ],
+        "missing": [
+          "The administrator's booking of trade T-20261006-005 in Harborview Semiconductor (sell 5,000 for 592,000 USD) is missing: the administrator has no matching trade."
+        ],
+        "sources": [
+          "Trading system export \u00b7 trading_export_20261006.csv \u00b7 Sheet1 row 2"
+        ],
+        "worded_by": "rules",
+        "question": "What is wrong with this trade?",
+        "answer": "The administrator's booking of trade T-20261006-005 in Harborview Semiconductor is missing: the administrator has no matching trade. The money at stake is 592,000 USD; the signed tolerance is 5,000 USD, so it is 587,000 USD over it.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": [],
+        "pending_model": false,
+        "trace_id": "tr-tally-3ae73a59-d3e46012"
+      },
+      "ms": 11643,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17535,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:43:47+0800",
+      "trace_id": "tr-tally-3ae73a59-d3e46012"
+    },
+    {
+      "bytes": 16781,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:43:44+0800",
+      "trace_id": "tr-tally-3ae73a59-d3e46012"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-tally-3ae73a59-d3e46012",
+      "status": 200,
+      "runs": [
+        {
+          "id": "a2164b0ce2f34fb0be58687b0586c426",
+          "agent_type": "Tally",
+          "status": "done",
+          "started_at": "2026-10-10T02:43:54+00:00",
+          "elapsed_ms": 11250,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002798,
+          "trace_id": "tr-tally-3ae73a59-d3e46012",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-tally-3ae73a59-d3e46012",
+          "at": "2026-10-10T02:43:54+00:00",
+          "run_id": "a2164b0ce2f34fb0be58687b0586c426",
+          "agent": "Tally",
+          "status": "done",
+          "elapsed_ms": 11250,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "case:1e6c4776-b028-443a-8dfc-52e73691518c"
+                },
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2843,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4349,
+              "tokens_out": 12,
+              "cost_usd": 0.001335
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "get_trade_rows",
+              "arg_keys": [],
+              "result_chars": 567,
+              "refused": false,
+              "reason": null,
+              "ms": 0
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 8406,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4576,
+              "tokens_out": 36,
+              "cost_usd": 0.001463
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002798,
+        "tokens": 8973
+      }
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "id": "TAL-06",
+  "agent": "tally",
+  "role": "participant",
+  "desc": "P17 real breach - Harborview Semiconductor 2,368,000 of 41,200,000 = 5.75%, over the 5% limit by 308,000, cause real breach.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 7853,
+  "cost": null,
+  "trace_id": "tr-tally-ef0d9e8a-f556e511",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Harborview Semiconductor|type=limit_breach}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "5.75",
+      "5",
+      "308000",
+      "2368000"
+    ],
+    "words_any": [
+      [
+        "real breach",
+        "real"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/cases/55a8f8c7-e4c1-4889-b7e2-b130a852d344/ask",
+      "request": {
+        "question": "Is this breach real, and how far over is it?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "55a8f8c7-e4c1-4889-b7e2-b130a852d344",
+        "kind": "limit_breach",
+        "summary": "Harborview Semiconductor is 5.75% of the Evergreen Liquid portfolio (2,368,000 USD of 41,200,000 USD), above the 5% maximum by 308,000 USD. All 21 input values in the portfolio are recent and verified, so this is a real breach, not stale data.",
+        "findings": [
+          {
+            "key": "exposure",
+            "text": "Harborview Semiconductor is 5.75% of the Evergreen Liquid portfolio (2,368,000 USD of 41,200,000 USD), above the 5% maximum by 308,000 USD. The Harborview Semiconductor share of the Evergreen Liquid portfolio must be at most 5%.",
+            "figure": "5.75%",
+            "chips": []
+          },
+          {
+            "key": "input",
+            "text": "Harborview Semiconductor: 2,368,000 USD, valued 30 Sep 2026 (9 days old), status approved.",
+            "figure": "2,368,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "89026305-455b-4b79-a2d0-47ee8ac59838"
+              }
+            ]
+          },
+          {
+            "key": "cause",
+            "text": "All 21 input values in the portfolio are recent and verified, so this is a real breach, not stale data.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Investment lead",
+            "text": "Decide whether to rebalance or to ask the committee for an exception; Tally does not decide."
+          },
+          {
+            "who": "Case owner",
+            "text": "Record the decision on the case and send it for check."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "valuation 89026305-455b-4b79-a2d0-47ee8ac59838"
+        ],
+        "worded_by": "rules",
+        "question": "Is this breach real, and how far over is it?",
+        "answer": "Harborview Semiconductor is 5.75% of the Evergreen Liquid portfolio (2,368,000 USD of 41,200,000 USD), above the 5% maximum by 308,000 USD. The Harborview Semiconductor share of the Evergreen Liquid portfolio must be at most 5%. All 21 input values in the portfolio are recent and verified, so this is a real breach, not stale data.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": [],
+        "pending_model": false,
+        "trace_id": "tr-tally-ef0d9e8a-f556e511"
+      },
+      "ms": 7831,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17235,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:44:08+0800",
+      "trace_id": "tr-tally-ef0d9e8a-f556e511"
+    },
+    {
+      "bytes": 16423,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:44:05+0800",
+      "trace_id": "tr-tally-ef0d9e8a-f556e511"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-tally-ef0d9e8a-f556e511",
+      "status": 200,
+      "runs": [
+        {
+          "id": "1e4dc5fe6eed48b98f063cd451fc1dd5",
+          "agent_type": "Tally",
+          "status": "done",
+          "started_at": "2026-10-10T02:44:10+00:00",
+          "elapsed_ms": 7108,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002979,
+          "trace_id": "tr-tally-ef0d9e8a-f556e511",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-tally-ef0d9e8a-f556e511",
+          "at": "2026-10-10T02:44:10+00:00",
+          "run_id": "1e4dc5fe6eed48b98f063cd451fc1dd5",
+          "agent": "Tally",
+          "status": "done",
+          "elapsed_ms": 7108,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "case:55a8f8c7-e4c1-4889-b7e2-b130a852d344"
+                },
+                {
+                  "kind": "turns",
+                  "id": "2"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3280,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4330,
+              "tokens_out": 12,
+              "cost_usd": 0.001329
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "get_limit_inputs",
+              "arg_keys": [],
+              "result_chars": 672,
+              "refused": false,
+              "reason": null,
+              "ms": 0
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3827,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4568,
+              "tokens_out": 112,
+              "cost_usd": 0.00165
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002979,
+        "tokens": 9022
+      }
+    }
+  ]
+}

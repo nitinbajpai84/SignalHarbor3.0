@@ -1,0 +1,336 @@
+- id: 46.pass.run
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: Closure memory pass after Close intent
+  input: The closure memory pass for North, Lens and Nira
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the closure record and outcome, never the cards
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: writing a lessons-learned note after each piece of work'
+  claim: On every close the agents write short filtered lessons into memory without anyone writing them
+- id: 46.pass.state
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: intents/<id>/intent.json (memory block)
+  input: Pass state, written at, entry ids and filtered count
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the pass run
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The record keeps counts only, never the memory text
+- id: 46.filter.exclude
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: Closure memory pass (filters)
+  input: Anonymous notes, sealed text, figures, names, restricted areas and contact details dropped
+  person: any person
+  mode: automatic
+  agent: null
+  source: the filters run before and after an entry is built
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: manually checking what a note must not contain'
+  claim: Sensitive content is filtered twice by code before anything is remembered
+- id: 46.north.shape
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (North, intent entries)
+  input: How this person likes to run sessions
+  person: organiser
+  mode: derived
+  agent: North
+  source: the time box and session record of the closed intent
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: remembering how someone usually runs things'
+  claim: North learns how an organiser likes to run sessions from what happened
+- id: 46.north.type
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (North, intent entries)
+  input: Which types they open and how many people, in words
+  person: organiser
+  mode: derived
+  agent: North
+  source: the type and participant count
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: North remembers the shape of what you usually run
+- id: 46.north.decision
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (North, intent entries)
+  input: What they decided at closure
+  person: decider
+  mode: derived
+  agent: North
+  source: the title signed by the closer, if it passes the filters
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: writing the decision into notes'
+  claim: The decision the closer signed is remembered as a line they can read and delete
+- id: 46.north.open
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (North, intent entries)
+  input: An unfinished next item the closer named
+  person: organiser
+  mode: derived
+  agent: North
+  source: closure.next
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: keeping a follow-up list'
+  claim: A follow-up the closer named is remembered for the next time
+- id: 46.lens.facts
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Company memory, Lens)
+  input: Confirmed definitions and owners as company facts without names
+  person: company admin
+  mode: derived
+  agent: Lens
+  source: glossary and catalogue entries a named person confirmed
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: updating a glossary wiki after each project'
+  claim: Confirmed definitions become company facts without anyone retyping them
+- id: 46.lens.ambiguities
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Company memory, Lens)
+  input: Ambiguities accepted at sign-off
+  person: company admin
+  mode: derived
+  agent: Lens
+  source: the accepted ambiguities
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Accepted ambiguities are remembered so they are not rediscovered
+- id: 46.nira.style
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Company memory, Nira)
+  input: Company style fact, off by default
+  person: company admin
+  mode: manual
+  agent: null
+  source: a company admin switches it on
+  minutes_without: 5
+  minutes_with: 5
+  basis: 'estimate: one decision'
+  claim: Nira writes nothing about people's speed; a company style line only if the admin allows
+- id: 46.opening.line
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/new (North's opening line)
+  input: Last time you ran a brainstorm with five people
+  person: organiser
+  mode: derived
+  agent: North
+  source: person memory entries matching the type
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: remembering what you did last time'
+  claim: North greets the organiser with what they did last time and says where it came from
+- id: 46.opening.same_shape
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/new (Same shape again)
+  input: Pre-select the type and people count
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser presses the chip
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: setting up the same thing again'
+  claim: One tap starts the same shape as last time
+- id: 46.opening.not_this_time
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/new (Not this time)
+  input: Hide the line for this visit
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The line can be dismissed without deleting memory
+- id: 46.opening.preference
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/new (Preference line)
+  input: A second line from a preference entry
+  person: organiser
+  mode: derived
+  agent: North
+  source: person preference entries
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: North states a stored preference, never an instruction
+- id: 46.toast
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>/close (Memory toast)
+  input: North noted two things, with counts in words
+  person: organiser
+  mode: automatic
+  agent: North
+  source: memory.by_agent lengths
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The closer is told what was remembered
+- id: 46.memory.edit
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Edit)
+  input: Correct a remembered line
+  person: any person
+  mode: manual
+  agent: null
+  source: the person's own correction
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: asking someone to fix a note'
+  claim: A person corrects what the agent remembers and it is never overwritten
+- id: 46.memory.delete
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Delete)
+  input: Delete a line with a tombstone
+  person: any person
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A deleted line is not written again
+- id: 46.memory.forget
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Forget everything)
+  input: Forget everything North remembers about me
+  person: any person
+  mode: manual
+  agent: null
+  source: the person with a confirm
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: a request to a data officer'
+  claim: One confirmed press removes everything remembered about you
+- id: 46.memory.filter
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Topic filter)
+  input: All, Intents, Other conversations
+  person: any person
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Memory can be filtered by topic
+- id: 46.memory.provenance
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Provenance line)
+  input: From the intent title and date
+  person: any person
+  mode: automatic
+  agent: null
+  source: from[].conversation of the entry
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: asking where a note came from'
+  claim: Every remembered line says which intent it came from
+- id: 46.company.edit
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Company memory, Edit and Delete)
+  input: Correct or delete a company fact
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: editing a wiki page'
+  claim: The company admin owns company memory and can correct any line
+- id: 46.company.retire
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Retire)
+  input: Retire a superseded fact
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: finding stale wiki pages'
+  claim: A superseded fact is retired in one tap and agents stop using it
+- id: 46.company.source
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: /centre/memory (Source line)
+  input: From the intent title, closed on a date
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the memory entry source
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Each company fact shows where it came from
+- id: 46.pulse.company
+  spec: '46'
+  journey: shared
+  stage: prove
+  screen: Pulse page of the company admin
+  input: Lens added company facts from an intent
+  person: company admin
+  mode: automatic
+  agent: Nira
+  source: the first company entry from an intent
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: an email notice'
+  claim: The admin is told once when company facts first arrive from an intent

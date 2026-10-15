@@ -1,0 +1,1326 @@
+# Template family_office@1 logical feeds: one feed per table of the synthetic workbook
+# (Family Office Data/Family_Office_Test_Data.xlsx), fields and types copied from its own
+# data_dictionary sheet. required_for lists only the KPI ids (kpi_tree.yaml) whose formula in
+# Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json emitters/family_office.py computes from that
+# field. fallback is not_computable everywhere: a missing input is never defaulted (CLAUDE.md
+# rule 4; Agent_Specifications.md 'missing is not zero'). pii is false: the pack is synthetic.
+template: family_office@1
+status: proposed
+feeds:
+  entities:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'entities' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: entity_id
+      label: entity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: name
+      label: name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: base_currency
+      label: base currency
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  ownership:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'ownership' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: ownership_id
+      label: ownership id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: parent_id
+      label: parent id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: child_id
+      label: child id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: ownership_pct
+      label: ownership pct
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: effective_date
+      label: effective date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+  accounts:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'accounts' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      pii: false
+      fallback: not_computable
+    - id: entity_id
+      label: entity id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      pii: false
+      fallback: not_computable
+    - id: custodian
+      label: custodian
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  investments:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'investments' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for:
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: name
+      label: name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: asset_class
+      label: asset class
+      type: varchar
+      required_for:
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: manager
+      label: manager
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: sector
+      label: sector
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: geography
+      label: geography
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: redemption_days
+      label: redemption days
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: strategic_holding
+      label: strategic holding
+      type: boolean
+      required_for: []
+      pii: false
+      fallback: not_computable
+  documents:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'documents' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      - K04
+      - K14
+      pii: false
+      fallback: not_computable
+    - id: document_type
+      label: document type
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: period_end
+      label: period end
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: received_date
+      label: received date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: version
+      label: version
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: supersedes_id
+      label: supersedes id
+      type: varchar
+      required_for:
+      - K01
+      - K04
+      - K14
+      pii: false
+      fallback: not_computable
+    - id: status
+      label: status
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      - K04
+      - K14
+      pii: false
+      fallback: not_computable
+    - id: path
+      label: path
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  evidence:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'evidence' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: evidence_id
+      label: evidence id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: section
+      label: section
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: field_name
+      label: field name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: extracted_value
+      label: extracted value
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: unit
+      label: unit
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: review_status
+      label: review status
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  policy_rules:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'policy_rules' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: rule_id
+      label: rule id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: scope_entity_id
+      label: scope entity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: metric
+      label: metric
+      type: varchar
+      required_for:
+      - K01
+      - K08
+      pii: false
+      fallback: not_computable
+    - id: operator
+      label: operator
+      type: varchar
+      required_for:
+      - K08
+      pii: false
+      fallback: not_computable
+    - id: threshold
+      label: threshold
+      type: double
+      required_for:
+      - K01
+      - K08
+      pii: false
+      fallback: not_computable
+    - id: unit
+      label: unit
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: effective_date
+      label: effective date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: evidence_id
+      label: evidence id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  fx_rates:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'fx_rates' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: fx_id
+      label: fx id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      - K04
+      - K05
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: as_of_date
+      label: as of date
+      type: date
+      required_for:
+      - K01
+      - K04
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for:
+      - K01
+      - K04
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: sgd_per_unit
+      label: sgd per unit
+      type: double
+      required_for:
+      - K01
+      - K02
+      - K04
+      - K05
+      - K10
+      pii: false
+      fallback: not_computable
+  positions:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'positions' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: position_id
+      label: position id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for:
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: as_of_date
+      label: as of date
+      type: date
+      required_for:
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: valuation_date
+      label: valuation date
+      type: date
+      required_for:
+      - K12
+      pii: false
+      fallback: not_computable
+    - id: units
+      label: units
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: price_native
+      label: price native
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: value_native
+      label: value native
+      type: double
+      required_for:
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: fx_id
+      label: fx id
+      type: varchar
+      required_for:
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: value_sgd
+      label: value sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for:
+      - K02
+      pii: false
+      fallback: not_computable
+  cash_ledger:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'cash_ledger' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: entry_id
+      label: entry id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for:
+      - K02
+      pii: false
+      fallback: not_computable
+    - id: date
+      label: date
+      type: date
+      required_for:
+      - K02
+      pii: false
+      fallback: not_computable
+    - id: entry_type
+      label: entry type
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: signed_amount_native
+      label: signed amount native
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for:
+      - K02
+      pii: false
+      fallback: not_computable
+  cash_balances:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'cash_balances'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: balance_id
+      label: balance id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: as_of_date
+      label: as of date
+      type: date
+      required_for:
+      - K01
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: opening_native
+      label: opening native
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: net_cashflow_native
+      label: net cashflow native
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: closing_native
+      label: closing native
+      type: double
+      required_for:
+      - K01
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: fx_id
+      label: fx id
+      type: varchar
+      required_for:
+      - K01
+      - K02
+      - K10
+      pii: false
+      fallback: not_computable
+    - id: closing_sgd
+      label: closing sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+  commitments:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'commitments' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: commitment_id
+      label: commitment id
+      type: varchar
+      required_for:
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for:
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: opening_unfunded_native
+      label: opening unfunded native
+      type: double
+      required_for:
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  commitment_events:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'commitment_events'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: event_id
+      label: event id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: commitment_id
+      label: commitment id
+      type: varchar
+      required_for:
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: event_date
+      label: event date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: event_type
+      label: event type
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: unfunded_delta_native
+      label: unfunded delta native
+      type: double
+      required_for:
+      - K05
+      pii: false
+      fallback: not_computable
+    - id: cashflow_native
+      label: cashflow native
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  obligations:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'obligations' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: obligation_id
+      label: obligation id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: account_id
+      label: account id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: commitment_id
+      label: commitment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: due_date
+      label: due date
+      type: date
+      required_for:
+      - K01
+      - K04
+      pii: false
+      fallback: not_computable
+    - id: amount_native
+      label: amount native
+      type: double
+      required_for:
+      - K01
+      - K04
+      pii: false
+      fallback: not_computable
+    - id: currency
+      label: currency
+      type: varchar
+      required_for:
+      - K01
+      - K04
+      pii: false
+      fallback: not_computable
+    - id: status
+      label: status
+      type: varchar
+      required_for:
+      - K01
+      - K04
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for:
+      - K01
+      - K04
+      pii: false
+      fallback: not_computable
+  exposures:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'exposures' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: exposure_id
+      label: exposure id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: as_of_date
+      label: as of date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: dimension
+      label: dimension
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: category
+      label: category
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: weight
+      label: weight
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: coverage_pct
+      label: coverage pct
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  issues:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'issues' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: issue_id
+      label: issue id
+      type: varchar
+      required_for:
+      - K07
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: issue_type
+      label: issue type
+      type: varchar
+      required_for:
+      - K07
+      pii: false
+      fallback: not_computable
+    - id: status
+      label: status
+      type: varchar
+      required_for:
+      - K07
+      pii: false
+      fallback: not_computable
+    - id: owner
+      label: owner
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: next_action
+      label: next action
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  opportunities:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'opportunities'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: opportunity_id
+      label: opportunity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: name
+      label: name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: asset_class
+      label: asset class
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: proposed_sgd
+      label: proposed sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: expected_return
+      label: expected return
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: downside_loss
+      label: downside loss
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: annual_fee
+      label: annual fee
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: redemption_days
+      label: redemption days
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: diligence_gaps
+      label: diligence gaps
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: pre_investment_value_sgd
+      label: pre investment value sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: pre_total_assets_sgd
+      label: pre total assets sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: pre_private_assets_sgd
+      label: pre private assets sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: available_cash_sgd
+      label: available cash sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: existing_obligations_sgd
+      label: existing obligations sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: stress_calls_sgd
+      label: stress calls sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: reserve_sgd
+      label: reserve sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: evidence_coverage
+      label: evidence coverage
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: evidence_age_days
+      label: evidence age days
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: unresolved_conflicts
+      label: unresolved conflicts
+      type: integer
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: document_id
+      label: document id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  decision_inputs:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'decision_inputs'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: input_id
+      label: input id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: opportunity_id
+      label: opportunity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: dimension
+      label: dimension
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: field_name
+      label: field name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: value
+      label: value
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: unit
+      label: unit
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: origin
+      label: origin
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: source_reference
+      label: source reference
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: probable_real_source
+      label: probable real source
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: required
+      label: required
+      type: boolean
+      required_for: []
+      pii: false
+      fallback: not_computable
+  decision_results:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'decision_results'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: result_id
+      label: result id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: opportunity_id
+      label: opportunity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: attractiveness
+      label: attractiveness
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: mandate_fit
+      label: mandate fit
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: funding_feasibility
+      label: funding feasibility
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: implementation_friction
+      label: implementation friction
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: evidence_strength
+      label: evidence strength
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: funding_headroom_sgd
+      label: funding headroom sgd
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: post_single_pct
+      label: post single pct
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: post_private_pct
+      label: post private pct
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: overall
+      label: overall
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: rules_version
+      label: rules version
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  intents:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'intents' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: intent_id
+      label: intent id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: entity_id
+      label: entity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: user_role
+      label: user role
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: desired_decision
+      label: desired decision
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: confirmed
+      label: confirmed
+      type: boolean
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: missing_information
+      label: missing information
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  decisions:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'decisions' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: decision_id
+      label: decision id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: opportunity_id
+      label: opportunity id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: decision_date
+      label: decision date
+      type: date
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: status
+      label: status
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: rationale
+      label: rationale
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: review_trigger
+      label: review trigger
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  agent_runs:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'agent_runs' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: run_id
+      label: run id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: agent_role
+      label: agent role
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: intent_id
+      label: intent id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: status
+      label: status
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: next_owner
+      label: next owner
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  source_map:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'source_map' (columns
+      per sheet 'data_dictionary')
+    fields:
+    - id: source_id
+      label: source id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: dimension
+      label: dimension
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: probable_source
+      label: probable source
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: fields_to_extract
+      label: fields to extract
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: validation
+      label: validation
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  data_dictionary:
+    source: Family Office Data/Family_Office_Test_Data.xlsx sheet 'data_dictionary'
+      (columns per sheet 'data_dictionary')
+    fields:
+    - id: field_id
+      label: field id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: table_name
+      label: table name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: column_name
+      label: column name
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: sql_type
+      label: sql type
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: key_role
+      label: key role
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: nullable
+      label: nullable
+      type: boolean
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: meaning
+      label: meaning
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  # FO-08: a synthetic supplement, not a workbook table. Invented fee rates, generated by the seed
+  # and labelled "synthetic illustration" wherever shown. No measure reads it.
+  holding_fees:
+    source: "scripts/sh/seed_family_office.py (_fee_rows): synthetic illustration; the workbook records no fee for an existing holding"
+    fields:
+    - id: investment_id
+      label: investment id
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: annual_fee_pct
+      label: annual fee as a fraction of value (invented)
+      type: double
+      required_for: []
+      pii: false
+      fallback: not_computable
+    - id: basis
+      label: always "synthetic illustration"
+      type: varchar
+      required_for: []
+      pii: false
+      fallback: not_computable
+  # FO-11: synthetic supplements for existing holdings. Invented or re-stated by the seed, labelled
+  # "synthetic illustration" wherever shown. No measure reads either table.
+  holding_theses:
+    source: "scripts/sh/seed_family_office.py (_thesis_rows): synthetic illustration; the workbook records no thesis for any holding"
+    fields:
+    - {id: investment_id, label: investment id, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: thesis_summary, label: why the holding is held (invented), type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: key_assumptions, label: what the thesis rests on (invented), type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: review_triggers, label: what would prompt a review (invented), type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: recorded_on, label: date the illustration is dated, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: basis, label: always "synthetic illustration", type: varchar, required_for: [], pii: false, fallback: not_computable}
+  holding_decision_inputs:
+    source: "scripts/sh/seed_family_office.py (_holding_input_rows): the shape of the workbook's decision_inputs, one set per holding; origin says which values are from the workbook (derived_snapshot) and which are invented (synthetic_illustration)"
+    fields:
+    - {id: input_id, label: input id, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: investment_id, label: investment id, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: dimension, label: decision dimension, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: field_name, label: input name, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: value, label: input value as text, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: unit, label: unit, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: origin, label: derived_snapshot or synthetic_illustration, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: source_reference, label: where the value came from, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: probable_real_source, label: where a real value would come from, type: varchar, required_for: [], pii: false, fallback: not_computable}
+    - {id: required, label: required, type: boolean, required_for: [], pii: false, fallback: not_computable}
+    - {id: basis, label: always "synthetic illustration", type: varchar, required_for: [], pii: false, fallback: not_computable}

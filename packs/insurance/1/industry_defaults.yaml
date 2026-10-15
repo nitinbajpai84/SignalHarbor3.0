@@ -1,0 +1,290 @@
+# Template insurance@1 industry defaults (V3-03 brief item 4) -- one entry per KPI in
+# docs/signal-harbor/cmo-proof/kpis.json, every field's label fixed to "Industry practice
+# (suggestion)" per ND-35: these describe how insurers typically implement/track the KPI, never a
+# business rule, and never a target or threshold (CLAUDE.md rule 4). An entry without a source is
+# invalid (brief item 4; enforced by tests/test_insurance_pack.py).
+#
+# window/cadence/breakdowns/definition_variants are drawn from kpis.json's own grain/formula/
+# definition_status fields (this pack's actual measurement shape) plus, where the research note
+# names an external industry-standard definition, that definition as a second variant.
+# customer_decides is populated from kpis.json's own open_questions[] whose "blocks" list names
+# this KPI -- the exact undecided business matters already on record, not invented ones.
+#
+# r3 fix (V3-07 review-r2.md B2, Nitin's round): every customer_decides entry is now
+# {question, fields} instead of a bare string -- `fields` names the feeds.yaml field id(s) that
+# question actually governs (so a column matcher/confirm step can refuse to auto-confirm them),
+# empty when no feeds.yaml field corresponds to the question (e.g. a margin/VNB basis choice --
+# there is no "margin basis" column to tag). Every field named here already exists in
+# feeds.yaml; none was invented. feeds.yaml marks the same fields `customer_decides: true` so the
+# two files agree (enforced by tests/test_insurance_pack.py::test_customer_decides_fields_agree).
+template: insurance@1
+status: proposed
+defaults:
+  - id: ID-K01
+    kpi_id: K01
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM of pol_policy_coverages.ape_amount x rate_to_usd, per distinct inception policy"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula"
+      - variant: "Industry practice: annualised first-year regular premium plus 10% of single premium (LIMRA/industry usage)"
+        source: "Research note section 1.4 (insurance-marketing-domain.md)"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, product_category]
+    levers: [lever:channel_spend_mix, lever:cep_journey_spend]
+    customer_decides:
+      - question: "Q7: Should free-look-cancelled policies be excluded from policies sold and APE?"
+        fields: [policy_status]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01, open_questions OQ7"
+  - id: ID-K02
+    kpi_id: K02
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: not computable today -- no margin_rate_pct in the monthly drops' pol_products"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K02 data_support"
+      - variant: "Industry practice: VNB/NBP is the present value of future shareholder profit on business written in the period, VNB margin = VNB / APE"
+        source: "Research note section 1.5; Umbrex, Embedded Value and Value of New Business Analysis"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, product_category]
+    levers: []
+    customer_decides:
+      - question: "Q5 (OQ5): What margin / VNB basis should NBP use?"
+        fields: []  # a margin/VNB basis is a calculation convention, not a feeds.yaml column
+    source: "docs/signal-harbor/cmo-proof/kpis.json K02, open_questions OQ5"
+  - id: ID-K03
+    kpi_id: K03
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: COUNT(DISTINCT policy_id) with inception_date in period, any status, latest drop's row per policy_id"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K03 formula"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, product_category]
+    levers: []
+    customer_decides:
+      - question: "Q7: Should free-look-cancelled policies be excluded from policies sold?"
+        fields: [policy_status]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K03, open_questions OQ7"
+  - id: ID-K04
+    kpi_id: K04
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: K01 / K03 -- non-additive ratio"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K04 formula"
+      - variant: "Industry practice: average case size = APE (or premium) / number of policies sold, for a given cut"
+        source: "Research note section 1.6"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, product_category, customer_segment]
+    levers: []
+    customer_decides: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K04"
+  - id: ID-K05
+    kpi_id: K05
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: COUNT(lms_leads.lead_id) by month of lead_created_date"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K05 formula"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, lead_source, campaign_id]
+    levers: [lever:targeting_audience_selection]
+    customer_decides:
+      - question: "Q3 (OQ3): Which lead-source taxonomy is real -- this pack's (email_marketing/agent_owned/cep_handoff/agency) or the sibling pack's (CEP/Agency/Bancassurance/Web) -- and where are bancassurance and web leads?"
+        fields: [lead_source]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K05, open_questions OQ3"
+  - id: ID-K06
+    kpi_id: K06
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: K05 minus rows where the same customer_id + campaign_id already has a lead created 0-2 days earlier (Proposal -- no is_duplicate_of column in the drops)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K06 formula"
+    window: "0-2 days (candidate rule, Proposal)"
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, lead_source]
+    levers: []
+    customer_decides:
+      - question: "Q6 (OQ6): Duplicate-lead rule (window and key) when no is_duplicate_of flag is supplied."
+        fields: [customer_id, campaign_id, lead_created_date]  # the dedupe key (customer_id + campaign_id) and the window anchor (lead_created_date), per this KPI's own formula above
+    source: "docs/signal-harbor/cmo-proof/kpis.json K06, open_questions OQ6"
+  - id: ID-K07
+    kpi_id: K07
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: distributed-rate = COUNT(distributed_date not null)/COUNT(*); accepted-rate = COUNT(accepted_date not null)/COUNT(distributed_date not null)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K07 formula"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, lead_source, branch]
+    levers: []
+    customer_decides: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K07"
+  - id: ID-K08
+    kpi_id: K08
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: un-windowed benchmark rule -- lead converts if its customer_id holds any pol_policies row with inception_date on or after lead_created_date; windowed variant uses ref_lbu.attribution_window_days (120 days)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K08 formula"
+    window: "120 days (windowed variant, ref_lbu.attribution_window_days)"
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lead_source, campaign_id]
+    levers: [lever:targeting_audience_selection]
+    customer_decides:
+      - question: "Q1 (OQ1): Attribution rule -- earliest touch/120 days (drops and 02_kpi_definitions.md) or last touch/90 days (DATA_DESIGN.md)?"
+        fields: [customer_id, lead_created_date]  # the join key and the touch-date the window is measured from, per this KPI's own formula above
+    source: "docs/signal-harbor/cmo-proof/kpis.json K08, open_questions OQ1"
+  - id: ID-K09
+    kpi_id: K09
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: APE of policies whose earliest touch inside the observation window before inception is a CEP journey's first send, same-day tie wins to CEP, divided by K01"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K09 formula"
+      - variant: "Industry practice: single-touch earliest-qualifying-touch is one of several attribution models (first-touch, last-touch, multi-touch); this pack uses a two-funnel variant of single-touch"
+        source: "Research note section 2.1"
+    window: "120 days (ref_lbu.attribution_window_days)"
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, journey_id, campaign_id]
+    levers: [lever:cep_journey_spend]
+    customer_decides:
+      - question: "Q1 (OQ1): Attribution rule -- earliest touch/120 days or last touch/90 days?"
+        fields: [customer_id, send_date]  # the join key and the touch-date the window is measured from, both required_for K09 in feeds.yaml
+      - question: "Q2 (OQ2): Should a non-commercial CEP send (Birthday Greeting, Welcome) count as a touch that earns APE credit?"
+        fields: [journey_id]  # journey classifies a send as commercial vs Birthday Greeting/Welcome etc.
+    source: "docs/signal-harbor/cmo-proof/kpis.json K09, open_questions OQ1, OQ2"
+  - id: ID-K10
+    kpi_id: K10
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: as K09 for the LEADS funnel, split by lms_leads.campaign_id and lead_source (equal split within funnel per benchmark rules)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K10 formula"
+    window: "120 days (ref_lbu.attribution_window_days)"
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, campaign_id, lead_source, lbu_code]
+    levers: [lever:targeting_audience_selection]
+    customer_decides:
+      - question: "Q1 (OQ1): Attribution rule -- earliest touch/120 days or last touch/90 days?"
+        fields: [lead_created_date, campaign_id]  # the touch-date and the funnel split key, both required_for K10 in feeds.yaml
+      - question: "Q3 (OQ3): Which lead-source taxonomy is real?"
+        fields: [lead_source]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K10, open_questions OQ1, OQ3"
+  - id: ID-K11
+    kpi_id: K11
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(mkt_campaign_spend.spend_usd) / K06, by campaign and month -- not computable today, no spend file in the monthly drops"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K11 formula/data_support"
+      - variant: "Industry practice: cost per lead = campaign spend / leads generated by that campaign"
+        source: "Research note section 1.7"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly, once a spend feed exists)"
+    breakdowns: [month, campaign_id]
+    levers: []
+    customer_decides:
+      - question: "Q4 (OQ4): Where is the campaign spend feed (system, grain, currency)?"
+        fields: [spend_usd]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K11, open_questions OQ4"
+  - id: ID-K12
+    kpi_id: K12
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(spend_usd) / attributed policies (K09/K10), by campaign -- not computable today"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K12 formula/data_support"
+      - variant: "Industry practice: cost per policy (a form of CAC) = campaign spend / policies sold attributed to that campaign"
+        source: "Research note section 1.7"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly, once a spend feed exists)"
+    breakdowns: [month, campaign_id]
+    levers: []
+    customer_decides:
+      - question: "Q4 (OQ4): Where is the campaign spend feed (system, grain, currency)?"
+        fields: [spend_usd]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K12, open_questions OQ4"
+  - id: ID-K13
+    kpi_id: K13
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: (K02 or attributed APE) / SUM(spend_usd) -- not computable today, needs both spend and margins"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K13 formula/data_support"
+      - variant: "Industry practice: ROI = (attributed value - spend) / spend, or attributed value / spend depending on house convention"
+        source: "Research note section 1.7"
+    window: null
+    cadence: "Quarterly (kpis.json K13 grain)"
+    breakdowns: [quarter, campaign_id]
+    levers: []
+    customer_decides:
+      - question: "Q4 (OQ4): Where is the campaign spend feed?"
+        fields: [spend_usd]
+      - question: "Q5 (OQ5): What margin / VNB basis should NBP use?"
+        fields: []  # a margin/VNB basis is a calculation convention, not a feeds.yaml column
+    source: "docs/signal-harbor/cmo-proof/kpis.json K13, open_questions OQ4, OQ5"
+  - id: ID-K14
+    kpi_id: K14
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(APE where product_category in (Protection, Health)) / K01 -- the protection/savings grouping itself is Proposal"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K14 formula"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code]
+    levers: []
+    customer_decides: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14"
+  - id: ID-K15
+    kpi_id: K15
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: attribution.cep.by_journey / by_campaign and attribution.leads.by_campaign; breakdowns are non-additive by design (a policy counts once in the total, appears in each relevant breakdown)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K15 formula"
+    window: "120 days (ref_lbu.attribution_window_days, same rule as K09/K10)"
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, journey_id, campaign_id]
+    levers: [lever:cep_journey_spend, lever:journey_design_timing]
+    customer_decides:
+      - question: "Q1 (OQ1): Attribution rule -- earliest touch/120 days or last touch/90 days?"
+        fields: [journey_id, campaign_id]  # both required_for K15 in feeds.yaml
+    source: "docs/signal-harbor/cmo-proof/kpis.json K15, open_questions OQ1"
+  - id: ID-K16
+    kpi_id: K16
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: delivered/sends, opens/delivered, clicks/sends by channel (Email, SMS, WhatsApp); SMS opens are always 0 by definition"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula"
+      - variant: "Industry practice: standard email/CRM marketing funnel (sent -> delivered -> open rate -> click-through rate) applied to insurance journeys, reported both all-channel and email-only because SMS cannot report opens"
+        source: "Research note section 1.1"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, channel_name, journey_id, customer vintage band]
+    levers: [lever:journey_design_timing]
+    customer_decides: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K16"
+  - id: ID-K17
+    kpi_id: K17
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: AVG(distributed_date - lead_created_date), AVG(accepted_date - distributed_date); day-level only, no SLA exists in contracts or DATA_DESIGN.md"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K17 formula/definition_status"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [month, lbu_code, lead_source, branch]
+    levers: []
+    customer_decides:
+      - question: "No SLA exists today -- the follow-up time limit itself is for the customer to set (see problems.yaml T-DIST-02)"
+        fields: [distributed_date, accepted_date]  # the two dates this KPI's own formula (above) measures the gap between
+    source: "docs/signal-harbor/cmo-proof/kpis.json K17"
+  - id: ID-K18
+    kpi_id: K18
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: COUNT(policy_status in (Lapsed, Cancelled)) / K03, latest drop's status per policy_id, by inception month -- a persistency proxy, not true 13-month persistency (needs 13+ months of history and a status-change date the drops lack)"
+        source: "docs/signal-harbor/cmo-proof/kpis.json K18 formula/definition_status"
+      - variant: "Industry practice: persistency is the share of premium/policies still in force at a given duration after issue (13-month, 25-month durations), LIMRA Experience Studies Program"
+        source: "Research note section 1.8"
+    window: null
+    cadence: "Monthly (the pack's drops land monthly)"
+    breakdowns: [inception month, lbu_code, product_category, attributed funnel]
+    levers: [lever:renewal_outreach]
+    customer_decides:
+      - question: "Q7 (OQ7): Should free-look cancellations be excluded from this KPI and from K01/K03?"
+        fields: [policy_status]  # the only feeds.yaml field that carries free-look/lapsed/cancelled status; no separate status-change-date field exists in this pack (see definition_variants above: "needs ... a status-change date the drops lack")
+    source: "docs/signal-harbor/cmo-proof/kpis.json K18, open_questions OQ7"

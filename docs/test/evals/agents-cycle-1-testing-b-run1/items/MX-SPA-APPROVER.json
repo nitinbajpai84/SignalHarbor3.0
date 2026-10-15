@@ -1,0 +1,197 @@
+{
+  "id": "MX-SPA-APPROVER",
+  "agent": "span",
+  "role": "approver",
+  "desc": "A1 approver asks Span which gold table holds cash by entity and what feeds it.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> tool -> model -> guard; tools list_tables"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "9489 ms",
+      "value": 9489
+    },
+    {
+      "name": "cost",
+      "passed": null,
+      "detail": "no cost rows (program-only route, or log not readable)"
+    }
+  ],
+  "error": null,
+  "latency_ms": 9489,
+  "cost": null,
+  "trace_id": "tr-span-413e179b-3c541fea",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity, and which bronze tables feed it?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The gold table `gold_investment_report_cash_daily` holds the cash by entity. It is fed by bronze tables, but I need to know which project you are interested in to find that information. Please specify the project.",
+        "rules_only": false,
+        "trace_id": "tr-span-413e179b-3c541fea"
+      },
+      "ms": 9489,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 7935,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:58:34+0800",
+      "trace_id": "tr-span-413e179b-3c541fea"
+    },
+    {
+      "bytes": 7473,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:58:30+0800",
+      "trace_id": "tr-span-413e179b-3c541fea"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-413e179b-3c541fea",
+      "status": 200,
+      "runs": [
+        {
+          "id": "efbc6ab456fb4a15a8069805862693aa",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:58:38+00:00",
+          "elapsed_ms": 8860,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.001392,
+          "trace_id": "tr-span-413e179b-3c541fea",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-413e179b-3c541fea",
+          "at": "2026-10-10T01:58:38+00:00",
+          "run_id": "efbc6ab456fb4a15a8069805862693aa",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 8860,
+          "steps": [
+            {
+              "kind": "context",
+              "items": []
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3860,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 1982,
+              "tokens_out": 22,
+              "cost_usd": 0.00065
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 225,
+              "refused": false,
+              "reason": null,
+              "ms": 639
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 4360,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2075,
+              "tokens_out": 48,
+              "cost_usd": 0.000742
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.001392,
+        "tokens": 4127
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# I1 Company page. The handler also refuses a write by anyone but the decision maker (company_admin, sponsor).
+routes:
+  GET /api/v1/company: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/v1/company: {roles: [company_admin, sponsor]}
+  POST /api/v1/company/documents: {roles: [company_admin, sponsor]}

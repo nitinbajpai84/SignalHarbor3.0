@@ -1,0 +1,72 @@
+{
+  "id": "LUM-16",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "The why-this-figure view on K01 gives the table and refresh time the number came from.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "144 ms",
+      "value": 144
+    }
+  ],
+  "error": null,
+  "latency_ms": 144,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/why"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/tiles/t-000001/why",
+      "request": null,
+      "status": 200,
+      "json": {
+        "answer": "K01 is down by 24,800,000: 41,200,000 in Evergreen , 16,400,000 in Evergreen .",
+        "evidence": [
+          {
+            "period": "Evergreen ",
+            "value": "41,200,000"
+          },
+          {
+            "period": "Evergreen ",
+            "value": "16,400,000"
+          }
+        ],
+        "sources": {
+          "tables": [
+            "gold_investment_report_holdings_monthly"
+          ],
+          "last_refresh": "2026-10-09T07:39:26+00:00"
+        },
+        "caveats": [
+          "Worded by fixed rules; the model is off."
+        ],
+        "wording": "rules",
+        "next_action": "Open the gold table behind this tile to see the rows."
+      },
+      "ms": 143,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

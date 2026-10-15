@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor state and concurrency: as is today (simple mode) and to be (production mode)",
+    "output": "docs/architecture/sh-production-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://local.invalid/signal-harbor/repo-1.0.git",
+      "link_mode": "local-only",
+      "revision": "c8dbbab88d8c3693eda756d1f5fceba4ac4de3b3"
+    },
+    "views": [
+      { "id": "as_is", "label": "As is today (simple mode)", "focus": ["browser", "web", "memstate", "model", "json", "duck", "threads"], "note": "One uvicorn process holds everything: files, DuckDB, in-memory sessions, limits and caches, background threads." },
+      { "id": "to_be", "label": "To be (production mode)", "focus": ["browser2", "web2", "adapters", "redis", "postgres", "worker", "duck2", "relay", "consumers", "model2"], "note": "Switched on only when DATABASE_URL and REDIS_URL are set. Same routes, agents and tests." },
+      { "id": "agent_turn", "label": "Agent turn, streamed", "focus": ["browser2", "web2", "adapters", "redis", "worker", "model2"], "note": "Web enqueues the turn, the worker calls the model, pieces come back over Redis pub/sub and SSE." },
+      { "id": "pipeline_job", "label": "Pipeline run job", "focus": ["web2", "adapters", "redis", "worker", "duck2", "postgres"], "note": "The worker is the only DuckDB writer; progress goes to the jobs table and the event stream." },
+      { "id": "outbox", "label": "Outbox fan-out", "focus": ["postgres", "relay", "consumers", "redis", "web2", "browser2"], "note": "An event row is written in the same transaction as the change, then delivered once per consumer." }
+    ]
+  },
+  "components": [
+    { "id": "browser", "type": "frontend", "label": "Browser (React UI)", "sublabel": "useLoad per page, no shared cache", "pos": [390, 60], "size": [200, 72],
+      "sources": [ { "path": "ui/src/components/useLoad.ts", "line": 15, "end_line": 40, "label": "fetch once per key into local state" } ] },
+    { "id": "memstate", "type": "backend", "label": "In-memory state", "sublabel": "sessions, limits, breaker, caches", "tag": "lost on restart", "pos": [40, 210], "size": [200, 72],
+      "sources": [
+        { "path": "sh_platform/auth/sessions.py", "line": 19, "end_line": 25, "label": "sessions in a dict" },
+        { "path": "sh_platform/demo_limits.py", "line": 77, "end_line": 95, "label": "TurnLimiter in process" },
+        { "path": "sh_platform/egress/gateway.py", "line": 359, "end_line": 385, "label": "outage breaker in process" }
+      ] },
+    { "id": "web", "type": "backend", "label": "One uvicorn process", "sublabel": "FastAPI routes + threadpool", "tag": "today", "pos": [390, 210], "size": [200, 72],
+      "sources": [
+        { "path": "sh_platform/app.py", "line": 80, "end_line": 177, "label": "create_app" },
+        { "path": "Dockerfile", "line": 27, "end_line": 28, "label": "single uvicorn command" }
+      ] },
+    { "id": "model", "type": "external", "label": "Model provider", "sublabel": "called inside the request", "pos": [740, 210], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/agents/loop.py", "line": 102, "end_line": 106, "label": "run_agent" } ] },
+    { "id": "duck", "type": "database", "label": "DuckDB per company", "sublabel": "one shared read-write connection", "pos": [40, 380], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/v1/wh.py", "line": 83, "end_line": 87, "label": "serve(): server mode" } ] },
+    { "id": "json", "type": "database", "label": "JSON files on /data", "sublabel": "atomic write + per-file RLock", "pos": [390, 380], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/jsonfile.py", "line": 19, "end_line": 61, "label": "lock_for and write_json_atomic" } ] },
+    { "id": "threads", "type": "backend", "label": "Daemon threads", "sublabel": "scheduler, scans, graph rebuild", "tag": "started at server start", "pos": [740, 380], "size": [200, 72],
+      "sources": [
+        { "path": "sh_platform/v1/b6_schedule.py", "line": 100, "end_line": 116, "label": "b6-scheduler thread" },
+        { "path": "sh_platform/graph/hooks.py", "line": 41, "end_line": 57, "label": "graph-rebuild thread" },
+        { "path": "sh_platform/v1/i6_chat.py", "line": 1543, "end_line": 1553, "label": "scan thread" }
+      ] },
+
+    { "id": "browser2", "type": "frontend", "label": "Browser (React UI)", "sublabel": "TanStack Query + live events", "tag": "Jobs and events page", "pos": [40, 660], "size": [200, 72],
+      "sources": [ { "path": "ui/src/api/client.ts", "line": 217, "end_line": 240, "label": "streamText: SSE over fetch, reused" } ] },
+    { "id": "web2", "type": "backend", "label": "Web process (uvicorn)", "sublabel": "routes, SSE, idempotency keys", "tag": "no model calls, no DuckDB writes", "pos": [390, 660], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/v1/chat_fastpath.py", "line": 347, "end_line": 360, "label": "ChatStreamMiddleware, reused" } ] },
+    { "id": "adapters", "type": "security", "label": "Adapter layer", "sublabel": "StateStore, JobQueue, Cache, EventBus", "tag": "simple or production", "pos": [740, 660], "size": [220, 72] },
+    { "id": "redis", "type": "messagebus", "label": "Redis 7", "sublabel": "queue, cache, limits, pub/sub", "tag": "holds nothing that cannot be rebuilt", "pos": [1070, 660], "size": [200, 72] },
+    { "id": "postgres", "type": "database", "label": "Postgres 16", "sublabel": "app state, versions, jobs, outbox", "tag": "the source of truth", "pos": [750, 840], "size": [200, 72] },
+    { "id": "worker", "type": "backend", "label": "Worker process (arq)", "sublabel": "agent turns, pipelines, scans", "tag": "deliveries, graph updates", "pos": [1070, 840], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/v1/b6_schedule.py", "line": 68, "end_line": 70, "label": "tick(): becomes a cron job" } ] },
+    { "id": "model2", "type": "external", "label": "Model provider", "sublabel": "through the egress gateway", "pos": [1380, 840], "size": [200, 72] },
+    { "id": "relay", "type": "backend", "label": "Outbox relay", "sublabel": "runs in the worker", "tag": "idempotent consumers", "pos": [750, 1020], "size": [200, 72] },
+    { "id": "duck2", "type": "database", "label": "DuckDB warehouse", "sublabel": "worker writes; web reads a copy", "pos": [1070, 1020], "size": [200, 72],
+      "sources": [ { "path": "sh_platform/warehouse/__init__.py", "line": 108, "end_line": 126, "label": "refresh_readonly_copy, reused" } ] },
+    { "id": "consumers", "type": "external", "label": "Consumers", "sublabel": "map, Action, notices, Slack", "tag": "retries, dead-letter list", "pos": [40, 1020], "size": [200, 72] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "AS IS today: SIMPLE mode, one process (DATABASE_URL and REDIS_URL unset)", "wraps": ["browser", "memstate", "web", "model", "duck", "json", "threads"], "pad": 22 },
+    { "kind": "region", "label": "TO BE: PRODUCTION mode (DATABASE_URL and REDIS_URL set)", "wraps": ["browser2", "web2", "adapters", "redis", "postgres", "worker", "model2", "relay", "duck2", "consumers"], "pad": 22 }
+  ],
+  "connections": [
+    { "from": "browser", "to": "web", "label": "HTTPS JSON", "variant": "emphasis" },
+    { "from": "web", "to": "memstate", "label": "reads, writes" },
+    { "from": "web", "to": "model", "label": "agent turn", "variant": "dashed" },
+    { "from": "web", "to": "json", "label": "write_json_atomic" },
+    { "from": "web", "to": "duck", "label": "SQL" },
+    { "from": "threads", "to": "json", "label": "writes" },
+    { "from": "threads", "to": "duck", "label": "pipeline runs", "fromSide": "bottom", "toSide": "bottom", "via": [[840, 500], [140, 500]] },
+
+    { "from": "browser2", "to": "web2", "label": "HTTPS + SSE", "variant": "emphasis" },
+    { "from": "web2", "to": "adapters", "label": "calls", "variant": "emphasis" },
+    { "from": "adapters", "to": "redis", "label": "enqueue" },
+    { "from": "adapters", "to": "postgres", "label": "txn + outbox row" },
+    { "from": "redis", "to": "worker", "label": "jobs", "variant": "emphasis" },
+    { "from": "worker", "to": "postgres", "label": "state, progress" },
+    { "from": "worker", "to": "model2", "label": "model calls", "variant": "dashed" },
+    { "from": "worker", "to": "duck2", "label": "single writer" },
+    { "from": "postgres", "to": "relay", "label": "unsent events" },
+    { "from": "relay", "to": "consumers", "label": "deliver once each", "variant": "dashed" },
+    { "from": "redis", "to": "web2", "label": "pub/sub events", "variant": "dashed", "fromSide": "top", "toSide": "top", "via": [[1170, 630], [490, 630]] }
+  ],
+  "cards": [
+    { "dot": "amber", "title": "Why change (as is)", "items": [
+      "One process: a restart drops every login, rate count and breaker state",
+      "Model calls and catalogue scans run inside the web process",
+      "A second process cannot share files safely: locks are per process",
+      "Screens fetch once and never hear about changes made elsewhere"
+    ] },
+    { "dot": "cyan", "title": "One switch, two modes", "items": [
+      "No DATABASE_URL and no REDIS_URL: simple mode, exactly today",
+      "Both set: production mode, Postgres + Redis + worker",
+      "Routes, agents and tests call the adapters, never the backends",
+      "The parity checker runs the 10 use-case checkers in both modes"
+    ] },
+    { "dot": "emerald", "title": "Safe under load", "items": [
+      "Version column on every editable record: a stale save gets 409",
+      "Idempotency key on writes: a double click saves once",
+      "Outbox row in the same transaction: no change without its event",
+      "Jobs survive a worker crash and run again safely"
+    ] }
+  ]
+}

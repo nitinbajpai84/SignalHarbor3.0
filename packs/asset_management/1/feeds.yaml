@@ -1,0 +1,453 @@
+# Template asset_management@1 logical feeds (V3-13), same schema as insurance@1's feeds.yaml.
+# Twelve logical feeds, fields named by meaning rather than by any one source system's spelling
+# (column_synonyms.yaml carries the spelling mapping). Every field's required_for lists only
+# kpi_tree.yaml ids whose own definition reads that field.
+#
+# ONLY three feeds are backed by a source contract in this repo (portfolios, instruments,
+# positions -- contracts/sources/asset_management/awm_*.source.yaml). The other nine (flows,
+# clients, client_holdings, distributors, share_classes, fees, performance, mandates, costs) are
+# PACK-DEFAULT PROPOSALS: no source exists for them here, each says so in its own `source`, and a
+# Head of Data must confirm them against a real company's systems.
+#
+# fallback is "not_computable" for every field: defaulting a missing required field to any other
+# value would itself be a business rule this builder is not entitled to invent (CLAUDE.md rule 4).
+#
+# `customer_decides: true` marks a field whose meaning is a business rule the customer must set
+# (the column matcher refuses to auto-confirm it). industry_defaults.yaml's customer_decides
+# `fields` name the same fields; the two files agree (tests/test_asset_management_pack.py).
+template: asset_management@1
+status: proposed
+feeds:
+  portfolios:
+    source: "contracts/sources/asset_management/awm_portfolios.source.yaml (schema)"
+    fields:
+      - id: portfolio_code
+        label: Portfolio (fund or mandate) identifier
+        type: string
+        required_for: ["kpi:aum", "kpi:net_flows", "kpi:performance_vs_benchmark", "kpi:fee_revenue"]
+        pii: false
+        fallback: not_computable
+      - id: portfolio_name
+        label: Portfolio name
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: base_currency
+        label: Portfolio base currency (ISO code)
+        type: string
+        required_for: ["kpi:aum"]
+        pii: false
+        fallback: not_computable
+      - id: portfolio_type
+        label: Portfolio type (contract values mutual_fund, mandate, pension)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+  instruments:
+    source: "contracts/sources/asset_management/awm_instruments.source.yaml (schema)"
+    fields:
+      - id: instrument_code
+        label: Instrument identifier
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: instrument_name
+        label: Instrument name
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: instrument_type
+        label: Instrument type (contract values equity, bond, cash)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+  positions:
+    source: "contracts/sources/asset_management/awm_positions.source.yaml (schema); contracts/semantics/asset_management.gold.yaml total_market_value"
+    fields:
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: ["kpi:aum"]
+        pii: false
+        fallback: not_computable
+      - id: as_of_date
+        label: Position date
+        type: date
+        required_for: ["kpi:aum", "kpi:market_movement", "kpi:fee_yield", "kpi:redemption_rate", "kpi:organic_growth_rate"]
+        pii: false
+        fallback: not_computable
+      - id: instrument_code
+        label: Instrument identifier (foreign key to instruments feed)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: quantity
+        label: Units held
+        type: decimal
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: market_value
+        label: Market value in base currency
+        type: decimal
+        required_for: ["kpi:aum", "kpi:market_movement", "kpi:fee_yield", "kpi:redemption_rate", "kpi:organic_growth_rate"]
+        pii: false
+        fallback: not_computable
+  flows:
+    source: "Pack default, status: proposal -- no flows/transactions source exists in contracts/sources/asset_management; scaffolded for the glossary term 'Net flows' and kpi_tree.yaml's flow KPIs"
+    fields:
+      - id: transaction_id
+        label: Client transaction identifier
+        type: string
+        required_for: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions"]
+        pii: false
+        fallback: not_computable
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions"]
+        pii: false
+        fallback: not_computable
+      - id: share_class_code
+        label: Share class identifier (foreign key to share_classes feed)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: client_id
+        label: Client identifier (foreign key to clients feed)
+        type: string
+        required_for: ["kpi:client_retention"]
+        pii: true
+        fallback: not_computable
+      - id: distributor_id
+        label: Distributor identifier (foreign key to distributors feed)
+        type: string
+        required_for: ["kpi:distributor_net_flows"]
+        pii: false
+        # industry_defaults.yaml ID-distributor_net_flows: which party a flow through an omnibus or
+        # nominee account is credited to is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: trade_date
+        label: Transaction trade date
+        type: date
+        required_for: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions", "kpi:redemption_rate", "kpi:organic_growth_rate", "kpi:market_movement", "kpi:distributor_net_flows"]
+        pii: false
+        # industry_defaults.yaml ID-net_flows: trade date versus settlement date is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: settlement_date
+        label: Transaction settlement date
+        type: date
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: transaction_type
+        label: Transaction type (subscription, redemption, switch, reinvested distribution)
+        type: string
+        required_for: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions", "kpi:redemption_rate", "kpi:organic_growth_rate", "kpi:market_movement", "kpi:distributor_net_flows"]
+        pii: false
+        # industry_defaults.yaml flow KPIs: whether switches and reinvested distributions count as
+        # flows is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: amount
+        label: Transaction amount in base currency
+        type: decimal
+        required_for: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions", "kpi:redemption_rate", "kpi:organic_growth_rate", "kpi:market_movement", "kpi:distributor_net_flows"]
+        pii: false
+        fallback: not_computable
+  clients:
+    source: "Pack default, status: proposal -- no client source exists in contracts/sources/asset_management"
+    fields:
+      - id: client_id
+        label: Client identifier
+        type: string
+        required_for: ["kpi:client_retention", "kpi:client_concentration", "kpi:onboarding_time"]
+        pii: true
+        fallback: not_computable
+      - id: client_type
+        label: Client type (for example institutional, intermediary, retail)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: client_since_date
+        label: Date the client relationship started
+        type: date
+        required_for: ["kpi:client_retention"]
+        pii: false
+        fallback: not_computable
+      - id: relationship_end_date
+        label: Date the client relationship ended
+        type: date
+        required_for: ["kpi:client_retention"]
+        pii: false
+        # industry_defaults.yaml ID-client_retention: what counts as a lost client is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: onboarding_start_date
+        label: Date onboarding started
+        type: date
+        required_for: ["kpi:onboarding_time"]
+        pii: false
+        # industry_defaults.yaml ID-onboarding_time: what starts the clock is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: onboarding_complete_date
+        label: Date onboarding completed
+        type: date
+        required_for: ["kpi:onboarding_time"]
+        pii: false
+        # industry_defaults.yaml ID-onboarding_time: what stops the clock is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+  client_holdings:
+    source: "Pack default, status: proposal -- contracts/sources/asset_management/awm_positions holds portfolio-level positions only; no client-level holdings (register) source exists"
+    fields:
+      - id: client_id
+        label: Client identifier (foreign key to clients feed)
+        type: string
+        required_for: ["kpi:client_concentration"]
+        pii: true
+        # industry_defaults.yaml ID-client_concentration: the level a client is counted at
+        # (account, legal entity, group) is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: share_class_code
+        label: Share class identifier (foreign key to share_classes feed)
+        type: string
+        required_for: ["kpi:share_class_mix"]
+        pii: false
+        fallback: not_computable
+      - id: holding_date
+        label: Holding date
+        type: date
+        required_for: ["kpi:client_concentration", "kpi:share_class_mix"]
+        pii: false
+        fallback: not_computable
+      - id: holding_value
+        label: Value of the client's holding in base currency
+        type: decimal
+        required_for: ["kpi:client_concentration", "kpi:share_class_mix"]
+        pii: false
+        fallback: not_computable
+  distributors:
+    source: "Pack default, status: proposal -- no distributor source exists in contracts/sources/asset_management"
+    fields:
+      - id: distributor_id
+        label: Distributor identifier
+        type: string
+        required_for: ["kpi:distributor_net_flows", "kpi:distribution_cost"]
+        pii: false
+        fallback: not_computable
+      - id: distributor_name
+        label: Distributor name
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: distributor_type
+        label: Distributor type (for example bank, platform, adviser, direct)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+  share_classes:
+    source: "Pack default, status: proposal -- no share-class source exists in contracts/sources/asset_management"
+    fields:
+      - id: share_class_code
+        label: Share class identifier
+        type: string
+        required_for: ["kpi:share_class_mix"]
+        pii: false
+        fallback: not_computable
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: share_class_group
+        label: Share class group (for example retail, institutional, clean)
+        type: string
+        required_for: ["kpi:share_class_mix"]
+        pii: false
+        # industry_defaults.yaml ID-share_class_mix: how share classes are grouped is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: management_fee_rate
+        label: Stated management fee rate for the share class
+        type: decimal
+        required_for: []
+        pii: false
+        fallback: not_computable
+  fees:
+    source: "Pack default, status: proposal -- no fee source exists in contracts/sources/asset_management; scaffolded for the glossary term 'Fee yield'"
+    fields:
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: ["kpi:fee_revenue", "kpi:fee_yield"]
+        pii: false
+        fallback: not_computable
+      - id: share_class_code
+        label: Share class identifier (foreign key to share_classes feed)
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: fee_period_end_date
+        label: End date of the period the fee was earned in
+        type: date
+        required_for: ["kpi:fee_revenue", "kpi:fee_yield", "kpi:cost_to_income", "kpi:distribution_cost"]
+        pii: false
+        fallback: not_computable
+      - id: fee_type
+        label: Fee type (for example management, performance, entry, exit)
+        type: string
+        required_for: ["kpi:fee_revenue", "kpi:fee_yield", "kpi:cost_to_income"]
+        pii: false
+        # industry_defaults.yaml ID-fee_revenue / ID-fee_yield / ID-cost_to_income: which fee types
+        # count as revenue is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: fee_amount
+        label: Fee amount earned in base currency
+        type: decimal
+        required_for: ["kpi:fee_revenue", "kpi:fee_yield", "kpi:cost_to_income"]
+        pii: false
+        fallback: not_computable
+      - id: distributor_id
+        label: Distributor the fee is shared with (foreign key to distributors feed)
+        type: string
+        required_for: ["kpi:distribution_cost"]
+        pii: false
+        fallback: not_computable
+      - id: distributor_payment_amount
+        label: Amount shared with or paid to the distributor (rebate, trailer fee, retrocession)
+        type: decimal
+        required_for: ["kpi:distribution_cost"]
+        pii: false
+        # industry_defaults.yaml ID-distribution_cost: which payments count as distribution cost is
+        # the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+  performance:
+    source: "Pack default, status: proposal -- no performance or benchmark source exists in contracts/sources/asset_management; scaffolded for the glossary term 'Benchmark'"
+    fields:
+      - id: portfolio_code
+        label: Portfolio identifier (foreign key to portfolios feed)
+        type: string
+        required_for: ["kpi:performance_vs_benchmark"]
+        pii: false
+        fallback: not_computable
+      - id: performance_period_end_date
+        label: End date of the performance period
+        type: date
+        required_for: ["kpi:performance_vs_benchmark"]
+        pii: false
+        fallback: not_computable
+      - id: portfolio_return
+        label: Portfolio return for the period
+        type: decimal
+        required_for: ["kpi:performance_vs_benchmark"]
+        pii: false
+        # industry_defaults.yaml ID-performance_vs_benchmark: before-fees or after-fees return is
+        # the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: benchmark_code
+        label: Benchmark identifier
+        type: string
+        required_for: ["kpi:performance_vs_benchmark"]
+        pii: false
+        # industry_defaults.yaml ID-performance_vs_benchmark: the official benchmark for each
+        # portfolio is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: benchmark_return
+        label: Benchmark return for the period
+        type: decimal
+        required_for: ["kpi:performance_vs_benchmark"]
+        pii: false
+        fallback: not_computable
+  mandates:
+    source: "Pack default, status: proposal -- no mandate pipeline source exists in contracts/sources/asset_management (awm_portfolios.portfolio_type only marks an existing portfolio as a mandate)"
+    fields:
+      - id: mandate_id
+        label: Mandate identifier
+        type: string
+        required_for: ["kpi:mandate_wins_losses"]
+        pii: false
+        fallback: not_computable
+      - id: client_id
+        label: Client identifier (foreign key to clients feed)
+        type: string
+        required_for: []
+        pii: true
+        fallback: not_computable
+      - id: mandate_event_type
+        label: Mandate event (won, lost)
+        type: string
+        required_for: ["kpi:mandate_wins_losses"]
+        pii: false
+        fallback: not_computable
+      - id: mandate_event_date
+        label: Date of the mandate event
+        type: date
+        required_for: ["kpi:mandate_wins_losses"]
+        pii: false
+        # industry_defaults.yaml ID-mandate_wins_losses: when a mandate counts as won (awarded,
+        # signed, funded) is the customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: mandate_amount
+        label: Mandate size in base currency
+        type: decimal
+        required_for: ["kpi:mandate_wins_losses"]
+        pii: false
+        fallback: not_computable
+      - id: mandate_loss_reason
+        label: Stated reason a mandate was lost
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+  costs:
+    source: "Pack default, status: proposal -- no cost source exists in contracts/sources/asset_management"
+    fields:
+      - id: cost_period_end_date
+        label: End date of the period the cost was booked in
+        type: date
+        required_for: ["kpi:cost_to_income"]
+        pii: false
+        fallback: not_computable
+      - id: cost_category
+        label: Cost category
+        type: string
+        required_for: ["kpi:cost_to_income"]
+        pii: false
+        # industry_defaults.yaml ID-cost_to_income: which cost lines count in the ratio is the
+        # customer's rule.
+        customer_decides: true
+        fallback: not_computable
+      - id: cost_amount
+        label: Cost amount in base currency
+        type: decimal
+        required_for: ["kpi:cost_to_income"]
+        pii: false
+        fallback: not_computable

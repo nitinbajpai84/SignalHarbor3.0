@@ -1,0 +1,49 @@
+{
+  "id": "MEM-08",
+  "agent": "memory",
+  "role": "approver",
+  "desc": "Company memory (agreed words) is readable by everyone in the company.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": false,
+      "detail": "missing 'items'"
+    }
+  ],
+  "error": null,
+  "latency_ms": 5,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/memory/company"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "items"
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "GET",
+      "path": "/api/v1/memory/company",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [],
+        "may_edit": false
+      },
+      "ms": 5,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

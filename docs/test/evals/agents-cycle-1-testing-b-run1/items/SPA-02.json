@@ -1,0 +1,214 @@
+{
+  "id": "SPA-02",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Which gold table holds the holdings by month.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6157,
+  "cost": {
+    "calls": 2,
+    "tokens": 8818,
+    "usd": 0.002779,
+    "estimated": false
+  },
+  "trace_id": "tr-span-3ae73a59-7b2f080b",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/p/{pid}/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_holdings_monthly"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/p/prj-30b9332c/chat",
+      "request": {
+        "text": "Which table has the holdings by month?"
+      },
+      "status": 200,
+      "json": {
+        "turns": [
+          {
+            "id": "t-db0dad72",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which gold table holds the cash by entity?",
+            "at": "2026-10-10T01:44:36+00:00"
+          },
+          {
+            "id": "t-b4ad3aec",
+            "by": "span",
+            "name": "Span",
+            "text": "The `gold_investment_report_cash_daily` table holds cash by entity, updated daily.",
+            "at": "2026-10-10T01:44:36+00:00",
+            "trace_id": "tr-span-3ae73a59-a736fd5b",
+            "rules_only": false
+          },
+          {
+            "id": "t-73f0783b",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which table has the holdings by month?",
+            "at": "2026-10-10T01:44:42+00:00"
+          },
+          {
+            "id": "t-35a69eff",
+            "by": "span",
+            "name": "Span",
+            "text": "The `gold_investment_report_holdings_monthly` table holds month-end holdings by entity in USD and SGD. This table includes the status of each value.",
+            "at": "2026-10-10T01:44:42+00:00",
+            "trace_id": "tr-span-3ae73a59-7b2f080b",
+            "rules_only": false
+          }
+        ],
+        "pending": [],
+        "trace_id": "tr-span-3ae73a59-7b2f080b",
+        "rules_only": false
+      },
+      "ms": 6157,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17689,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:44:41+0800",
+      "trace_id": "tr-span-3ae73a59-7b2f080b"
+    },
+    {
+      "bytes": 16790,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:44:38+0800",
+      "trace_id": "tr-span-3ae73a59-7b2f080b"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-3ae73a59-7b2f080b",
+      "status": 200,
+      "runs": [
+        {
+          "id": "07a072ff23324e6697396ac4560a6a01",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:44:42+00:00",
+          "elapsed_ms": 5890,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002779,
+          "trace_id": "tr-span-3ae73a59-7b2f080b",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-3ae73a59-7b2f080b",
+          "at": "2026-10-10T01:44:42+00:00",
+          "run_id": "07a072ff23324e6697396ac4560a6a01",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 5890,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                },
+                {
+                  "kind": "turns",
+                  "id": "2"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2750,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4284,
+              "tokens_out": 26,
+              "cost_usd": 0.00135
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 640,
+              "refused": false,
+              "reason": null,
+              "ms": 140
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3000,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4473,
+              "tokens_out": 35,
+              "cost_usd": 0.001429
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.0027790000000000002,
+        "tokens": 8818
+      }
+    }
+  ]
+}

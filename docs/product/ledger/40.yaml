@@ -1,0 +1,476 @@
+- id: 40.pulse.read
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: Pulse line "Read the week"
+  input: Prompt to the reviewer that the week is ready
+  person: reviewer
+  mode: automatic
+  agent: Nira
+  source: week state ready
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a chase message'
+  claim: The reviewer is told when the week is ready
+- id: 40.header
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (header)
+  input: Week and state chip
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: the week file state
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The week state is always shown
+- id: 40.counters
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (counters strip)
+  input: Answered, items, broke, repeats
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: responded_count, items and seen_weeks
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: tallying replies by hand'
+  claim: The reviewer opens a week already counted
+- id: 40.digest.groups
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (group headings)
+  input: Items grouped by process or measure
+  person: reviewer
+  mode: derived
+  agent: North
+  source: item links and words, broke items ordered by reporter count and earlier weeks
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: reading and grouping everyone''s replies'
+  claim: North groups the week so the reviewer reads themes, not 40 messages
+- id: 40.digest.line
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (North digest line)
+  input: One sentence per group with sources
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the items in the group and their repeat history
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: summarising the week for the meeting'
+  claim: North writes the one line per group with source chips
+- id: 40.repeat.match
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Seen N weeks)
+  input: Matches of an item to earlier weeks
+  person: reviewer
+  mode: derived
+  agent: North
+  source: item words and links against earlier weeks' items
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: remembering whether it has come up before'
+  claim: North finds the repeats across weeks that people forget
+- id: 40.repeat.notsame
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Not the same)
+  input: Reject a repeat match
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The reviewer corrects a wrong repeat match
+- id: 40.fate.pick
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (decision control)
+  input: One of four fates per item
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer decides Problem, backlog, handled or nothing
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a spoken decision and a minute-taker versus one tap'
+  claim: The decision on every item is a person's, and it is recorded
+- id: 40.fate.reason
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Reason field)
+  input: Why, in a line
+  person: reviewer
+  mode: confirm
+  agent: North
+  source: a draft from the repeat history for example third week running
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: writing the reason versus tapping Use'
+  claim: North drafts the reason; the reviewer keeps or edits it
+- id: 40.fate.handledlink
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Already handled)
+  input: Link to what handled it
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer names the record or document
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: finding the link'
+  claim: The reviewer points at what handled it
+- id: 40.fate.problem
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Becomes a Problem)
+  input: Problem start pre-filled from the item
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the item words, process, severity and count
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing up a ticket'
+  claim: A Problem opens with the item already written
+- id: 40.fate.backlog
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Goes to the backlog)
+  input: Backlog item from the item
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the item words and links
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: adding to a backlog sheet'
+  claim: A backlog item writes itself from the item
+- id: 40.progress
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Decision progress)
+  input: Items decided of items
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: decisions by kind
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: counting'
+  claim: The reviewer sees what is left
+- id: 40.session.start
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Start review session)
+  input: Start the review session
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The review meeting has its own clock and screen
+- id: 40.session.clock
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (session clock)
+  input: Thirty minutes counting down from the server
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: session.started_at
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: a watch'
+  claim: The session keeps its own time
+- id: 40.session.item
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (current item)
+  input: Current item without name
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: the item, kind, process, repeat count and severity
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: reading round the table'
+  claim: The room sees the item without the reporter's name
+- id: 40.session.nav
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Next item, Previous item)
+  input: Move between items
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The reviewer steps through items
+- id: 40.session.overrun
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Overrun line)
+  input: Time up and items still open
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the clock and the undecided count
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: noticing the meeting overrun'
+  claim: North says when time is up and leaves extend or end to the reviewer
+- id: 40.session.extend
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Extend 10 minutes, End session)
+  input: Extend or end
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Extending the session is a person's call
+- id: 40.close.summary
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Summary draft)
+  input: What came out of the week in a few sentences
+  person: reviewer
+  mode: confirm
+  agent: North
+  source: answers, items and fates counted
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: writing the weekly note'
+  claim: North writes the week's summary from the decisions; the reviewer edits one sentence
+- id: 40.close.table
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Decisions table)
+  input: One row per item with fate and reason
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: the item decisions
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: compiling the minutes'
+  claim: The decisions table writes itself
+- id: 40.close.undecided
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Undecided items)
+  input: Undecided items closing as Nothing with a stated reason
+  person: reviewer
+  mode: automatic
+  agent: North
+  source: items without a decision at close
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Undecided items close with a stated reason and are not lost
+- id: 40.close.week
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (Close the week)
+  input: Close the week
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reviewer once every broke item has a fate and reason
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Closing is a person's act; the next week has already opened by the clock
+- id: 40.close.admin
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/review (company admin)
+  input: Close a stuck week for the reviewer
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: chasing the reviewer'
+  claim: An admin can unstick a week without seeing anonymous authors
+- id: 40.trends.table
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/trends (broke per week per process)
+  input: Table of broke items by process and week
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: items kind broke by ref over closed weeks
+  minutes_without: 40
+  minutes_with: 0
+  basis: 'estimate: a spreadsheet kept by hand'
+  claim: The trend table needs no spreadsheet
+- id: 40.trends.repeats
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/trends (Repeated items)
+  input: Items matched across weeks with latest fate
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the repeat matches and the latest week's fate
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: reading back through old weeks'
+  claim: North keeps the list of what keeps coming back
+- id: 40.trends.reading
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/trends (North's reading)
+  input: One or two sentences on the pattern with sources
+  person: reviewer
+  mode: derived
+  agent: North
+  source: the counts by process and week
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: writing an observation'
+  claim: North writes the reading with sources and no untraced number
+- id: 40.trends.filters
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/trends (range chips, process filter)
+  input: Range and process filter
+  person: reviewer
+  mode: manual
+  agent: null
+  source: the reader
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The reader picks the range and process
+- id: 40.raised.rows
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/week?view=mine (What I raised)
+  input: The reporter's items with fates and reasons
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the person's own items and their decisions
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: asking the reviewer what happened'
+  claim: Reporters see what happened to what they raised without asking
+- id: 40.raised.problem
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id>/week?view=mine (Problem progress chip)
+  input: State of the linked Problem
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the Problem state
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking for an update'
+  claim: The reporter sees how the Problem is going
+- id: 40.raised.pulse
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: Pulse line to each reporter
+  input: Your items have a decision
+  person: reporter
+  mode: automatic
+  agent: Nira
+  source: week closed with decisions
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a reply email'
+  claim: Reporters hear back in their Pulse
+- id: 40.count.answers
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id> (counters)
+  input: Answers per week, items by kind and severity
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: responded_count and items
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting'
+  claim: Week counts are computed
+- id: 40.count.fates
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id> (counters)
+  input: Items by fate and the Problems and backlog items they became
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: decision.fate and fate_ref
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: following up each item'
+  claim: Every item can be followed to what it became
+- id: 40.count.minutes
+  spec: '40'
+  journey: checkin
+  stage: decide
+  screen: /centre/intent/<id> (counters)
+  input: Review minutes per week and mean
+  person: reviewer
+  mode: automatic
+  agent: null
+  source: session.minutes_used
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The time the review takes is measured to show the saving

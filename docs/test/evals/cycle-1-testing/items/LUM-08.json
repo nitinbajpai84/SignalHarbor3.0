@@ -1,0 +1,150 @@
+{
+  "id": "LUM-08",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"monthly not daily\" edits the period of the last tile.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": true,
+      "detail": "tile edited as asked"
+    }
+  ],
+  "error": null,
+  "latency_ms": 689,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "period": "month"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity over time"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Cash USD by entity per month. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-793035",
+            "title": "Cash USD by entity per month",
+            "kpi": "cash_usd",
+            "sql": "select \"position_date\" as \"position_date\", \"entity\", sum(\"cash_usd\") as \"cash_usd\" from \"gold_investment_report_cash_daily\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "position_date",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "cash_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "From gold_investment_report_cash_daily, worded by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "cash_usd",
+              "when": "position_date",
+              "split": "entity",
+              "kind": "line",
+              "table": "gold_investment_report_cash_daily",
+              "from_memory": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-659d6d62",
+        "remembered": []
+      },
+      "ms": 272,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "monthly not daily"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I changed 'Cash USD by entity per month': by month. This is a new version waiting for you; accept it to replace the old one, or choose Not this. I will remember: you like figures by month. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [
+          {
+            "id": "t-1342ad",
+            "title": "Cash USD by entity per month",
+            "kpi": "cash_usd",
+            "sql": "select date_trunc('month', \"position_date\") as \"position_date\", \"entity\", sum(\"cash_usd\") as \"cash_usd\" from \"gold_investment_report_cash_daily\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "position_date",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "cash_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "A new version of 'Cash USD by entity per month': by month.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "cash_usd",
+              "when": "position_date",
+              "split": "entity",
+              "kind": "line",
+              "table": "gold_investment_report_cash_daily",
+              "period": "month"
+            }
+          }
+        ],
+        "dashboard_id": "dash-659d6d62",
+        "edited": true,
+        "remembered": [
+          "you like figures by month"
+        ]
+      },
+      "ms": 416,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

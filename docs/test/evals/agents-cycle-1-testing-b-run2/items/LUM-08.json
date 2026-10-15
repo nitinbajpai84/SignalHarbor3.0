@@ -1,0 +1,77 @@
+{
+  "id": "LUM-08",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"monthly not daily\" edits the period of the last tile.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": false,
+      "detail": "fewer than two tiles proposed"
+    }
+  ],
+  "error": null,
+  "latency_ms": 116,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "period": "month"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity per day"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 54,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "monthly not daily"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 61,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

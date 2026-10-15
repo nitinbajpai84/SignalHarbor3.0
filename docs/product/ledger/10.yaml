@@ -1,0 +1,161 @@
+# Input ledger rows for spec 10: ratings and session value.
+- id: "10.rating_prompt"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (rating panel: score buttons 1 to 5)"
+  input: "How worth your time was this, 1 to 5"
+  person: participant
+  mode: manual
+  source: "the participant; agents never rate"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: filling in a feedback survey versus one tap"
+  claim: "A rating is one tap, anonymous by default, and never ranks a person"
+- id: "10.rating_note"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "rating panel (one-line note, optional)"
+  input: "One line on why"
+  person: participant
+  mode: manual
+  source: "the participant's own words"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: a short free-text reply"
+  claim: "An optional one-line note travels with the score and stays with the person who wrote it"
+- id: "10.sign_switch"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "rating panel (Put my name on it, default off)"
+  input: "Sign the rating"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 1
+  minutes_with: 0.1
+  basis: "estimate: a switch"
+  claim: "Anonymous is the default; the person's own file keeps what they gave"
+- id: "10.waive"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "rating panel (I was not part of this)"
+  input: "Say you were not part of it"
+  person: participant
+  mode: manual
+  source: "the participant"
+  minutes_without: 3
+  minutes_with: 0.2
+  basis: "estimate: replying to a survey you should not have received"
+  claim: "A person who was not part of it can opt out in one tap and gets no reminder"
+- id: "10.window"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "intent record (rating asked, reminder and drop dates)"
+  input: "Rating window dates"
+  person: system
+  mode: automatic
+  source: "North at closure, from the closure date"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: scheduling a survey"
+  claim: "The rating window opens at closure and ends by the clock"
+- id: "10.rate_line"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "Pulse line kind rate"
+  input: "Reminder to rate once"
+  person: participant
+  mode: derived
+  agent: Nira
+  source: "participants who have neither rated nor waived"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing survey responses"
+  claim: "Nira reminds each person who has not rated, once, and drops the line at the end of the window"
+- id: "10.ratings_panel"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (Ratings panel: rated count, average, signed ratings)"
+  input: "Rated count, average from three, signed ratings"
+  person: organiser
+  mode: automatic
+  source: "the ratings on the record; average shown from three"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: collating survey responses"
+  claim: "The organiser sees how worth it the time was, as a number, never who gave which anonymous score"
+- id: "10.remind_unrated"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "Ratings panel (Remind people who have not rated)"
+  input: "Send one reminder to people who have not rated"
+  person: organiser
+  mode: manual
+  source: "the organiser's choice; once per intent"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a chaser"
+  claim: "One press reminds everyone who has not rated"
+- id: "10.used_question"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "Pulse line kind used, then /centre/intent/<id> (Was the outcome used)"
+  input: "Was the outcome used a month later"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the closure date and the closure's what-came-out and next list"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: following up on whether a decision was acted on"
+  claim: "North asks a month later whether the outcome was used, with the outcome and its follow-ups beside the question"
+- id: "10.used_answer"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "Was the outcome used panel (Yes, Partly, No, and one line)"
+  input: "Answer yes, partly or no, with a line"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: a post-implementation check-in versus one panel"
+  claim: "One answer shows whether a good session changed anything"
+- id: "10.used_next"
+  spec: "10"
+  journey: shared
+  stage: prove
+  screen: "Was the outcome used panel (Suggested next move: Open it)"
+  input: "Next step after a No or Partly"
+  person: organiser
+  mode: confirm
+  built: manual
+  agent: North
+  source: "the answer and the line"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: deciding what to do about a stalled outcome"
+  claim: "North drafts one next step for an outcome that was not used; the organiser opens it or not"
+- id: "10.worth_section"
+  spec: "10"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent/outcomes (Was it worth the time: by type, by area, rated share, outcome used)"
+  input: "Average by type and by area, rated share, outcome used counts"
+  person: company_admin
+  mode: automatic
+  source: "ratings and outcome_used on closed intents; groups below three are not shown"
+  minutes_without: 120
+  minutes_with: 0
+  basis: "estimate: analysing survey results across projects"
+  claim: "The company learns which kinds of intent earn their time, without ranking any person"

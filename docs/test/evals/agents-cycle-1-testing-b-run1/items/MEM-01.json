@@ -1,0 +1,81 @@
+{
+  "id": "MEM-01",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "A preference told to Lumen is still there in a new session.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 1: missing 'remember'; turn 2: missing 'month'"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 135,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures monthly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 18,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "remember"
+        ]
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 6,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "month"
+        ]
+      },
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

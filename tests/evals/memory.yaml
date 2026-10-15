@@ -1,0 +1,152 @@
+# Agent memory (sh_platform/v1/mem_routes.py, mem_agent.py) and the context map (docs/plan/MEMORY-CONTEXT-MAP.md, MEM2).
+# Routes: GET /api/v1/memory/me ; DELETE /api/v1/memory/me/{id} ; GET/POST /api/v1/memory/company. A preference is written by a
+# plain-words rule on a Lumen turn ("from now on ...", "I prefer ...").
+# `new_login: true` on a turn signs the same person in again with a fresh session (a second session). `cleanup: true` turns run even when
+# an earlier turn failed, so an item leaves no memory behind. Test phrases use "weekly" / "quarterly" / "in SGD" as markers.
+- id: MEM-01
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: A preference told to Lumen is still there in a new session.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on show my figures monthly", expect: {status: 200, contains: ["remember"]}}
+    - {method: GET, path: /api/v1/memory/me, new_login: true, save: {mid: "items[text~month].id"}, expect: {status: 200, contains: ["month"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect, egress_clean]
+
+- id: MEM-02
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: A colour preference is used by the next tile (blue line colour in the spec).
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "I prefer blue lines", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~blue].id"}, expect: {contains: ["blue"]}}
+    - {say: "Show me net worth by month", expect: {status: 200, contains: ["#2563eb"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-03
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: Forget works - after delete the item is gone from the list.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on show my figures in SGD", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~SGD].id"}, expect: {contains: ["SGD"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", expect: {status: 200, contains: ["forgotten"]}}
+    - {method: GET, path: /api/v1/memory/me, expect: {status: 200, absent: ["in SGD"]}}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-04
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: Person A's preference never reaches person B (the approver does not see the analyst's weekly preference).
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on show my figures weekly", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, as_role: approver, expect: {status: 200, absent: ["weekly"]}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~week].id"}, cleanup: true}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-05
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: And the other way - the analyst's quarterly preference does not reach the sponsor.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on show my figures quarterly", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, as_role: sponsor, expect: {status: 200, absent: ["quarterly"]}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~quarter].id"}, cleanup: true}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-06
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: Person B cannot forget person A's item (404 or 403) and it stays.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on show my figures weekly", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~week].id"}, expect: {contains: ["week"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", as_role: approver, expect: {status_in: [403, 404]}}
+    - {method: GET, path: /api/v1/memory/me, expect: {contains: ["week"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-07
+  agent: memory
+  role: participant
+  desc: Company memory is written only by the administrator and analysts - a participant gets 403.
+  route: {method: POST, path: /api/v1/memory/company}
+  pending_if_missing: true
+  turns: [{body: {text: "Eval check: this should not be stored"}}]
+  expected: {status: 403}
+  scorers: [access]
+
+- id: MEM-08
+  agent: memory
+  role: approver
+  desc: Company memory (agreed words) is readable by everyone in the company. None is seeded, so the administrator writes one first (ev.29).
+  route: {method: GET, path: /api/v1/memory/company}
+  pending_if_missing: true
+  turns:
+    - {method: POST, as_role: company_admin, body: {text: "Eval check: the office calls the month-end pack the investment report"}, save: {cid: "id"}, expect: {status: 200}}
+    - {expect: {status: 200, contains: ["Eval check: the office calls"]}}
+    - {method: GET, as_role: participant, expect: {status: 200, contains: ["Eval check: the office calls"]}}
+    - {method: DELETE, path: "/api/v1/memory/company/{saved.cid}", as_role: company_admin, cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-09
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: No client figure is stored as memory text - 103,405,000 is not kept.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  pending_if_missing: true
+  turns:
+    - {say: "From now on remember that the net worth is 103,405,000", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, expect: {status: 200, absent: ["103,405,000", "103405000"]}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~net worth].id"}, cleanup: true}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: MEM-10
+  agent: memory
+  role: analyst
+  desc: Context map - after a talk with Span, the Map page's conversations graph (GET /api/v1/memory/graph, MEM2a) answers with nodes and edges.
+  route: {method: GET, path: /api/v1/memory/graph}
+  pending_if_missing: true
+  turns:
+    - {method: POST, path: /api/v1/build/chat, say: "Which gold table holds the cash by entity?", expect: {status: 200}}
+    - {expect: {status: 200, contains: ['"conversation"', '"edges"']}}  # a conversation node, not only the keys
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: MEM-11
+  agent: memory
+  role: analyst  # EVT-T1: a preference is told to Lumen where it builds tiles (Build studio, OP1); Mei Chen is a maker
+  desc: Shared memory - Span answers from what Lumen was told (context_for, MEM2), so the blue-lines preference is recalled.
+  route: {method: POST, path: /api/v1/build/chat}
+  pending_if_missing: true
+  turns:
+    - {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask", say: "I prefer blue lines", expect: {status: 200}}
+    - {say: "What do you remember about how I like my charts?", expect: {status: 200, contains: ["blue"]}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~blue].id"}, cleanup: true}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect, egress_clean]

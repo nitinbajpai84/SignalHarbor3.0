@@ -1,0 +1,123 @@
+{
+  "id": "LUM-05",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Asked for cash by entity, the tile rows hold Entity B administrator 880,400 and trading export 868,000.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 880400"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 5342,
+  "cost": {
+    "calls": 2,
+    "tokens": 6446,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "880400",
+      "868000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity per day"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Cash USD by entity per day. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-1d25e8",
+            "title": "Cash USD by entity per day",
+            "kpi": "cash_usd",
+            "sql": "select date_trunc('day', \"position_date\") as \"position_date\", \"entity\", sum(\"cash_usd\") as \"cash_usd\" from \"gold_investment_report_cash_daily\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "position_date",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "cash_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "cash_usd",
+              "when": "position_date",
+              "split": "entity",
+              "kind": "line",
+              "period": "day",
+              "table": "gold_investment_report_cash_daily",
+              "from_memory": [],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 5049,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 270,
+  "egress": [
+    {
+      "bytes": 12329,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:12+0800"
+    },
+    {
+      "bytes": 11797,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:10+0800"
+    }
+  ]
+}

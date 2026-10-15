@@ -1,0 +1,368 @@
+{
+  "id": "SPA-10",
+  "agent": "span",
+  "role": "sponsor",
+  "desc": "The sponsor may ask Span about the plan and gets the same table names; nothing leaves with a person or company name.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "4 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "11819 ms",
+      "value": 11819
+    }
+  ],
+  "error": null,
+  "latency_ms": 11819,
+  "cost": {
+    "calls": 4,
+    "tokens": 19226,
+    "usd": 0.00604,
+    "estimated": false
+  },
+  "trace_id": "tr-span-c2bf28ad-dd8e16de",
+  "forgotten": [],
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/p/{pid}/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_cash_daily"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/p/prj-30b9332c/chat",
+      "request": {
+        "text": "Which table do I read for cash by entity?"
+      },
+      "status": 200,
+      "json": {
+        "turns": [
+          {
+            "id": "t-db0dad72",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which gold table holds the cash by entity?",
+            "at": "2026-10-10T01:44:36+00:00"
+          },
+          {
+            "id": "t-b4ad3aec",
+            "by": "span",
+            "name": "Span",
+            "text": "The `gold_investment_report_cash_daily` table holds cash by entity, updated daily.",
+            "at": "2026-10-10T01:44:36+00:00",
+            "trace_id": "tr-span-3ae73a59-a736fd5b",
+            "rules_only": false
+          },
+          {
+            "id": "t-73f0783b",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which table has the holdings by month?",
+            "at": "2026-10-10T01:44:42+00:00"
+          },
+          {
+            "id": "t-35a69eff",
+            "by": "span",
+            "name": "Span",
+            "text": "The `gold_investment_report_holdings_monthly` table holds month-end holdings by entity in USD and SGD. This table includes the status of each value.",
+            "at": "2026-10-10T01:44:42+00:00",
+            "trace_id": "tr-span-3ae73a59-7b2f080b",
+            "rules_only": false
+          },
+          {
+            "id": "t-31e1f42f",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "What are the source tables of this plan?",
+            "at": "2026-10-10T01:44:50+00:00"
+          },
+          {
+            "id": "t-9eb741c1",
+            "by": "span",
+            "name": "Span",
+            "text": "This plan uses `bronze_administrator_positions` and `bronze_trading_export_positions` as its source tables. These tables contain positions and cash information from administrator and trading exports, respectively.",
+            "at": "2026-10-10T01:44:50+00:00",
+            "trace_id": "tr-span-3ae73a59-fed403e1",
+            "rules_only": false
+          },
+          {
+            "id": "t-8ed39908",
+            "by": "person",
+            "name": "Sofia Reyes",
+            "text": "Add a monthly gold table by entity.",
+            "at": "2026-10-10T01:45:31+00:00"
+          },
+          {
+            "id": "t-173b0314",
+            "by": "span",
+            "name": "Span",
+            "text": "I have drafted a new gold table named `gold_investment_report_balances_monthly_by_entity`. This table will provide month-end balances by entity, showing the latest market value for each holding within the month. It uses data from `position_snapshots`, `portfolios`, and `legal_entities` tables. Only the data team can accept a change to the plan, so it waits as a suggestion for them.",
+            "at": "2026-10-10T01:45:31+00:00",
+            "trace_id": "tr-span-ef0d9e8a-81707787",
+            "rules_only": false
+          },
+          {
+            "id": "t-1d1ba641",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Add a monthly gold table by entity.",
+            "at": "2026-10-10T01:46:13+00:00"
+          },
+          {
+            "id": "t-0cc180f8",
+            "by": "span",
+            "name": "Span",
+            "text": "I have drafted a new gold table named `gold_investment_report_balances_monthly_by_entity`. This table will provide month-end balances by entity, showing the latest market value for each holding within the month. It uses data from `position_snapshots`, `portfolios`, and `legal_entities` tables. Only the data team can accept a change to the plan, so it waits as a suggestion for them. Accept it, or say 'Not this'. A changed plan goes back to the head of data.",
+            "at": "2026-10-10T01:46:13+00:00",
+            "trace_id": "tr-span-3ae73a59-c7ad5aeb",
+            "rules_only": false
+          },
+          {
+            "id": "t-53304fb4",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which table has the customer churn rate?",
+            "at": "2026-10-10T01:46:31+00:00"
+          },
+          {
+            "id": "t-c094c454",
+            "by": "span",
+            "name": "Span",
+            "text": "I cannot find a table with customer churn rate in the data model. The data team can help to add or change tables.",
+            "at": "2026-10-10T01:46:31+00:00",
+            "trace_id": "tr-span-3ae73a59-3d24c439",
+            "rules_only": false
+          },
+          {
+            "id": "t-e72cef17",
+            "by": "person",
+            "name": "Daniel Foo",
+            "text": "Which table do I read for cash by entity?",
+            "at": "2026-10-10T01:46:44+00:00"
+          },
+          {
+            "id": "t-50b731e5",
+            "by": "span",
+            "name": "Span",
+            "text": "There are two tables that relate to cash. The `cash_movements` table is a silver table that records individual cash transactions. For daily cash balances by entity, you should read the `gold_investment_report_cash_daily` table. This gold table shows cash per entity per day.",
+            "at": "2026-10-10T01:46:44+00:00",
+            "trace_id": "tr-span-c2bf28ad-dd8e16de",
+            "rules_only": false
+          }
+        ],
+        "pending": [],
+        "trace_id": "tr-span-c2bf28ad-dd8e16de",
+        "rules_only": false
+      },
+      "ms": 11819,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 20182,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:42+0800",
+      "trace_id": "tr-span-c2bf28ad-dd8e16de"
+    },
+    {
+      "bytes": 19511,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:39+0800",
+      "trace_id": "tr-span-c2bf28ad-dd8e16de"
+    },
+    {
+      "bytes": 18151,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:36+0800",
+      "trace_id": "tr-span-c2bf28ad-dd8e16de"
+    },
+    {
+      "bytes": 17607,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:33+0800",
+      "trace_id": "tr-span-c2bf28ad-dd8e16de"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-c2bf28ad-dd8e16de",
+      "status": 200,
+      "runs": [
+        {
+          "id": "2de225b5f7904fe1a80b07bbfb7d807e",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:46:44+00:00",
+          "elapsed_ms": 11640,
+          "steps": 9,
+          "tool_calls": 3,
+          "cost_usd": 0.00604,
+          "trace_id": "tr-span-c2bf28ad-dd8e16de",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-c2bf28ad-dd8e16de",
+          "at": "2026-10-10T01:46:44+00:00",
+          "run_id": "2de225b5f7904fe1a80b07bbfb7d807e",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 11640,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3093,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4455,
+              "tokens_out": 22,
+              "cost_usd": 0.001391
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 306,
+              "refused": false,
+              "reason": null,
+              "ms": 140
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 2438,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4568,
+              "tokens_out": 18,
+              "cost_usd": 0.001415
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "describe_table",
+              "arg_keys": [
+                "table"
+              ],
+              "result_chars": 1070,
+              "refused": false,
+              "reason": null,
+              "ms": 93
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 2671,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4954,
+              "tokens_out": 23,
+              "cost_usd": 0.001544
+            },
+            {
+              "kind": "tool",
+              "n": 3,
+              "tool": "describe_table",
+              "arg_keys": [
+                "table"
+              ],
+              "result_chars": 398,
+              "refused": false,
+              "reason": null,
+              "ms": 110
+            },
+            {
+              "kind": "model",
+              "n": 4,
+              "ok": true,
+              "ms": 3093,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 5125,
+              "tokens_out": 61,
+              "cost_usd": 0.00169
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.00604,
+        "tokens": 19226
+      }
+    }
+  ]
+}

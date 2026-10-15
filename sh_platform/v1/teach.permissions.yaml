@@ -1,0 +1,9 @@
+# TEACH1 Teach an agent. The route roles are the union of everyone who may teach any agent; which agent a person may teach is checked again
+# in sh_platform/v1/teach.py (default deny): Span - head of data, data engineer, admin; North - admin; Tally - owner, sponsor, approver, admin;
+# Lumen - owner, head of data, admin.
+routes:
+  GET /api/v1/knowledge: {roles: [company_admin, analyst, head_of_data, owner, sponsor, approver]}
+  GET /api/v1/knowledge/{agent}: {roles: [company_admin, analyst, head_of_data, owner, sponsor, approver]}
+  POST /api/v1/knowledge/{agent}: {roles: [company_admin, analyst, head_of_data, owner, sponsor, approver]}
+  PUT /api/v1/knowledge/{agent}/{item_id}: {roles: [company_admin, analyst, head_of_data, owner, sponsor, approver]}
+  POST /api/v1/knowledge/{agent}/{item_id}/active: {roles: [company_admin, analyst, head_of_data, owner, sponsor, approver]}

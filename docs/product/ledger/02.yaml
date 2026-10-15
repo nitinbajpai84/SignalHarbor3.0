@@ -1,0 +1,266 @@
+# Input ledger rows for spec 02: intent types catalogue. The per-type start questions are owned (and rowed) by files 22, 35, 38, 41, 43.
+- id: "02.type_choice"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (five type cards)"
+  input: "Which type of intent to start"
+  person: organiser
+  mode: manual
+  source: "the person's own intent; the catalogue lists the five types"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: deciding which process or template applies versus tapping one card"
+  claim: "A person starts from what they intend to do; one tap picks the workflow"
+- id: "02.type_chips"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (time box chip, who is in it chip, what you will get panel)"
+  input: "Time box, people needed, stages and outcome per type"
+  person: organiser
+  mode: automatic
+  source: "the types catalogue (intent_types.yaml)"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: looking up how long and who for each kind of work in a handbook"
+  claim: "How long it takes, who is needed and what comes out are read from the catalogue; nobody looks it up"
+- id: "02.drafts_count"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (Your drafts link)"
+  input: "Count of the person's own drafts"
+  person: organiser
+  mode: automatic
+  source: "the person's draft intent records"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: hunting for half-finished work"
+  claim: "Half-finished intents are counted and kept for the person who started them"
+- id: "02.start_answers"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (answer fields, one question at a time)"
+  input: "Start answers, each marked stated, guessed or unknown"
+  person: organiser
+  mode: manual
+  source: "the person's answers, in the wording of the type's start questions"
+  minutes_without: 20
+  minutes_with: 5
+  basis: "estimate: writing a brief for a new piece of work versus answering five or six one-line questions"
+  claim: "A person answers a few plain questions; North asks them one at a time and records how sure each answer is"
+- id: "02.unknown_option"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (Unknown option chip)"
+  input: "Answer 'Just me for now', 'Not sure' or 'I do not know'"
+  person: organiser
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 2
+  minutes_with: 0.1
+  basis: "estimate: a tap against drafting a placeholder"
+  claim: "'Not sure' is a valid answer; the product records it instead of blocking the person"
+- id: "02.draft_fields"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (after the last question)"
+  input: "Title, purpose, areas and time box drafted from the answers"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the start answers and the catalogue defaults"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: writing a project header versus confirming a drafted one"
+  claim: "North drafts the title, purpose, areas and time box from the answers; the person edits or confirms"
+- id: "02.people_check"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (people rules per type)"
+  input: "Which required role or count is missing for the type"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the type's people rules in the catalogue against the people named"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: checking a guest list against rules by hand"
+  claim: "North checks the people against the type's rules and names what is missing"
+- id: "02.open_button"
+  spec: "02"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/new?type=<type> (the type's open button)"
+  input: "Open the intent"
+  person: organiser
+  mode: manual
+  source: "the organiser's decision; North has drafted the stages, time box and invitations"
+  minutes_without: 15
+  minutes_with: 0.5
+  basis: "estimate: setting up a plan, a calendar and invitations versus one press"
+  claim: "One press opens the intent; the stages, clock and invitations are already drafted"
+- id: "02.stage_budget"
+  spec: "02"
+  journey: shared
+  stage: run
+  screen: "intent record (stages default_days and days_used)"
+  input: "Stage default days and days used"
+  person: system
+  mode: automatic
+  source: "the catalogue at opening; days used when a stage closes"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: planning stage lengths by hand"
+  claim: "Stage lengths come from the catalogue and the days used are recorded by the system"
+- id: "02.week_prompts"
+  spec: "02"
+  journey: checkin
+  stage: run
+  screen: "weekly check-in (three fixed prompts)"
+  input: "What ran well, what broke, what is on your mind"
+  person: participant
+  mode: manual
+  source: "the person's own words; the prompts are fixed in the catalogue"
+  minutes_without: 15
+  minutes_with: 3
+  basis: "estimate: preparing a weekly status for a meeting versus three short answers"
+  claim: "Each person answers three fixed prompts; there is no meeting to prepare for"
+- id: "02.closure_reqs"
+  spec: "02"
+  journey: shared
+  stage: prove
+  screen: "closure (what closed requires per type)"
+  input: "Check that the closure requirements of the type hold"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the type's closure rules against the record"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: checking a closure checklist by hand"
+  claim: "North checks what the type needs before closing and says what is missing"
+- id: "02.counters"
+  spec: "02"
+  journey: admin
+  stage: prove
+  screen: "centre counters (opened per type, closed in time, mean days per stage, extended, unknown answers)"
+  input: "Intents opened and closed per type, days used per stage, answers marked unknown"
+  person: company_admin
+  mode: automatic
+  source: "the intent records"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: compiling the same in a spreadsheet"
+  claim: "How each kind of work performs is counted from the records"
+- id: "02.save_leave"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (Save and leave)"
+  input: "Keep the draft and leave"
+  person: organiser
+  mode: manual
+  source: "the answers so far"
+  minutes_without: 3
+  minutes_with: 0.2
+  basis: "estimate: saving a half-finished plan to a file and finding it later versus one press"
+  claim: "The draft is kept for its creator and found again under Your drafts"
+- id: "02.named_slots"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (decider, owner, reporter, sponsor)"
+  input: "Name the decider, owner, reporter or sponsor the type needs"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the start answers and the company people list"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: asking around who should own it versus picking from a drafted name"
+  claim: "North proposes the named person from the answers; the organiser confirms or picks another"
+- id: "02.shorten_stage"
+  spec: "02"
+  journey: shared
+  stage: think
+  screen: "/centre/intent/<id> (stage days before it opens)"
+  input: "Shorten a stage before it opens"
+  person: organiser
+  mode: manual
+  source: "the catalogue default days for the stage"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: re-planning dates in a thread versus editing one number"
+  claim: "The stage default is shown and the organiser changes a single number before the stage opens"
+- id: "02.extend_reason"
+  spec: "02"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id> (extension reason)"
+  input: "Reason for extending the time box"
+  person: organiser
+  mode: manual
+  agent: North
+  source: "time left, days used and what is still open"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: writing an email to explain a delay versus a short line on a prepared prompt"
+  claim: "North names how far the stage has run; the organiser types the reason, which is kept on the record"
+- id: "02.catalogue_version"
+  spec: "02"
+  journey: shared
+  stage: notice
+  screen: "intent record (catalogue version)"
+  input: "Catalogue version the intent opened under"
+  person: organiser
+  mode: automatic
+  source: "the catalogue file at opening"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: working out which rules applied when it started versus a stamp"
+  claim: "A later catalogue change never alters a running intent, and nobody has to record which version applied"
+- id: "02.stage_copy"
+  spec: "02"
+  journey: shared
+  stage: think
+  screen: "intent record (stages: default days copied at opening)"
+  input: "Stage list and default days written at opening"
+  person: organiser
+  mode: automatic
+  source: "the catalogue entry for the type"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: building a plan with dates versus copying the type's stages"
+  claim: "Opening writes the stage list and the time box from the type; the organiser plans nothing from blank"
+- id: "02.days_used"
+  spec: "02"
+  journey: shared
+  stage: prove
+  screen: "intent record (days used per stage)"
+  input: "Days used when a stage closes"
+  person: organiser
+  mode: automatic
+  source: "stage open and close times"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: reconstructing durations later versus a clock"
+  claim: "Days used per stage are filled when the stage closes, so the time spent is known without anyone logging it"
+- id: "02.start_counts"
+  spec: "02"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent (measures: opened per type, closed in time box, extended, unknown answers)"
+  input: "Counts of intents opened, closed in time box, extended and unknown answers per type"
+  person: company_admin
+  mode: automatic
+  source: "the intent records and start answers"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: a quarterly spreadsheet pull versus a computed measure"
+  claim: "Opened, on-time, extended and unknown counts come from the records, with small groups withheld"

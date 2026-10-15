@@ -1,0 +1,97 @@
+{
+  "id": "LUM-05",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Asked for cash by entity, the tile rows hold Entity B administrator 880,400 and trading export 868,000.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 880400, 868000"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 408,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "880400",
+      "868000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity over time"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Cash USD by entity per month. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-8c8660",
+            "title": "Cash USD by entity per month",
+            "kpi": "cash_usd",
+            "sql": "select \"position_date\" as \"position_date\", \"entity\", sum(\"cash_usd\") as \"cash_usd\" from \"gold_investment_report_cash_daily\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "position_date",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "cash_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "From gold_investment_report_cash_daily, worded by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "cash_usd",
+              "when": "position_date",
+              "split": "entity",
+              "kind": "line",
+              "table": "gold_investment_report_cash_daily",
+              "from_memory": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-659d6d62",
+        "remembered": []
+      },
+      "ms": 276,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 9,
+  "egress": []
+}

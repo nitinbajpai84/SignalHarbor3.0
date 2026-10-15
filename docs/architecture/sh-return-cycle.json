@@ -1,0 +1,428 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: The Return Cycle, 7 October 2026",
+    "subtitle": "Notice, Think, Decide, Build, Run, Prove: the agent that drafts at each stage and the record it writes",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-return-cycle.html"
+  },
+  "components": [
+    {
+      "id": "notice",
+      "type": "frontend",
+      "label": "Notice",
+      "sublabel": "opportunity radar",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "think",
+      "type": "frontend",
+      "label": "Think",
+      "sublabel": "brainstorm and wall",
+      "pos": [
+        325,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "decide",
+      "type": "frontend",
+      "label": "Decide",
+      "sublabel": "charter and decision",
+      "pos": [
+        610,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "build",
+      "type": "frontend",
+      "label": "Build",
+      "sublabel": "agent chain, five steps",
+      "pos": [
+        895,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "run",
+      "type": "frontend",
+      "label": "Run",
+      "sublabel": "ops and feeds",
+      "pos": [
+        1180,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "prove",
+      "type": "frontend",
+      "label": "Prove",
+      "sublabel": "weekly uplift, verdict",
+      "pos": [
+        1465,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "stage"
+    },
+    {
+      "id": "a_notice",
+      "type": "backend",
+      "label": "Watcher and Lens",
+      "sublabel": "read data, documents, voices",
+      "pos": [
+        40,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "North writes the hypothesis"
+    },
+    {
+      "id": "a_think",
+      "type": "backend",
+      "label": "North and Lens",
+      "sublabel": "group ideas, draft outcome",
+      "pos": [
+        325,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "a person picks and votes"
+    },
+    {
+      "id": "a_decide",
+      "type": "backend",
+      "label": "North",
+      "sublabel": "drafts charter and options",
+      "pos": [
+        610,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "sponsor signs"
+    },
+    {
+      "id": "a_build",
+      "type": "backend",
+      "label": "Architect to ops manager",
+      "sublabel": "draft, build, test, run",
+      "pos": [
+        895,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "head of department approves"
+    },
+    {
+      "id": "a_run",
+      "type": "backend",
+      "label": "Watcher",
+      "sublabel": "reads runs, alerts, feeds",
+      "pos": [
+        1180,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "feeds the radar"
+    },
+    {
+      "id": "a_prove",
+      "type": "backend",
+      "label": "North",
+      "sublabel": "drafts the weekly report",
+      "pos": [
+        1465,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "organiser confirms"
+    },
+    {
+      "id": "r_notice",
+      "type": "database",
+      "label": "Opportunity",
+      "sublabel": "opportunities, hypotheses",
+      "pos": [
+        40,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "r_think",
+      "type": "database",
+      "label": "Cards, ideas, outcome",
+      "sublabel": "intents/<id>/intent.json",
+      "pos": [
+        325,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "r_decide",
+      "type": "database",
+      "label": "Charter, decision",
+      "sublabel": "signed record in the intent",
+      "pos": [
+        610,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "r_build",
+      "type": "database",
+      "label": "Change note, blueprint",
+      "sublabel": "changes, blueprint, architecture",
+      "pos": [
+        895,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "r_run",
+      "type": "database",
+      "label": "Runs and alerts",
+      "sublabel": "runs.json, alerts.json",
+      "pos": [
+        1180,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "r_prove",
+      "type": "database",
+      "label": "Proving and reports",
+      "sublabel": "intents/<id>/proving.json",
+      "pos": [
+        1465,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Company data plane: every record sits in data/<company>/; an agent drafts, a named person signs",
+      "wraps": [
+        "r_notice",
+        "r_think",
+        "r_decide",
+        "r_build",
+        "r_run",
+        "r_prove"
+      ],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "m0",
+      "from": "notice",
+      "to": "think",
+      "label": "a belief",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m1",
+      "from": "think",
+      "to": "decide",
+      "label": "an idea",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m2",
+      "from": "decide",
+      "to": "build",
+      "label": "a charter",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m3",
+      "from": "build",
+      "to": "run",
+      "label": "released",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m4",
+      "from": "run",
+      "to": "prove",
+      "label": "measured",
+      "variant": "emphasis"
+    },
+    {
+      "id": "g0",
+      "from": "notice",
+      "to": "a_notice",
+      "label": "drafted by"
+    },
+    {
+      "id": "w0",
+      "from": "a_notice",
+      "to": "r_notice",
+      "label": "writes"
+    },
+    {
+      "id": "g1",
+      "from": "think",
+      "to": "a_think",
+      "label": "drafted by"
+    },
+    {
+      "id": "w1",
+      "from": "a_think",
+      "to": "r_think",
+      "label": "writes"
+    },
+    {
+      "id": "g2",
+      "from": "decide",
+      "to": "a_decide",
+      "label": "drafted by"
+    },
+    {
+      "id": "w2",
+      "from": "a_decide",
+      "to": "r_decide",
+      "label": "writes"
+    },
+    {
+      "id": "g3",
+      "from": "build",
+      "to": "a_build",
+      "label": "drafted by"
+    },
+    {
+      "id": "w3",
+      "from": "a_build",
+      "to": "r_build",
+      "label": "writes"
+    },
+    {
+      "id": "g4",
+      "from": "run",
+      "to": "a_run",
+      "label": "drafted by"
+    },
+    {
+      "id": "w4",
+      "from": "a_run",
+      "to": "r_run",
+      "label": "writes"
+    },
+    {
+      "id": "g5",
+      "from": "prove",
+      "to": "a_prove",
+      "label": "drafted by"
+    },
+    {
+      "id": "w5",
+      "from": "a_prove",
+      "to": "r_prove",
+      "label": "writes"
+    },
+    {
+      "id": "ret",
+      "from": "prove",
+      "to": "notice",
+      "label": "a failed hypothesis returns with its learning",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Who signs each stage",
+      "items": [
+        "Notice: nobody signs; North may reject a pattern the evidence breaks, with the reason",
+        "Decide: the sponsor signs the charter; Build: the head of department approves before the data engineer builds",
+        "Prove: the organiser confirms the weekly report and the verdict"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "The loop closes",
+      "items": [
+        "Run: the Watcher reads runs, alerts and feeds and passes patterns to the radar",
+        "Prove: a hypothesis that fails goes back to the radar with what was learned, and the people who raised the signal get a receipt"
+      ]
+    }
+  ]
+}

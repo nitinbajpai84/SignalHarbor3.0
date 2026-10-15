@@ -1,0 +1,202 @@
+{
+  "id": "LUM-AQ-08",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "LQ-7 (A6, A14) what net worth includes - the signed definition, with a trace that lists the context used.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers fast"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6117,
+  "cost": {
+    "calls": 2,
+    "tokens": 9189,
+    "usd": 0.000937,
+    "estimated": false
+  },
+  "trace_id": "tr-lumen-c2bf28ad-66cab8de",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "holding",
+        "holdings"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "What does net worth include?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The \"Net worth by entity\" concept includes the value of each entity's holdings at the month end, in USD and SGD. This is calculated by summing the holding values per entity on a monthly basis.",
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "model",
+        "remembered": [],
+        "trace_id": "tr-lumen-c2bf28ad-66cab8de"
+      },
+      "ms": 6117,
+      "expect": {
+        "contains": [
+          "tr-lumen-"
+        ]
+      },
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17816,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:50+0800",
+      "trace_id": "tr-lumen-c2bf28ad-66cab8de"
+    },
+    {
+      "bytes": 17309,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:47+0800",
+      "trace_id": "tr-lumen-c2bf28ad-66cab8de"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-66cab8de",
+      "status": 200,
+      "runs": [
+        {
+          "id": "4ab8980cd4c94b9ebac99579b4b3da83",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:20:51+00:00",
+          "elapsed_ms": 5875,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.000937,
+          "trace_id": "tr-lumen-c2bf28ad-66cab8de",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-66cab8de",
+          "at": "2026-10-10T02:20:51+00:00",
+          "run_id": "4ab8980cd4c94b9ebac99579b4b3da83",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 5875,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                },
+                {
+                  "kind": "graph",
+                  "id": "dashboard:dash-0ad2b1c7"
+                },
+                {
+                  "kind": "graph",
+                  "id": "tile:t-000003"
+                },
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2625,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4512,
+              "tokens_out": 16,
+              "cost_usd": 0.000458
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "get_definition",
+              "arg_keys": [
+                "term"
+              ],
+              "result_chars": 289,
+              "refused": false,
+              "reason": null,
+              "ms": 63
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3186,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4619,
+              "tokens_out": 42,
+              "cost_usd": 0.000479
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.000937,
+        "tokens": 9189
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "id": "MEM-05",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "And the other way - the sponsor's quarterly preference does not reach the analyst.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 105,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures quarterly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 67,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 21,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "quarterly"
+        ]
+      },
+      "cleanup": false,
+      "reply": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 17,
+      "expect": null,
+      "cleanup": true,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

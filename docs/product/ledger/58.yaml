@@ -1,0 +1,255 @@
+- id: 58.chip
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (Proving chip)
+  input: Proving state from release to review date
+  person: organiser
+  mode: automatic
+  agent: null
+  source: proving.json state
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: tracking launched projects in a list'
+  claim: Every closed Initiative shows whether it is being proved
+  built: missing
+- id: 58.hypo
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (hypothesis strip)
+  input: Hypothesis frozen at charter signature
+  person: organiser
+  mode: derived
+  agent: North
+  source: hypothesis version in proving.hypothesis_ref
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: finding the original promise in old papers'
+  claim: The promise made at signature is shown beside the result
+  built: missing
+- id: 58.start
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (start line)
+  input: Live since date
+  person: organiser
+  mode: derived
+  agent: North
+  source: release signed or closure date
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking when it went live'
+  claim: North works out the live date from the signed release
+  built: missing
+- id: 58.startchg
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (Change the start date)
+  input: Changed start date with a reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 5
+  minutes_with: 5
+  basis: 'estimate: agree a date and note why'
+  claim: A start date can be moved with a recorded reason
+  built: missing
+- id: 58.weekly
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (latest report card)
+  input: Before, Now and Target figures each with trace
+  person: organiser
+  mode: derived
+  agent: North
+  source: gold table rows and the frozen baseline
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: a weekly spreadsheet pull and comparison'
+  claim: North drafts the before, now and target every Friday with traces
+  built: missing
+- id: 58.series
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=proving (series chart)
+  input: Measure series since start, target line and normal range
+  person: organiser
+  mode: automatic
+  agent: null
+  source: gold table periods
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: building a chart by hand each week'
+  claim: The series and normal range are drawn from the gold table
+  built: missing
+- id: 58.notes
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: ?week=<key> (Attribution notes)
+  input: What else moved the measure
+  person: organiser
+  mode: derived
+  agent: North
+  source: other intents on the measure, run events, alerts, segments
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: asking around for other causes'
+  claim: North lists other causes it can find, each traced
+  built: missing
+- id: 58.noteadd
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: ?week=<key> (Add a note)
+  input: An attribution note with its record or No record
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: writing a note'
+  claim: People can add what they know to a weekly report
+  built: missing
+- id: 58.verdict
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: ?week=<key> (Verdict)
+  input: Verdict, rule and confidence in words
+  person: organiser
+  mode: derived
+  agent: North
+  source: the four rules and proving_min_periods
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: a judgement call at the weekly meeting'
+  claim: North states the verdict, the rule that fired and how sure it is
+  built: missing
+- id: 58.confirm
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: ?week=<key> (Confirm this report)
+  input: Confirm or change the weekly verdict
+  person: organiser
+  mode: manual
+  agent: null
+  source: North's drafted report; the person signs
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: read and agree a report that is prepared'
+  claim: The organiser confirms a prepared report with one tap; agents never confirm
+  built: missing
+- id: 58.nochange
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: ?week=<key> (No change banner)
+  input: No new period landed, nothing to confirm
+  person: organiser
+  mode: automatic
+  agent: null
+  source: gold table periods
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking whether anything moved'
+  claim: A quiet week says so and asks for nothing
+  built: missing
+- id: 58.summary
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=review (review summary)
+  input: Review summary and proposed outcome
+  person: organiser
+  mode: derived
+  agent: North
+  source: confirmed reports, latest figures and notes
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: preparing a review paper'
+  claim: North drafts the review summary and proposes an outcome
+  built: missing
+- id: 58.choice
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=review (review choice)
+  input: 'Review action: keep, more time, send back, stop'
+  person: organiser
+  mode: manual
+  agent: null
+  source: North proposes; the person chooses
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: a review meeting'
+  claim: North proposes the action and the organiser picks
+  built: missing
+- id: 58.learning
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=review (learning)
+  input: What held and what did not, naming the period or segment
+  person: organiser
+  mode: confirm
+  agent: North
+  source: confirmed reports and notes
+  minutes_without: 45
+  minutes_with: 3
+  basis: 'estimate: writing lessons learned'
+  claim: North drafts the lesson in two sentences; the organiser edits it
+  built: missing
+- id: 58.sponsor
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: /centre/intent/<id>?focus=review (Confirm the outcome)
+  input: Sponsor confirms or sends back the outcome
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the organiser's review as sent
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: read a short note and decide'
+  claim: The sponsor reads one summary and decides
+  built: missing
+- id: 58.rules
+  spec: '58'
+  journey: admin
+  stage: prove
+  screen: /centre/intent/admin?tab=defaults (Proving rules)
+  input: Periods a verdict needs
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: setting policy'
+  claim: Proving rules are company policy set once
+  built: missing
+- id: 58.receipt
+  spec: '58'
+  journey: shared
+  stage: prove
+  screen: Pulse and the source item (receipt)
+  input: Receipt to each person whose voice fed the Initiative
+  person: raiser
+  mode: derived
+  agent: Nira
+  source: the record of which voices fed the Initiative
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: remembering to tell people what came of their idea'
+  claim: Everyone whose idea became an Initiative hears what came of it, with no one chasing
+  built: missing

@@ -1,0 +1,392 @@
+- id: 27.a.draft
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Ask Lens to draft the process map
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the wall cards, the interviews and the documents
+  minutes_without: 240
+  minutes_with: 5
+  basis: 'estimate: a workshop to map processes versus reading Lens''s drafts'
+  claim: Lens drafts every process the initiative touches from the cards, interviews and documents, marked guessed with its source
+- id: 27.a.header
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: 'Header line: cards, interviews and documents read, and the time'
+  person: analyst
+  mode: automatic
+  agent: Lens
+  source: the last draft run
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: The map says what it was drafted from
+- id: 27.a.add_process
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Add a process
+  person: analyst
+  mode: manual
+  agent: null
+  source: the committee member's knowledge
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: a name and a few fields'
+  claim: A process Lens missed is added by a person
+- id: 27.a.filters
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Cluster and status filters
+  person: analyst
+  mode: manual
+  agent: null
+  source: the viewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Filters are one tap
+- id: 27.a.card_summary
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: 'Process card: owner, status, frequency, trigger, step strip, systems, breaks today'
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the cards, interviews and documents
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: assembled'
+  claim: The one-line summary of every process is assembled from the evidence
+- id: 27.a.systems
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Systems used per process
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: systems named in documents and the profile
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: read from documents'
+  claim: Systems are picked out of the documents, not typed
+- id: 27.a.badge
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Open question badge
+  person: analyst
+  mode: automatic
+  agent: Lens
+  source: the open questions
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: Waiting questions are counted per process
+- id: 27.a.counters
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: 'Counters block: mapped, confirmed, still guessed, edited, steps, questions'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: processes.json
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: The map's progress is counted, never tallied by hand
+- id: 27.a.needs
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: 'Needs from you: up to three open questions per person'
+  person: participant
+  mode: automatic
+  agent: Lens
+  source: the open questions
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: listed by the system'
+  claim: Each person sees their own questions first, never more than three
+- id: 27.b.name
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Process name
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the cards and documents
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a drafted name edited'
+  claim: Lens names each process; a person only edits
+- id: 27.b.owner
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Process owner (business owner of the process)
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: a RACI or document that names the owner
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a suggested owner with its source against asking who owns it'
+  claim: Lens suggests the owner from the documents and says where; a person picks
+- id: 27.b.trigger
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'Trigger: what starts the process'
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: interviews and documents
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: drafted, or the owner is asked'
+  claim: Lens drafts the trigger where it has a source and asks the owner where it has not
+- id: 27.b.frequency
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Frequency
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: interviews and documents
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: drafted or a chip'
+  claim: Frequency is drafted or one chip
+- id: 27.b.steps
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: The ordered steps of the process
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the owner's own answers and documents (Lens never invents a step)
+  minutes_without: 60
+  minutes_with: 15
+  basis: 'estimate: owner questions answered against drawing the process'
+  claim: Steps come from the owner's own answers, turned into a proposal by Lens; Lens never guesses a step
+- id: 27.b.step_detail
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'Per step: who does it, systems, inputs, outputs'
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: documents and the owner's answers
+  minutes_without: 20
+  minutes_with: 5
+  basis: 'estimate: drafted where documents say it'
+  claim: Step detail is filled from documents and answers and confirmed
+- id: 27.b.reorder
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Reorder, split, merge, remove a step or process
+  person: analyst
+  mode: manual
+  agent: null
+  source: the editor
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: a few drags'
+  claim: Restructuring a process is a person's edit and is kept in the history
+- id: 27.b.breaks
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'Where it breaks today: linked wall cards or the owner''s own words'
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the wall cards that mention the process
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: cards linked from the wall against a recall exercise'
+  claim: Lens links the wall cards that say where a process breaks
+- id: 27.b.link_measure
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'Link a measure to a step: produced at or used at'
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the catalogue
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: a pick from the catalogue'
+  claim: Measure links are suggested from the catalogue and picked
+- id: 27.b.link_source
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Link a data source to a step
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the data sources map
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: a pick'
+  claim: Source links are suggested and picked
+- id: 27.b.provenance
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'Provenance line: guessed by Lens from a source, edited, confirmed'
+  person: analyst
+  mode: automatic
+  agent: null
+  source: the cell marks
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: recorded by the system'
+  claim: Who said what, from where, is recorded for every cell
+- id: 27.b.confirm
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Confirm this process (the named owner only)
+  person: process owner
+  mode: manual
+  agent: null
+  source: the owner's decision
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: one press'
+  claim: Only the named owner confirms a process; Lens never does
+- id: 27.b.not_mine
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: Not mine, it is...
+  person: process owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: one pick'
+  claim: An owner hands a process on in one pick and the new owner is told
+- id: 27.b.history
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process card)
+  input: 'History: every edit with person and time'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the edits
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: recorded'
+  claim: Every change is kept with who and when
+- id: 27.c.question
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: owner question page (guest link or in-app)
+  input: Question card from Lens to the owner
+  person: process owner
+  mode: derived
+  agent: Lens
+  source: the unknown step
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: question written by Lens'
+  claim: Lens writes the question about an unknown step
+- id: 27.c.answer
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: owner question page (guest link or in-app)
+  input: Answer to the question
+  person: process owner
+  mode: manual
+  agent: Lens
+  source: the owner's own knowledge
+  minutes_without: 20
+  minutes_with: 5
+  basis: 'estimate: a sentence or two against an interview'
+  claim: The owner types only the knowledge nobody else has; Lens turns it into a step proposal
+- id: 27.c.dont_know
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: owner question page (guest link or in-app)
+  input: I do not know
+  person: process owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Not knowing is recorded with a reason and the step stays unknown
+- id: 27.c.step_proposal
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: owner question page (guest link or in-app)
+  input: Step proposal from the answer, marked guessed from the answer
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the owner's answer
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: proposed against transcribed'
+  claim: The owner's answer becomes a step proposal automatically
+- id: 27.c.charter_page
+  spec: '27'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=process-map (process list)
+  input: Processes involved page in the charter
+  person: sponsor
+  mode: derived
+  agent: Lens
+  source: the confirmed and guessed processes
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: page assembled'
+  claim: The charter page of processes is assembled with what is confirmed and what is still guessed

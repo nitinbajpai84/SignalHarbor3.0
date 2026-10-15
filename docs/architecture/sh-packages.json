@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: Packages and Module Entitlement",
+    "subtitle": "Ideal state: a customer request becomes a package, a package becomes the modules one company can open",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-sh-packages-20261003-110500/sh-packages.html"
+  },
+  "components": [
+    {"id": "customer", "type": "external", "label": "Customer", "sublabel": "asks for a workspace", "pos": [40, 70], "size": [150, 64]},
+    {"id": "request", "type": "frontend", "label": "Request form", "sublabel": "industry, modules wanted", "pos": [285, 70], "size": [150, 64]},
+    {"id": "super_admin", "type": "external", "label": "Super admin", "sublabel": "reviews, approves", "pos": [530, 70], "size": [150, 64]},
+    {"id": "catalogue", "type": "database", "label": "Package catalogue", "sublabel": "three, five or six modules", "pos": [775, 70], "size": [150, 64]},
+    {"id": "provision", "type": "backend", "label": "Provisioner", "sublabel": "package into modules", "pos": [1020, 70], "size": [150, 64]},
+    {"id": "plane", "type": "database", "label": "Company plane", "sublabel": "created empty, isolated", "pos": [1265, 70], "size": [150, 64]},
+
+    {"id": "users", "type": "external", "label": "Company users", "sublabel": "sign in to their company", "pos": [40, 250], "size": [150, 64]},
+    {"id": "auth", "type": "security", "label": "Sign-in gate", "sublabel": "session, role, company", "pos": [285, 250], "size": [150, 64]},
+    {"id": "home", "type": "frontend", "label": "Home page", "sublabel": "tiles for owned modules", "pos": [530, 250], "size": [150, 64]},
+    {"id": "gate", "type": "security", "label": "Module gate", "sublabel": "checked on every request", "pos": [775, 250], "size": [150, 64]},
+    {"id": "entitlement", "type": "database", "label": "Entitlements", "sublabel": "modules per company", "tag": "one switch per module", "pos": [1020, 250], "size": [150, 64]},
+    {"id": "registry", "type": "backend", "label": "Tool registry", "sublabel": "agents and tools per module", "pos": [1265, 250], "size": [150, 64]},
+
+    {"id": "m1", "type": "backend", "label": "1 Intent", "sublabel": "agent: North", "tag": "in package", "pos": [40, 430], "size": [150, 64]},
+    {"id": "m2", "type": "backend", "label": "2 Baseline", "sublabel": "agent: Lens", "tag": "in package", "pos": [285, 430], "size": [150, 64]},
+    {"id": "m3", "type": "backend", "label": "3 Scan and gap", "sublabel": "agent: Flow", "tag": "in package", "pos": [530, 430], "size": [150, 64]},
+    {"id": "m4", "type": "backend", "label": "4 Build", "sublabel": "agent: the builder", "tag": "not in package", "pos": [775, 430], "size": [150, 64]},
+    {"id": "m5", "type": "backend", "label": "5 Foresight", "sublabel": "agent: the forecaster", "tag": "not in package", "pos": [1020, 430], "size": [150, 64]},
+    {"id": "m6", "type": "backend", "label": "6 Day two", "sublabel": "agent: Watch", "tag": "not in package", "pos": [1265, 430], "size": [150, 64]}
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "Six modules: each a self-contained package of screens, routes, one agent, tools and tests", "wraps": ["m1", "m2", "m3", "m4", "m5", "m6"], "pad": 18}
+  ],
+  "connections": [
+    {"id": "r1", "from": "customer", "to": "request", "label": "fills in", "variant": "emphasis"},
+    {"id": "r2", "from": "request", "to": "super_admin", "label": "submits"},
+    {"id": "r3", "from": "super_admin", "to": "catalogue", "label": "picks package", "variant": "emphasis"},
+    {"id": "r4", "from": "catalogue", "to": "provision", "label": "package"},
+    {"id": "r5", "from": "provision", "to": "plane", "label": "creates"},
+    {"id": "r6", "from": "provision", "to": "entitlement", "label": "writes", "variant": "emphasis"},
+
+    {"id": "s1", "from": "users", "to": "auth", "label": "sign in", "variant": "emphasis"},
+    {"id": "s2", "from": "auth", "to": "home", "label": "role+company", "variant": "security"},
+    {"id": "s3", "from": "home", "to": "gate", "label": "open module"},
+    {"id": "s4", "from": "entitlement", "to": "gate", "label": "owned modules", "variant": "security"},
+    {"id": "s5", "from": "entitlement", "to": "registry", "label": "owned agents"},
+
+    {"id": "g1", "from": "home", "to": "m3", "label": "owned: opens", "variant": "emphasis"},
+    {"id": "g2", "from": "gate", "to": "m4", "label": "not owned: refused", "variant": "dashed"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "From request to workspace",
+      "items": [
+        "The customer fills in a request: company, industry, and which modules it wants",
+        "The super admin reviews it and picks the package that matches; a custom set of modules is also possible",
+        "The provisioner creates the empty company plane and writes one entitlement row per module",
+        "Nothing is installed per customer: the modules are already running, and the entitlement decides what this company can open"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Packages (names and contents are a proposal)",
+      "items": [
+        "Discover: modules 1 to 3. The customer leaves with a charter, a catalogue and a gap report",
+        "Build: modules 1 to 5. Adds the build and Foresight",
+        "Run: all six. Adds the daily feed, market pulse and operations",
+        "The example on this diagram is a company on Discover"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "What makes a module a package",
+      "items": [
+        "A manifest: its id, screens, routes, its one agent, the tools that agent may use, and the pack sections it reads",
+        "Its inputs and its output: what it needs to start, and the document it produces",
+        "Its own tests, so a module can be released or switched off without touching the others"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Enforced in three places",
+      "items": [
+        "The home page and menu show only the modules the company owns",
+        "The module gate refuses any request to a module the company does not own, whatever the screen shows",
+        "The tool registry loads only the agents and tools of owned modules, so an agent for an unowned module cannot be reached at all"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Modules that depend on each other",
+      "items": [
+        "Each module starts from the output of an earlier one: the charter, the catalogue, the gap report, the build",
+        "A company that skips a module supplies that output itself: for example it uploads its own catalogue to start at module 3",
+        "Upgrading is one entitlement change; the company's earlier outputs are already in its plane"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Built today and not yet",
+      "items": [
+        "Built: company creation by a super admin, an industry per company, role-based permissions on every route, a quick or enterprise mode per company",
+        "Not built: entitlements per module, the package catalogue, the request form, the module manifest, the tool registry"
+      ]
+    }
+  ]
+}

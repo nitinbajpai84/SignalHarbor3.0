@@ -1,0 +1,10 @@
+# C4 The context library. The people who talk to the agents (decision maker, architect, data engineer) use it; what each person
+# sees is checked again per item (own or shared with the company).
+routes:
+  GET /api/v1/library: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/library: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/v1/library/{item_id}: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/v1/library/{item_id}: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/intents/{iid}/context: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/v1/intents/{iid}/context: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/intents/{iid}/context/suggestions: {roles: [company_admin, sponsor, analyst]}

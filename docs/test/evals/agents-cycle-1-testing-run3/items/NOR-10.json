@@ -1,0 +1,50 @@
+{
+  "id": "NOR-10",
+  "agent": "north",
+  "role": "participant",
+  "desc": "A participant (Sofia Reyes) cannot write into the signed intent of work.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "access",
+      "passed": true,
+      "detail": "status 403, wanted 403"
+    }
+  ],
+  "error": null,
+  "latency_ms": 80,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/intents/{iid:Monthly investment report}/chat"
+  },
+  "expected": {
+    "status": 403
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/intents/ini-044848976e2a3ff364bb6387401a742e/chat",
+      "request": {
+        "text": "Change step 2 so that the tolerance is 50,000 USD."
+      },
+      "status": 403,
+      "json": {
+        "detail": {
+          "error": "not_allowed",
+          "message": "This project is Internal. You can see its title, stage and owner (Mei Chen). Ask for access and Mei Chen will answer."
+        }
+      },
+      "ms": 14,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

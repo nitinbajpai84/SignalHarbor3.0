@@ -1,0 +1,6 @@
+# G4 Deviations. Flow's request is raised by the data engineer's seat; only the addressed approver can answer (the handler checks the name).
+routes:
+  GET /api/v1/build/{iid}/deviations: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/{iid}/deviations: {roles: [company_admin, analyst]}
+  POST /api/v1/build/{iid}/deviations/{did}/decide: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/{iid}/deviations/{did}/make: {roles: [company_admin, analyst]}

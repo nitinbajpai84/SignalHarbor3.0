@@ -1,0 +1,89 @@
+# Template family_office@1 -- the five decision dimensions as this domain's forces, in the settings
+# contract pattern of contracts/settings/insurance.classifier.yaml. Read by
+# emitters/family_office_forces.py (workspace copy first, this pack file otherwise).
+#
+# Every check is a formula the synthetic workbook itself writes down, on its "Decision calculation"
+# sheet (columns B to J), with limits read from its policy_rules sheet by metric. The workbook
+# labels these gates "Demo-v1 ... illustrative": nothing here is an approved policy.
+#
+# No model is called. In the insurance domain "Jev" is an external judgement service; here the
+# same vocabulary (signals, evidence, why) is produced by these rules only, so no family office
+# figure is sent anywhere. There are no weights and no overall score: a dimension passes, fails or
+# is unknown, and a failed hard constraint is never offset by anything else.
+$schema: sh/settings/v1
+domain: family_office
+owner: Signal Harbor build (FO-11)
+
+engine:
+  name: Decision checks
+  mode: rules_only
+  rules_version: demo-v1
+  status: "Proposal - the workbook's own illustrative gates"
+  note: >-
+    Deterministic rules from the workbook's Decision calculation sheet. No model call and no
+    weighted score.
+
+# Figures worked out from the inputs before the checks run. The formula text is the sheet's.
+derived:
+  post_single_pct:
+    formula: "(pre_investment_value_sgd + proposed_sgd) / pre_total_assets_sgd"
+    source: "Decision calculation column H"
+  post_private_pct:
+    formula: "(pre_private_assets_sgd + proposed_sgd) / pre_total_assets_sgd"
+    source: "Decision calculation column I"
+  funding_headroom_sgd:
+    formula: "available_cash_sgd - existing_obligations_sgd - stress_calls_sgd - proposed_sgd - reserve_sgd"
+    source: "Decision calculation column G"
+
+# hard_constraint is a proposal for review: a mandate limit and the liquidity floor are treated as
+# constraints, the other three as assessments. It changes no verdict; it only keeps a failed
+# constraint visible on its own.
+dimensions:
+  - id: attractiveness
+    title: Attractiveness
+    question: Why might this be worth considering?
+    hard_constraint: false
+    source: "Decision calculation column B"
+    checks:
+      - {value: expected_return, op: ">=", rule: expected_return, label: Expected return, unit: ratio, unknown_if_missing: true}
+      - {value: annual_fee, op: "<=", rule: annual_fee, label: Annual fee, unit: ratio}
+  - id: mandate_fit
+    title: Mandate fit
+    question: Does it serve the office's objectives and permitted scope?
+    hard_constraint: true
+    source: "Decision calculation column C"
+    checks:
+      - {value: post_single_pct, op: "<=", rule: single_investment_pct, label: Largest single investment after this, unit: ratio}
+      - {value: post_private_pct, op: "<=", rule: private_markets_pct, label: Private-market share after this, unit: ratio}
+  - id: funding_feasibility
+    title: Funding feasibility
+    question: Can the office fund it while preserving required liquidity?
+    hard_constraint: true
+    source: "Decision calculation column D"
+    checks:
+      - {value: funding_headroom_sgd, op: ">=", limit: 0, label: Funding headroom after the reserve, unit: SGD}
+  - id: implementation_friction
+    title: Implementation friction
+    question: What diligence gaps, lockups, complexity or operational work come with it?
+    hard_constraint: false
+    source: "Decision calculation column E"
+    checks:
+      - {value: diligence_gaps, op: "<=", rule: diligence_gaps, label: Open diligence gaps, unit: count}
+      - {value: redemption_days, op: "<=", rule: redemption_days, label: Redemption notice, unit: days}
+  - id: evidence_strength
+    title: Evidence strength
+    question: How complete, current and defensible is the assessment?
+    hard_constraint: false
+    source: "Decision calculation column F (the limits 0.9, 90 and 0 are written in the formula itself)"
+    checks:
+      - {value: evidence_coverage, op: ">=", limit: 0.9, label: Evidence coverage, unit: ratio}
+      - {value: evidence_age_days, op: "<=", limit: 90, label: Age of the evidence, unit: days}
+      - {value: unresolved_conflicts, op: "==", limit: 0, label: Unresolved conflicts, unit: count}
+
+# Decision calculation column J: unknown attractiveness -> insufficient data; any failed check ->
+# review required; otherwise eligible for a person's review. "Eligible" is never an approval.
+# Stricter than column J, in code: when nothing fails, a hard constraint that is unknown also
+# gives insufficient data.
+overall:
+  insufficient_data_when_unknown: [attractiveness]
+  source: "Decision calculation column J"

@@ -1,0 +1,6 @@
+# A1 Span's conversation. Anyone who may see the project reads and talks; only the architect seat (analyst, company_admin) changes the design (the logic leaves it alone for others).
+# Approve: the head of data (company_admin); the handler checks the role again.
+routes:
+  GET /api/v1/build/{iid}/blueprint/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/{iid}/blueprint/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/{iid}/blueprint/approve: {roles: [company_admin]}

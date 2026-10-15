@@ -1,0 +1,387 @@
+{
+  "id": "MX-SPA-ADMIN",
+  "agent": "span",
+  "role": "company_admin",
+  "desc": "A1 company admin asks Span which gold table holds cash by entity and what feeds it.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> model -> tool -> model -> tool -> model -> guard; tools list_tables, get_lineage"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "2 loop run(s), tiers manager, specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "7 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "42216 ms",
+      "value": 42216
+    },
+    {
+      "name": "cost",
+      "passed": true,
+      "detail": "7 calls, 19268 tokens, $0.007185",
+      "value": 19268
+    }
+  ],
+  "error": null,
+  "latency_ms": 42216,
+  "cost": {
+    "calls": 7,
+    "tokens": 19268,
+    "usd": 0.007185,
+    "estimated": false
+  },
+  "trace_id": "tr-span-07e358e3-2226af8c",
+  "forgotten": [],
+  "egress_lines": 7,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "company_admin",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity, and which bronze tables feed it?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The `gold_investment_report_cash_daily` table holds daily cash by entity. However, the lineage for this table within the 'Monthly investment report in USD and SGD' project indicates that nothing feeds it and it does not feed any other tables in this project's plan or dashboards.",
+        "rules_only": false,
+        "trace_id": "tr-span-07e358e3-2226af8c"
+      },
+      "ms": 42216,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 11072,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:50:09+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 10646,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:50:05+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 10155,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:49:58+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 9939,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:49:50+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 10089,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:49:45+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 9873,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:49:38+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    },
+    {
+      "bytes": 9873,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:49:34+0800",
+      "trace_id": "tr-span-07e358e3-2226af8c"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-07e358e3-2226af8c",
+      "status": 200,
+      "runs": [
+        {
+          "id": "ffd83efe34de4d97b0ee880b628368e8",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:49:49+00:00",
+          "elapsed_ms": 15702,
+          "steps": 4,
+          "tool_calls": 0,
+          "cost_usd": 0.003351,
+          "trace_id": "tr-span-07e358e3-2226af8c",
+          "kind": "loop",
+          "worded_by": "model"
+        },
+        {
+          "id": "0dda38e123b44089b2ea6e9df616e098",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:50:14+00:00",
+          "elapsed_ms": 25468,
+          "steps": 8,
+          "tool_calls": 2,
+          "cost_usd": 0.003834,
+          "trace_id": "tr-span-07e358e3-2226af8c",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-07e358e3-2226af8c",
+          "at": "2026-10-10T02:49:49+00:00",
+          "run_id": "ffd83efe34de4d97b0ee880b628368e8",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 15702,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "4"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 10780,
+              "tool_calls": 0,
+              "tries": 2,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 5174,
+              "tokens_out": 341,
+              "cost_usd": 0.002405,
+              "attempts": [
+                {
+                  "tier": "specialist",
+                  "model": "gemini-2.5-flash",
+                  "step": "first",
+                  "ok": "number_guard",
+                  "tokens_in": 2587,
+                  "tokens_out": 280,
+                  "cost_usd": 0.001476,
+                  "ms": 4236
+                },
+                {
+                  "tier": "manager",
+                  "model": "gemini-2.5-flash",
+                  "step": "retry_up",
+                  "ok": "ok",
+                  "tokens_in": 2587,
+                  "tokens_out": 61,
+                  "cost_usd": 0.000929,
+                  "ms": 6527
+                }
+              ],
+              "nudged": "tool_required"
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 4922,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2628,
+              "tokens_out": 63,
+              "cost_usd": 0.000946
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        },
+        {
+          "trace_id": "tr-span-07e358e3-2226af8c",
+          "at": "2026-10-10T02:50:14+00:00",
+          "run_id": "0dda38e123b44089b2ea6e9df616e098",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 25468,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "4"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 8328,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2602,
+              "tokens_out": 106,
+              "cost_usd": 0.001046,
+              "nudged": "tool_required"
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 7327,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2643,
+              "tokens_out": 30,
+              "cost_usd": 0.000868
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "list_tables",
+              "arg_keys": [
+                "starts_with",
+                "layer"
+              ],
+              "result_chars": 225,
+              "refused": false,
+              "reason": null,
+              "ms": 593
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 3186,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2744,
+              "tokens_out": 38,
+              "cost_usd": 0.000918
+            },
+            {
+              "kind": "tool",
+              "n": 3,
+              "tool": "get_lineage",
+              "arg_keys": [
+                "table",
+                "project"
+              ],
+              "result_chars": 152,
+              "refused": false,
+              "reason": null,
+              "ms": 63
+            },
+            {
+              "kind": "model",
+              "n": 4,
+              "ok": true,
+              "ms": 5968,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2839,
+              "tokens_out": 60,
+              "cost_usd": 0.001002
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.0071849999999999995,
+        "tokens": 19268
+      }
+    }
+  ]
+}

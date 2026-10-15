@@ -1,0 +1,141 @@
+{
+  "id": "LUM-04",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Asked for net worth by entity, the proposed tile's rows equal the universe for September 2026.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 1 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "3316 ms",
+      "value": 3316
+    },
+    {
+      "name": "cost",
+      "passed": true,
+      "detail": "1 calls, 382 tokens",
+      "value": 382
+    }
+  ],
+  "error": null,
+  "latency_ms": 3316,
+  "cost": {
+    "calls": 1,
+    "tokens": 382,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 1,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "22875000",
+      "63950000",
+      "16580000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by entity by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD by entity per month. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-e48d49",
+            "title": "Net worth USD by entity per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", \"entity\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": "entity",
+              "kind": "line",
+              "period": "month",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 3162,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 111,
+  "egress": [
+    {
+      "bytes": 1409,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:38:18+0800"
+    },
+    {
+      "bytes": 12970,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:38:18+0800"
+    }
+  ]
+}

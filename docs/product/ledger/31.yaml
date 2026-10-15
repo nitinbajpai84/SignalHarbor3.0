@@ -1,0 +1,294 @@
+- id: 31.draft_six
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel)
+  input: Draft all six governed fields for each measure
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: work list owners, the profile and the pack
+  minutes_without: 120
+  minutes_with: 5
+  basis: 'estimate: filling six fields per measure by hand'
+  claim: Lens drafts all six governed fields on first look with a plain source for each
+- id: 31.carry
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel)
+  input: Carry confirmed cells from an earlier Initiative
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the earlier signed baseline
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: re-asking the same people'
+  claim: A measure already governed is copied forward with its confirmer and date
+- id: 31.strip
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (percentage strip)
+  input: Owned, classified, who may see, team assigned percentages
+  person: organiser
+  mode: automatic
+  agent: null
+  source: governed_state.json
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: counted by hand'
+  claim: The four percentages are counted from stored cells
+- id: 31.ring
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (ring on cluster card)
+  input: Governed ring on a cluster
+  person: organiser
+  mode: automatic
+  agent: null
+  source: governed_state.json
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking each measure'
+  claim: The ring shows what is still missing per cluster
+- id: 31.owners
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: owners)'
+  input: Confirm the owners
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: the named owner's own knowledge; Lens drafted the cell
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a chase email versus one button'
+  claim: The named owner confirms drafted owners with one button
+- id: 31.class
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: classification)'
+  input: Confirm the classification
+  person: governance lead
+  mode: confirm
+  agent: Lens
+  source: the governance lead's judgement; Lens drafted the cell
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: a review per measure versus one button'
+  claim: Classification is drafted and confirmed by the governance lead only
+- id: 31.may_see
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: who may see)'
+  input: Confirm who may see
+  person: governance lead
+  mode: confirm
+  agent: Lens
+  source: the governance lead's judgement; Lens drafted the cell
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: writing lists versus one button'
+  claim: Who may see is drafted and confirmed by the governance lead only
+- id: 31.resolving
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: who resolves it)'
+  input: Confirm the resolving team and target week
+  person: sponsor
+  mode: confirm
+  agent: Lens
+  source: the sponsor's decision; Lens drafted from deadlines
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a planning conversation versus one button'
+  claim: The resolving team and week are drafted from the profile; the sponsor confirms
+- id: 31.affects
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: what it affects)'
+  input: Confirm what the measure affects
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: the owner's knowledge; Lens drafted from the pack drives
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: drawing dependencies by hand'
+  claim: Downstream effects are drafted from the pack and confirmed by the owner
+- id: 31.review
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=clusters (Governed state panel) (row: review date)'
+  input: Confirm the review date
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: a default date drafted by Lens
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: picking a date versus one button'
+  claim: The review date arrives with a default
+- id: 31.redraft
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (Ask Lens to draft again)
+  input: Draft again, keeping confirmed cells
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: current records
+  minutes_without: 20
+  minutes_with: 1
+  basis: 'estimate: redoing by hand'
+  claim: A redraft never replaces a confirmed cell
+- id: 31.pill
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (owner not confirmed pill)
+  input: Who still has to confirm
+  person: organiser
+  mode: automatic
+  agent: null
+  source: governed_state.json
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: asked round the table'
+  claim: The list of who is holding a part is computed
+- id: 31.propose
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Propose a change, modal)
+  input: Propose a change to a confirmed governed field
+  person: analyst
+  mode: manual
+  agent: null
+  source: the proposer's reasoning
+  minutes_without: 20
+  minutes_with: 4
+  basis: 'estimate: an email to the owner'
+  claim: A proposal is one value and one reason; the stored cell is unchanged until the owner confirms
+- id: 31.decide_apply
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Apply or Decline proposal)
+  input: Apply or decline a proposal
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner's decision
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: a reply email and an edit'
+  claim: The owner applies or declines with one click; the old cell is kept as history
+- id: 31.withdraw
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Withdraw)
+  input: Withdraw a proposal
+  person: analyst
+  mode: manual
+  agent: null
+  source: the proposer's choice
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: an email retracting'
+  claim: A proposal is withdrawn with one click
+- id: 31.must_row
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/build-ready (Is every Must measure governed?)
+  input: Must measures governed check
+  person: organiser
+  mode: automatic
+  agent: North
+  source: governed_state.json and priority
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: checking each Must measure'
+  claim: North counts governed Must measures and names what is missing
+- id: 31.not_gov
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/build-ready (list: not governed yet)'
+  input: What is not governed yet, per measure
+  person: organiser
+  mode: derived
+  agent: North
+  source: governed_state.json
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: building a gap list'
+  claim: The gap list names each measure, the missing fields and who confirms
+- id: 31.pulse_line
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: '/pulse (Decide line: confirm governed parts)'
+  input: Pulse line for the parts you may confirm
+  person: owner
+  mode: automatic
+  agent: Nira
+  source: governed_state.json and roles
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: chasing by email'
+  claim: Each person sees only the parts they may confirm
+- id: 31.refusal
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (refusal line)
+  input: Refusal when not the named person
+  person: anyone
+  mode: automatic
+  agent: null
+  source: the named person on the cell
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who may sign off'
+  claim: The product says who may confirm a part and refuses anyone else
+- id: 31.events
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=clusters (Governed state panel) (events line per confirm)
+  input: Event line for every confirm and proposal
+  person: organiser
+  mode: automatic
+  agent: null
+  source: events.jsonl
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: kept by hand'
+  claim: Every governed change leaves a dated line
+- id: 31.downstream
+  spec: '31'
+  journey: initiative
+  stage: think
+  screen: Build, feeds and graph (reads the state)
+  input: Downstream reads of the governed state
+  person: build team
+  mode: derived
+  agent: North
+  source: governed_state.json
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: asking again in Build'
+  claim: Build reads access rules and owners from the confirmed state without asking again

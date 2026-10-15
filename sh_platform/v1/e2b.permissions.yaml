@@ -1,0 +1,7 @@
+# E2b Extracted fields of a document. Reading: the working seats and the decision maker. Reading a statement and reviewing its fields: Operations (analyst) and the company admin.
+routes:
+  GET /api/v1/evidence/documents/{doc_id}/fields: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/evidence/documents/{doc_id}/extract: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/fields/{field_id}/confirm: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/fields/{field_id}/correct: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/fields/{field_id}/reject: {roles: [company_admin, analyst]}

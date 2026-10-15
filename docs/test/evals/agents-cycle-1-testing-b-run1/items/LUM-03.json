@@ -1,0 +1,124 @@
+{
+  "id": "LUM-03",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "K03 Holdings by status - official, revised, estimated, unverified.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 37,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000003/data"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "62500000",
+      "18455000",
+      "12500000",
+      "9950000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/tiles/t-000003/data",
+      "request": null,
+      "status": 200,
+      "json": {
+        "tile": {
+          "id": "t-000003",
+          "title": "Holdings by status",
+          "kpi": "K03",
+          "sql": "select status, sum(net_worth_usd) as net_worth_usd from gold_investment_report_holdings_monthly where report_month = (select max(report_month) from gold_investment_report_holdings_monthly) group by status order by status",
+          "spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "mark": "bar",
+            "encoding": {
+              "x": {
+                "field": "status",
+                "type": "nominal"
+              },
+              "y": {
+                "field": "net_worth_usd",
+                "type": "quantitative"
+              }
+            }
+          },
+          "note": "Official, revised, estimated or unverified.",
+          "state": "accepted"
+        },
+        "spec": {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "mark": "bar",
+          "encoding": {
+            "x": {
+              "field": "status",
+              "type": "nominal"
+            },
+            "y": {
+              "field": "net_worth_usd",
+              "type": "quantitative"
+            }
+          }
+        },
+        "columns": [
+          "status",
+          "net_worth_usd"
+        ],
+        "rows": [
+          {
+            "status": "estimated",
+            "net_worth_usd": 12500000.0
+          },
+          {
+            "status": "official",
+            "net_worth_usd": 62500000.0
+          },
+          {
+            "status": "revised",
+            "net_worth_usd": 18455000.0
+          },
+          {
+            "status": "unverified",
+            "net_worth_usd": 9950000.0
+          }
+        ],
+        "capped": false,
+        "row_cap": 5000,
+        "data_used": {
+          "tables": [
+            "gold_investment_report_holdings_monthly"
+          ],
+          "last_refresh": "2026-10-09T22:36:06+00:00"
+        }
+      },
+      "ms": 37,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 8,
+  "egress": [],
+  "traces": []
+}

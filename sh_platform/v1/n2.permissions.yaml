@@ -1,0 +1,8 @@
+# N2 Comments with history. Anyone signed in may use the routes; code refuses a thread whose thing the person may not see, and edit/delete belong to the author (delete also to an admin).
+routes:
+  GET /api/v1/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/comments/people: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PUT /api/v1/comments/{cid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  DELETE /api/v1/comments/{cid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/comments/{cid}/raise: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

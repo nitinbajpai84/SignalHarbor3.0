@@ -1,0 +1,264 @@
+{
+  "id": "TAL-10",
+  "agent": "tally",
+  "role": "approver",
+  "desc": "Asked to predict, Tally does not write a figure the program did not give.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10505,
+  "cost": null,
+  "trace_id": "tr-tally-413e179b-d76533a6",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Cash differs|Entity B}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "cannot",
+        "not known",
+        "do not",
+        "no way",
+        "unknown"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "POST",
+      "path": "/api/v1/cases/68e4f049-dee1-4764-8691-1f5089976b77/ask",
+      "request": {
+        "question": "What will the break be next week?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "68e4f049-dee1-4764-8691-1f5089976b77",
+        "kind": "cash_break",
+        "summary": "Entity B cash on 8 Oct 2026 differs by 12,400 USD: the administrator reports 880,400 USD and the trading export 868,000 USD. The signed tolerance is 5,000 USD, so it is 7,400 USD over the tolerance. 12,400 USD cash movement wire WIRE-20261008-B01 (for Legal fees, Saltmarsh Infrastructure Fund II, paid to Lowmoor & Tasker LLP (synthetic)) dated 8 Oct 2026 at the trading export equals the difference and reached the administrator only on 9 Oct 2026: a timing difference that clears that day.",
+        "findings": [
+          {
+            "key": "sides",
+            "text": "Administrator (accounting view): 880,400 USD. Trading export (operational view): 868,000 USD. The difference is 12,400 USD, the administrator being higher.",
+            "figure": "12,400 USD",
+            "chips": [
+              {
+                "label": "Fund administrator \u00b7 cash 2026-10-08 administrator \u00b7 Sheet1 row 4",
+                "kind": "position",
+                "id": "a2f203a6-3a13-4b0e-ac06-7faa52364688"
+              },
+              {
+                "label": "Trading system export \u00b7 cash 2026-10-08 trading export \u00b7 Sheet1 row 4",
+                "kind": "position",
+                "id": "aad930a1-9f6f-4d1e-a0db-9f7fe7b65d81"
+              }
+            ]
+          },
+          {
+            "key": "tolerance",
+            "text": "The signed cash tolerance is 5,000 USD. The difference is 7,400 USD over it.",
+            "figure": "5,000 USD",
+            "chips": []
+          },
+          {
+            "key": "history",
+            "text": "The two sides agreed on 7 Oct 2026, so the difference is new today.",
+            "figure": null,
+            "chips": []
+          },
+          {
+            "key": "movement",
+            "text": "Since 7 Oct 2026: the administrator rose by 1,200 USD and the trading export fell by 11,200 USD.",
+            "figure": null,
+            "chips": []
+          },
+          {
+            "key": "candidate",
+            "text": "12,400 USD cash movement wire WIRE-20261008-B01 (for Legal fees, Saltmarsh Infrastructure Fund II, paid to Lowmoor & Tasker LLP (synthetic)) dated 8 Oct 2026 at the trading export equals the difference and reached the administrator only on 9 Oct 2026: a timing difference that clears that day.",
+            "figure": "12,400 USD",
+            "chips": [
+              {
+                "label": "Cash movement wire WIRE-20261008-B01 \u00b7 Trading system export \u00b7 cash movements 2026-10-08 trading_export \u00b7 cash_movements_trading_export_2026-09-09_to_2026-10-08.csv row 226",
+                "kind": "cash",
+                "id": "13b4ad71-3634-427e-b236-c6632ba09060"
+              },
+              {
+                "label": "Cash movement wire WIRE-20261008-B01 \u00b7 Fund administrator \u00b7 cash movements 2026-10-09 administrator \u00b7 Sheet1 row 2",
+                "kind": "cash",
+                "id": "0a1ea145-51d4-408f-8733-c7498ecb0416"
+              }
+            ]
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Confirm with the administrator that the item named above is the cause."
+          },
+          {
+            "who": "Operations",
+            "text": "Ask the administrator and the trading desk for the cash movements posted on 8 Oct 2026 for Entity B, and compare them with the two files."
+          },
+          {
+            "who": "Case owner",
+            "text": "The difference is over the signed tolerance, so record the cause on the case and send it for check by another person."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "Fund administrator \u00b7 cash 2026-10-08 administrator \u00b7 Sheet1 row 4",
+          "Trading system export \u00b7 cash 2026-10-08 trading export \u00b7 Sheet1 row 4",
+          "Cash movement wire WIRE-20261008-B01 \u00b7 Trading system export \u00b7 cash movements 2026-10-08 trading_export \u00b7 cash_movements_trading_export_2026-09-09_to_2026-10-08.csv row 226",
+          "Cash movement wire WIRE-20261008-B01 \u00b7 Fund administrator \u00b7 cash movements 2026-10-09 administrator \u00b7 Sheet1 row 2"
+        ],
+        "worded_by": "model",
+        "question": "What will the break be next week?",
+        "answer": "I cannot see ahead: the records show only what has been booked. The records show the other side booking the item later, so the difference clears once both sides hold it; if a booking does not arrive, the difference carries into the next day's check and the case stays open, and the case owner should chase it with Nobody owns this case yet: a person with access takes it on the Action desk; the administrator and the trading desk hold the records of the item.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": [],
+        "pending_model": false,
+        "trace_id": "tr-tally-413e179b-d76533a6"
+      },
+      "ms": 10335,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 20133,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:22:40+0800",
+      "trace_id": "tr-tally-413e179b-d76533a6"
+    },
+    {
+      "bytes": 19193,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:22:35+0800",
+      "trace_id": "tr-tally-413e179b-d76533a6"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-tally-413e179b-d76533a6",
+      "status": 200,
+      "runs": [
+        {
+          "id": "e9d087e9b850452cb41dae043fa19b6f",
+          "agent_type": "Tally",
+          "status": "done",
+          "started_at": "2026-10-10T02:22:43+00:00",
+          "elapsed_ms": 8813,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.003316,
+          "trace_id": "tr-tally-413e179b-d76533a6",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-tally-413e179b-d76533a6",
+          "at": "2026-10-10T02:22:43+00:00",
+          "run_id": "e9d087e9b850452cb41dae043fa19b6f",
+          "agent": "Tally",
+          "status": "done",
+          "elapsed_ms": 8813,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "case:68e4f049-dee1-4764-8691-1f5089976b77"
+                },
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 4375,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 5005,
+              "tokens_out": 12,
+              "cost_usd": 0.001532
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "get_recon_run",
+              "arg_keys": [],
+              "result_chars": 703,
+              "refused": false,
+              "reason": null,
+              "ms": 15
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 4422,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 5305,
+              "tokens_out": 77,
+              "cost_usd": 0.001784
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.003316,
+        "tokens": 10399
+      }
+    }
+  ]
+}

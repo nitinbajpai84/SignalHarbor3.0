@@ -1,0 +1,364 @@
+- id: 53.s01.q1
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: /centre/intent/new?type=problem&from=<pulse>&item=<item> (q1)
+  input: What is wrong
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the week item text
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: describing it in a ticket versus a drafted line'
+  claim: A Problem started from a check-in item arrives with the statement filled in
+- id: 53.s01.q2
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: q2
+  input: Which process or measure is it about
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the item and the area
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: finding the measure name versus a preselected one'
+  claim: North preselects the process or measure from the item
+- id: 53.s01.q3
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: q3
+  input: How hard it bites
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's own knowledge; 'I do not know' accepted
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an estimate in a ticket versus a field'
+  claim: Cost of the problem is the reporter's own words
+- id: 53.s01.q4
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: q4
+  input: Who owns it
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's view among area people
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: asking around versus a picker'
+  claim: The reporter names who they think owns it; North checks later
+- id: 53.s01.q5
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: q5
+  input: Areas and who feels it
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the item's area
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: emailing affected people versus ticking names'
+  claim: North preselects the area; the reporter ticks who feels it
+- id: 53.s01.clock
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id>
+  input: Five-day time box and stage clocks
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the type's time box
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: agreeing a deadline versus none'
+  claim: The five-day time box starts when the Problem opens
+- id: 53.s02.triage
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> ('Triage draft from North')
+  input: Statement, measure, likely owners
+  person: reporter
+  mode: derived
+  agent: North
+  source: the item, the measure feed and the profile
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: an incident triage meeting versus a read and a tap'
+  claim: North drafts the triage once and says the draft is its own
+- id: 53.s02.alerts
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: triage panel, 'Recent alerts'
+  input: Alerts on the measure in the last 14 days
+  person: reporter
+  mode: derived
+  agent: Watcher
+  source: the Ops alert feed, as ids, never typed
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: searching the alert history versus a list'
+  claim: The panel lists real alerts by id with dates and sizes
+- id: 53.s02.confirm
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: '''Looks right'''
+  input: Agree the statement
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: re-reading a ticket versus one tap'
+  claim: The reporter confirms North's one-line statement
+- id: 53.s03.accept
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: Pulse line 'You are proposed as owner'
+  input: Accept ownership or pass with a reason
+  person: owner
+  mode: manual
+  agent: null
+  source: the proposed owner; a pass needs a reason
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: an email back and forth versus a tap and a line'
+  claim: A proposed owner accepts in one tap or passes and says why
+- id: 53.s03.next
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: North card to the reporter
+  input: Next owner proposal after a pass
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the pass reason, the measure and the profile
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: chasing a replacement versus a one-tap proposal'
+  claim: North proposes the next owner from the pass reason; the reporter confirms
+- id: 53.s05.post
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (Thread)
+  input: Posts and evidence in the thread
+  person: participant
+  mode: manual
+  agent: null
+  source: the people working the problem
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: an email chain versus a short post with a link'
+  claim: People post facts and link records; nobody retypes a summary
+- id: 53.s05.know
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: panel 'What we know'
+  input: Confirmed, not confirmed and missing lists
+  person: owner
+  mode: derived
+  agent: North
+  source: the thread and the linked records
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: writing an incident log by hand'
+  claim: North keeps the running summary and cites a post or record for each line
+- id: 53.s06.cause
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: panel 'Root cause'
+  input: Root cause confirmed
+  person: owner
+  mode: confirm
+  agent: North
+  source: the posts and the log lines it names
+  minutes_without: 30
+  minutes_with: 5
+  basis: 'estimate: a root-cause meeting versus a read and a confirm'
+  claim: North drafts the cause with citations; the owner confirms, edits or says keep looking
+- id: 53.s07.fix
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: panel 'Fix'
+  input: What changes, who does it, the workaround date, the done date
+  person: owner
+  mode: confirm
+  agent: North
+  source: the confirmed cause
+  minutes_without: 25
+  minutes_with: 5
+  basis: 'estimate: writing a fix plan versus editing a draft'
+  claim: North drafts the fix plan from the confirmed cause; the owner edits the dates
+- id: 53.s07.inbox
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: time box check at fix
+  input: Fix date inside the time box
+  person: owner
+  mode: automatic
+  agent: North
+  source: time_box.ends and the planned date
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: checking a calendar versus a check'
+  claim: North flags a fix date outside the box and offers to extend
+- id: 53.s08.done
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: '''Mark fix done'''
+  input: Mark the fix done
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: an update email versus one tap'
+  claim: Only the owner says the fix is in
+- id: 53.s08.fixed
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: Pulse line 'Is it fixed for you?'
+  input: Fixed for me or not, with a note
+  person: affected
+  mode: manual
+  agent: null
+  source: each affected person
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a reply to a broadcast versus a tap'
+  claim: Each affected person answers for themselves; the tally is computed
+- id: 53.s09.closure
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: panel 'Closure'
+  input: Closure summary, why it happened, what came out
+  person: owner
+  mode: confirm
+  agent: North
+  source: the cause, the fix and the version it made
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: writing an incident report versus a draft'
+  claim: North drafts the closure from the record; closing is blocked and says why until the rule holds
+- id: 53.s10.reporter
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: stage confirm
+  input: Is the problem you reported gone
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter checking the next feed values
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: a chase for confirmation versus one question'
+  claim: The reporter confirms with the next match results shown from the feed
+- id: 53.s11.version
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: governed state node, History
+  input: Version note on the measure
+  person: data owner
+  mode: confirm
+  agent: North
+  source: the closure and the fix
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: updating a data dictionary versus a confirm'
+  claim: North drafts the version note; the data owner confirms; North never writes a version alone
+- id: 53.s12.rating
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: panel 'Was this useful?'
+  input: A rating, optionally without my name
+  person: participant
+  mode: manual
+  agent: null
+  source: the rater
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a feedback form versus one tap'
+  claim: A rating is anonymous on request and shows an average only from three
+- id: 53.bA.admin
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: Pulse card to the company admin (branch A)
+  input: Name an owner after two passes
+  person: admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: chasing an owner versus one card'
+  claim: After two passes the card goes to the company admin; North proposes no third name
+- id: 53.bB.bigger
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: '''This is bigger than a fix'' (branch B)'
+  input: Turn a Problem into an Initiative
+  person: owner
+  mode: derived
+  agent: North
+  source: the thread and the one-line reason
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: re-keying a Problem as a project versus a prefilled start'
+  claim: A Problem turns into an Initiative with start answers drawn from the thread
+- id: 53.bC.reopen
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: stage confirm (branch C)
+  input: Send it back once with a note
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's note
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: a follow-up email versus one reopen'
+  claim: A reporter may reopen once with a note; North redrafts what we know
+- id: 53.bD.extend
+  spec: '53'
+  journey: problem
+  stage: run
+  screen: time box ends (branch D)
+  input: Extend, close with what we have or cancel with a reason
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner with a reason
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: asking for more time versus an option'
+  claim: Only the owner extends and the chip 'Extended' stays visible

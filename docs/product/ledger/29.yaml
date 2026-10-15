@@ -1,0 +1,392 @@
+- id: 29.reuse
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/new (initiative start, terms the company holds)
+  input: Tick Reuse for related company terms
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: the company term store matched to the title, purpose and areas
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: searching an old glossary versus a tick'
+  claim: Lens lists the company terms that look related; the organiser ticks Reuse
+- id: 29.draft_terms
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (Ask Lens to draft)
+  input: Draft every term with a definition
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: wall cards, interviews and documents
+  minutes_without: 240
+  minutes_with: 5
+  basis: 'estimate: a workshop to define terms versus reading a draft'
+  claim: Lens drafts every term with a business definition and a source line
+- id: 29.header
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (header strip)
+  input: 'Counts: terms, confirmed, draft, ambiguous'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: glossary.json counts
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counted by hand'
+  claim: Glossary progress is counted from records
+- id: 29.upload
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (Upload your own glossary)
+  input: Upload the office's own glossary file
+  person: analyst
+  mode: manual
+  agent: null
+  source: the office's existing file
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: finding and attaching a file'
+  claim: An uploaded glossary is matched by name then by meaning, not retyped
+- id: 29.match
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (term row)
+  input: Match each term with the company's terms
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: company terms by name then by meaning
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: comparing two lists by eye'
+  claim: Lens matches terms and marks reused, changed or new
+- id: 29.definition
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (drawer, definition)
+  input: Business definition wording
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: cards, interviews and documents
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: writing each definition versus checking one'
+  claim: The definition arrives drafted with its source; the owner edits or keeps it
+- id: 29.source_line
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (drawer, source)
+  input: Where the term was found
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: card, interview and document references
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: noting references by hand'
+  claim: Each term carries where it was found; anonymous cards stay anonymous
+- id: 29.owner_term
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (drawer, owner)
+  input: Owner of the term
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: the responsibility chart and interviews
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking around versus a tap'
+  claim: The owner is proposed from the responsibility chart
+- id: 29.meanings
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (drawer, meanings)
+  input: The different meanings of an ambiguous term
+  person: governance lead
+  mode: derived
+  agent: Lens
+  source: cards and documents using the word differently
+  minutes_without: 45
+  minutes_with: 1
+  basis: 'estimate: spotting clashes in meetings'
+  claim: Lens finds a term used in two or more ways and lists each with where it was found
+- id: 29.edit
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (Edit wording)
+  input: Edit the wording
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person's own words
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: editing in a document versus a text box'
+  claim: A person's wording is kept; a later draft sits beside it
+- id: 29.keep_wording
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (Keep Lens's wording)
+  input: Keep Lens's wording or the provided one
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the draft and any provided glossary
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: one choice versus a tap'
+  claim: One tap keeps a drafted wording
+- id: 29.confirm_unchanged
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (Confirm all unchanged)
+  input: Confirm all unchanged terms
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead's review
+  minutes_without: 30
+  minutes_with: 2
+  basis: 'estimate: checking each term versus one button'
+  claim: Unchanged reused terms are confirmed in one action
+- id: 29.owner_confirm
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=mine (Mine, wording is right)
+  input: Owner confirms a term
+  person: term owner
+  mode: confirm
+  agent: Lens
+  source: the owner's own knowledge; Lens prepared the draft
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: a meeting versus one button'
+  claim: The owner confirms a prepared term with one button
+- id: 29.owner_change
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=mine (Mine, change the wording)
+  input: Owner changes the wording
+  person: term owner
+  mode: manual
+  agent: null
+  source: the owner's own words
+  minutes_without: 8
+  minutes_with: 4
+  basis: 'estimate: rewriting in a document'
+  claim: The owner edits the wording once and confirms
+- id: 29.not_mine
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=mine (Not mine, it is)
+  input: Hand the term to the right person
+  person: term owner
+  mode: manual
+  agent: null
+  source: the owner's knowledge
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a forwarded email versus a pick'
+  claim: A term goes to its real owner with one pick
+- id: 29.question
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=mine (question card)
+  input: Pick the meaning you use
+  person: term owner
+  mode: confirm
+  agent: Lens
+  source: the meanings Lens found, with a suggestion
+  minutes_without: 20
+  minutes_with: 1
+  basis: 'estimate: a long thread versus one tap'
+  claim: The owner picks from the meanings Lens found, with a suggested answer
+- id: 29.both_used
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=mine (Both are used)
+  input: Send an ambiguity to the governance lead
+  person: term owner
+  mode: manual
+  agent: null
+  source: the owner's note
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: an email versus one button'
+  claim: Both meanings used goes up with one button and a note
+- id: 29.pick_meaning
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=ambiguities (Pick one meaning)
+  input: Settle an ambiguous term
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead's decision; Lens listed the meanings
+  minutes_without: 30
+  minutes_with: 2
+  basis: 'estimate: a meeting versus one pick on a prepared table'
+  claim: The governance lead settles a term with one pick; an agent never does
+- id: 29.second_term
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=ambiguities (Keep both)
+  input: Name the second term
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead's decision
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: agreeing a name in a meeting'
+  claim: A second term is named in a field and Lens drafts its entry
+- id: 29.accept_risk
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=ambiguities (Accept as a known risk)
+  input: Accept an ambiguity with a reason
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead's decision
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: a risk log entry versus one reason'
+  claim: An accepted ambiguity is recorded with reason, name and date
+- id: 29.reopen
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary&view=ambiguities (Reopen)
+  input: Reopen a settled term, with a reason
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead's decision
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: re-opening an email thread'
+  claim: Reopening is one reason and the term returns to draft
+- id: 29.questions_cap
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?tab=glossary (questions per person)
+  input: Questions asked per person, at most three
+  person: organiser
+  mode: automatic
+  agent: null
+  source: intent record counters across Define
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: tracked by hand'
+  claim: The three-question limit is counted, not policed by hand
+- id: 29.charter_glossary
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/charter (page: business glossary)'
+  input: 'Charter glossary page: confirmed terms and known risks'
+  person: sponsor
+  mode: derived
+  agent: North
+  source: the glossary and accepted ambiguities
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: compiling a glossary page by hand'
+  claim: The charter glossary page is compiled from the record
+- id: 29.sign_draft
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/charter (sign with draft terms)
+  input: Sign with draft terms marked draft
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's decision
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a side note versus a tick'
+  claim: The sponsor ticks to sign with draft terms; the page prints them as draft
+- id: 29.propose_change
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /register/terms/<term> (Propose a change)
+  input: Propose a change to a company term
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's reasoning
+  minutes_without: 15
+  minutes_with: 5
+  basis: 'estimate: an email chain versus a form'
+  claim: A change to a company term is a proposal with a reason, never a silent edit
+- id: 29.confirm_version
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /register/terms/<term> (Confirm as new version)
+  input: Owner confirms a new version of a company term
+  person: term owner
+  mode: manual
+  agent: null
+  source: the owner's decision
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: an approval email versus a button'
+  claim: A version is added only when the owner confirms; the trail is kept
+- id: 29.versions
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: /register/terms/<term> (versions list)
+  input: Version trail of a term
+  person: everyone
+  mode: automatic
+  agent: null
+  source: versions record
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: kept by hand'
+  claim: Every change to a term is a version with who and when
+- id: 29.reused_unchanged
+  spec: '29'
+  journey: initiative
+  stage: think
+  screen: '/centre/intent/<id>/define?tab=glossary (counter: confirmed unchanged)'
+  input: Definitions confirmed unchanged
+  person: organiser
+  mode: automatic
+  agent: null
+  source: glossary.json change and reviewed
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counted by hand'
+  claim: The share of reused terms confirmed unchanged is computed

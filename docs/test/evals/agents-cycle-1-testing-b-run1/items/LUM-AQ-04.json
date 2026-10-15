@@ -1,0 +1,79 @@
+{
+  "id": "LUM-AQ-04",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "LT-2 (A4) \"last 12 months\" keeps 12 month-ends (the SQL keeps dates after max minus 12 months, not from it).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 2: missing 'for the last 12 months'; turn 2: missing '> (select max('"
+    }
+  ],
+  "error": null,
+  "latency_ms": 84,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 32,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "last 12 months"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 51,
+      "expect": {
+        "contains": [
+          "for the last 12 months",
+          "> (select max("
+        ]
+      },
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

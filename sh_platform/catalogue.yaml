@@ -1,0 +1,57 @@
+# The six modules and the packages that bundle them. Package names and contents are a proposal (D-008):
+# change them here and nowhere else. Modules 3 to 6 are listed but have no manifest yet.
+# Agent names for modules 4 and 5 are placeholders (D-003).
+modules:
+  - id: m1_intent
+    number: 1
+    name: Intent
+    description: Agree what the business wants to know and who signs it off.
+    agent: North
+  - id: m2_baseline
+    number: 2
+    name: Baseline
+    description: Map the processes and data the company has today and who owns each part.
+    agent: Lens
+  - id: m3_connect
+    number: 3
+    name: Assess and plan
+    description: Score the sources, check sample data against your own figures, and agree a phased build plan.
+    agent: Lens
+  - id: m4_build
+    number: 4
+    name: Build
+    description: Build the data products that close the gaps.
+    agent: Builder
+  - id: m5_foresight
+    number: 5
+    name: Foresight
+    description: Forecast what is likely next with advanced models.
+    agent: Forecaster
+  - id: m6_ops
+    number: 6
+    name: Ops
+    description: Run the daily feed and the market pulse once everything is in place.
+    agent: Watch
+packages:
+  discover:
+    name: Discover
+    modules: [m1_intent, m2_baseline, m3_connect]
+  build:
+    name: Build
+    modules: [m1_intent, m2_baseline, m3_connect, m4_build, m5_foresight]
+  run:
+    name: Run
+    modules: [m1_intent, m2_baseline, m3_connect, m4_build, m5_foresight, m6_ops]
+centres:
+  - id: intent
+    name: Intent centre
+    description: Agree what the business wants to know, map what it has today, and plan how to connect the two.
+    modules: [m1_intent, m2_baseline, m3_connect]
+  - id: build
+    name: Build centre
+    description: Declared, no modules yet.
+    modules: []
+  - id: consume
+    name: Consume centre
+    description: Declared, no modules yet.
+    modules: []

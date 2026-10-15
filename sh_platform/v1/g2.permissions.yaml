@@ -1,0 +1,7 @@
+# G2 Go live and the run book. Go live: every seat may ask; the handler allows only the project's raiser or sponsor. The run book is
+# the ops manager seat's (analyst, company_admin).
+routes:
+  POST /api/v1/projects/{pid}/go-live: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/run-book/draft: {roles: [company_admin, analyst]}
+  PUT /api/v1/projects/{pid}/run-book: {roles: [company_admin, analyst]}
+  POST /api/v1/projects/{pid}/run-book/sign: {roles: [company_admin, analyst]}

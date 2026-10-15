@@ -1,0 +1,135 @@
+"""Pick the builder model and the review level for one subtask card.
+
+Usage: python tools/route_task.py <card.json> [--log]
+
+Code rules decide the safety-sensitive cases. Jev (a TypeSafe System One model) answers four typed questions about the
+rest: which tier fits, whether the acceptance lines are complete, how bad a wrong build would be, and who should review.
+Jev may make a code rule stricter, never looser. Plan: docs/specs/INTENT-CENTRE-BUILD-PLAN.md section 2.
+
+The key is read by the SDK from TYPESAFE_API_KEY. It is never printed or written. The log keeps ids and numbers only.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import sys
+from pathlib import Path
+
+from typesafe_sdk import Choice, Noul, NoulCriteria, Score, TypeSafeClient
+
+log = logging.getLogger("route_task")
+
+# ---- everything a human tunes, in one place ---------------------------------------------------------------------------
+SENSITIVE_PREFIXES = ("sh_platform/auth", "sh_platform/egress", "sh_platform/profile/view.py", "sh_platform/route_permissions.yaml",
+                      "modules/m3_connect/domain/accept.py", "modules/m1_intent/api/charter.py", "modules/m2_baseline/api/signoff")
+BIG_BLAST = 8                 # files; above this the brief must name every file and Haiku is out
+ACT_CONFIDENCE = 0.6          # act on Jev's tier at or above this
+LEAN_UP_CONFIDENCE = 0.35     # between this and ACT: take the higher tier
+SPEC_COMPLETE_MIN = 0.4       # below this the card goes back to the orchestrator (tuned on five probe cards, 6 Oct 2026: specified cards 0.43-0.59, an open decision 0.13)
+FORCE_OPUS_REVIEW_AT = 2      # risk level 2 or 3 (another person's data, a signed record)
+TIER_ORDER = ["haiku_fits", "sonnet_fits", "needs_reasoning_model"]
+MODEL_FOR = {"haiku_fits": "haiku", "sonnet_fits": "sonnet", "needs_reasoning_model": "orchestrator"}
+LOG_PATH = Path("docs/ledger/routing.jsonl")
+
+QUESTIONS = {
+    "tier": Choice(
+        instructions="Which builder tier fits `card`, given `card.kind`, `card.files_touched`, `card.new_contract`, `card.new_route` and `card.acceptance`?",
+        criteria={
+            "haiku_fits": {"what": "one or two files, a copy, rename, re-skin or test rewording, a screen with no new state",
+                           "not_for": "anything that adds a route, a contract or a stored field", "examples": ["rename a shelf label", "add a counter"]},
+            "sonnet_fits": {"what": "a new component, route or stored field; several files; a contract to read and follow",
+                            "not_for": "a design choice the brief leaves open", "examples": ["new lane view over existing notes", "shelf drag with audit"]},
+            "needs_reasoning_model": {"what": "the brief leaves a design or product choice open, or the acceptance lines contradict each other",
+                                      "not_for": "work that is merely large", "examples": ["decide how sealed cards appear to the admin"]},
+            "other": None,
+        },
+    ),
+    "spec_is_complete": Noul(
+        instructions="Reading `card.title` and `card.acceptance`, can a builder start the work without first asking the product owner a question?",
+        criteria=NoulCriteria(true="The lines say what to build and what counts as done; any gap is a technical detail the builder can settle",
+                              false="The title asks for a decision, or a behaviour the title names has no line that says how it should behave"),
+    ),
+    "risk_if_wrong": Score(
+        instructions="If `card` is built wrongly and the mistake reaches the running app, what happens?",
+        criteria=["A reviewer notices it; nothing reaches a person",
+                  "One screen is wrong or empty for one role until fixed",
+                  "One person can see data that only other people may see",
+                  "A signed record changes, or a signature is accepted from the wrong person"],
+    ),
+    "review_needed": Choice(
+        instructions="Who should review `card` after it is built, given `card.touches_sensitive_path`, `card.new_route` and what a wrong build would do?",
+        criteria={"sonnet_reviewer": "ordinary code review against the brief",
+                  "opus_reviewer": "a reasoning review for a design-heavy or many-file change",
+                  "security_reviewer": "an adversarial review of authorisation, masking, signing or egress"},
+    ),
+}
+
+
+def code_rules(card: dict) -> dict:
+    """The decisions code makes before Jev is asked. Returns floors Jev may raise but not lower."""
+    paths = [str(p) for p in card.get("paths", [])]
+    sensitive = bool(card.get("touches_sensitive_path")) or any(p.startswith(SENSITIVE_PREFIXES) for p in paths)
+    floor_tier = "haiku_fits"
+    review = "sonnet_reviewer"
+    if sensitive:
+        floor_tier, review = "sonnet_fits", "security_reviewer"
+    if card.get("new_contract") or card.get("new_route"):
+        floor_tier = max(floor_tier, "sonnet_fits", key=TIER_ORDER.index)
+    if int(card.get("blast_radius_files", 0)) > BIG_BLAST:
+        floor_tier = max(floor_tier, "sonnet_fits", key=TIER_ORDER.index)
+    return {"floor_tier": floor_tier, "review": review, "sensitive": sensitive}
+
+
+def route(card: dict, client: TypeSafeClient | None = None) -> dict:
+    floors = code_rules(card)
+    state = {"card": {k: card[k] for k in card if k != "paths"}}
+    own = client is None
+    client = client or TypeSafeClient()
+    try:
+        r = client.system_one(state=state, questions=QUESTIONS)
+    finally:
+        if own:
+            client.close()
+    tier_a, spec, risk, rev = r.choices["tier"], r.nouls["spec_is_complete"], r.scores["risk_if_wrong"], r.choices["review_needed"]
+
+    if tier_a.confidence >= ACT_CONFIDENCE:
+        tier = tier_a.choice
+    elif tier_a.confidence >= LEAN_UP_CONFIDENCE:
+        nxt = min(TIER_ORDER.index(tier_a.choice) + 1, len(TIER_ORDER) - 1)
+        tier = TIER_ORDER[nxt]
+    else:
+        tier = "needs_reasoning_model"
+    if tier == "other":
+        tier = "sonnet_fits"
+    tier = max(tier, floors["floor_tier"], key=TIER_ORDER.index)  # Jev may only go stricter than the code rules
+
+    review = floors["review"]
+    if review != "security_reviewer":
+        review = rev.choice
+        if round(risk.score) >= FORCE_OPUS_REVIEW_AT and review == "sonnet_reviewer":
+            review = "opus_reviewer"
+
+    back_to_orchestrator = spec.noul < SPEC_COMPLETE_MIN or tier == "needs_reasoning_model"
+    return {"id": card.get("id"), "tier": tier, "model": MODEL_FOR[tier], "tier_confidence": tier_a.confidence,
+            "spec_is_complete": spec.noul, "risk": round(risk.score, 2), "risk_text": risk.legend.get(round(risk.score), ""),
+            "review": review, "sensitive": floors["sensitive"], "back_to_orchestrator": back_to_orchestrator, "jev_model": r.model,
+            "input_tokens": r.usage.input_tokens}
+
+
+def main(argv: list[str]) -> int:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if len(argv) < 2:
+        log.error("usage: route_task.py <card.json> [--log]")
+        return 2
+    card = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+    out = route(card)
+    log.info(json.dumps(out, indent=2))
+    if "--log" in argv:
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_PATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({k: out[k] for k in ("id", "tier", "tier_confidence", "risk", "review", "back_to_orchestrator")}) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

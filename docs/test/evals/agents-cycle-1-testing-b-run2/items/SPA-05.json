@@ -1,0 +1,427 @@
+{
+  "id": "SPA-05",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "The plan proposes the benchmark gold table (answer key P14).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 34,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/build/p/{pid}/plan"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_benchmark_monthly"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/build/p/prj-30b9332c/plan",
+      "request": null,
+      "status": 200,
+      "json": {
+        "project_id": "prj-30b9332c",
+        "project_slug": "investment_report",
+        "version": 1,
+        "sources": [
+          {
+            "code": "administrator",
+            "kind": "structured",
+            "files": [
+              "administrator export"
+            ],
+            "owner": "Mei Chen"
+          },
+          {
+            "code": "trading_export",
+            "kind": "structured",
+            "files": [
+              "trading export"
+            ],
+            "owner": "Mei Chen"
+          },
+          {
+            "code": "manager_email",
+            "kind": "unstructured",
+            "files": [
+              "manager statements"
+            ],
+            "owner": "Mei Chen"
+          }
+        ],
+        "model_changes": null,
+        "tables": [
+          {
+            "name": "bronze_administrator_positions",
+            "layer": "bronze",
+            "source": "administrator",
+            "layout": "positions",
+            "purpose": "Positions and cash as the administrator export landed them.",
+            "sql": "",
+            "depends_on": [],
+            "columns": [
+              {
+                "name": "portfolio_code",
+                "type": "varchar",
+                "from": "portfolio_code"
+              },
+              {
+                "name": "instrument_name",
+                "type": "varchar",
+                "from": "instrument"
+              },
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "position date"
+              },
+              {
+                "name": "market_value",
+                "type": "decimal",
+                "from": "market value"
+              },
+              {
+                "name": "currency",
+                "type": "varchar",
+                "from": "currency"
+              },
+              {
+                "name": "file_name",
+                "type": "varchar",
+                "from": "file"
+              },
+              {
+                "name": "loaded_at",
+                "type": "timestamp",
+                "from": "loaded at"
+              }
+            ],
+            "is_new": true
+          },
+          {
+            "name": "bronze_trading_export_positions",
+            "layer": "bronze",
+            "source": "trading_export",
+            "layout": "positions",
+            "purpose": "Cash and positions as the trading export landed them.",
+            "sql": "",
+            "depends_on": [],
+            "columns": [
+              {
+                "name": "portfolio_code",
+                "type": "varchar",
+                "from": "portfolio_code"
+              },
+              {
+                "name": "instrument_name",
+                "type": "varchar",
+                "from": "instrument"
+              },
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "position date"
+              },
+              {
+                "name": "market_value",
+                "type": "decimal",
+                "from": "market value"
+              },
+              {
+                "name": "currency",
+                "type": "varchar",
+                "from": "currency"
+              },
+              {
+                "name": "file_name",
+                "type": "varchar",
+                "from": "file"
+              },
+              {
+                "name": "loaded_at",
+                "type": "timestamp",
+                "from": "loaded at"
+              }
+            ],
+            "is_new": true
+          },
+          {
+            "name": "gold_investment_report_holdings_monthly",
+            "layer": "gold",
+            "purpose": "Month-end holdings by entity in USD and SGD with the status of each value.",
+            "columns": [
+              {
+                "name": "report_month",
+                "type": "date",
+                "from": "a.month_end"
+              },
+              {
+                "name": "entity",
+                "type": "varchar(200)",
+                "from": "e.entity_name"
+              },
+              {
+                "name": "holding",
+                "type": "varchar(255)",
+                "from": "i.canonical_name"
+              },
+              {
+                "name": "net_worth_usd",
+                "type": "varchar",
+                "from": "a.value_amount"
+              },
+              {
+                "name": "net_worth_sgd",
+                "type": "varchar",
+                "from": "a.month_end, a.value_amount, o.observed_at, o.series_key, o.value"
+              },
+              {
+                "name": "status",
+                "type": "varchar",
+                "from": "a.approval_status, a.supersedes_valuation_id, a.valuation_type"
+              }
+            ],
+            "sql": "create or replace table gold_investment_report_holdings_monthly as\nwith months as (\n  select distinct last_day(valuation_date) as month_end from valuation_observations\n),\nlive as (\n  select\n    v.portfolio_id,\n    v.instrument_id,\n    v.valuation_date,\n    v.received_at,\n    v.value_amount,\n    v.valuation_type,\n    v.approval_status,\n    v.supersedes_valuation_id\n  from valuation_observations v\n  where not exists (select 1 from valuation_observations x where x.supersedes_valuation_id = v.id)\n    and v.approval_status <> 'rejected' and v.value_amount <> 0\n  union all\n  select\n    s.portfolio_id,\n    s.instrument_id,\n    s.position_date,\n    s.received_at,\n    s.source_market_value,\n    'administrator',\n    'approved',\n    null\n  from position_snapshots s\n  join instruments i on i.id = s.instrument_id\n  where i.instrument_type <> 'cash' and s.view_type = 'investment'\n    and not exists (select 1 from position_snapshots x where x.supersedes_position_id = s.id)\n    and not exists (select 1 from valuation_observations v where v.portfolio_id = s.portfolio_id and v.value_amount <> 0)\n),\nas_at as (\n  select\n    m.month_end,\n    v.*,\n    row_number() over (partition by m.month_end, v.portfolio_id, v.instrument_id order by v.valuation_date desc, v.received_at desc) as rn\n  from months m\n  join live v on v.valuation_date <= m.month_end\n)\nselect\n  date_trunc('month', a.month_end)::date as report_month,\n  e.entity_name as entity,\n  i.canonical_name as holding,\n  a.value_amount as net_worth_usd,\n  a.value_amount * (\n    select o.value from market_observations o\n    where o.series_key = 'FX:USDSGD:WMR_4PM' and o.observed_at <= a.month_end + interval 1 day\n    order by o.observed_at desc limit 1\n  ) as net_worth_sgd,\n  case\n    when a.valuation_type = 'manager_estimate' then 'estimated'\n    when a.approval_status in ('pending', 'proposed') then 'unverified'\n    when a.supersedes_valuation_id is not null then 'revised'\n    else 'official'\n  end as status\nfrom as_at a\njoin portfolios p on p.id = a.portfolio_id\njoin legal_entities e on e.id = p.legal_entity_id\njoin instruments i on i.id = a.instrument_id\nwhere a.rn = 1",
+            "depends_on": [
+              "position_snapshots",
+              "valuation_observations",
+              "portfolios",
+              "legal_entities",
+              "instruments",
+              "market_observations"
+            ],
+            "is_new": true
+          },
+          {
+            "name": "gold_investment_report_cash_daily",
+            "layer": "gold",
+            "purpose": "Cash per entity per day, administrator view next to the trading view.",
+            "columns": [
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "s.position_date"
+              },
+              {
+                "name": "entity",
+                "type": "varchar(200)",
+                "from": "e.entity_name"
+              },
+              {
+                "name": "view_type",
+                "type": "varchar(50)",
+                "from": "s.view_type"
+              },
+              {
+                "name": "cash_usd",
+                "type": "numeric(28,8)",
+                "from": "s.source_market_value"
+              },
+              {
+                "name": "status",
+                "type": "varchar(50)",
+                "from": "s.data_status"
+              }
+            ],
+            "sql": "create or replace table gold_investment_report_cash_daily as\nselect\n  s.position_date,\n  e.entity_name as entity,\n  s.view_type,\n  s.source_market_value as cash_usd,\n  s.data_status as status\nfrom position_snapshots s\njoin portfolios p on p.id = s.portfolio_id\njoin legal_entities e on e.id = p.legal_entity_id\njoin instruments i on i.id = s.instrument_id\nwhere i.instrument_type = 'cash'\n  and not exists (select 1 from position_snapshots x where x.supersedes_position_id = s.id)",
+            "depends_on": [
+              "position_snapshots",
+              "portfolios",
+              "legal_entities",
+              "instruments"
+            ],
+            "is_new": true
+          },
+          {
+            "name": "gold_investment_report_benchmark_monthly",
+            "layer": "gold",
+            "columns": [
+              {
+                "name": "benchmark_code",
+                "type": "varchar",
+                "from": "br.benchmark_code"
+              },
+              {
+                "name": "month",
+                "type": "varchar",
+                "from": "pr.month"
+              },
+              {
+                "name": "portfolio_return",
+                "type": "varchar",
+                "from": "pr.portfolio_return"
+              },
+              {
+                "name": "benchmark_return",
+                "type": "varchar",
+                "from": "br.benchmark_return"
+              },
+              {
+                "name": "difference",
+                "type": "varchar",
+                "from": "br.benchmark_return, pr.portfolio_return"
+              }
+            ],
+            "sql": "create or replace table gold_investment_report_benchmark_monthly as with pv as (select date_trunc('month', valuation_date) as month, sum(value_amount) as portfolio_value from valuation_observations where valuation_type <> 'manager_estimate' and id not in (select supersedes_valuation_id from valuation_observations where supersedes_valuation_id is not null) group by 1), pr as (select month, portfolio_value / lag(portfolio_value) over (order by month) - 1 as portfolio_return from pv), lv as (select series_key, date_trunc('month', timezone('UTC', observed_at)) as month, max_by(value, observed_at) as level from market_observations where observation_type = 'index_level' and id not in (select supersedes_observation_id from market_observations where supersedes_observation_id is not null) group by 1, 2), ir as (select series_key, month, level / lag(level) over (partition by series_key order by month) - 1 as index_return from lv), bd as (select id, benchmark_code from benchmark_definitions as d where approval_status = 'approved' and version_number = (select max(version_number) from benchmark_definitions as x where x.benchmark_code = d.benchmark_code and x.approval_status = 'approved')), br as (select bd.benchmark_code, i.month, sum(c.component_weight * (i.index_return + coalesce(c.spread_bps, 0) / 10000 / 12)) as benchmark_return from ir as i join benchmark_components as c on c.market_series_key = i.series_key join bd on bd.id = c.benchmark_definition_id where i.month between c.weight_effective_from and coalesce(c.weight_effective_to, date '9999-12-31') group by 1, 2) select br.benchmark_code, pr.month, pr.portfolio_return, br.benchmark_return, pr.portfolio_return - br.benchmark_return as difference from pr join br on br.month = pr.month",
+            "depends_on": [
+              "valuation_observations",
+              "market_observations",
+              "benchmark_definitions",
+              "benchmark_components"
+            ],
+            "purpose": "Portfolio return, benchmark return and the difference for each month, from recorded values.",
+            "is_new": true
+          }
+        ],
+        "lineage": [
+          {
+            "from": "bronze_administrator_positions",
+            "to": "position_snapshots"
+          },
+          {
+            "from": "bronze_trading_export_positions",
+            "to": "position_snapshots"
+          },
+          {
+            "from": "position_snapshots",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "valuation_observations",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "portfolios",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "legal_entities",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "instruments",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "market_observations",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "position_snapshots",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "portfolios",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "legal_entities",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "instruments",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "valuation_observations",
+            "to": "gold_investment_report_benchmark_monthly"
+          },
+          {
+            "from": "market_observations",
+            "to": "gold_investment_report_benchmark_monthly"
+          },
+          {
+            "from": "benchmark_definitions",
+            "to": "gold_investment_report_benchmark_monthly"
+          },
+          {
+            "from": "benchmark_components",
+            "to": "gold_investment_report_benchmark_monthly"
+          }
+        ],
+        "schedule": {
+          "freq": "daily",
+          "at": "06:00",
+          "day": null
+        },
+        "state": "live",
+        "proposed_by": "Leo Park",
+        "approved_by": "Anita Rao",
+        "approved_at": "2026-10-09T22:36:05+00:00",
+        "reason": "",
+        "proposed_by_id": "f6e3ecb18b334d86984729adf4ff898a",
+        "proposed_at": "2026-10-09T22:36:05+00:00",
+        "title": "Monthly investment report in USD and SGD",
+        "intent_id": "ini-d376bbfd10c0d48c55e918d09200f7bf",
+        "intent_signed": true,
+        "versions": [
+          1
+        ],
+        "can": {
+          "propose": true,
+          "approve": false,
+          "reject": false,
+          "run_sandbox": true,
+          "go_live": false,
+          "schedule": true
+        },
+        "changes": [],
+        "log": [
+          {
+            "at": "2026-10-09T22:36:05+00:00",
+            "by": "Leo Park",
+            "what": "proposed a build plan",
+            "version": 1,
+            "note": "5 tables"
+          },
+          {
+            "at": "2026-10-09T22:36:05+00:00",
+            "by": "Anita Rao",
+            "what": "approved the build plan",
+            "version": 1,
+            "note": ""
+          },
+          {
+            "at": "2026-10-09T22:36:06+00:00",
+            "by": "Leo Park",
+            "what": "plan is now built",
+            "version": 1,
+            "note": ""
+          },
+          {
+            "at": "2026-10-09T22:36:06+00:00",
+            "by": "Leo Park",
+            "what": "plan is now live",
+            "version": 1,
+            "note": ""
+          }
+        ],
+        "model_diff": null
+      },
+      "ms": 34,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

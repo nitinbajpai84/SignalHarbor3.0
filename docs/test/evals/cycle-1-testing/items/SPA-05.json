@@ -1,0 +1,337 @@
+{
+  "id": "SPA-05",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "The plan proposes the benchmark gold table (answer key P14).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": false,
+      "detail": "missing 'gold_investment_report_benchmark_monthly'"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/build/p/{pid}/plan"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_benchmark_monthly"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/build/p/prj-bfd3c588/plan",
+      "request": null,
+      "status": 200,
+      "json": {
+        "project_id": "prj-bfd3c588",
+        "project_slug": "investment_report",
+        "version": 1,
+        "sources": [
+          {
+            "code": "administrator",
+            "kind": "structured",
+            "files": [
+              "administrator export"
+            ],
+            "owner": "Mei Chen"
+          },
+          {
+            "code": "trading_export",
+            "kind": "structured",
+            "files": [
+              "trading export"
+            ],
+            "owner": "Mei Chen"
+          },
+          {
+            "code": "manager_email",
+            "kind": "unstructured",
+            "files": [
+              "manager statements"
+            ],
+            "owner": "Mei Chen"
+          }
+        ],
+        "model_changes": null,
+        "tables": [
+          {
+            "name": "bronze_administrator_positions",
+            "layer": "bronze",
+            "source": "administrator",
+            "layout": "positions",
+            "purpose": "Positions and cash as the administrator export landed them.",
+            "sql": "",
+            "depends_on": [],
+            "columns": [
+              {
+                "name": "portfolio_code",
+                "type": "varchar",
+                "from": "portfolio_code"
+              },
+              {
+                "name": "instrument_name",
+                "type": "varchar",
+                "from": "instrument"
+              },
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "position date"
+              },
+              {
+                "name": "market_value",
+                "type": "decimal",
+                "from": "market value"
+              },
+              {
+                "name": "currency",
+                "type": "varchar",
+                "from": "currency"
+              },
+              {
+                "name": "file_name",
+                "type": "varchar",
+                "from": "file"
+              },
+              {
+                "name": "loaded_at",
+                "type": "timestamp",
+                "from": "loaded at"
+              }
+            ],
+            "is_new": true
+          },
+          {
+            "name": "bronze_trading_export_positions",
+            "layer": "bronze",
+            "source": "trading_export",
+            "layout": "positions",
+            "purpose": "Cash and positions as the trading export landed them.",
+            "sql": "",
+            "depends_on": [],
+            "columns": [
+              {
+                "name": "portfolio_code",
+                "type": "varchar",
+                "from": "portfolio_code"
+              },
+              {
+                "name": "instrument_name",
+                "type": "varchar",
+                "from": "instrument"
+              },
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "position date"
+              },
+              {
+                "name": "market_value",
+                "type": "decimal",
+                "from": "market value"
+              },
+              {
+                "name": "currency",
+                "type": "varchar",
+                "from": "currency"
+              },
+              {
+                "name": "file_name",
+                "type": "varchar",
+                "from": "file"
+              },
+              {
+                "name": "loaded_at",
+                "type": "timestamp",
+                "from": "loaded at"
+              }
+            ],
+            "is_new": true
+          },
+          {
+            "name": "gold_investment_report_holdings_monthly",
+            "layer": "gold",
+            "purpose": "Month-end holdings by entity in USD and SGD with the status of each value.",
+            "columns": [
+              {
+                "name": "report_month",
+                "type": "date",
+                "from": "valuation date"
+              },
+              {
+                "name": "entity",
+                "type": "varchar",
+                "from": "legal entity"
+              },
+              {
+                "name": "holding",
+                "type": "varchar",
+                "from": "instrument"
+              },
+              {
+                "name": "net_worth_usd",
+                "type": "decimal",
+                "from": "value"
+              },
+              {
+                "name": "net_worth_sgd",
+                "type": "decimal",
+                "from": "value times the WMR 4pm fixing"
+              },
+              {
+                "name": "status",
+                "type": "varchar",
+                "from": "approval status"
+              }
+            ],
+            "sql": "create or replace table gold_investment_report_holdings_monthly as\nwith holding as (\n  select v.valuation_date as as_of, p.legal_entity_id, i.canonical_name as holding, v.value_amount as net_worth_usd, v.approval_status as status\n  from valuation_observations v\n  join portfolios p on p.id = v.portfolio_id\n  join instruments i on i.id = v.instrument_id\n  where not exists (select 1 from valuation_observations x where x.supersedes_valuation_id = v.id)\n  union all\n  select s.position_date, p.legal_entity_id, i.canonical_name, s.source_market_value, s.data_status\n  from position_snapshots s\n  join portfolios p on p.id = s.portfolio_id\n  join instruments i on i.id = s.instrument_id\n  where i.instrument_type <> 'cash' and s.view_type = 'investment'\n    and not exists (select 1 from position_snapshots x where x.supersedes_position_id = s.id)\n)\nselect\n  date_trunc('month', h.as_of)::date as report_month,\n  e.entity_name as entity,\n  h.holding,\n  h.net_worth_usd,\n  h.net_worth_usd * (\n    select o.value from market_observations o\n    where o.series_key = 'FX:USDSGD:WMR_4PM' and o.observed_at <= h.as_of + interval 1 day\n    order by o.observed_at desc limit 1\n  ) as net_worth_sgd,\n  h.status\nfrom holding h\njoin legal_entities e on e.id = h.legal_entity_id",
+            "depends_on": [
+              "position_snapshots",
+              "valuation_observations",
+              "portfolios",
+              "legal_entities",
+              "instruments",
+              "market_observations"
+            ],
+            "is_new": true
+          },
+          {
+            "name": "gold_investment_report_cash_daily",
+            "layer": "gold",
+            "purpose": "Cash per entity per day, administrator view next to the trading view.",
+            "columns": [
+              {
+                "name": "position_date",
+                "type": "date",
+                "from": "position date"
+              },
+              {
+                "name": "entity",
+                "type": "varchar",
+                "from": "legal entity"
+              },
+              {
+                "name": "view_type",
+                "type": "varchar",
+                "from": "view"
+              },
+              {
+                "name": "cash_usd",
+                "type": "decimal",
+                "from": "cash"
+              },
+              {
+                "name": "status",
+                "type": "varchar",
+                "from": "data status"
+              }
+            ],
+            "sql": "create or replace table gold_investment_report_cash_daily as\nselect\n  s.position_date,\n  e.entity_name as entity,\n  s.view_type,\n  s.source_market_value as cash_usd,\n  s.data_status as status\nfrom position_snapshots s\njoin portfolios p on p.id = s.portfolio_id\njoin legal_entities e on e.id = p.legal_entity_id\njoin instruments i on i.id = s.instrument_id\nwhere i.instrument_type = 'cash'\n  and not exists (select 1 from position_snapshots x where x.supersedes_position_id = s.id)",
+            "depends_on": [
+              "position_snapshots",
+              "portfolios",
+              "legal_entities",
+              "instruments"
+            ],
+            "is_new": true
+          }
+        ],
+        "lineage": [
+          {
+            "from": "bronze_administrator_positions",
+            "to": "position_snapshots"
+          },
+          {
+            "from": "bronze_trading_export_positions",
+            "to": "position_snapshots"
+          },
+          {
+            "from": "position_snapshots",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "valuation_observations",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "portfolios",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "legal_entities",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "instruments",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "market_observations",
+            "to": "gold_investment_report_holdings_monthly"
+          },
+          {
+            "from": "position_snapshots",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "portfolios",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "legal_entities",
+            "to": "gold_investment_report_cash_daily"
+          },
+          {
+            "from": "instruments",
+            "to": "gold_investment_report_cash_daily"
+          }
+        ],
+        "schedule": {
+          "freq": "daily",
+          "at": "06:00",
+          "day": null
+        },
+        "state": "live",
+        "proposed_by": "Leo Park",
+        "approved_by": "Anita Rao",
+        "approved_at": "2026-10-09T07:39:25+00:00",
+        "reason": "Silver is unchanged; two gold tables serve the three dashboard tiles.",
+        "title": "Monthly investment report in USD and SGD",
+        "intent_id": "ini-98c975c74402bfcb11b64ec7208847af",
+        "intent_signed": true,
+        "versions": [
+          1
+        ],
+        "can": {
+          "propose": true,
+          "approve": false,
+          "reject": false,
+          "run_sandbox": true,
+          "go_live": false,
+          "schedule": true
+        },
+        "changes": [],
+        "log": [],
+        "model_diff": null
+      },
+      "ms": 10,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

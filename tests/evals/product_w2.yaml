@@ -1,0 +1,12 @@
+# W2-P: product package, wave 2. Only one P item is agent behaviour: Span's answer about lineage, which now has the intake edges
+# (bronze -> core silver) kept by b6_plan.validate, so gold -> silver -> bronze can be walked. Owed to the live 3-of-3 rerun once the model
+# accounts are topped up (python tools/run_evals.py --agents product_w2 --items PW2-LINEAGE). Synthetic data only.
+- id: PW2-LINEAGE
+  agent: span
+  role: analyst
+  live: true
+  desc: Lineage via the catalogue (test_c1_a10_7) - "where does the holdings table come from?" walks gold -> silver -> bronze and names both bronze feeds.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Where does the monthly holdings table come from, all the way back to the files?"}]
+  expected: {status: 200, words: ["position_snapshots", "bronze_administrator_positions", "bronze_trading_export_positions"]}
+  scorers: [words, loop_trace, egress_clean]

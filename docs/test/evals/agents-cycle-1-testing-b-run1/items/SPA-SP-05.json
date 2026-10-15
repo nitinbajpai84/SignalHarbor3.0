@@ -1,0 +1,254 @@
+{
+  "id": "SPA-SP-05",
+  "agent": "span",
+  "role": "participant",
+  "desc": "SPM-6, SPM-7, A16: a table that does not exist is not invented and the person is told who can help, in plain words.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> tool -> model -> tool -> model -> tool -> model -> guard; tools list_tables, list_tables, list_tables"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10017,
+  "cost": null,
+  "trace_id": "tr-span-ef0d9e8a-79e7cd79",
+  "forgotten": [],
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "data team",
+        "Anita",
+        "Mei",
+        "Leo",
+        "Grace"
+      ]
+    ],
+    "forbidden": [
+      "gold_custodian_fee"
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "what is the custodian fee table?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I cannot find a table named 'custodian fee' in the data model. The data team can add new tables to the model.",
+        "rules_only": false,
+        "trace_id": "tr-span-ef0d9e8a-79e7cd79"
+      },
+      "ms": 10017,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 8845,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:49:30+0800",
+      "trace_id": "tr-span-ef0d9e8a-79e7cd79"
+    },
+    {
+      "bytes": 8424,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:49:28+0800",
+      "trace_id": "tr-span-ef0d9e8a-79e7cd79"
+    },
+    {
+      "bytes": 7805,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:49:26+0800",
+      "trace_id": "tr-span-ef0d9e8a-79e7cd79"
+    },
+    {
+      "bytes": 7337,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:49:23+0800",
+      "trace_id": "tr-span-ef0d9e8a-79e7cd79"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-ef0d9e8a-79e7cd79",
+      "status": 200,
+      "runs": [
+        {
+          "id": "542b4c09496d43d69036bfdd54f770c3",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:49:32+00:00",
+          "elapsed_ms": 9811,
+          "steps": 9,
+          "tool_calls": 3,
+          "cost_usd": 0.002779,
+          "trace_id": "tr-span-ef0d9e8a-79e7cd79",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-ef0d9e8a-79e7cd79",
+          "at": "2026-10-10T01:49:32+00:00",
+          "run_id": "542b4c09496d43d69036bfdd54f770c3",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 9811,
+          "steps": [
+            {
+              "kind": "context",
+              "items": []
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2718,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 1949,
+              "tokens_out": 24,
+              "cost_usd": 0.000645
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 224,
+              "refused": false,
+              "reason": null,
+              "ms": 109
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 2328,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2046,
+              "tokens_out": 24,
+              "cost_usd": 0.000674
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 373,
+              "refused": false,
+              "reason": null,
+              "ms": 108
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 2063,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2176,
+              "tokens_out": 25,
+              "cost_usd": 0.000715
+            },
+            {
+              "kind": "tool",
+              "n": 3,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 175,
+              "refused": false,
+              "reason": null,
+              "ms": 140
+            },
+            {
+              "kind": "model",
+              "n": 4,
+              "ok": true,
+              "ms": 2343,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2257,
+              "tokens_out": 27,
+              "cost_usd": 0.000745
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002779,
+        "tokens": 8528
+      }
+    }
+  ]
+}

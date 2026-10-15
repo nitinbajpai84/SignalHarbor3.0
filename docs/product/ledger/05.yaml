@@ -1,0 +1,175 @@
+# Input ledger rows for spec 05: areas and visibility.
+- id: "05.areas_list"
+  spec: "05"
+  journey: admin
+  stage: notice
+  screen: "/company/settings/areas (Add area, Rename, Retire, Bring back)"
+  input: "The company's areas (departments and operations areas)"
+  person: company_admin
+  mode: manual
+  source: "the company admin"
+  minutes_without: 30
+  minutes_with: 10
+  basis: "estimate: defining departments from scratch versus ticking suggested ones and adding the rest"
+  claim: "The company's areas are set once and kept; retired areas keep past intents matched"
+- id: "05.pack_areas"
+  spec: "05"
+  journey: admin
+  stage: notice
+  screen: "/company/settings/areas (Suggested panel, Add selected)"
+  input: "Accept suggested areas from the industry pack"
+  person: company_admin
+  mode: confirm
+  agent: Lens
+  source: "the industry pack areas, labelled as suggestions"
+  minutes_without: 30
+  minutes_with: 2
+  basis: "estimate: listing areas by hand versus ticking four boxes"
+  claim: "A family office starts with Finance, Investments, Operations and Compliance suggested; the admin ticks them"
+- id: "05.team_areas"
+  spec: "05"
+  journey: admin
+  stage: notice
+  screen: "/company/settings/areas (Lens line: add areas from team values)"
+  input: "Areas drafted from the team values in the people file"
+  person: company_admin
+  mode: confirm
+  agent: Lens
+  source: "the team or department column of the people file"
+  minutes_without: 20
+  minutes_with: 1
+  basis: "estimate: reading a people file to list teams"
+  claim: "Lens reads the people file and proposes the teams as areas; the admin accepts"
+- id: "05.people_tags"
+  spec: "05"
+  journey: admin
+  stage: notice
+  screen: "/company/settings/areas/people (areas select per person)"
+  input: "Which areas each person belongs to"
+  person: company_admin
+  mode: confirm
+  agent: Lens
+  source: "each person's team value in the profile"
+  minutes_without: 45
+  minutes_with: 5
+  basis: "estimate: tagging each person by hand versus accepting suggested tags"
+  claim: "Lens proposes each person's area from the team value; the admin accepts, and a tag the admin set is never replaced"
+- id: "05.titles_private"
+  spec: "05"
+  journey: admin
+  stage: decide
+  screen: "/company/settings/areas (Keep intent titles private to the company)"
+  input: "Keep intent titles private from the super admin"
+  person: company_admin
+  mode: manual
+  source: "the company admin's decision"
+  minutes_without: 5
+  minutes_with: 0.2
+  basis: "estimate: a policy request versus one switch"
+  claim: "One switch keeps titles out of the super admin view"
+- id: "05.area_counts"
+  spec: "05"
+  journey: admin
+  stage: prove
+  screen: "/company/settings/areas (people tagged, intents per area, untagged filter)"
+  input: "People tagged, intents per area, people with no area"
+  person: company_admin
+  mode: automatic
+  source: "the profile people and the intent records"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: counting in a spreadsheet"
+  claim: "Coverage of areas is counted from the profile and the records"
+- id: "05.picker_suggest"
+  spec: "05"
+  journey: shared
+  stage: notice
+  screen: "area picker in every start flow (North suggestion: Add)"
+  input: "Areas chosen for an intent"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the tags of the participants named and the purpose line"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: deciding who should know versus tapping Add"
+  claim: "North proposes the areas from who is named; nothing is added without a click"
+- id: "05.who_will_see"
+  spec: "05"
+  journey: shared
+  stage: notice
+  screen: "area picker (Who will see this panel)"
+  input: "How many people will see that the intent exists"
+  person: organiser
+  mode: automatic
+  source: "accounts of people tagged to the chosen areas"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting recipients of a notice"
+  claim: "The organiser sees how many people an intent will reach before opening it"
+- id: "05.change_areas"
+  spec: "05"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id> (Change areas, Confirm)"
+  input: "Change the areas of an open intent"
+  person: organiser
+  mode: manual
+  source: "the organiser; North drafts the 'N more people will see this' warning"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: re-sending a notice to a wider group"
+  claim: "Changing areas shows who gains or loses sight before it applies"
+- id: "05.hidden_filter"
+  spec: "05"
+  journey: shared
+  stage: shared
+  screen: "every list and route (tiered filter)"
+  input: "What each viewer may see: existence, card or content"
+  person: system
+  mode: automatic
+  source: "the visibility matrix applied by one function, from the viewer's areas and relations"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: managing folder permissions by hand per project"
+  claim: "Who sees what is decided by one rule applied everywhere; nobody sets permissions per project"
+- id: "05.nira_lines"
+  spec: "05"
+  journey: shared
+  stage: notice
+  screen: "Pulse lines (3 intents running in Finance; 4 people have no area)"
+  input: "Area activity line and untagged-people line"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "the intent records and people tags through the same filter as a person"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: checking the tracker for your area"
+  claim: "Nira tells people what is running in their area and tells the admin who is untagged"
+- id: "05.super_admin_view"
+  spec: "05"
+  journey: admin
+  stage: prove
+  screen: "/centre/control/intents (existence table)"
+  input: "Existence of intents per company"
+  person: super_admin
+  mode: automatic
+  source: "read through the kernel on request; title omitted when the company switch is on"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: asking each company for a status list"
+  claim: "The platform owner sees that intents exist without ever reading what is in them"
+- id: "05.share"
+  spec: "05"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/share (Share, Stop sharing)"
+  input: "Share a closed intent with named people"
+  person: organiser
+  mode: manual
+  source: "the organiser names who may open the link"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: compiling and emailing a summary"
+  claim: "Sharing is explicit, per intent, to named people, and can be withdrawn"

@@ -1,0 +1,355 @@
+# Input ledger rows for spec 15: search and filters.
+- id: "15.search"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent and /centre/intent/past (search box)"
+  input: "Search by title, purpose, area, organiser or outcome"
+  person: any
+  mode: manual
+  source: "the person's own words; matched only in fields the viewer's tier may read"
+  minutes_without: 15
+  minutes_with: 0.5
+  basis: "estimate: searching email and folders for what was discussed"
+  claim: "Any intent is found by what a person remembers, and a person only finds what they may see"
+- id: "15.chips"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "search region (type, state, area, my role, time box status, outcome kind, rated)"
+  input: "Seven filter groups"
+  person: any
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: filtering a tracker"
+  claim: "Filters are chips with live counts; one tap narrows the list"
+- id: "15.facets"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "chip counts (facets)"
+  input: "Count on each chip"
+  person: any
+  mode: automatic
+  source: "the rows the person may see, with the other filters applied"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting by hand"
+  claim: "Every chip shows how many intents it would return"
+- id: "15.sort"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "sort select (newest, ending soonest, most people, best rated)"
+  input: "Sort order"
+  person: any
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: sorting a tracker column"
+  claim: "One select re-orders the list"
+- id: "15.card"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "result card (type, state and stage, areas, organiser, people count, time box line, outcome line, rating, match line, access line)"
+  input: "The fields on each result card"
+  person: any
+  mode: automatic
+  source: "the index row built from the intent record"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: maintaining a status register"
+  claim: "The list of intents is built from the records, cut to what the viewer may see"
+- id: "15.index"
+  spec: "15"
+  journey: admin
+  stage: shared
+  screen: "intents/_index.json (upsert on every write, rebuild when stale)"
+  input: "The search index"
+  person: system
+  mode: automatic
+  source: "every intent write; rebuilt from the intent files when absent or stale"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: keeping a project register current"
+  claim: "The index keeps itself current and rebuilds itself; no one maintains a register"
+- id: "15.outcome_line"
+  spec: "15"
+  journey: shared
+  stage: prove
+  screen: "closure (outcome line, searchable once confirmed)"
+  input: "Outcome text that makes a closed intent findable"
+  person: organiser
+  mode: confirm
+  built: derived
+  agent: North
+  source: "the closure draft"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a findable summary"
+  claim: "North drafts the outcome line; once a person confirms it, it can be found"
+- id: "15.pulse_area"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "Pulse line (3 intents in Operations end this week)"
+  input: "Area activity line linked to a pre-filtered list"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "the index"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: checking what ends this week"
+  claim: "Nira links people straight to a pre-filtered list"
+- id: "15.timebox_status"
+  spec: "15"
+  journey: shared
+  stage: shared
+  screen: "result card and time box chips (running to time, extended, past its end, closed late)"
+  input: "Time box status"
+  person: any
+  mode: automatic
+  source: "time_box and the company clock in working days"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: judging status"
+  claim: "Whether an intent is on time is worked out from its dates"
+- id: "15.count_line"
+  spec: "15"
+  journey: admin
+  stage: shared
+  screen: "count line and admin note (14 of 212 intents you can see; list needs a refresh)"
+  input: "Intents you can see, rows in the index"
+  person: any
+  mode: automatic
+  source: "total of the unfiltered response and rows in the index"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting a register"
+  claim: "The number of intents a person can see is counted for them"
+- id: "15.state_chips"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (State chips)"
+  input: "Pick states to show"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 1
+  minutes_with: 0.2
+  basis: "estimate: a filter tap"
+  claim: "One tap filters by state"
+- id: "15.area_chips"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (Area chips, More areas)"
+  input: "Pick areas to show"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 1
+  minutes_with: 0.2
+  basis: "estimate: a filter tap"
+  claim: "One tap filters by area"
+- id: "15.role_chips"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (My role chips)"
+  input: "Pick the role you hold"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: checking who is on what"
+  claim: "One tap shows what the person organises or is named in"
+- id: "15.timebox_chips"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (Time box status chips)"
+  input: "Pick time box status"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: checking dates by hand"
+  claim: "One tap shows what is running late"
+- id: "15.rated_chips"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (Rated chips)"
+  input: "Show rated or not yet rated"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 1
+  minutes_with: 0.2
+  basis: "estimate: a filter tap"
+  claim: "One tap filters by rating"
+- id: "15.clear_filters"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (Clear all, active filter strip)"
+  input: "Remove filters"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 0.5
+  minutes_with: 0.1
+  basis: "estimate: one tap"
+  claim: "Filters are removed in one tap"
+- id: "15.show_more"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "/centre/intent (Show more)"
+  input: "Load the next page of results"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 0.5
+  minutes_with: 0.1
+  basis: "estimate: one tap"
+  claim: "Results page on without losing the order"
+- id: "15.filter_sheet"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "phone filter sheet (Show N intents)"
+  input: "Phone filter selection and live count"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 2
+  minutes_with: 0.5
+  basis: "estimate: setting several filters"
+  claim: "Counts update as chips change"
+- id: "15.facet_counts"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "chips (counts)"
+  input: "Count on each chip with other filters applied"
+  person: participant
+  mode: automatic
+  source: "the index"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting records by hand"
+  claim: "Chip counts are exact and per viewer"
+- id: "15.total_line"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "count line (14 of 212 intents you can see)"
+  input: "Filtered and unfiltered totals"
+  person: participant
+  mode: automatic
+  source: "the index"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: counting rows"
+  claim: "The totals are computed"
+- id: "15.list_refreshed"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "list refreshed line"
+  input: "When the list was last built"
+  person: participant
+  mode: automatic
+  source: "the index built-at time"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: asking if the list is current"
+  claim: "The age of the list is shown"
+- id: "15.match_line"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "result card (Matched in)"
+  input: "Where a search word matched"
+  person: participant
+  mode: automatic
+  source: "the index fields the viewer may read"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: skimming for the match"
+  claim: "The card says which field matched, only a field the viewer may read"
+- id: "15.access_line"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "result card (Access line, View summary)"
+  input: "What the person can do with a card they cannot open"
+  person: participant
+  mode: automatic
+  source: "the viewer's tier"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: asking who to approach"
+  claim: "The card names who to ask"
+- id: "15.tier"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "every row (visibility tier)"
+  input: "Tier of each row for the viewer"
+  person: participant
+  mode: derived
+  source: "the people, areas and company role"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: a permission check by hand"
+  claim: "Each row is cut to the viewer's tier by rule"
+- id: "15.working_days"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "result card (time box line)"
+  input: "Working days left or past the end"
+  person: participant
+  mode: automatic
+  source: "the end date and the company calendar"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: counting days"
+  claim: "Days are counted by rule in the company time zone"
+- id: "15.rating_card"
+  spec: "15"
+  journey: consume
+  stage: notice
+  screen: "result card (rating)"
+  input: "Average rating from three"
+  person: participant
+  mode: automatic
+  source: "the ratings"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: collating ratings"
+  claim: "The mean shows from three, never who gave which"
+- id: "15.index_repair"
+  spec: "15"
+  journey: admin
+  stage: notice
+  screen: "index rebuild (upsert, stale check)"
+  input: "Keeping the index current"
+  person: company admin
+  mode: automatic
+  source: "every intent write"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: keeping a register current by hand"
+  claim: "The register updates on every write and repairs itself"

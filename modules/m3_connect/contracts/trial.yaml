@@ -1,0 +1,24 @@
+# Module 3 trial contract (M3-P03). Read by domain/trial.py; the numbers here are the only place a tolerance lives.
+# A figure matches when |ours - theirs| <= max(absolute, relative * |theirs|). `absolute` covers a reported figure rounded to two places.
+tolerance:
+  absolute: 0.005
+  relative: 0.001
+results: [matches, gap, cannot]        # cannot = a needed column, period or figure is missing; a missing figure is never shown as zero
+empty_share: 0.5                        # a column this empty (share of cells) is named as a reason
+min_group: 5                            # a group smaller than this is never shown
+groups: [ready, unclear, unknown]
+risk_kinds: [risk, ambiguity, unknown]
+reasons:                                # plain words; {} fields are filled by code from counts, dates and column names only
+  data_ends: "The data ends on {data_end}, but your figure is as at {bench_end}."
+  period_end: "Your figure is as at {bench_end}; the rule is worked out as at {rule_end}."
+  net: "Your figure leaves out {what}, while the definition says net. Without it Lens gets your figure."
+  half_empty: "{column} is empty in {n} of {total} rows; empty cells were left out, not counted as zero."
+  rows_missing: "Some rows you expected are missing from the data."
+  bad_rule: "The rule could not be run as written, so this measure cannot be worked out. Ask Lens to write it again."
+  group_hidden: "Hidden: fewer than five holdings"
+  none_found: "Lens could not find a reason. Ask whoever works out your figure how they do it."
+  no_benchmark: "There is no figure from you to compare with."
+  no_data: "No data has arrived for this measure yet."
+  no_rule: "The rule could not be written from the definition: {why}"
+  missing_column: "{column} is not in the data received."
+net_words: [net]                        # the definition says one of these, so a deduction in the rule can explain a gap

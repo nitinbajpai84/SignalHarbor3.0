@@ -1,0 +1,8 @@
+# E1d Access to structured data. Reading your own reach is open to any signed-in role; changing groups is company_admin only.
+routes:
+  GET /api/v1/access/mine: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/access/groups: {roles: [company_admin]}
+  POST /api/v1/access/groups: {roles: [company_admin]}
+  POST /api/v1/access/groups/{gid}/members: {roles: [company_admin]}
+  DELETE /api/v1/access/groups/{gid}/members/{uid}: {roles: [company_admin]}
+  POST /api/v1/access/groups/{gid}/scopes: {roles: [company_admin]}

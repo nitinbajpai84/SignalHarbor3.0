@@ -1,0 +1,125 @@
+{
+  "id": "LUM-01",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "K01 Net worth by entity, Sep 2026 - the three entity figures.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "46 ms",
+      "value": 46
+    }
+  ],
+  "error": null,
+  "latency_ms": 46,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/data"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "22875000",
+      "63950000",
+      "16580000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/tiles/t-000001/data",
+      "request": null,
+      "status": 200,
+      "json": {
+        "tile": {
+          "id": "t-000001",
+          "title": "Net worth by entity",
+          "kpi": "K01",
+          "sql": "select entity, sum(net_worth_usd) as net_worth_usd from gold_investment_report_holdings_monthly where report_month = (select max(report_month) from gold_investment_report_holdings_monthly) group by entity order by entity",
+          "spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "mark": "bar",
+            "encoding": {
+              "x": {
+                "field": "entity",
+                "type": "nominal"
+              },
+              "y": {
+                "field": "net_worth_usd",
+                "type": "quantitative"
+              }
+            }
+          },
+          "note": "From gold_investment_report_holdings_monthly.",
+          "state": "accepted"
+        },
+        "spec": {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "mark": "bar",
+          "encoding": {
+            "x": {
+              "field": "entity",
+              "type": "nominal"
+            },
+            "y": {
+              "field": "net_worth_usd",
+              "type": "quantitative"
+            }
+          }
+        },
+        "columns": [
+          "entity",
+          "net_worth_usd"
+        ],
+        "rows": [
+          {
+            "entity": "Entity B",
+            "net_worth_usd": 22875000.0
+          },
+          {
+            "entity": "Evergreen Family Trust",
+            "net_worth_usd": 63950000.0
+          },
+          {
+            "entity": "Evergreen Holdings",
+            "net_worth_usd": 16580000.0
+          }
+        ],
+        "capped": false,
+        "row_cap": 5000,
+        "data_used": {
+          "tables": [
+            "gold_investment_report_holdings_monthly"
+          ],
+          "last_refresh": "2026-10-09T22:36:06+00:00"
+        }
+      },
+      "ms": 46,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 6,
+  "egress": [],
+  "traces": []
+}

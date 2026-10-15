@@ -1,0 +1,15 @@
+# K1 Sensitivity, topic and access to library items. Same people as C4; who may read an item is checked again per item.
+routes:
+  POST /api/v1/library/proposal: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/library/topics: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/library/people: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/library/access: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/library/pulse: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/library/{item_id}/access: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/library/access/{request_id}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/library/{item_id}/grants: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/v1/library/{item_id}/grants/{account_id}: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/v1/library/{item_id}/owner: {roles: [company_admin]}
+  # People and access: the administrator changes a colleague's role (code checks company_admin again).
+  GET /api/v1/people/roles: {roles: [company_admin]}
+  PUT /api/v1/people/{account_id}/roles: {roles: [company_admin]}

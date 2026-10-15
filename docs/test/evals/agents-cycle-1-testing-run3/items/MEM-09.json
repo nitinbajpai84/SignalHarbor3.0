@@ -1,0 +1,327 @@
+{
+  "id": "MEM-09",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "No client figure is stored as memory text - 103,405,000 is not kept.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 3902,
+  "cost": {
+    "calls": 1,
+    "tokens": 440,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 1,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on remember that the net worth is 103,405,000"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD per month. It is waiting for you: accept it or choose Not this. I used what I remember about you: blue lines.",
+        "proposals": [
+          {
+            "id": "t-115b07",
+            "title": "Net worth USD per month",
+            "kpi": "net_worth_usd",
+            "sql": "select \"report_month\" as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true,
+                "color": "#2563eb"
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "color": "blue",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [
+                "blue lines"
+              ],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 3881,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-529bbfb4",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes.",
+            "sure": "model",
+            "at": "2026-10-09T17:45:30+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-0fc4a595a78939c13ed6e4604771f1bc",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-44a73302",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T17:38:29+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-36ab9c1b",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes since last month.",
+            "sure": "model",
+            "at": "2026-10-09T17:36:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-5c5a07045e56a641370383856386a6ba",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-4ead95a1",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "fact",
+            "text": "What do you remember about how I like my charts?",
+            "sure": "said",
+            "at": "2026-10-09T17:33:46+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          },
+          {
+            "id": "m-b6f60a38",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:26+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-dcc5f3a0",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants to track progress on the month-end report.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-e18424b01941488f7a2714db02c65c39",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 10,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "103,405,000",
+          "103405000"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-529bbfb4",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes.",
+            "sure": "model",
+            "at": "2026-10-09T17:45:30+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-0fc4a595a78939c13ed6e4604771f1bc",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-44a73302",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T17:38:29+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-36ab9c1b",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes since last month.",
+            "sure": "model",
+            "at": "2026-10-09T17:36:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-5c5a07045e56a641370383856386a6ba",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-4ead95a1",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "fact",
+            "text": "What do you remember about how I like my charts?",
+            "sure": "said",
+            "at": "2026-10-09T17:33:46+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          },
+          {
+            "id": "m-b6f60a38",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:26+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-dcc5f3a0",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants to track progress on the month-end report.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-e18424b01941488f7a2714db02c65c39",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 11,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 1669,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:51:37+0800"
+    },
+    {
+      "bytes": 13429,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:51:36+0800"
+    }
+  ]
+}

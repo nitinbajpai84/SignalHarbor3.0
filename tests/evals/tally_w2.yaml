@@ -1,0 +1,57 @@
+# Agent quality Wave 2, package T (Tally). Proven offline in tests/v1/test_tally_w2.py (stub loop replaying the recorded finished-loop shapes);
+# these items are for the LIVE run once the model accounts have credit (live: true). Evidence of the original failures:
+# docs/test-evidence/agents/cycle-1/H-aqf15/testing-3/items/MX-TAL-ANALYST.json (H1-09), docs/guides/DEMO-GUIDE-10UC.md section 5 (DG-4).
+- id: TAW2-H109
+  agent: tally
+  role: analyst
+  live: true
+  desc: H1-09 (A13, A2) - a finished loop (tools read, guard 0) shows the model's answer; a dropped one names its reason on the trace.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Why does Entity B's cash differ from the administrator, and by how much?"}]
+  expected: {status: 200, figures: ["12400"], forbidden: ["Rules-only reply"]}
+  scorers: [loop_trace, trace_complete, figure_match, groundedness]
+
+- id: TAW2-DG4-TOTAL
+  agent: tally
+  role: analyst
+  live: true
+  desc: DG-4 (A8, A16) - "why did the total change" on the Fund A revision is answered with the manager-reported difference, not "cannot tell".
+  route: {method: POST, path: "/api/v1/cases/{case:Evergreen Growth I|type=revision}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Why did the total change since the September report?"}]
+  expected: {status: 200, figures: ["180000"], forbidden: ["I cannot tell", "cannot tell that from the records"]}
+  scorers: [figure_match, groundedness, words, loop_trace]
+
+- id: TAW2-DG4-CONFIRMED
+  agent: tally
+  role: analyst
+  live: true
+  desc: DG-4 (A8, A16) - a two-part question on the capital call gets both parts, the due date and the notice's confirmation status.
+  route: {method: POST, path: "/api/v1/cases/{case:Fund the capital call|type=capital_call}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "When is this due and is it confirmed?"}]
+  expected: {status: 200, words: ["20 Oct", "confirmed"]}
+  scorers: [words, groundedness, loop_trace]
+
+- id: TAW2-DG4-ALLOWANCE
+  agent: tally
+  role: analyst
+  live: true
+  desc: DG-4 (A8, A16) - "is this over the allowance?" on the FX forward gives the tolerance and how far over, never "nothing is missing".
+  route: {method: POST, path: "/api/v1/cases/{case:FXF-2026-002}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Is this over the allowance?"}]
+  expected: {status: 200, figures: ["1050.19", "5000"], forbidden: ["nothing is missing", "Nothing needed"]}
+  scorers: [figure_match, groundedness, words, loop_trace]
+
+- id: TAW2-H103-OWNER
+  agent: tally
+  role: owner
+  live: true
+  desc: H1-03 (A1) - the family principal asks Tally like any other role (needs the seeded owner seat in an access group, see AGENT-TRIAGE Wave 2 T).
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Why does Entity B's cash differ?"}]
+  expected: {status: 200, figures: ["12400"]}
+  scorers: [figure_match, groundedness]

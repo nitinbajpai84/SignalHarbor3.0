@@ -1,0 +1,142 @@
+/**
+ * Styles for js/handoff.js (hand-off card + chat), js/room-session.js
+ * (multi-party room), and js/screens/flow.js (the #/flow guided demo).
+ * Theme-agnostic — every color is a var() from css/sh.css's tokens.
+ */
+
+/* ---- handoff.js: the hand-off card ---- */
+.n-handoff-card {
+  background: var(--card); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; max-width: 460px;
+}
+.n-handoff-badge {
+  align-self: flex-start; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--teal2); background: var(--accent-soft); border-radius: 999px; padding: 3px 9px;
+}
+.n-handoff-head { display: flex; align-items: center; gap: 12px; }
+.n-handoff-avatar {
+  flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--night); color: var(--teal);
+  display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+}
+.n-handoff-avatar.sm { width: 30px; height: 30px; font-size: 11px; }
+.n-handoff-name { font-family: var(--font-heading); font-size: 15px; color: var(--ink); }
+.n-handoff-role { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.n-handoff-why .lbl, .n-handoff-ask .lbl {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--teal2); margin-bottom: 4px;
+}
+.n-handoff-why p { margin: 0; font-size: 13px; color: var(--ink2); line-height: 1.5; }
+.n-handoff-ask ul { margin: 0; padding-left: 18px; }
+.n-handoff-ask li { font-size: 12.5px; color: var(--ink2); line-height: 1.5; margin-bottom: 3px; }
+.n-handoff-domain {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 11.5px; color: var(--text-muted);
+  border-top: 1px solid var(--border-hairline); padding-top: 10px;
+}
+.n-handoff-domain svg { flex: none; margin-top: 1px; }
+.n-handoff-actions { display: flex; }
+
+/* ---- handoff.js: the chat panel ---- */
+.n-handoff-chat {
+  background: var(--card); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg);
+  display: flex; flex-direction: column; max-width: 520px; overflow: hidden;
+}
+.n-handoff-chat-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border-hairline); }
+.n-handoff-chat-head .meta { flex: 1; }
+.n-handoff-chat-head .name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.n-handoff-chat-head .role { font-size: 11px; color: var(--text-muted); }
+.n-handoff-status { font-size: 10.5px; color: var(--success-text); background: var(--success-soft); border-radius: 999px; padding: 3px 9px; font-weight: 600; }
+.n-handoff-chat-sub {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--teal2); font-weight: 600;
+  padding: 6px 14px; background: var(--accent-soft);
+}
+.n-handoff-thread { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; max-height: 260px; overflow-y: auto; }
+/* V2-O2: inside the shared docked chat panel (js/handoff.js openHandoffOverlay), the outer
+   `.n-chat-scroll` is the one scrolling region (same convention as the companion's
+   `.n-companion-convo`) so the conversation grows to fill the panel instead of being capped to
+   the flow-embed's fixed 260px. */
+.n-chat-scroll .n-handoff-thread { max-height: none; overflow-y: visible; padding: 0; }
+.n-handoff-turn .who { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin-bottom: 2px; }
+.n-handoff-turn .text { font-size: 13px; color: var(--text-primary); line-height: 1.45; padding: 8px 11px; border-radius: var(--radius-md); background: var(--bg2); max-width: 92%; }
+.n-handoff-turn.human .text { background: var(--accent-soft); margin-left: auto; }
+.n-handoff-turn.agent .text { background: var(--bg2); }
+.n-handoff-form { display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--border-hairline); padding: 8px 10px; }
+.n-handoff-input { flex: 1; border: none; outline: none; background: transparent; color: var(--text-primary); font-size: 12.5px; font-family: inherit; min-width: 0; }
+.n-handoff-talk {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-hairline);
+  background: var(--bg2); color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0;
+}
+.n-handoff-talk:hover { color: var(--text-primary); border-color: var(--teal); }
+.n-handoff-talk.listening { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); animation: n-handoff-talk-blink 1.2s infinite; }
+@media (prefers-reduced-motion: reduce) { .n-handoff-talk.listening { animation: none; } }
+@keyframes n-handoff-talk-blink { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.n-handoff-talk-status { font-size: 11px; color: var(--text-muted); padding: 0 14px 8px; min-height: 0; }
+.n-handoff-talk-status:empty { display: none; }
+.n-handoff-back-row { padding: 0 10px 10px; display: flex; }
+
+/* V2-O2: both js/handoff.js's openHandoffOverlay and js/room-session.js's openRoomOverlay used
+   to be centred modals (`.n-handoff-overlay`/`.n-handoff-modal-wrap`/`.n-handoff-close`,
+   `.n-room-modal`/`-head`/`-title`) — removed. They are now the shared docked chat panel
+   (js/chat-panel.js's `.n-chat-*` classes, css/sh.css), which never covers page content and needs
+   no backdrop/centring of its own. */
+.n-flow-handoff-embed .n-handoff-card, .n-flow-handoff-embed .n-handoff-chat { max-width: none; }
+
+/* ---- room-session.js ---- */
+.n-room-session { display: flex; flex-direction: column; gap: 14px; }
+.n-room-purpose { font-size: 13px; color: var(--ink2); line-height: 1.55; background: var(--bg2); border-radius: var(--radius-md); padding: 11px 13px; }
+.n-room-participants { display: flex; flex-wrap: wrap; gap: 10px; }
+.n-room-progress-bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.n-room-progress-bar .fill { height: 100%; background: var(--teal); transition: width .3s ease; }
+.n-room-progress-label { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.n-room-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .n-room-grid { grid-template-columns: 1fr; } }
+.n-room-agenda { display: flex; flex-direction: column; gap: 12px; }
+.n-room-agenda-row { border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: 10px 12px; background: var(--card); }
+.n-room-agenda-label { font-size: 13px; color: var(--text-primary); margin-bottom: 8px; }
+.n-room-agenda-field { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.n-room-field { flex: 1; min-width: 160px; border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); padding: 6px 9px; font-size: 12.5px; font-family: inherit; background: var(--bg2); color: var(--text-primary); }
+.n-room-field:disabled { opacity: .6; }
+.n-room-upload { display: flex; }
+.n-room-agenda-agent { font-size: 11px; color: var(--teal2); margin-top: 6px; font-weight: 600; }
+.n-room-thread { display: flex; flex-direction: column; gap: 7px; border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: 10px 12px; max-height: 320px; overflow-y: auto; background: var(--bg2); }
+.n-room-thread-line { font-size: 12.5px; line-height: 1.45; }
+.n-room-thread-line .who { font-weight: 700; color: var(--ink); margin-right: 5px; }
+.n-room-thread-line.companion .who { color: var(--teal2); }
+.n-room-closing-card {
+  border: 1px solid var(--success); border-radius: var(--radius-md); padding: 12px 14px; background: var(--success-soft);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.n-room-closing-head { display: flex; align-items: center; gap: 7px; font-weight: 600; color: var(--success-text); }
+.n-room-closing-list { display: flex; flex-direction: column; gap: 6px; }
+.n-room-closing-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; flex-wrap: wrap; }
+.n-room-closing-row .from { color: var(--ink2); }
+.n-room-closing-row .to { color: var(--ink); font-weight: 600; }
+.n-room-audit { font-size: 11.5px; color: var(--text-muted); }
+.n-room-announce { display: flex; align-items: flex-start; gap: 10px; }
+.n-companion-avatar-inline { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--night); color: var(--teal); display: flex; align-items: center; justify-content: center; }
+.n-room-announce-who { font-size: 11.5px; font-weight: 700; color: var(--teal2); }
+.n-room-announce-text { font-size: 13.5px; color: var(--text-primary); margin-top: 2px; }
+.n-room-closed-card {
+  border: 1px solid var(--border-hairline); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; background: var(--card);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.n-room-closed-title { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+/* ---- flow.js: the #/flow guided demo ---- */
+.n-flow-stepnav { display: flex; gap: 6px; padding-bottom: 12px; }
+.n-flow-dot { width: 26px; height: 6px; border-radius: 999px; border: none; background: var(--line); cursor: pointer; padding: 0; }
+.n-flow-dot.done { background: var(--success); }
+.n-flow-dot.current { background: var(--teal); }
+.n-flow-stage { min-height: 220px; border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); padding: 16px 0; }
+.n-flow-step-eyebrow { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--teal2); }
+.n-flow-step-title { font-family: var(--font-heading); font-size: 19px; color: var(--ink); margin-top: 3px; }
+.n-flow-step-body { font-size: 13px; color: var(--ink2); margin-top: 5px; max-width: 640px; line-height: 1.5; }
+.n-flow-step-body-area { margin-top: 16px; }
+.n-flow-companion-line { display: flex; align-items: flex-start; gap: 12px; background: var(--accent-soft); border-radius: var(--radius-md); padding: 13px 15px; max-width: 640px; }
+.n-flow-companion-avatar { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--night); display: flex; align-items: center; justify-content: center; }
+.n-flow-companion-line .text { font-size: 14px; color: var(--ink); line-height: 1.55; }
+.n-companion-checklist.static { display: flex; flex-direction: column; gap: 10px; }
+.n-flow-room-announce-note { font-size: 13.5px; color: var(--ink2); margin: 10px 0 0; max-width: 600px; line-height: 1.5; }
+.n-flow-controls { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; flex-wrap: wrap; gap: 10px; }
+.n-flow-live-link { font-size: 12px; color: var(--teal2); font-weight: 600; text-decoration: none; }
+.n-flow-live-link:hover { text-decoration: underline; }
+.n-flow-back-icon { transform: rotate(180deg); }

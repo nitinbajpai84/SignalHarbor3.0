@@ -1,0 +1,203 @@
+{
+  "id": "TAL-06",
+  "agent": "tally",
+  "role": "participant",
+  "desc": "P17 real breach - Harborview Semiconductor 2,368,000 of 41,200,000 = 5.75%, over the 5% limit by 308,000, cause real breach.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 308000"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 32617,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 7,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Harborview Semiconductor|type=limit_breach}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "5.75",
+      "5",
+      "308000",
+      "2368000"
+    ],
+    "words_any": [
+      [
+        "real breach",
+        "real"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/cases/f75594d6-fe02-4816-aa46-903face30cb9/ask",
+      "request": {
+        "question": "Is this breach real, and how far over is it?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "f75594d6-fe02-4816-aa46-903face30cb9",
+        "kind": "limit_breach",
+        "summary": "Harborview Semiconductor is at 5.75% of the Evergreen Liquid portfolio. The signed maximum is 5%. All 21 input values in the portfolio are recent and verified, so this looks like a real breach. All 21 input values in the portfolio are recent and verified, so this looks like a real breach. Nothing needed for this check is missing. Investment lead: Decide whether to rebalance or to ask the committee for an exception; Tally does not decide. Case owner: Record the decision on the case and send it for check.",
+        "findings": [
+          {
+            "key": "exposure",
+            "text": "Harborview Semiconductor in Evergreen Liquid portfolio: 5.75% of the portfolio against a maximum of 5%. The Harborview Semiconductor share of each portfolio must be at most 5%.",
+            "figure": "5.75%",
+            "chips": []
+          },
+          {
+            "key": "input",
+            "text": "Harborview Semiconductor: 2,368,000 USD, valued 30 Sep 2026 (9 days old), status approved.",
+            "figure": "2,368,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "3c16cd4c-c66b-40a7-a82b-16d8db8b286b"
+              }
+            ]
+          },
+          {
+            "key": "cause",
+            "text": "All 21 input values in the portfolio are recent and verified, so this looks like a real breach.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Investment lead",
+            "text": "Decide whether to rebalance or to ask the committee for an exception; Tally does not decide."
+          },
+          {
+            "who": "Case owner",
+            "text": "Record the decision on the case and send it for check."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "valuation 3c16cd4c-c66b-40a7-a82b-16d8db8b286b"
+        ],
+        "worded_by": "model",
+        "question": "Is this breach real, and how far over is it?",
+        "answer": "All 21 input values in the portfolio are recent and verified, so this looks like a real breach. Harborview Semiconductor stands at 5.75% of the Evergreen Liquid portfolio against a maximum of 5%. The program has not given a figure for the gap, so I won't work it out myself. Nothing needed for this check is missing. Investment lead: Decide whether to rebalance or to ask the committee for an exception; Tally does not decide. Case owner: Record the decision on the case and send it for check.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [
+          {
+            "kind": "explanation",
+            "case_id": "f75594d6-fe02-4816-aa46-903face30cb9",
+            "cause": "real_breach",
+            "item_ref": "",
+            "text": "Cause proposed: a real breach. All 21 input values in the portfolio are recent and verified, so this looks like a real breach.",
+            "note": "All 21 input values in the portfolio are recent and verified, so this looks like a real breach.",
+            "sources": [],
+            "outside_seen": true
+          },
+          {
+            "kind": "next_step",
+            "case_id": "f75594d6-fe02-4816-aa46-903face30cb9",
+            "who": "Investment lead",
+            "action": "raise_policy_question",
+            "text": "Raise a policy question. Investment lead: Decide whether to rebalance or to ask the committee for an exception; Tally does not decide. Case owner: Record the decision on the case and send it for check.",
+            "outside_seen": true
+          }
+        ],
+        "remembered": []
+      },
+      "ms": 32407,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12422,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:23+0800"
+    },
+    {
+      "bytes": 12249,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:19+0800"
+    },
+    {
+      "bytes": 11300,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:16+0800"
+    },
+    {
+      "bytes": 12964,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:10+0800"
+    },
+    {
+      "bytes": 12606,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:05+0800"
+    },
+    {
+      "bytes": 12059,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:01+0800"
+    },
+    {
+      "bytes": 11110,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:42:57+0800"
+    }
+  ]
+}

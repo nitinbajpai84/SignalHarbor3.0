@@ -1,0 +1,129 @@
+# Intent types (Intent Centre v2, spec 02). Chooser, start flow and North read every list from here.
+# Start questions equal files 22, 35, 38, 41, 43 (ruling 2). Gap analysis is not a stage of any type (ruling 10).
+version: 1
+working_days: mon-fri        # company time zone from the profile, else UTC; holidays when the profile sets them
+chooser_heading: "What do you want to do?"
+types:
+  initiative:
+    title: "Initiative"
+    chooser_line: "Run a project or a new initiative, from the first idea to a plan that Build can pick up."
+    open_button: "That is right, open this intent"
+    time_box_days: 10
+    people: {slots: [organiser, sponsor, participants, affected], required_slots: [organiser], sponsor_optional: true}
+    start_questions:
+      - {id: i1, lead: "What are you trying to achieve?", required: true, fields: [goal_line, why], fills: [title, purpose, outcome.goal]}
+      - {id: i2, lead: "Whom do you need to involve, and who is affected?", required: true, fields: [sponsor, involve, affected], unknown_label: "Just me for now", fills: [people.sponsor, people.participants, people.affected]}
+      - {id: i3, lead: "Do you think this needs a build (new data, pipelines, reports)?", required: true, choices: [yes, no, not_sure], fills: [outcome.build_needed]}
+      - {id: i4, lead: "Do we already have a business glossary and technical definitions for this, or will we discover them along the way?", required: true, choices: [yes, some, no], fills: [outcome.definitions_exist]}
+      - {id: i5, lead: "Which areas does this touch?", required: true, fills: [areas]}
+      - {id: i6, lead: "When must this be decided by?", required: true, default: "time_box_days from today", fills: [time_box.ends, outcome.decide_by]}
+    stages:
+      - {key: think_unfiltered, name: "Think unfiltered", default_days: 3, reuses: "m1_intent wall (intent_session.yaml, wall_questions.yaml)"}
+      - {key: define_strategically, name: "Define strategically", default_days: 6, reuses: "m1_intent Define"}
+      - {key: build_ready, name: "Build-ready", default_days: 1, kind: check}
+    outcome:
+      kind: initiative
+      fields: [goal, why, build_needed, definitions_exist, build_ready]
+    closure: {closer: organiser, closer_confirms: sponsor, requires: [signed_charter, build_ready_set, next_filled]}
+    can_become: [build]
+    can_create: [problem, decision]
+    can_come_from: [brainstorm, problem, decision]
+  brainstorm:
+    title: "Brainstorm"
+    chooser_line: "Think with five to nine people to find one idea or one answer."
+    open_button: "Open this brainstorm"
+    time_box_days: 3
+    people: {slots: [organiser, participants, observers], required_slots: [organiser], participants_min: 4, participants_max: 8}
+    start_questions:
+      - {id: b1, lead: "What is the idea or the problem you want to think about?", required: true, fields: [statement, context], fills: [title, purpose, outcome.statement, outcome.context]}
+      - {id: b2, lead: "What would a good outcome look like when the session is over?", required: true, fills: [outcome.good_outcome]}
+      - {id: b3, lead: "Who should think with you? Pick four to eight people.", required: true, fills: [people.participants]}
+      - {id: b4, lead: "Which parts of the company does this touch?", required: true, fills: [areas]}
+      - {id: b5, lead: "When is the live session?", required: true, fields: [session_at, session_minutes], choices: [45, 60], fills: [outcome.session_at, outcome.session_minutes, time_box]}
+    stages:
+      - {key: think_alone, name: "Think alone", default_days: 1}
+      - {key: live_session, name: "Live session", default_days: 1, live: true}
+      - {key: choose, name: "Choose", default_days: 1}
+    outcome: {kind: brainstorm, fields: [statement, good_outcome, session_at, chosen, backed, runners_up, ideas_kept, dropped]}
+    closure: {closer: organiser, closer_confirms: null, requires: [one_chosen_with_reason, next_filled]}
+    can_become: [initiative, backlog]
+    can_create: [decision]
+    can_come_from: [pulse, problem, decision]
+  pulse:                                 # shown as "Weekly check-in"; "Pulse" alone is the daily page
+    title: "Weekly check-in"
+    chooser_line: "Collect what ran, what broke and what is on people's minds in one ops area, every week."
+    open_button: "Start the check-in"
+    time_box_days: 5                     # one week; a new week opens by the clock on the next working day after the close day
+    recurring: weekly
+    rated: false                         # series and weeks are not rated
+    people: {slots: [organiser, participants], required_slots: [organiser], participants_min: 2}   # participants_min chosen
+    start_questions:
+      - {id: p1, lead: "Which ops area is this for?", required: true, fills: [areas]}
+      - {id: p2, lead: "Who reports each week?", required: true, fills: [people.participants]}
+      - {id: p3, lead: "Which day does the week close?", required: true, fields: [close_day, reviewer], default: {close_day: fri, reviewer: organiser}, fills: [series.close_day, series.reviewer]}
+      - {id: p4, lead: "What each person answers each week", required: false, fields: [extra_prompt], fills: [series.extra_prompt]}
+    weekly_prompts:
+      - {id: w1, kind: ran, lead: "What ran well this week?"}
+      - {id: w2, kind: broke, lead: "What broke or nearly broke?"}
+      - {id: w3, kind: thought, lead: "What is on your mind?"}
+    stages:
+      - {key: collect, name: "Collect", default_days: 3}
+      - {key: review, name: "Review", default_days: 1}
+      - {key: sort, name: "Sort", default_days: 1}
+    outcome:                             # an object from open (ruling 6); the series holds the week list, each week holds its items
+      kind: pulse
+      fields: [weeks]
+      week_fields: [week_key, opens, closes, state, items, review, closed_at]
+      item_fields: [id, by_or_anonymous, kind, text, severity, count, amount, ref, fate, fate_reason, decided_by]
+      item_kinds: [ran, broke, thought]
+      fates: [problem, backlog, handled, nothing]
+      week_close: {closer: reviewer, requires: [every_broke_item_has_fate_and_reason], undecided_ran_thought: {fate: nothing, reason: "Not reviewed this week"}}
+    closure: {closer: organiser, closer_confirms: null, requires: [series_ended_with_reason]}
+    can_become: []
+    can_create: [problem, backlog]
+    can_come_from: [decision]
+  problem:
+    title: "Problem"
+    chooser_line: "Something is wrong in operations. Give it an owner and a fix."
+    open_button: "Open this problem"
+    time_box_days: 5
+    people: {slots: [organiser, reporter, owner, affected], required_slots: [reporter], affected_min: 1}   # reporter is the organiser; owner accepted in triage
+    start_questions:
+      - {id: r1, lead: "What is wrong?", required: true, fields: [what, saw], fills: [title, purpose, outcome.what, outcome.saw]}
+      - {id: r2, lead: "Which process or measure is it about?", required: false, unknown_label: "Not sure", fills: [outcome.about]}
+      - {id: r3, lead: "How hard does it bite?", required: true, choices: [slowed, stopped, cost_money], fields: [count, amount], fills: [outcome.bites]}
+      - {id: r4, lead: "Who do you think owns it?", required: false, unknown_label: "I do not know", fills: [people.owner]}
+      - {id: r5, lead: "Which areas are affected?", required: true, fields: [areas, who_feels_it], fills: [areas, people.affected]}
+    stages:
+      - {key: describe, name: "Describe", default_days: 1}
+      - {key: find_cause, name: "Find the cause", default_days: 2}
+      - {key: fix, name: "Fix", default_days: 1}
+      - {key: confirm, name: "Confirm", default_days: 1}
+    outcome: {kind: problem, fields: [what, saw, bites, count, amount, owner_accepted_at, root_cause, fix]}
+    closure: {closer: organiser, closer_confirms: [owner, reporter], requires: [root_cause, fix_with_named_doer, reporter_confirmed_or_accepted_by_name]}
+    can_become: [initiative]
+    can_create: [decision]
+    can_come_from: [pulse, decision]
+  decision:
+    title: "Decision"
+    chooser_line: "Make one decision and keep the options and the reasons."
+    open_button: "Open this decision"
+    time_box_days: 2
+    people: {slots: [organiser, decider, advisers], required_slots: [organiser, decider], advisers_max: 5}   # decider may be the organiser; zero advisers allowed
+    start_questions:
+      - {id: d1, lead: "What must be decided?", required: true, fills: [title, purpose, outcome.question]}
+      - {id: d2, lead: "By when?", required: true, default: "time_box_days from today", fills: [time_box.ends]}
+      - {id: d3, lead: "Who decides?", required: true, default: "sponsor", fills: [people.decider]}
+      - {id: d4, lead: "Whose advice do you want?", required: false, fills: [people.advisers]}
+      - {id: d5, lead: "Which areas does it affect?", required: true, fills: [areas]}
+    stages:
+      - {key: options, name: "Set out the options", default_days: 1}
+      - {key: decide, name: "Decide and record", default_days: 1}
+    outcome: {kind: decision, fields: [question, options, chosen, why]}
+    closure: {closer: organiser, closer_confirms: decider, requires: [chosen_or_no_decision_reason, decider_named, reason]}
+    can_become: [initiative, brainstorm, pulse, problem, decision]   # ruling 7: any type, as source or target
+    can_create: [initiative, brainstorm, pulse, problem, decision]
+    can_come_from: [initiative, brainstorm, pulse, problem, decision]
+closure_common:
+  requires: [why_it_happened, what_came_out, next_one_or_more]
+  next_kinds: [initiative, problem, decision, backlog, handled, nothing]    # nothing needs a reason

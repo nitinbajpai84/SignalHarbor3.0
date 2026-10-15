@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Map: the company map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#5FC2C2;text-decoration:none}a:hover{color:#8FDCDC}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1040px; box-sizing: border-box; background: #0F1B2D; color: #F6F4EE; font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; display: flex; flex-direction: column">
+  <header style="height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid #22344D">
+    <div style="display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 17px"><span style="width: 26px; height: 26px; border-radius: 7px; background: #177878; display: inline-block"></span>Signal Harbor<span style="font-weight: 400; color: #8FA3B0; font-size: 14px; margin-left: 12px">Evergreen Office</span></div>
+    <nav aria-label="Centres" style="display: flex; gap: 28px; font-size: 15px">
+      <a href="Main.dc.html" style="color: #BFD8D5">Action</a>
+      <a href="BuildProjects.dc.html" style="color: #BFD8D5">Build</a>
+      <a href="ConsumeMorningNote.dc.html" style="color: #BFD8D5">Consume</a>
+      <a href="CompanyMap.dc.html" style="color: #F6F4EE; border-bottom: 2px solid #5FC2C2; padding-bottom: 6px">Map</a>
+    </nav>
+    <div style="font-size: 14px; color: #BFD8D5">Anita Rao · Head of data</div>
+  </header>
+  <div style="padding: 20px 32px 0; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap">
+    <div style="display: flex; gap: 10px; align-items: center">
+      <label for="find" style="font-size: 14px; color: #8FA3B0">Find</label>
+      <input id="find" value="Net worth" style="width: 320px; background: #16263D; color: #F6F4EE; border: 1px solid #2E4059; border-radius: 10px; padding: 10px 12px; font: 14px 'IBM Plex Sans', sans-serif">
+    </div>
+    <div role="group" aria-label="Lenses" style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button style="background: #177878; color: #F6F4EE; border: 0; border-radius: 999px; padding: 8px 14px; font: 600 13px 'IBM Plex Sans', sans-serif">Data flow</button>
+      <button style="background: transparent; color: #BFD8D5; border: 1px solid #2E4059; border-radius: 999px; padding: 8px 14px; font: 500 13px 'IBM Plex Sans', sans-serif">Process</button>
+      <button style="background: transparent; color: #BFD8D5; border: 1px solid #2E4059; border-radius: 999px; padding: 8px 14px; font: 500 13px 'IBM Plex Sans', sans-serif">Definitions</button>
+      <button style="background: transparent; color: #BFD8D5; border: 1px solid #2E4059; border-radius: 999px; padding: 8px 14px; font: 500 13px 'IBM Plex Sans', sans-serif">People and decisions</button>
+      <button style="background: transparent; color: #BFD8D5; border: 1px solid #2E4059; border-radius: 999px; padding: 8px 14px; font: 500 13px 'IBM Plex Sans', sans-serif">Health</button>
+      <button style="background: transparent; color: #BFD8D5; border: 1px solid #2E4059; border-radius: 999px; padding: 8px 14px; font: 500 13px 'IBM Plex Sans', sans-serif">Show as a list</button>
+    </div>
+  </div>
+  <main style="flex: 1; padding: 16px 32px 28px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px">
+    <section aria-label="Company graph" style="position: relative; background: #121F33; border: 1px solid #22344D; border-radius: 16px; overflow: hidden">
+      <div style="position: absolute; left: 24px; top: 16px; display: flex; gap: 112px; font: 500 11px 'IBM Plex Mono', monospace; color: #8FA3B0; letter-spacing: 1px"><span>SOURCES</span><span>BRONZE</span><span>SILVER</span><span style="margin-left: 8px">GOLD</span><span style="margin-left: 8px">OUTPUTS</span><span>PEOPLE</span></div>
+      <div style="position: absolute; left: 174px; top: 118px; width: 52px; height: 2px; background: #2E4059"></div>
+      <div style="position: absolute; left: 174px; top: 218px; width: 52px; height: 2px; background: #2E4059"></div>
+      <div style="position: absolute; left: 354px; top: 118px; width: 52px; height: 2px; background: #5FC2C2"></div>
+      <div style="position: absolute; left: 354px; top: 218px; width: 52px; height: 2px; background: #2E4059"></div>
+      <div style="position: absolute; left: 534px; top: 168px; width: 60px; height: 2px; background: #5FC2C2"></div>
+      <div style="position: absolute; left: 534px; top: 268px; width: 60px; height: 2px; background: #5FC2C2"></div>
+      <div style="position: absolute; left: 722px; top: 218px; width: 56px; height: 2px; background: #5FC2C2"></div>
+      <div style="position: absolute; left: 906px; top: 218px; width: 56px; height: 2px; background: #5FC2C2"></div>
+      <div style="position: absolute; left: 24px; top: 96px; width: 150px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #2E4059; border-radius: 12px; font-size: 13px">Fund administrator<div style="font-size: 11px; color: #5FC2C2">daily · on time</div></div>
+      <div style="position: absolute; left: 24px; top: 196px; width: 150px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #E0A34A; border-radius: 12px; font-size: 13px">Manager statements<div style="font-size: 11px; color: #E0A34A">1 late · Cedarpoint</div></div>
+      <div style="position: absolute; left: 226px; top: 96px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #2E4059; border-radius: 12px; font-size: 13px">admin positions</div>
+      <div style="position: absolute; left: 226px; top: 196px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #2E4059; border-radius: 12px; font-size: 13px">statements read</div>
+      <div style="position: absolute; left: 406px; top: 146px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #5FC2C2; border-radius: 12px; font-size: 13px">position snapshots</div>
+      <div style="position: absolute; left: 406px; top: 246px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #5FC2C2; border-radius: 12px; font-size: 13px">valuations</div>
+      <div style="position: absolute; left: 594px; top: 196px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #177878; border: 2px solid #8FDCDC; border-radius: 12px; font-size: 13px; font-weight: 600">holdings monthly<div style="font-size: 11px; font-weight: 400">net worth USD/SGD</div></div>
+      <div style="position: absolute; left: 778px; top: 196px; width: 128px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #5FC2C2; border-radius: 12px; font-size: 13px">Net worth tile<div style="font-size: 11px; color: #8FA3B0">Monthly report</div></div>
+      <div style="position: absolute; left: 962px; top: 196px; width: 92px; padding: 10px 12px; box-sizing: border-box; background: #16263D; border: 1px solid #2E4059; border-radius: 999px; font-size: 13px; text-align: center">Daniel</div>
+      <div style="position: absolute; left: 406px; top: 380px; width: 168px; padding: 10px 12px; box-sizing: border-box; background: #1A2A42; border: 1px dashed #2E4059; border-radius: 12px; font-size: 13px">Definition: net worth<div style="font-size: 11px; color: #8FA3B0">signed by Daniel · 3 Oct</div></div>
+      <div style="position: absolute; left: 489px; top: 290px; width: 2px; height: 90px; background: #2E4059"></div>
+      <div style="position: absolute; left: 594px; top: 380px; width: 190px; padding: 10px 12px; box-sizing: border-box; background: #1A2A42; border: 1px dashed #2E4059; border-radius: 12px; font-size: 13px">Decided in a talk with Lumen<div style="font-size: 11px; color: #8FA3B0">"show SGD beside USD" · Mei</div></div>
+      <div style="position: absolute; left: 657px; top: 240px; width: 2px; height: 140px; background: #2E4059"></div>
+      <div style="position: absolute; left: 778px; top: 380px; width: 150px; padding: 10px 12px; box-sizing: border-box; background: #1A2A42; border: 1px solid #E0A34A; border-radius: 12px; font-size: 13px">Case: Fund A revision<div style="font-size: 11px; color: #E0A34A">raised from a comment</div></div>
+      <div style="position: absolute; left: 24px; bottom: 18px; display: flex; gap: 18px; font-size: 12px; color: #8FA3B0"><span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #5FC2C2; vertical-align: middle"></span> path of the selected figure</span><span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #E0A34A; vertical-align: middle"></span> needs attention</span><span>dashed: decisions and definitions</span></div>
+    </section>
+    <aside aria-label="Selected" style="background: #16263D; border: 1px solid #22344D; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="font: 500 12px 'IBM Plex Mono', monospace; color: #5FC2C2">GOLD TABLE</div>
+      <h2 style="margin: 0; font-size: 20px">holdings monthly</h2>
+      <p style="margin: 0; font-size: 14px; color: #BFD8D5; line-height: 1.5">Month-end holdings by entity in USD and SGD with the status of each value.</p>
+      <div style="display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; font-size: 14px">
+        <span style="color: #8FA3B0">Owner</span><span>Anita Rao</span>
+        <span style="color: #8FA3B0">Project</span><span>Monthly investment report</span>
+        <span style="color: #8FA3B0">Last load</span><span>9 Oct 06:00 · ok</span>
+        <span style="color: #8FA3B0">Fed by</span><span>position snapshots, valuations, portfolios, FX fixing</span>
+        <span style="color: #8FA3B0">Feeds</span><span>Net worth tile, Morning Note</span>
+        <span style="color: #8FA3B0">Defined in</span><span>Net worth, signed 3 Oct</span>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px">
+        <a href="#" style="font-size: 14px">Open in Build › Architecture</a>
+        <a href="#" style="font-size: 14px">Ask Span about this table</a>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

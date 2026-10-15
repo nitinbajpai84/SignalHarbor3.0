@@ -1,0 +1,439 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signal Harbor: three planes and how a question stays safe",
+  "output": "docs/architecture/sh-three-planes-security.html",
+  "quality_profile": "showcase"
+ },
+ "components": [
+  {
+   "id": "agent_defs",
+   "type": "cloud",
+   "label": "Agents",
+   "sublabel": "North, Span, Lumen, Tally",
+   "pos": [
+    380,
+    40
+   ],
+   "size": [
+    170,
+    60
+   ],
+   "tag": "no company data"
+  },
+  {
+   "id": "packs",
+   "type": "cloud",
+   "label": "Packs and playbooks",
+   "sublabel": "per industry, generic",
+   "pos": [
+    620,
+    40
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "router",
+   "type": "cloud",
+   "label": "Model router",
+   "sublabel": "tiers, Testing or Real",
+   "pos": [
+    1165,
+    40
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "user",
+   "type": "external",
+   "label": "Company user",
+   "sublabel": "signed in, one role",
+   "pos": [
+    20,
+    300
+   ],
+   "size": [
+    140,
+    60
+   ]
+  },
+  {
+   "id": "modules",
+   "type": "frontend",
+   "label": "Four centres",
+   "sublabel": "Intent Build Consume Action",
+   "pos": [
+    210,
+    300
+   ],
+   "size": [
+    160,
+    60
+   ],
+   "tag": "role per route"
+  },
+  {
+   "id": "agent",
+   "type": "backend",
+   "label": "Agent runtime",
+   "sublabel": "plans, calls tools, drafts",
+   "pos": [
+    430,
+    300
+   ],
+   "size": [
+    160,
+    60
+   ]
+  },
+  {
+   "id": "minimiser",
+   "type": "security",
+   "label": "Minimiser",
+   "sublabel": "only fields it needs",
+   "pos": [
+    690,
+    300
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "tag": "guard 2"
+  },
+  {
+   "id": "pseudo",
+   "type": "security",
+   "label": "Pseudonymiser",
+   "sublabel": "names become tokens",
+   "pos": [
+    920,
+    300
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "tag": "guard 3"
+  },
+  {
+   "id": "egress",
+   "type": "security",
+   "label": "Egress gateway",
+   "sublabel": "allowlist, blocker, log",
+   "pos": [
+    1170,
+    300
+   ],
+   "size": [
+    160,
+    60
+   ],
+   "tag": "guard 4: only exit"
+  },
+  {
+   "id": "model",
+   "type": "external",
+   "label": "Model provider",
+   "sublabel": "no retention, or private",
+   "pos": [
+    1420,
+    300
+   ],
+   "size": [
+    160,
+    60
+   ]
+  },
+  {
+   "id": "tools",
+   "type": "backend",
+   "label": "Internal tools",
+   "sublabel": "read-only, totals only",
+   "pos": [
+    430,
+    470
+   ],
+   "size": [
+    160,
+    60
+   ],
+   "tag": "guard 1"
+  },
+  {
+   "id": "vault",
+   "type": "database",
+   "label": "Name vault",
+   "sublabel": "real name to token",
+   "pos": [
+    920,
+    470
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "tag": "never leaves"
+  },
+  {
+   "id": "audit",
+   "type": "database",
+   "label": "Audit trail",
+   "sublabel": "run IDs, every call",
+   "pos": [
+    1170,
+    470
+   ],
+   "size": [
+    160,
+    60
+   ]
+  },
+  {
+   "id": "internet",
+   "type": "external",
+   "label": "Internet and tools",
+   "sublabel": "allowlisted, off by default",
+   "pos": [
+    1420,
+    470
+   ],
+   "size": [
+    160,
+    60
+   ]
+  },
+  {
+   "id": "warehouse",
+   "type": "database",
+   "label": "Warehouse",
+   "sublabel": "DuckDB bronze silver gold",
+   "pos": [
+    300,
+    640
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "docs",
+   "type": "database",
+   "label": "Files and taught notes",
+   "sublabel": "local search index",
+   "pos": [
+    560,
+    640
+   ],
+   "size": [
+    170,
+    60
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "Control plane: shared by every customer, holds no company data",
+   "wraps": [
+    "agent_defs",
+    "packs",
+    "router"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "Company environment: module plane and data plane, one per customer",
+   "wraps": [
+    "modules",
+    "agent",
+    "minimiser",
+    "pseudo",
+    "egress",
+    "tools",
+    "vault",
+    "audit",
+    "warehouse",
+    "docs"
+   ]
+  },
+  {
+   "kind": "security-group",
+   "label": "Data plane: owned by the company",
+   "wraps": [
+    "tools",
+    "warehouse",
+    "docs",
+    "vault"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "ask",
+   "from": "user",
+   "to": "modules",
+   "label": "asks",
+   "variant": "emphasis"
+  },
+  {
+   "id": "to-agent",
+   "from": "modules",
+   "to": "agent",
+   "label": "question"
+  },
+  {
+   "id": "use-tools",
+   "from": "agent",
+   "to": "tools",
+   "label": "look up",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "read-wh",
+   "from": "tools",
+   "to": "warehouse",
+   "label": "read gold",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "read-docs",
+   "from": "tools",
+   "to": "docs",
+   "label": "passages",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "prompt",
+   "from": "agent",
+   "to": "minimiser",
+   "label": "draft prompt"
+  },
+  {
+   "id": "minimised",
+   "from": "minimiser",
+   "to": "pseudo",
+   "label": "trimmed"
+  },
+  {
+   "id": "tokens",
+   "from": "pseudo",
+   "to": "vault",
+   "label": "swap names",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "checked",
+   "from": "pseudo",
+   "to": "egress",
+   "label": "tokens only",
+   "variant": "security"
+  },
+  {
+   "id": "out-model",
+   "from": "egress",
+   "to": "model",
+   "label": "HTTPS",
+   "variant": "security"
+  },
+  {
+   "id": "out-net",
+   "from": "egress",
+   "to": "internet",
+   "label": "public terms",
+   "variant": "dashed"
+  },
+  {
+   "id": "log",
+   "from": "egress",
+   "to": "audit",
+   "label": "logs",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "defs",
+   "from": "agent_defs",
+   "to": "agent",
+   "label": "instructions",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "pack-in",
+   "from": "packs",
+   "to": "agent",
+   "label": "playbooks",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "route",
+   "from": "router",
+   "to": "egress",
+   "label": "which model",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "Does every question leave the company?",
+   "items": [
+    "No. Figures are answered inside: tools read the company's own warehouse and return totals, never rows",
+    "Only a short, trimmed prompt goes to the model, with names swapped for tokens; the answer is mapped back inside",
+    "Files, rows and raw records never leave; a group smaller than five is never shown",
+    "Strictest option: a private model inside the client's cloud, so no prompt leaves at all"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "The four guards, in order",
+   "items": [
+    "1 Internal tools: read-only, counts and totals only",
+    "2 Minimiser: keeps only the fields the question needs",
+    "3 Pseudonymiser: company, people, fund and counterparty names become tokens; the vault stays inside",
+    "4 Egress gateway: allowlisted destinations only, blocks any payload with a vault name or a raw record, logs every call"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "Security checks by layer",
+   "items": [
+    "Control plane: generic agents, packs and playbooks only; versioned; no company data or keys",
+    "Module plane: sign-in, a role on every route (refused unless declared), named sign-off at each step",
+    "Data plane: one company per plane, read-only tools, run ID on every load, taught notes kept here",
+    "Exit: allowlist, name and row blocker, full call log; internet is a switch per company, off by default"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "Who trains the agents",
+   "items": [
+    "Span: head of data, data engineer, admin",
+    "Lumen: owner, head of data, admin",
+    "Tally: owner, sponsor, approver, admin; North: admin",
+    "What a company teaches stays in its own data plane; only generic playbooks live in the control plane",
+    "Taught material suggests; it is never an instruction and never the source of a figure"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+# K3 Manager inbox and manager research. Everyone in the company may read what their access to the funds allows (checked in code, E1d);
+# writing a note or drafting a follow-up needs an operations or decision-maker role.
+routes:
+  GET /api/v1/managers/inbox: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/managers/{manager_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/managers/{manager_id}/changes: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/managers/{manager_id}/followup: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/managers/{manager_id}/notes: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/managers/{manager_id}/notes/{note_id}/answered: {roles: [company_admin, sponsor, analyst]}

@@ -1,0 +1,36 @@
+# R1b: the two model sets behind the Testing / Real use switch. Non-secret: provider names and model ids only;
+# keys stay in .env (GOOGLE_API_KEY, OPENROUTER_API_KEY). Reviewed by Nitin. A tier left out uses the .env settings.
+default: testing
+modes:
+  testing:
+    fast: {provider: openrouter, model: qwen/qwen3.7-flash}         # Nitin 10 Oct 11:50: cheapest tool-capable models from the OpenRouter price list
+    specialist: {provider: openrouter, model: openai/gpt-oss-120b}   # 0.037 in / 0.17 out per million tokens
+    manager: {provider: openrouter, model: openai/gpt-oss-120b}
+  real: {}  # SH_MODEL_FAST / SPECIALIST / MANAGER and their SH_MODEL_<TIER>_ALT from .env
+# G1: three agents (north, span, lumen) and N1: Tally, the data analyst of the Action centre. The retired keys resolve to them so nothing breaks.
+agents:
+  north: [north, intent]
+  span: [span, flow, data, intake, investigation]
+  lumen: [lumen, briefing, consumer, nira, lens]
+  tally: [tally]
+# INT3: USD per million tokens {in, out} by model id, for the cost log (cost_usd per call). LIST PRICES TO BE CHECKED by Nitin
+# against the provider's price page (noted 9 Oct 2026); free-tier calls are still priced at list.
+# AQ1 (RC-5): every model of both modes is priced. Anthropic list prices from the provider's model table (cached 25 Sep 2026): Sonnet 5.5
+# 2/10, Opus 5.5 4/20. Haiku 5.5 and the OpenAI _ALT models are not in a price table we hold: `estimated: true` (Haiku at the Haiku 4.5
+# list price; the OpenAI ones at the tier default) until Nitin checks them on the provider's price page.
+prices:
+  qwen/qwen3.7-flash: {in: 0.03, out: 0.13}
+  openai/gpt-oss-120b: {in: 0.037, out: 0.17}
+  gemini-2.5-flash-lite: {in: 0.10, out: 0.40}
+  gemini-2.5-flash: {in: 0.30, out: 2.50}
+  anthropic/claude-sonnet-5.5: {in: 2.00, out: 10.00}
+  anthropic/claude-opus-5.5: {in: 4.00, out: 20.00}
+  anthropic/claude-haiku-5.5: {in: 1.00, out: 5.00, estimated: true}
+  openai/gpt-6-luna: {in: 1.00, out: 5.00, estimated: true}
+  openai/gpt-6.1-sol: {in: 2.00, out: 10.00, estimated: true}
+  openai/gpt-6.1-sol-pro: {in: 4.00, out: 20.00, estimated: true}
+# A model id not listed above is priced at its tier's default and marked estimated (never null, never USD 0).
+tier_prices:
+  fast: {in: 1.00, out: 5.00, estimated: true}
+  specialist: {in: 2.00, out: 10.00, estimated: true}
+  manager: {in: 4.00, out: 20.00, estimated: true}

@@ -1,0 +1,238 @@
+/**
+ * Screen-specific CSS for group Peek's Sense & check (#/sense-check).
+ * Layers on top of css/sh.css tokens (--card, --bg2, --line,
+ * --ink/--ink2, --copper/--copper2, --green/--amber/--red, --radius-md) —
+ * var(--token) only, no hard-coded hex, so both themes stay correct.
+ */
+
+/* ---------- Tab 1: Your sensing ---------- */
+.n-sensing-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .n-sensing-grid { grid-template-columns: 1fr; }
+}
+
+.n-belief-card {
+  background: var(--card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.n-belief-card:last-child { margin-bottom: 0; }
+.n-belief-metric {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.n-belief-arrow {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  color: var(--teal2);
+}
+.n-belief-statement {
+  font-size: 13.5px;
+  color: var(--text-primary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.n-belief-magnitude {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+.n-source-chip {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg2);
+  border: 1px solid var(--border-hairline);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+/* ---------- Tab 2: Four views ---------- */
+.n-connstrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media (max-width: 900px) {
+  .n-connstrip { grid-template-columns: 1fr 1fr; }
+}
+.n-connchip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: var(--bg2);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+.n-connchip.connected { border-left: 3px solid var(--green); color: var(--green); }
+.n-connchip.connected .lbl { color: var(--text-primary); }
+.n-connchip.not-connected { border-left: 3px solid var(--text-muted); color: var(--text-muted); }
+.n-connchip .lbl { font-size: 12.5px; font-weight: 700; }
+.n-connchip .detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.35; }
+
+.n-fourway-row {
+  background: var(--card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.n-fourway-row:last-child { margin-bottom: 0; }
+.n-fourway-kpi {
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.n-fourway-cells {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+@media (max-width: 900px) {
+  .n-fourway-cells { grid-template-columns: 1fr 1fr; }
+}
+.n-fourway-cells .cell {
+  background: var(--bg2);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+}
+.n-fourway-cells .k {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.n-fourway-cells .v { font-size: 13px; color: var(--text-primary); line-height: 1.3; }
+.n-fourway-cells .v.strong { font-weight: 700; color: var(--teal2); }
+.n-fourway-why {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border-hairline);
+  padding-left: 10px;
+  line-height: 1.45;
+}
+
+.n-band-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.n-band-chip.good { color: var(--success-text); background: var(--gbg); }
+.n-band-chip.watch { color: var(--warning-text); background: var(--abg); }
+.n-band-chip.high { color: var(--red); background: var(--rbg); }
+
+.n-legend { display: grid; grid-template-columns: 160px 1fr; gap: 6px 14px; margin: 0; }
+.n-legend dt { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.n-legend dd { font-size: 12.5px; color: var(--text-muted); margin: 0; line-height: 1.4; }
+
+/* ---------- Tab 3: Ambiguities ---------- */
+.n-ambig-row {
+  background: var(--card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.n-ambig-row:last-child { margin-bottom: 0; }
+.n-ambig-title { font-family: var(--font-heading); font-size: 14px; font-weight: 600; }
+.n-ambig-detail { font-size: 12.5px; color: var(--text-muted); margin-top: 5px; line-height: 1.45; }
+
+.n-cause-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--teal2);
+  border: 1px solid var(--teal);
+}
+
+/* ---------- Intent center (#/intent-center) ---------- */
+.n-ic-top {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.n-ic-switcher {
+  flex: 0 0 250px;
+  background: var(--card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 12px 12px 6px;
+}
+.n-ic-switcher-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.n-ic-row {
+  padding: 7px 6px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+.n-ic-row.current {
+  background: var(--bg2);
+  border: 1px solid var(--border-hairline);
+}
+.n-ic-row-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.n-ic-row-label { line-height: 1.3; }
+.n-ic-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.n-ic-header {
+  flex: 1 1 380px;
+  min-width: 280px;
+}
+.n-ic-stat {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.n-ic-stat .k { color: var(--text-muted); }
+.n-ic-stat .v { color: var(--text-primary); font-weight: 600; }
+
+.n-intentcenter-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--bg2);
+  min-height: 220px;
+}
+.n-intentcenter-inner .n-crumb { display: none; } /* avoid a doubled breadcrumb inside the tab */
+.n-intentcenter-inner .n-panel { background: var(--card); }

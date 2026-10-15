@@ -1,0 +1,1021 @@
+Project investment_evidence_to_action {
+  database_type: 'PostgreSQL'
+  Note: '''
+  Logical MVP model for an investment-office evidence-to-action product.
+
+  Principles:
+  - Source records and documents are retained, not overwritten.
+  - Investment estimates and official accounting NAV are separate.
+  - Financial calculations run in deterministic, versioned code.
+  - Agent findings and financial approvals are separate concepts.
+  - Every data-bearing table includes organization_id for tenant scoping.
+
+  Added in the merged version (9 Oct 2026):
+  - Three times on every fact: effective (true in the world), received (office learnt it),
+    recorded (we stored it). "As known at T" filters on recorded_at <= T.
+  - Every observation table can point to the row it supersedes.
+  - Extracted document fields, spreadsheet mappings and control totals, signed business rules,
+    issued report versions and their exception impacts, access scopes for structured data,
+    vector and full-text search columns, and the agent run behind each proposal.
+
+  Enforce in implementation:
+  - PostgreSQL row-level security on organization_id and on access_group_scopes.
+  - Composite (organization_id, id) foreign keys, or RLS, so no row points into another organization.
+  - CHECK constraints noted on metric_evidence, approvals and instrument_identifiers.
+  '''
+}
+
+/* ============================================================
+   1. ORGANIZATION, USERS, PERMISSIONS
+   ============================================================ */
+
+Table organizations {
+  id uuid [pk]
+  name varchar(200) [not null]
+  created_at timestamptz [not null]
+}
+
+Table users {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  external_identity_id varchar(255) [not null]
+  display_name varchar(200) [not null]
+  email varchar(255) [not null]
+  business_role varchar(100)
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+
+  indexes {
+    (organization_id, external_identity_id) [unique]
+    (organization_id, email)
+  }
+}
+
+Table access_groups {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  group_name varchar(150) [not null]
+  description text
+
+  indexes {
+    (organization_id, group_name) [unique]
+  }
+}
+
+Table access_group_memberships {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  access_group_id uuid [not null, ref: > access_groups.id]
+  user_id uuid [not null, ref: > users.id]
+  granted_at timestamptz [not null]
+  granted_by uuid [ref: > users.id]
+  expires_at timestamptz
+
+  indexes {
+    (access_group_id, user_id) [unique]
+  }
+}
+
+/*
+  ADDED. Access to structured data, not only documents.
+  Row-level security on positions, valuations, NAV, cash, metric values and exceptions
+  joins through these scopes.
+*/
+Table access_group_scopes {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  access_group_id uuid [not null, ref: > access_groups.id]
+  scope_type varchar(40) [not null, note: 'legal_entity, portfolio, document_type']
+  scope_value varchar(255) [not null, note: 'legal_entity id, portfolio id or document type']
+  access_level varchar(20) [not null, note: 'full, read, preview']
+
+  indexes {
+    (access_group_id, scope_type, scope_value) [unique]
+  }
+}
+
+/* ============================================================
+   2. INVESTMENT MASTER DATA
+   ============================================================ */
+
+Table legal_entities {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  entity_code varchar(80) [not null]
+  entity_name varchar(200) [not null]
+  base_currency char(3) [not null]
+  active_from date
+  active_to date
+
+  indexes {
+    (organization_id, entity_code) [unique]
+  }
+}
+
+Table portfolios {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  legal_entity_id uuid [not null, ref: > legal_entities.id]
+  portfolio_code varchar(80) [not null]
+  portfolio_name varchar(200) [not null]
+  base_currency char(3) [not null]
+  active_from date
+  active_to date
+
+  indexes {
+    (organization_id, portfolio_code) [unique]
+  }
+}
+
+Table instruments {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  canonical_name varchar(255) [not null]
+  instrument_type varchar(80) [not null, note: 'Examples: listed_equity, fund, bond, option, swap']
+  asset_class varchar(80)
+  manager_name varchar(200)
+  currency char(3)
+  created_at timestamptz [not null]
+
+  indexes {
+    (organization_id, canonical_name)
+  }
+}
+
+/*
+  Maps LGH IDs, administrator IDs, manager fund names,
+  ISINs, Bloomberg identifiers, etc. to one canonical instrument.
+  CHECK / partial unique index: at most one APPROVED mapping per
+  (organization, source system, type, value) at any date.
+*/
+Table instrument_identifiers {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+  source_system_id uuid [not null, ref: > source_systems.id]
+  identifier_type varchar(80) [not null]
+  identifier_value varchar(255) [not null]
+  valid_from date
+  valid_to date
+  mapping_status varchar(40) [not null, note: 'proposed, approved, rejected']
+  proposed_by_agent_run_id uuid [ref: > agent_runs.id, note: 'ADDED: which agent proposed the alias']
+  approved_by uuid [ref: > users.id]
+  approved_at timestamptz
+
+  indexes {
+    (organization_id, source_system_id, identifier_type, identifier_value, valid_from) [unique]
+    (instrument_id, source_system_id)
+  }
+}
+
+/* ============================================================
+   3. SOURCE SYSTEMS AND IMMUTABLE INTAKE
+   ============================================================ */
+
+Table source_systems {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_code varchar(80) [not null]
+  source_name varchar(200) [not null]
+  source_type varchar(80) [not null, note: 'OMS, administrator, manager, market_data, internal, spreadsheet']
+  connection_method varchar(80)
+  owner_user_id uuid [ref: > users.id]
+  licence_scope varchar(255)
+  permitted_use varchar(255) [note: 'ADDED: e.g. display_only, may_index, may_send_to_model']
+  expected_cadence varchar(80)
+  is_active boolean [not null, default: true]
+
+  indexes {
+    (organization_id, source_code) [unique]
+  }
+}
+
+/*
+  ADDED. How a spreadsheet layout maps onto the canonical tables.
+  Proposed by the data agent, approved once by the owner, reused every period.
+  A layout change creates a new version; old batches keep the version they used.
+*/
+Table sheet_mappings {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_system_id uuid [not null, ref: > source_systems.id]
+  file_pattern varchar(255) [not null, note: 'e.g. Positions *.xlsx']
+  sheet_name varchar(150)
+  header_row int
+  version_number int [not null]
+  mapping_status varchar(40) [not null, note: 'proposed, approved, retired']
+  proposed_by_agent_run_id uuid [ref: > agent_runs.id]
+  approved_by uuid [ref: > users.id]
+  approved_at timestamptz
+
+  indexes {
+    (source_system_id, file_pattern, sheet_name, version_number) [unique]
+  }
+}
+
+Table sheet_mapping_columns {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  sheet_mapping_id uuid [not null, ref: > sheet_mappings.id]
+  source_column varchar(150) [not null]
+  target_table varchar(80) [not null, note: 'e.g. position_snapshots']
+  target_field varchar(80) [not null]
+  transform_rule varchar(255) [note: 'e.g. date dd/mm/yyyy, values in thousands']
+
+  indexes {
+    (sheet_mapping_id, source_column) [unique]
+  }
+}
+
+Table source_batches {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_system_id uuid [not null, ref: > source_systems.id]
+  sheet_mapping_id uuid [ref: > sheet_mappings.id, note: 'ADDED: mapping version used for a spreadsheet batch']
+  batch_reference varchar(150) [not null]
+  received_at timestamptz [not null]
+  loaded_at timestamptz [note: 'ADDED']
+  source_period_end date
+  content_hash varchar(128)
+  storage_uri text
+  validation_status varchar(40) [not null, note: 'loaded, rejected_totals, quarantined']
+  validation_summary text
+
+  indexes {
+    (source_system_id, batch_reference) [unique]
+    (organization_id, received_at)
+  }
+}
+
+/*
+  ADDED. A batch is accepted only when what we loaded adds up
+  to the totals stated in the file itself.
+*/
+Table batch_control_totals {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_batch_id uuid [not null, ref: > source_batches.id]
+  measure_name varchar(150) [not null, note: 'e.g. row count, total market value, total cash']
+  expected_value numeric(28,8) [not null, note: 'Read from the source file']
+  loaded_value numeric(28,8)
+  tolerance numeric(28,8)
+  passed boolean
+
+  indexes {
+    (source_batch_id, measure_name) [unique]
+  }
+}
+
+/*
+  Raw records stay immutable. A correction creates a new record
+  and points to the record it supersedes.
+*/
+Table source_records {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_batch_id uuid [not null, ref: > source_batches.id]
+  external_record_id varchar(255)
+  record_type varchar(100) [not null]
+  effective_at timestamptz
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED: when we stored it; drives as-known-at queries']
+  sheet_name varchar(150) [note: 'ADDED: locator for spreadsheet rows']
+  row_number int [note: 'ADDED']
+  cell_range varchar(50) [note: 'ADDED']
+  raw_payload_uri text [not null]
+  content_hash varchar(128) [not null]
+  supersedes_record_id uuid [ref: > source_records.id]
+  quality_status varchar(40) [not null]
+
+  indexes {
+    (source_batch_id, external_record_id)
+    (organization_id, record_type, effective_at)
+    (organization_id, received_at)
+    (organization_id, recorded_at)
+  }
+}
+
+/* ============================================================
+   4. UNSTRUCTURED EVIDENCE / RAG
+   ============================================================ */
+
+Table documents {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_system_id uuid [not null, ref: > source_systems.id]
+  source_record_id uuid [ref: > source_records.id]
+  access_group_id uuid [not null, ref: > access_groups.id]
+  instrument_id uuid [ref: > instruments.id]
+
+  external_document_id varchar(255)
+  document_type varchar(100) [not null]
+  title varchar(300) [not null]
+  original_filename varchar(300)
+  original_uri text [not null]
+  content_hash varchar(128) [not null]
+
+  document_date date
+  valuation_date date
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+
+  document_status varchar(40) [not null, note: 'estimate, revised_estimate, final, policy, research']
+  supersedes_document_id uuid [ref: > documents.id]
+  processing_status varchar(40) [not null]
+  contains_personal_data boolean [note: 'ADDED: from the local scan; such passages need approval before indexing']
+
+  indexes {
+    (organization_id, document_type, received_at)
+    (instrument_id, valuation_date)
+    (content_hash)
+  }
+}
+
+/*
+  Search passages, but always retain a pointer to the original
+  page/table/section. The text is evidence, not an instruction.
+*/
+Table document_passages {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  document_id uuid [not null, ref: > documents.id]
+  access_group_id uuid [not null, ref: > access_groups.id]
+  passage_order int [not null]
+  page_number int
+  line_from int [note: 'ADDED']
+  line_to int [note: 'ADDED']
+  section_label varchar(200)
+  table_reference varchar(100)
+  passage_text text [not null]
+  search_text tsvector [note: 'ADDED: keyword search']
+  embedding vector(384) [note: 'ADDED: pgvector, meaning search; dimension follows the embedding model']
+  extraction_confidence numeric(5,4)
+  embedding_model_version varchar(100)
+  indexed_at timestamptz
+
+  indexes {
+    (document_id, passage_order) [unique]
+    (organization_id, indexed_at)
+  }
+}
+
+/*
+  ADDED. What the intake agent read from a document, where, and who confirmed it.
+  Low-confidence or material values wait for a person before they become observations.
+*/
+Table extracted_fields {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  document_id uuid [not null, ref: > documents.id]
+  document_passage_id uuid [ref: > document_passages.id]
+  field_name varchar(100) [not null, note: 'e.g. nav, units, valuation_date, call_amount, due_date']
+  value_text varchar(255)
+  value_numeric numeric(28,10)
+  currency char(3)
+  page_number int
+  line_number int
+  confidence varchar(20) [not null, note: 'high, medium, low']
+  extracted_by_agent_run_id uuid [ref: > agent_runs.id]
+  review_status varchar(40) [not null, note: 'pending, confirmed, corrected, rejected']
+  reviewed_by uuid [ref: > users.id]
+  reviewed_at timestamptz
+  corrected_value_text varchar(255)
+
+  indexes {
+    (document_id, field_name)
+    (organization_id, review_status)
+  }
+}
+
+/* ============================================================
+   5. STRUCTURED OPERATIONAL AND FINANCIAL OBSERVATIONS
+   ============================================================ */
+
+Table transactions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  portfolio_id uuid [not null, ref: > portfolios.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+
+  external_trade_id varchar(200)
+  transaction_type varchar(80) [not null]
+  trade_date date
+  effective_date date [not null]
+  settlement_date date
+  quantity_delta numeric(28,10)
+  cash_amount numeric(28,8)
+  currency char(3) [not null]
+
+  recorded_at timestamptz [not null]
+  status varchar(40) [not null]
+  supersedes_transaction_id uuid [ref: > transactions.id]
+
+  indexes {
+    (portfolio_id, instrument_id, effective_date)
+    (external_trade_id, recorded_at)
+  }
+}
+
+Table position_snapshots {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  portfolio_id uuid [not null, ref: > portfolios.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+
+  position_date date [not null]
+  as_of_at timestamptz [not null]
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+
+  quantity numeric(28,10)
+  source_market_value numeric(28,8)
+  currency char(3)
+  view_type varchar(50) [not null, note: 'operational, investment, accounting']
+  data_status varchar(50) [not null, note: 'indicative, estimated, official']
+  supersedes_position_id uuid [ref: > position_snapshots.id, note: 'ADDED']
+
+  indexes {
+    (portfolio_id, instrument_id, position_date, received_at)
+    (organization_id, recorded_at)
+  }
+}
+
+/*
+  A manager estimate is not the same thing as approved portfolio P&L.
+  Preserve every valuation and its document/source provenance.
+*/
+Table valuation_observations {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+  portfolio_id uuid [ref: > portfolios.id]
+  source_record_id uuid [ref: > source_records.id]
+  evidence_document_id uuid [ref: > documents.id]
+  extracted_field_id uuid [ref: > extracted_fields.id, note: 'ADDED: the exact value read, with page and line']
+
+  valuation_date date [not null]
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+  value_amount numeric(28,8) [not null]
+  currency char(3) [not null]
+
+  valuation_type varchar(80) [not null, note: 'manager_estimate, manager_final, internal, administrator']
+  approval_status varchar(40) [not null]
+  supersedes_valuation_id uuid [ref: > valuation_observations.id]
+
+  indexes {
+    (instrument_id, portfolio_id, valuation_date, received_at)
+    (organization_id, recorded_at)
+  }
+}
+
+/*
+  What an investor promised to put into a fund (private markets).
+  Append-only: a change is a new row that supersedes the old one.
+  Capital calls and distributions are cash_movements rows linked by commitment_id.
+*/
+Table commitments {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  legal_entity_id uuid [not null, ref: > legal_entities.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+  source_record_id uuid [ref: > source_records.id]
+  commitment_amount numeric(28,8) [not null]
+  currency char(3) [not null]
+  committed_on date [not null]
+  called_to_date numeric(28,8) [note: 'Capital called to date as the commitments file states it, at called_as_at']
+  called_as_at date [note: 'The as-at date of the file that stated called_to_date']
+  recorded_at timestamptz [not null]
+  supersedes_commitment_id uuid [ref: > commitments.id]
+
+  indexes {
+    (legal_entity_id, instrument_id, committed_on)
+  }
+}
+
+Table cash_movements {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  portfolio_id uuid [not null, ref: > portfolios.id]
+  instrument_id uuid [ref: > instruments.id]
+
+  movement_type varchar(80) [not null, note: 'subscription, redemption, call, distribution, dividend, fee']
+  effective_date date [not null]
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+  amount numeric(28,8) [not null]
+  currency char(3) [not null]
+  confirmation_status varchar(40) [not null, note: 'expected, noticed, confirmed, cancelled']
+  supersedes_cash_movement_id uuid [ref: > cash_movements.id, note: 'ADDED']
+  due_date date [note: 'ADDED: when a call must be paid or a distribution is expected']
+  notice_kind varchar(40) [note: 'ADDED: call, distribution, recallable']
+  commitment_id uuid [ref: > commitments.id, note: 'ADDED']
+
+  indexes {
+    (portfolio_id, instrument_id, effective_date)
+  }
+}
+
+/*
+  Covers licensed prices, index levels, rates and FX observations.
+  series_key is the provider's identifier; mapping/entitlement
+  must be checked before use in a report.
+*/
+Table market_observations {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  instrument_id uuid [ref: > instruments.id]
+
+  series_key varchar(150) [not null]
+  observation_type varchar(50) [not null, note: 'price, index_level, rate, fx']
+  observed_at timestamptz [not null]
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+
+  value numeric(28,10) [not null]
+  base_currency char(3)
+  quote_currency char(3)
+  quality_status varchar(40) [not null]
+  supersedes_observation_id uuid [ref: > market_observations.id, note: 'ADDED']
+
+  indexes {
+    (series_key, observed_at, received_at)
+  }
+}
+
+/*
+  The administrator's official view is separately modelled from
+  a fund manager valuation or an investment-team estimate.
+*/
+Table nav_snapshots {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  portfolio_id uuid [not null, ref: > portfolios.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+
+  nav_period_end date [not null]
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null, note: 'ADDED']
+  nav_amount numeric(28,8) [not null]
+  currency char(3) [not null]
+
+  nav_status varchar(50) [not null, note: 'draft, approved_official, restated']
+  approved_at timestamptz
+  supersedes_nav_id uuid [ref: > nav_snapshots.id]
+
+  indexes {
+    (portfolio_id, nav_period_end, received_at)
+  }
+}
+
+/* ============================================================
+   6. BUSINESS RULES AND VERSIONED BENCHMARK DEFINITIONS
+   ============================================================ */
+
+/*
+  ADDED. Tolerances, materiality, estimate use, FX fixing, due dates.
+  Only a signed version takes effect; outputs record the version they used.
+*/
+Table business_rules {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  rule_code varchar(100) [not null, note: 'e.g. cash_tolerance, cio_materiality, estimate_use, fx_fixing, statement_due']
+  rule_type varchar(50) [not null, note: 'tolerance, materiality, policy, fixing, deadline']
+  owner_user_id uuid [not null, ref: > users.id]
+
+  indexes {
+    (organization_id, rule_code) [unique]
+  }
+}
+
+Table rule_versions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  business_rule_id uuid [not null, ref: > business_rules.id]
+  version_number int [not null]
+  definition_text text [not null, note: 'Plain words']
+  parameters jsonb [note: 'Machine form, e.g. {"abs_amount": 5000, "currency": "USD"}']
+  effective_from date [not null]
+  effective_to date
+  approval_status varchar(40) [not null, note: 'draft, approved, retired']
+  approved_by uuid [ref: > users.id]
+  approved_at timestamptz
+
+  indexes {
+    (business_rule_id, version_number) [unique]
+  }
+}
+
+Table benchmark_definitions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+
+  benchmark_code varchar(100) [not null]
+  benchmark_name varchar(200) [not null]
+  version_number int [not null]
+
+  reporting_currency char(3) [not null]
+  effective_from date [not null]
+  effective_to date
+  calculation_method text [not null]
+
+  approval_status varchar(40) [not null, note: 'draft, in_progress, approved; in_progress is never certified']
+  approved_by uuid [ref: > users.id]
+
+  indexes {
+    (organization_id, benchmark_code, version_number) [unique]
+  }
+}
+
+Table benchmark_components {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  benchmark_definition_id uuid [not null, ref: > benchmark_definitions.id]
+
+  market_series_key varchar(150) [not null]
+  component_weight numeric(18,10) [not null]
+  spread_bps numeric(12,4) [note: 'ADDED: premium over the index, e.g. index plus 300 bps']
+  weight_effective_from date [not null]
+  weight_effective_to date
+  treatment_note text
+
+  indexes {
+    (benchmark_definition_id, market_series_key, weight_effective_from)
+  }
+}
+
+/* ============================================================
+   7. INTENTS, CALCULATIONS, AND TRACEABLE OUTPUTS
+   ============================================================ */
+
+Table decision_intents {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  requested_by uuid [not null, ref: > users.id]
+  business_owner_id uuid [ref: > users.id]
+
+  title varchar(250) [not null]
+  business_question text [not null]
+  intended_audience varchar(255)
+  permitted_use varchar(100) [not null]
+  value_basis varchar(40) [note: 'ADDED: investment_estimate or official']
+  output_description text
+  acceptance_tests text [note: 'ADDED: e.g. rebuild July and August within 1 USD']
+  open_choices text [note: 'ADDED']
+
+  status varchar(50) [not null, note: 'draft, pending_approval, approved, retired']
+  contract_version int [not null, default: 1]
+  approved_at timestamptz
+  created_at timestamptz [not null]
+
+  indexes {
+    (organization_id, status, created_at)
+  }
+}
+
+Table metric_definitions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  decision_intent_id uuid [ref: > decision_intents.id]
+
+  metric_code varchar(120) [not null]
+  metric_name varchar(200) [not null]
+  version_number int [not null]
+  definition_text text [not null]
+
+  implementation_ref varchar(255) [not null, note: 'Versioned SQL/dbt/Python reference, not free-form model output']
+  owner_user_id uuid [not null, ref: > users.id]
+  approval_status varchar(40) [not null]
+
+  indexes {
+    (organization_id, metric_code, version_number) [unique]
+  }
+}
+
+Table calculation_runs {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  decision_intent_id uuid [ref: > decision_intents.id]
+
+  started_at timestamptz [not null]
+  finished_at timestamptz
+  knowledge_cutoff_at timestamptz [not null, note: 'Only facts with recorded_at <= this are used']
+  reporting_date date [not null]
+
+  code_version varchar(120) [not null]
+  rule_versions_used jsonb [note: 'ADDED: rule_version ids applied in this run']
+  input_manifest_uri text [not null]
+  run_status varchar(50) [not null]
+  validation_status varchar(50) [not null]
+
+  indexes {
+    (organization_id, reporting_date, knowledge_cutoff_at)
+  }
+}
+
+Table metric_values {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  calculation_run_id uuid [not null, ref: > calculation_runs.id]
+  metric_definition_id uuid [not null, ref: > metric_definitions.id]
+
+  portfolio_id uuid [ref: > portfolios.id]
+  instrument_id uuid [ref: > instruments.id]
+
+  reporting_date date [not null]
+  numeric_value numeric(28,10)
+  currency char(3)
+  value_status varchar(50) [not null, note: 'draft, indicative, certified']
+  published_at timestamptz
+
+  indexes {
+    (portfolio_id, reporting_date, metric_definition_id)
+    (calculation_run_id, metric_definition_id)
+  }
+}
+
+/*
+  Exactly one evidence pointer should be populated per row:
+  source_record_id OR document_passage_id OR extracted_field_id.
+  Enforce with a PostgreSQL CHECK constraint during implementation.
+*/
+Table metric_evidence {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  metric_value_id uuid [not null, ref: > metric_values.id]
+  source_record_id uuid [ref: > source_records.id]
+  document_passage_id uuid [ref: > document_passages.id]
+  extracted_field_id uuid [ref: > extracted_fields.id, note: 'ADDED']
+  evidence_role varchar(80) [not null, note: 'input, adjustment, explanation, policy']
+  note text
+
+  indexes {
+    (metric_value_id, evidence_role)
+  }
+}
+
+/*
+  ADDED. A report as it was issued: which run, which cut-off, who approved it.
+  An issued version is never changed; a correction is a new version that supersedes it.
+*/
+Table reports {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  decision_intent_id uuid [ref: > decision_intents.id]
+  report_code varchar(100) [not null]
+  report_name varchar(200) [not null]
+  audience varchar(150)
+  reporting_currencies varchar(20) [note: 'e.g. USD,SGD']
+
+  indexes {
+    (organization_id, report_code) [unique]
+  }
+}
+
+Table report_versions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  report_id uuid [not null, ref: > reports.id]
+  calculation_run_id uuid [not null, ref: > calculation_runs.id]
+  period_end date [not null]
+  cutoff_at timestamptz [not null]
+  status varchar(40) [not null, note: 'draft, ready_for_review, approved, issued, superseded']
+  approved_by uuid [ref: > users.id]
+  issued_at timestamptz
+  supersedes_report_version_id uuid [ref: > report_versions.id]
+
+  indexes {
+    (report_id, period_end, issued_at)
+  }
+}
+
+/* ============================================================
+   8. EXCEPTIONS, APPROVALS, DAILY PULSE
+   ============================================================ */
+
+Table exceptions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  decision_intent_id uuid [ref: > decision_intents.id]
+  calculation_run_id uuid [ref: > calculation_runs.id]
+  portfolio_id uuid [ref: > portfolios.id]
+  instrument_id uuid [ref: > instruments.id]
+
+  exception_type varchar(100) [not null, note: 'revision, break, missing_document, stale_data, limit_breach, policy_question, capital_call']
+  title varchar(250) [not null]
+  description text
+  detected_at timestamptz [not null]
+
+  candidate_impact_amount numeric(28,8)
+  impact_currency char(3)
+  materiality_status varchar(50) [not null, note: 'unknown, below_threshold, material']
+  materiality_rule_version_id uuid [ref: > rule_versions.id, note: 'ADDED: the signed rule that set materiality']
+  status varchar(50) [not null, note: 'new, assigned, investigating, resolved, rejected']
+
+  owner_user_id uuid [ref: > users.id]
+  due_at timestamptz
+  resolution_code varchar(100)
+  resolved_at timestamptz
+
+  indexes {
+    (organization_id, status, due_at)
+    (portfolio_id, detected_at)
+  }
+}
+
+/*
+  ADDED. Which issued reports an exception touches, and the draft revised figure.
+*/
+Table exception_impacts {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  exception_id uuid [not null, ref: > exceptions.id]
+  report_version_id uuid [not null, ref: > report_versions.id]
+  metric_value_id uuid [ref: > metric_values.id]
+  issued_value numeric(28,10)
+  draft_value numeric(28,10)
+  currency char(3)
+
+  indexes {
+    (exception_id, report_version_id)
+  }
+}
+
+Table exception_events {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  exception_id uuid [not null, ref: > exceptions.id]
+  performed_by_user_id uuid [ref: > users.id]
+  agent_run_id uuid [ref: > agent_runs.id, note: 'ADDED: set when an agent proposed this step']
+
+  event_type varchar(80) [not null, note: 'opened, assigned, explanation_proposed, explanation_confirmed, escalated, resolved, reopened']
+  event_note text
+  occurred_at timestamptz [not null]
+
+  source_record_id uuid [ref: > source_records.id]
+  evidence_document_id uuid [ref: > documents.id]
+
+  indexes {
+    (exception_id, occurred_at)
+  }
+}
+
+/*
+  For an MVP, exactly one of the target IDs should be populated.
+  Enforce the exact-one-target rule with a database CHECK constraint.
+  Maker-checker: decision_by_user_id must differ from the exception owner
+  and from whoever prepared the item (enforce in the service and a trigger).
+*/
+Table approvals {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+
+  decision_intent_id uuid [ref: > decision_intents.id]
+  calculation_run_id uuid [ref: > calculation_runs.id]
+  exception_id uuid [ref: > exceptions.id]
+  report_version_id uuid [ref: > report_versions.id, note: 'ADDED']
+  rule_version_id uuid [ref: > rule_versions.id, note: 'ADDED']
+  sheet_mapping_id uuid [ref: > sheet_mappings.id, note: 'ADDED']
+
+  approval_type varchar(100) [not null]
+  requested_from_user_id uuid [not null, ref: > users.id]
+  decision_by_user_id uuid [ref: > users.id]
+
+  status varchar(40) [not null, note: 'requested, approved, rejected, withdrawn']
+  rationale text
+  requested_at timestamptz [not null]
+  decided_at timestamptz
+
+  indexes {
+    (organization_id, status, requested_from_user_id)
+  }
+}
+
+Table pulse_items {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  recipient_user_id uuid [not null, ref: > users.id]
+  exception_id uuid [ref: > exceptions.id]
+  metric_value_id uuid [ref: > metric_values.id]
+
+  headline varchar(250) [not null]
+  summary text [not null]
+  generated_at timestamptz [not null]
+  as_of_at timestamptz [not null]
+
+  urgency varchar(40) [not null]
+  action_type varchar(80)
+  delivery_status varchar(40) [not null]
+  acknowledged_at timestamptz
+  outcome varchar(40) [note: 'ADDED: acted, dismissed_with_reason, ignored; feeds the usefulness measure']
+
+  indexes {
+    (recipient_user_id, generated_at)
+    (organization_id, urgency, delivery_status)
+  }
+}
+
+/* ============================================================
+   9. AGENT EXECUTION AND AUDITABILITY
+   ============================================================ */
+
+Table agent_runs {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  decision_intent_id uuid [ref: > decision_intents.id]
+  exception_id uuid [ref: > exceptions.id]
+  acting_for_user_id uuid [ref: > users.id, note: 'ADDED: agents act inside this person\'s permissions']
+
+  agent_type varchar(100) [not null, note: 'intent, intake, data, investigation, briefing']
+  model_id varchar(150) [not null]
+  prompt_version varchar(100) [not null]
+  tool_policy_version varchar(100) [not null]
+
+  started_at timestamptz [not null]
+  finished_at timestamptz
+  run_status varchar(50) [not null]
+  tool_calls int [note: 'ADDED: counted against the run limit']
+  cost_usd numeric(12,6) [note: 'ADDED']
+
+  trace_id varchar(150)
+  output_artifact_uri text
+  human_review_status varchar(50)
+
+  indexes {
+    (organization_id, agent_type, started_at)
+    (trace_id)
+  }
+}
+
+TableGroup access {
+  organizations
+  users
+  access_groups
+  access_group_memberships
+  access_group_scopes
+}
+
+TableGroup master_data {
+  legal_entities
+  portfolios
+  instruments
+  instrument_identifiers
+}
+
+TableGroup intake {
+  source_systems
+  sheet_mappings
+  sheet_mapping_columns
+  source_batches
+  batch_control_totals
+  source_records
+}
+
+TableGroup documents_and_rag {
+  documents
+  document_passages
+  extracted_fields
+}
+
+TableGroup observations {
+  transactions
+  position_snapshots
+  valuation_observations
+  commitments
+  cash_movements
+  market_observations
+  nav_snapshots
+}
+
+TableGroup rules_and_benchmarks {
+  business_rules
+  rule_versions
+  benchmark_definitions
+  benchmark_components
+}
+
+TableGroup intents_and_outputs {
+  decision_intents
+  metric_definitions
+  calculation_runs
+  metric_values
+  metric_evidence
+  reports
+  report_versions
+}
+
+TableGroup exceptions_and_pulse {
+  exceptions
+  exception_impacts
+  exception_events
+  approvals
+  pulse_items
+}
+
+TableGroup agents {
+  agent_runs
+}

@@ -1,0 +1,577 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signal Harbor 3.0 on AWS: one assistant, many agents, the data never leaves the customer's account",
+  "output": "docs/architecture/sh-aws-target-architecture.html",
+  "quality_profile": "showcase"
+ },
+ "components": [
+  {
+   "id": "registry",
+   "type": "cloud",
+   "label": "Agent and pack registry",
+   "sublabel": "ECR images, packs, playbooks",
+   "pos": [
+    610,
+    40
+   ],
+   "size": [
+    190,
+    60
+   ],
+   "tag": "no company data"
+  },
+  {
+   "id": "router",
+   "type": "cloud",
+   "label": "Model router",
+   "sublabel": "tiers, Testing or Real",
+   "pos": [
+    865,
+    40
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "evals",
+   "type": "cloud",
+   "label": "Evaluation and release",
+   "sublabel": "answer-key tests per pack",
+   "pos": [
+    1130,
+    40
+   ],
+   "size": [
+    190,
+    60
+   ]
+  },
+  {
+   "id": "user",
+   "type": "external",
+   "label": "Company user",
+   "sublabel": "browser, phone",
+   "pos": [
+    20,
+    300
+   ],
+   "size": [
+    120,
+    60
+   ]
+  },
+  {
+   "id": "edge",
+   "type": "security",
+   "label": "CloudFront + WAF",
+   "sublabel": "TLS, rate limits",
+   "pos": [
+    200,
+    300
+   ],
+   "size": [
+    140,
+    60
+   ]
+  },
+  {
+   "id": "cognito",
+   "type": "security",
+   "label": "Cognito",
+   "sublabel": "SSO (SAML, OIDC), MFA",
+   "pos": [
+    410,
+    300
+   ],
+   "size": [
+    140,
+    60
+   ],
+   "tag": "company sign-in"
+  },
+  {
+   "id": "api",
+   "type": "backend",
+   "label": "Harbor assistant",
+   "sublabel": "one face; routes to specialists",
+   "pos": [
+    610,
+    300
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "specialists",
+   "type": "backend",
+   "label": "Specialist agents",
+   "sublabel": "intent, model, build, dashboards, cases",
+   "pos": [
+    865,
+    300
+   ],
+   "size": [
+    190,
+    60
+   ]
+  },
+  {
+   "id": "guards",
+   "type": "security",
+   "label": "Guard chain",
+   "sublabel": "minimise, mask, number guard",
+   "pos": [
+    865,
+    470
+   ],
+   "size": [
+    170,
+    60
+   ],
+   "tag": "guards 1 to 3"
+  },
+  {
+   "id": "egress",
+   "type": "security",
+   "label": "Egress gateway",
+   "sublabel": "allowlist, blocker, log",
+   "pos": [
+    1130,
+    470
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "tag": "guard 4: only exit"
+  },
+  {
+   "id": "bedrock",
+   "type": "external",
+   "label": "Bedrock models",
+   "sublabel": "in-region, no retention",
+   "pos": [
+    1380,
+    470
+   ],
+   "size": [
+    150,
+    60
+   ]
+  },
+  {
+   "id": "steps",
+   "type": "messagebus",
+   "label": "Step Functions",
+   "sublabel": "build journey, human approval states",
+   "pos": [
+    610,
+    470
+   ],
+   "size": [
+    170,
+    60
+   ],
+   "tag": "the 3 decisions"
+  },
+  {
+   "id": "worker",
+   "type": "backend",
+   "label": "Pipeline workers",
+   "sublabel": "ECS Fargate, DuckDB",
+   "pos": [
+    610,
+    640
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "schedule",
+   "type": "messagebus",
+   "label": "EventBridge",
+   "sublabel": "monthly runs, file arrivals",
+   "pos": [
+    865,
+    640
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "audit",
+   "type": "database",
+   "label": "Audit trail",
+   "sublabel": "S3 Object Lock, CloudTrail",
+   "pos": [
+    1130,
+    640
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "tag": "immutable"
+  },
+  {
+   "id": "market",
+   "type": "external",
+   "label": "Market data",
+   "sublabel": "allowlisted feeds, optional",
+   "pos": [
+    1380,
+    640
+   ],
+   "size": [
+    150,
+    60
+   ]
+  },
+  {
+   "id": "intake",
+   "type": "cloud",
+   "label": "Intake",
+   "sublabel": "S3 drop, SES mailbox, SFTP",
+   "pos": [
+    330,
+    810
+   ],
+   "size": [
+    170,
+    60
+   ]
+  },
+  {
+   "id": "s3",
+   "type": "database",
+   "label": "Company bucket",
+   "sublabel": "raw files, DuckDB, KMS key",
+   "pos": [
+    610,
+    810
+   ],
+   "size": [
+    170,
+    60
+   ],
+   "tag": "bronze silver gold"
+  },
+  {
+   "id": "state",
+   "type": "database",
+   "label": "Aurora Postgres",
+   "sublabel": "threads, decisions, versions",
+   "pos": [
+    865,
+    810
+   ],
+   "size": [
+    190,
+    60
+   ]
+  },
+  {
+   "id": "queue",
+   "type": "database",
+   "label": "ElastiCache Redis",
+   "sublabel": "job queue",
+   "pos": [
+    1130,
+    810
+   ],
+   "size": [
+    150,
+    60
+   ]
+  },
+  {
+   "id": "index",
+   "type": "database",
+   "label": "Local search index",
+   "sublabel": "embeddings in-VPC, taught notes",
+   "pos": [
+    1380,
+    810
+   ],
+   "size": [
+    150,
+    60
+   ]
+  },
+  {
+   "id": "secrets",
+   "type": "security",
+   "label": "Secrets Manager + KMS",
+   "sublabel": "the company's own keys",
+   "pos": [
+    130,
+    810
+   ],
+   "size": [
+    150,
+    60
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "Control plane: our AWS account, shared by every customer, holds no company data",
+   "wraps": [
+    "registry",
+    "router",
+    "evals"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "Customer AWS account (or VPC): the module plane and the data plane, one per customer",
+   "wraps": [
+    "edge",
+    "cognito",
+    "api",
+    "specialists",
+    "guards",
+    "egress",
+    "steps",
+    "worker",
+    "schedule",
+    "audit",
+    "intake",
+    "s3",
+    "state",
+    "queue",
+    "index",
+    "secrets"
+   ]
+  },
+  {
+   "kind": "security-group",
+   "label": "Private subnets: no internet route; PrivateLink to S3, Bedrock, Secrets",
+   "wraps": [
+    "api",
+    "specialists",
+    "guards",
+    "steps",
+    "worker",
+    "s3",
+    "state",
+    "queue",
+    "index",
+    "secrets",
+    "audit"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "u-edge",
+   "from": "user",
+   "to": "edge",
+   "label": "HTTPS",
+   "variant": "emphasis"
+  },
+  {
+   "id": "edge-auth",
+   "from": "edge",
+   "to": "cognito",
+   "label": "sign in"
+  },
+  {
+   "id": "auth-api",
+   "from": "cognito",
+   "to": "api",
+   "label": "token, role"
+  },
+  {
+   "id": "api-spec",
+   "from": "api",
+   "to": "specialists",
+   "label": "delegates"
+  },
+  {
+   "id": "spec-guards",
+   "from": "specialists",
+   "to": "guards",
+   "label": "draft prompt",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "guards-egress",
+   "from": "guards",
+   "to": "egress",
+   "label": "tokens only",
+   "variant": "security"
+  },
+  {
+   "id": "egress-bedrock",
+   "from": "egress",
+   "to": "bedrock",
+   "label": "PrivateLink",
+   "variant": "security"
+  },
+  {
+   "id": "egress-market",
+   "from": "egress",
+   "to": "market",
+   "label": "public terms",
+   "variant": "dashed"
+  },
+  {
+   "id": "egress-audit",
+   "from": "egress",
+   "to": "audit",
+   "label": "logs",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "api-steps",
+   "from": "api",
+   "to": "steps",
+   "label": "starts a thread",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "steps-worker",
+   "from": "steps",
+   "to": "worker",
+   "label": "build and prove",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "sched-steps",
+   "from": "schedule",
+   "to": "worker",
+   "label": "monthly",
+   "variant": "dashed"
+  },
+  {
+   "id": "worker-s3",
+   "from": "worker",
+   "to": "s3",
+   "label": "read, write",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "worker-state",
+   "from": "worker",
+   "to": "state",
+   "label": "runs, versions",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "worker-queue",
+   "from": "worker",
+   "to": "queue",
+   "label": "jobs",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "spec-index",
+   "from": "specialists",
+   "to": "index",
+   "label": "passages",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "intake-s3",
+   "from": "intake",
+   "to": "s3",
+   "label": "files arrive"
+  },
+  {
+   "id": "secrets-s3",
+   "from": "secrets",
+   "to": "intake",
+   "label": "keys",
+   "variant": "dashed"
+  },
+  {
+   "id": "reg-api",
+   "from": "registry",
+   "to": "api",
+   "label": "images, packs",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "router-egress",
+   "from": "router",
+   "to": "egress",
+   "label": "which model",
+   "variant": "dashed",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "evals-reg",
+   "from": "evals",
+   "to": "registry",
+   "label": "gates a release",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "One assistant, many agents",
+   "items": [
+    "The person talks to Harbor only; it delegates to specialists for intent, model, build, dashboards and cases",
+    "Step Functions holds the build journey with three human-approval states: the brief, the understanding, go live",
+    "Everything else runs without a person; EventBridge triggers monthly runs when files arrive"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "What leaves the account, and what never does",
+   "items": [
+    "Prompts reach Bedrock over PrivateLink, in-region, after the guard chain masks names and trims fields",
+    "Rows, files and the DuckDB warehouse never leave the company bucket; groups under five are never shown",
+    "No internet route from private subnets; the egress gateway is the only exit and logs every call",
+    "Strictest option: a private model endpoint in the same account"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "Security by layer",
+   "items": [
+    "Edge: CloudFront, WAF, Cognito SSO with MFA, one role per route",
+    "Data: a bucket and KMS key per company, Aurora encrypted, Object Lock audit trail",
+    "Agents: number guard on every answer, run IDs on every load, playbooks versioned in the control plane",
+    "Tenancy: one AWS account per customer for sovereignty, or one VPC per customer in a shared account for cost"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "How the data engineer stays in the loop",
+   "items": [
+    "Escalation rules route a thread to an engineer when a source type is new, a shared table would change, or a match fails beyond tolerance",
+    "The workbench shows model, mappings, SQL, runs and lineage, one click from any thread",
+    "Autonomy per thread: Assist, Auto, Silent; it steps up only after clean months",
+    "Evaluation gates: a pack ships only when its answer-key tests pass"
+   ]
+  }
+ ]
+}

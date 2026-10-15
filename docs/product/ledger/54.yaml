@@ -1,0 +1,238 @@
+- id: 54.s01.what
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/new?type=decision&from=<brainstorm> (q1)
+  input: What has to be decided
+  person: organiser
+  mode: derived
+  agent: North
+  source: outcome.chosen of the brainstorm
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: retyping the idea into a decision note versus a prefilled question'
+  claim: A Decision started from a brainstorm arrives with its question filled in
+- id: 54.s01.who
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: q2 and q3
+  input: Who decides and who advises
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the brainstorm's sponsor and participants
+  minutes_without: 8
+  minutes_with: 1
+  basis: 'estimate: choosing and emailing people versus accepting names'
+  claim: North suggests the decider and advisers from the brainstorm
+- id: 54.s01.title
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: review
+  input: Title, purpose and the two-day time box
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the brainstorm record
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing a decision memo header versus a draft'
+  claim: North drafts the title and purpose; the time box is set by the type
+- id: 54.s02.accept
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (invitation)
+  input: Accept or decline, with a reason on decline
+  person: adviser
+  mode: manual
+  agent: null
+  source: each adviser
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: an email reply versus a tap'
+  claim: Advisers answer in one tap; a decline carries one line of reason
+- id: 54.s03.note
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: panel 'Notes'
+  input: Your view in a few lines, named or anonymous
+  person: adviser
+  mode: manual
+  agent: null
+  source: the adviser's own view
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: writing an email to the decider versus a short note'
+  claim: Advisers give their own view; anonymous notes are never shown to the decider with a name
+- id: 54.s04.cards
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: panel 'Options'
+  input: Two to four option cards
+  person: organiser
+  mode: derived
+  agent: North
+  source: the notes, the brainstorm and the records the options name
+  minutes_without: 60
+  minutes_with: 6
+  basis: 'estimate: typical office: an options paper written by an analyst'
+  claim: North drafts the option cards with a source tag on each; the organiser edits, merges or removes
+- id: 54.s04.cost
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: option card, 'Cost to change'
+  input: Cost to change
+  person: adviser
+  mode: manual
+  agent: null
+  source: an adviser's note or a record; otherwise 'Not available yet'
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: guessing a cost versus an honest gap'
+  claim: North never invents a cost; the card says nobody gave one
+- id: 54.s05.anon
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: '''Add an option'', ''Add without my name'''
+  input: An option added without a name
+  person: adviser
+  mode: manual
+  agent: null
+  source: the adviser, sealed from everyone
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: a quiet word with the organiser versus a switch'
+  claim: Anonymous options are kept and never ranked up or down
+- id: 54.s06.suggest
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: panel 'North's suggestion'
+  input: A recommendation with two to four sources
+  person: decider
+  mode: derived
+  agent: North
+  source: notes, records and the brainstorm, each source opening
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: an analyst''s recommendation memo'
+  claim: North suggests an option with its sources, or says it has no suggestion and what is missing
+- id: 54.s07.decide
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: panel 'Decide'
+  input: Choose an option and give the reason
+  person: decider
+  mode: manual
+  agent: null
+  source: the decider; North checks the reason is not empty
+  minutes_without: 15
+  minutes_with: 4
+  basis: 'estimate: a decision email versus a recorded choice'
+  claim: Only the decider decides; the reason is required and never filled by an agent
+- id: 54.s07.later
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: '''Decide later'' and ''No decision'' (branches)'
+  input: Decide later once, or no decision with a reason
+  person: decider
+  mode: manual
+  agent: null
+  source: the decider
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: deferring by email versus a recorded deferral'
+  claim: Deferral and no-decision are the decider's acts and are kept with a reason
+- id: 54.s08.record
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: panel 'Record'
+  input: The decision record page
+  person: decider
+  mode: confirm
+  agent: North
+  source: the decision, options, notes and brainstorm
+  minutes_without: 30
+  minutes_with: 2
+  basis: 'estimate: writing a decision log entry versus confirming a page'
+  claim: North drafts the record from the data; nothing is added that is not in the record
+- id: 54.s09.version
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: record, 'Measures this decision touches'
+  input: A version note on each measure the option names
+  person: data owner
+  mode: confirm
+  agent: North
+  source: the catalogue entry and the decision
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: updating the data dictionary versus one confirm'
+  claim: North drafts a pointer note; the measure keeper adds it or leaves it for the owner
+- id: 54.s10.links
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: brainstorm and decision pages
+  input: Links back and forward between brainstorm and decision
+  person: organiser
+  mode: automatic
+  agent: null
+  source: links.from and links.to written at confirm
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: pasting links in two documents versus none'
+  claim: Both records link to each other when the record is confirmed
+- id: 54.s11.closure
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id>/close
+  input: Closure and next step
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the decision record
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: a follow-up email versus a draft'
+  claim: North drafts the closure and offers the follow-on Initiative
+- id: 54.s11.rating
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: rating sheet
+  input: A rating, optionally without my name
+  person: adviser
+  mode: manual
+  agent: null
+  source: the rater
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a feedback form versus one tap'
+  claim: Ratings are anonymous on request and aggregate only above the minimum
+- id: 54.s11.notify
+  spec: '54'
+  journey: decision
+  stage: decide
+  screen: affected person's Pulse line
+  input: What was decided and why, for the affected person
+  person: affected
+  mode: automatic
+  agent: Nira
+  source: the closed record, reason only
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: emailing the outcome versus a line'
+  claim: Affected people find the decision and reason on their Pulse with no one writing to them

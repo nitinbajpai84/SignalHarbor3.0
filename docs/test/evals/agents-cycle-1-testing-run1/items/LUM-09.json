@@ -1,0 +1,192 @@
+{
+  "id": "LUM-09",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"in SGD\" edits the last tile to SGD (WMR 1.3412 at 30 Sep is the universe's rate).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": true,
+      "detail": "tile edited as asked"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10539,
+  "cost": {
+    "calls": 4,
+    "tokens": 15090,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "currency": "SGD"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD per month. It is waiting for you: accept it or choose Not this. I used what I remember about you: blue lines.",
+        "proposals": [
+          {
+            "id": "t-dc56ca",
+            "title": "Net worth USD per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true,
+                "color": "#2563eb"
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "period": "month",
+              "color": "blue",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [
+                "blue lines"
+              ],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 5442,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "in SGD"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I changed 'Net worth USD per month': in SGD. This is a new version waiting for you; accept it to replace the old one, or choose Not this. I will remember: you like figures in SGD. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [
+          {
+            "id": "t-bafeb1",
+            "title": "Net worth SGD per month",
+            "kpi": "net_worth_sgd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_sgd\") as \"net_worth_sgd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true,
+                "color": "#2563eb"
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_sgd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "A new version of 'Net worth USD per month': in SGD.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_sgd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "period": "month",
+              "color": "blue",
+              "table": "gold_investment_report_holdings_monthly"
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "edited": true,
+        "remembered": [
+          "you like figures in SGD"
+        ]
+      },
+      "ms": 5097,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 14764,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:27:14+0800"
+    },
+    {
+      "bytes": 12633,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:27:12+0800"
+    },
+    {
+      "bytes": 14685,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:27:09+0800"
+    },
+    {
+      "bytes": 12628,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:27:07+0800"
+    }
+  ]
+}

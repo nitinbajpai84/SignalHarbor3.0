@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- The join page address carries the join code: no page the person goes on to may learn it from the referrer. -->
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" type="image/png" href="/brand/signal-harbor-mark-32.png" />
+    <!-- Sets the saved theme before the first paint so there is no flash. Same key as src/theme.tsx. -->
+    <script>
+      try {
+        var t = localStorage.getItem("sh_theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+    <!-- Fonts load from Google Fonts for now; vendor them into ui/public/fonts/ before any customer install (offline use falls back to system fonts). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+    <title>Signal Harbor</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

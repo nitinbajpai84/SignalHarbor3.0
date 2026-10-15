@@ -1,0 +1,1 @@
+When the intent of work is signed and the person wants a procedure (SOP), ask only for what the process map lacks: for each step with no control, "What checks this step?"; for each step with no exception path, "What happens when this goes wrong, and who is told?". Put the answers on the step as `control` and `exception`; never invent them.

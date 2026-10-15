@@ -1,0 +1,65 @@
+# A1 matrix (EVT-20, ER-17): each of the six roles asks each of the four agents one data question, inside the company (outside any
+# project for North, Span and Lumen; on the Entity B cash case for Tally). Every cell also scores A2 (loop_trace: model -> tool -> model ->
+# answer, no rules reply), A9 + A14 (trace_complete: tier, tokens, price, time, context and guard steps on the trace), A7 (groundedness) and
+# A13 (egress_clean). Asking is never an action, so a refusal (403) of a question fails A1. The owner seat is Helen Foo (tools/seed_10uc.py).
+# A Tally case a role cannot see is looked up as the company admin, so the role's own answer (or refusal) is what is scored.
+- &north
+  id: MX-NOR-OWNER
+  agent: north
+  role: owner
+  desc: A1 owner asks North what the company already holds about the month-end report.
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "What does the office already have about the monthly investment report? Two or three lines, please."}]
+  expected: {status: 200, words_any: [["report"]], forbidden: ["Traceback"]}
+  scorers: [words, loop_trace, trace_complete, groundedness, egress_clean, latency_ms, cost]
+- {<<: *north, id: MX-NOR-SPONSOR, role: sponsor, desc: A1 sponsor asks North what the company already holds about the month-end report.}
+- {<<: *north, id: MX-NOR-ANALYST, role: analyst, desc: A1 analyst asks North what the company already holds about the month-end report.}
+- {<<: *north, id: MX-NOR-APPROVER, role: approver, desc: A1 approver asks North what the company already holds about the month-end report.}
+- {<<: *north, id: MX-NOR-PARTICIPANT, role: participant, desc: A1 participant asks North what the company already holds about the month-end report.}
+- {<<: *north, id: MX-NOR-ADMIN, role: company_admin, desc: A1 company admin asks North what the company already holds about the month-end report.}
+
+- &span
+  id: MX-SPA-OWNER
+  agent: span
+  role: owner
+  desc: A1 owner asks Span (company talk box) which gold table holds cash by entity and what feeds it.
+  route: {method: POST, path: /api/v1/build/chat}
+  turns: [{say: "Which gold table holds the cash by entity, and which bronze tables feed it?"}]
+  expected: {status: 200, words_any: [["table"]], forbidden: ["Traceback"]}
+  scorers: [words, loop_trace, trace_complete, groundedness, egress_clean, latency_ms, cost]
+- {<<: *span, id: MX-SPA-SPONSOR, role: sponsor, desc: A1 sponsor asks Span which gold table holds cash by entity and what feeds it.}
+- {<<: *span, id: MX-SPA-ANALYST, role: analyst, desc: A1 analyst asks Span which gold table holds cash by entity and what feeds it.}
+- {<<: *span, id: MX-SPA-APPROVER, role: approver, desc: A1 approver asks Span which gold table holds cash by entity and what feeds it.}
+- {<<: *span, id: MX-SPA-PARTICIPANT, role: participant, desc: A1 participant asks Span which gold table holds cash by entity and what feeds it.}
+- {<<: *span, id: MX-SPA-ADMIN, role: company_admin, desc: A1 company admin asks Span which gold table holds cash by entity and what feeds it.}
+
+- &lumen
+  id: MX-LUM-OWNER
+  agent: lumen
+  role: owner
+  desc: A1 owner asks Lumen (company talk box) for net worth by entity at the end of September.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "What was the net worth of each entity at the end of September 2026?"}]
+  expected: {status: 200, words_any: [["net worth", "entity", "entities"]], forbidden: ["Traceback"]}
+  sources: ["/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/data"]  # EVT-T2: the figures Lumen's query_figure reads, from the product's own tile (K01 net worth by entity)
+  scorers: [words, loop_trace, trace_complete, groundedness, egress_clean, latency_ms, cost]
+- {<<: *lumen, id: MX-LUM-SPONSOR, role: sponsor, desc: A1 sponsor asks Lumen for net worth by entity at the end of September.}
+- {<<: *lumen, id: MX-LUM-ANALYST, role: analyst, desc: A1 analyst asks Lumen for net worth by entity at the end of September.}
+- {<<: *lumen, id: MX-LUM-APPROVER, role: approver, desc: A1 approver asks Lumen for net worth by entity at the end of September.}
+- {<<: *lumen, id: MX-LUM-PARTICIPANT, role: participant, desc: A1 participant asks Lumen for net worth by entity at the end of September.}
+- {<<: *lumen, id: MX-LUM-ADMIN, role: company_admin, desc: A1 company admin asks Lumen for net worth by entity at the end of September.}
+
+- &tally
+  id: MX-TAL-OWNER
+  agent: tally
+  role: owner
+  desc: A1 owner asks Tally why Entity B's cash differs from the administrator.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  turns: [{say: "Why does Entity B's cash differ from the administrator, and by how much?"}]
+  expected: {status: 200, words: ["Entity B"], forbidden: ["Traceback"]}
+  scorers: [words, loop_trace, trace_complete, groundedness, egress_clean, latency_ms, cost]
+- {<<: *tally, id: MX-TAL-SPONSOR, role: sponsor, desc: A1 sponsor asks Tally why Entity B's cash differs from the administrator.}
+- {<<: *tally, id: MX-TAL-ANALYST, role: analyst, desc: A1 analyst asks Tally why Entity B's cash differs from the administrator.}
+- {<<: *tally, id: MX-TAL-APPROVER, role: approver, desc: A1 approver asks Tally why Entity B's cash differs from the administrator.}
+- {<<: *tally, id: MX-TAL-PARTICIPANT, role: participant, desc: A1 participant asks Tally why Entity B's cash differs from the administrator.}
+- {<<: *tally, id: MX-TAL-ADMIN, role: company_admin, desc: A1 company admin asks Tally why Entity B's cash differs from the administrator.}

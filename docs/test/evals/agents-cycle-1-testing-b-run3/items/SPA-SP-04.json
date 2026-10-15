@@ -1,0 +1,188 @@
+{
+  "id": "SPA-SP-04",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "SPM-4, SPM-5: on the Build landing, freshness is answered from describe_layers' last load, with the load-time caveat.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> tool -> model -> guard; tools describe_layers"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6495,
+  "cost": {
+    "calls": 2,
+    "tokens": 6745,
+    "usd": 0.002184,
+    "estimated": false
+  },
+  "trace_id": "tr-span-3ae73a59-35a390d7",
+  "forgotten": [
+    "analyst: summary s-6fb2e9d4"
+  ],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "load",
+        "loaded"
+      ]
+    ],
+    "forbidden": [
+      "cannot determine the freshness"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "How fresh is the cash data?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The `gold_investment_report_cash_daily` table, which holds cash by entity, was last loaded on October 9, 2026, at 22:36:06. Please note that the load time is not the date the figures are for.",
+        "rules_only": false,
+        "trace_id": "tr-span-3ae73a59-35a390d7"
+      },
+      "ms": 6494,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 14535,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:40:01+0800",
+      "trace_id": "tr-span-3ae73a59-35a390d7"
+    },
+    {
+      "bytes": 10198,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:39:58+0800",
+      "trace_id": "tr-span-3ae73a59-35a390d7"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-3ae73a59-35a390d7",
+      "status": 200,
+      "runs": [
+        {
+          "id": "2dcd0cf208ea443ab87b937f4fbaa6f4",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:40:03+00:00",
+          "elapsed_ms": 6046,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002184,
+          "trace_id": "tr-span-3ae73a59-35a390d7",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-3ae73a59-35a390d7",
+          "at": "2026-10-10T02:40:03+00:00",
+          "run_id": "2dcd0cf208ea443ab87b937f4fbaa6f4",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 6046,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2811,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2678,
+              "tokens_out": 13,
+              "cost_usd": 0.000836
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "describe_layers",
+              "arg_keys": [
+                "project"
+              ],
+              "result_chars": 4017,
+              "refused": false,
+              "reason": null,
+              "ms": 218
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3015,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3994,
+              "tokens_out": 60,
+              "cost_usd": 0.001348
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002184,
+        "tokens": 6745
+      }
+    }
+  ]
+}

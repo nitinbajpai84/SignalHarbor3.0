@@ -1,0 +1,9 @@
+# W2 MCP. POST /mcp is public to the session check on purpose: it carries its own per-person bearer token and refuses without one (401).
+# The Settings routes need a signed-in company person; a token only ever acts as the person who issued it.
+routes:
+  POST /mcp: {public: true}
+  GET /mcp: {public: true}
+  GET /api/v1/mcp/tokens: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/mcp/tokens: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  DELETE /api/v1/mcp/tokens/{token_id}: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  GET /api/v1/mcp/drafts: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

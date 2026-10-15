@@ -1,0 +1,727 @@
+{
+ "version": 1,
+ "additions": 0,
+ "team": true,
+ "layers": {
+  "bronze": {
+   "label": "Bronze",
+   "title": "as it arrived",
+   "meaning": "Each source's file, kept exactly as received, with when it was loaded."
+  },
+  "silver": {
+   "label": "Silver",
+   "title": "the office's clean model, shared by every project",
+   "meaning": "Cleaned, matched and kept with its history. Grouped the way the core model is."
+  },
+  "gold": {
+   "label": "Gold",
+   "title": "ready-made figures",
+   "meaning": "One table per question a project answers. Dashboards read only these."
+  }
+ },
+ "tables": [
+  {
+   "id": "silver.portfolios",
+   "real": "portfolios",
+   "layer": "silver",
+   "group": "master_data",
+   "group_label": "Master data",
+   "added": false,
+   "rows": 2,
+   "loaded": true,
+   "meaning": "",
+   "source": "",
+   "cadence": "",
+   "owner": "",
+   "project": "",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "meaning": "Identifies the row",
+     "required": true
+    },
+    {
+     "name": "organization_id",
+     "type": "uuid",
+     "meaning": "Links to organizations",
+     "required": true
+    },
+    {
+     "name": "legal_entity_id",
+     "type": "uuid",
+     "meaning": "Links to legal_entities",
+     "required": true
+    },
+    {
+     "name": "portfolio_code",
+     "type": "varchar(80)",
+     "meaning": "",
+     "required": true
+    },
+    {
+     "name": "portfolio_name",
+     "type": "varchar(200)",
+     "meaning": "",
+     "required": true
+    }
+   ],
+   "reads": [],
+   "feeds": []
+  },
+  {
+   "id": "silver.instruments",
+   "real": "instruments",
+   "layer": "silver",
+   "group": "master_data",
+   "group_label": "Master data",
+   "added": false,
+   "rows": 3,
+   "loaded": true,
+   "meaning": "",
+   "source": "",
+   "cadence": "",
+   "owner": "",
+   "project": "",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "meaning": "Identifies the row",
+     "required": true
+    },
+    {
+     "name": "organization_id",
+     "type": "uuid",
+     "meaning": "Links to organizations",
+     "required": true
+    },
+    {
+     "name": "canonical_name",
+     "type": "varchar(255)",
+     "meaning": "",
+     "required": true
+    },
+    {
+     "name": "instrument_type",
+     "type": "varchar(80)",
+     "meaning": "Examples: listed_equity, fund, bond, option, swap",
+     "required": true
+    },
+    {
+     "name": "asset_class",
+     "type": "varchar(80)",
+     "meaning": "",
+     "required": false
+    }
+   ],
+   "reads": [],
+   "feeds": []
+  },
+  {
+   "id": "silver.position_snapshots",
+   "real": "position_snapshots",
+   "layer": "silver",
+   "group": "observations",
+   "group_label": "Observations",
+   "added": false,
+   "rows": 0,
+   "loaded": false,
+   "meaning": "",
+   "source": "",
+   "cadence": "",
+   "owner": "",
+   "project": "",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "meaning": "Identifies the row",
+     "required": true
+    },
+    {
+     "name": "organization_id",
+     "type": "uuid",
+     "meaning": "Links to organizations",
+     "required": true
+    },
+    {
+     "name": "source_record_id",
+     "type": "uuid",
+     "meaning": "Links to source_records",
+     "required": true
+    },
+    {
+     "name": "portfolio_id",
+     "type": "uuid",
+     "meaning": "Links to portfolios",
+     "required": true
+    },
+    {
+     "name": "instrument_id",
+     "type": "uuid",
+     "meaning": "Links to instruments",
+     "required": true
+    }
+   ],
+   "reads": [],
+   "feeds": []
+  },
+  {
+   "id": "silver.valuation_observations",
+   "real": "valuation_observations",
+   "layer": "silver",
+   "group": "observations",
+   "group_label": "Observations",
+   "added": false,
+   "rows": 3,
+   "loaded": true,
+   "meaning": "Valuations",
+   "source": "",
+   "cadence": "",
+   "owner": "Leela Raman",
+   "project": "Monthly investment report",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "meaning": "Identifies the row",
+     "required": true
+    },
+    {
+     "name": "organization_id",
+     "type": "uuid",
+     "meaning": "Links to organizations",
+     "required": true
+    },
+    {
+     "name": "instrument_id",
+     "type": "uuid",
+     "meaning": "Links to instruments",
+     "required": true
+    },
+    {
+     "name": "portfolio_id",
+     "type": "uuid",
+     "meaning": "Links to portfolios",
+     "required": false
+    },
+    {
+     "name": "source_record_id",
+     "type": "uuid",
+     "meaning": "Links to source_records",
+     "required": false
+    }
+   ],
+   "reads": [
+    "bronze.administrator_export_valuations"
+   ],
+   "feeds": [
+    {
+     "kind": "table",
+     "id": "gold.monthly_report_valuation_monthly",
+     "label": "gold.monthly_report_valuation_monthly",
+     "project": "Monthly investment report"
+    },
+    {
+     "kind": "dashboard",
+     "id": "dash:d1",
+     "label": "Net worth by month",
+     "project": "Monthly investment report"
+    }
+   ]
+  },
+  {
+   "id": "silver.benchmark_definitions",
+   "real": "benchmark_definitions",
+   "layer": "silver",
+   "group": "rules_and_benchmarks",
+   "group_label": "Rules and benchmarks",
+   "added": false,
+   "rows": 0,
+   "loaded": false,
+   "meaning": "",
+   "source": "",
+   "cadence": "",
+   "owner": "",
+   "project": "",
+   "columns": [
+    {
+     "name": "id",
+     "type": "uuid",
+     "meaning": "Identifies the row",
+     "required": true
+    },
+    {
+     "name": "organization_id",
+     "type": "uuid",
+     "meaning": "Links to organizations",
+     "required": true
+    },
+    {
+     "name": "benchmark_code",
+     "type": "varchar(100)",
+     "meaning": "",
+     "required": true
+    },
+    {
+     "name": "benchmark_name",
+     "type": "varchar(200)",
+     "meaning": "",
+     "required": true
+    },
+    {
+     "name": "version_number",
+     "type": "int",
+     "meaning": "",
+     "required": true
+    }
+   ],
+   "reads": [],
+   "feeds": []
+  },
+  {
+   "id": "bronze.administrator_export",
+   "real": "bronze_administrator_export",
+   "layer": "bronze",
+   "group": "",
+   "group_label": "",
+   "added": false,
+   "rows": null,
+   "loaded": false,
+   "meaning": "Raw export from administrator",
+   "source": "Fund administrator",
+   "cadence": "daily",
+   "owner": "Mei Tan",
+   "project": "",
+   "columns": [
+    {
+     "name": "isin",
+     "type": "text",
+     "meaning": "As received",
+     "required": false
+    }
+   ],
+   "reads": [],
+   "feeds": []
+  },
+  {
+   "id": "bronze.administrator_export_valuations",
+   "real": "bronze_administrator_export_valuations",
+   "layer": "bronze",
+   "group": "",
+   "group_label": "",
+   "added": false,
+   "rows": null,
+   "loaded": false,
+   "meaning": "Valuations as landed",
+   "source": "Fund administrator",
+   "cadence": "daily",
+   "owner": "Mei Tan",
+   "project": "Monthly investment report",
+   "columns": [
+    {
+     "name": "isin",
+     "type": "text",
+     "meaning": "As received",
+     "required": false
+    }
+   ],
+   "reads": [],
+   "feeds": [
+    {
+     "kind": "table",
+     "id": "silver.valuation_observations",
+     "label": "silver.valuation_observations",
+     "project": "Monthly investment report"
+    },
+    {
+     "kind": "table",
+     "id": "gold.monthly_report_valuation_monthly",
+     "label": "gold.monthly_report_valuation_monthly",
+     "project": "Monthly investment report"
+    },
+    {
+     "kind": "dashboard",
+     "id": "dash:d1",
+     "label": "Net worth by month",
+     "project": "Monthly investment report"
+    }
+   ]
+  },
+  {
+   "id": "gold.monthly_report_valuation_monthly",
+   "real": "gold_monthly_report_valuation_monthly",
+   "layer": "gold",
+   "group": "",
+   "group_label": "",
+   "added": false,
+   "rows": 1,
+   "loaded": true,
+   "meaning": "Value by month",
+   "source": "",
+   "cadence": "",
+   "owner": "Leela Raman",
+   "project": "Monthly investment report",
+   "columns": [
+    {
+     "name": "month",
+     "type": "date",
+     "meaning": "",
+     "required": false
+    }
+   ],
+   "reads": [
+    "bronze.administrator_export_valuations",
+    "silver.valuation_observations"
+   ],
+   "feeds": [
+    {
+     "kind": "dashboard",
+     "id": "dash:d1",
+     "label": "Net worth by month",
+     "project": "Monthly investment report"
+    }
+   ]
+  }
+ ],
+ "counts": {
+  "loaded": 4,
+  "whole": 8
+ },
+ "intro": "How data is kept, in three layers. Model version 1: the core model Span starts from.",
+ "lineage": {
+  "nodes": [
+   {
+    "id": "bronze.administrator_export",
+    "kind": "bronze",
+    "label": "bronze.administrator_export",
+    "used_by": 0
+   },
+   {
+    "id": "bronze.administrator_export_valuations",
+    "kind": "bronze",
+    "label": "bronze.administrator_export_valuations",
+    "used_by": 0
+   },
+   {
+    "id": "bronze.manager_email_statement",
+    "kind": "bronze",
+    "label": "bronze.manager_email_statement",
+    "used_by": 0
+   },
+   {
+    "id": "dash:d1",
+    "kind": "dashboard",
+    "label": "Net worth by month",
+    "used_by": 0
+   },
+   {
+    "id": "gold.monthly_report_valuation_monthly",
+    "kind": "gold",
+    "label": "gold.monthly_report_valuation_monthly",
+    "used_by": 0
+   },
+   {
+    "id": "project:prj-3022ccae",
+    "kind": "project",
+    "label": "Monthly investment report",
+    "used_by": 0
+   },
+   {
+    "id": "silver.access_group_memberships",
+    "kind": "silver",
+    "label": "silver.access_group_memberships",
+    "used_by": 0
+   },
+   {
+    "id": "silver.access_group_scopes",
+    "kind": "silver",
+    "label": "silver.access_group_scopes",
+    "used_by": 0
+   },
+   {
+    "id": "silver.access_groups",
+    "kind": "silver",
+    "label": "silver.access_groups",
+    "used_by": 0
+   },
+   {
+    "id": "silver.agent_runs",
+    "kind": "silver",
+    "label": "silver.agent_runs",
+    "used_by": 0
+   },
+   {
+    "id": "silver.approvals",
+    "kind": "silver",
+    "label": "silver.approvals",
+    "used_by": 0
+   },
+   {
+    "id": "silver.batch_control_totals",
+    "kind": "silver",
+    "label": "silver.batch_control_totals",
+    "used_by": 0
+   },
+   {
+    "id": "silver.benchmark_components",
+    "kind": "silver",
+    "label": "silver.benchmark_components",
+    "used_by": 0
+   },
+   {
+    "id": "silver.benchmark_definitions",
+    "kind": "silver",
+    "label": "silver.benchmark_definitions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.business_rules",
+    "kind": "silver",
+    "label": "silver.business_rules",
+    "used_by": 0
+   },
+   {
+    "id": "silver.calculation_runs",
+    "kind": "silver",
+    "label": "silver.calculation_runs",
+    "used_by": 0
+   },
+   {
+    "id": "silver.cash_movements",
+    "kind": "silver",
+    "label": "silver.cash_movements",
+    "used_by": 0
+   },
+   {
+    "id": "silver.commitments",
+    "kind": "silver",
+    "label": "silver.commitments",
+    "used_by": 0
+   },
+   {
+    "id": "silver.decision_intents",
+    "kind": "silver",
+    "label": "silver.decision_intents",
+    "used_by": 0
+   },
+   {
+    "id": "silver.document_passages",
+    "kind": "silver",
+    "label": "silver.document_passages",
+    "used_by": 0
+   },
+   {
+    "id": "silver.documents",
+    "kind": "silver",
+    "label": "silver.documents",
+    "used_by": 0
+   },
+   {
+    "id": "silver.exception_events",
+    "kind": "silver",
+    "label": "silver.exception_events",
+    "used_by": 0
+   },
+   {
+    "id": "silver.exception_impacts",
+    "kind": "silver",
+    "label": "silver.exception_impacts",
+    "used_by": 0
+   },
+   {
+    "id": "silver.exceptions",
+    "kind": "silver",
+    "label": "silver.exceptions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.extracted_fields",
+    "kind": "silver",
+    "label": "silver.extracted_fields",
+    "used_by": 0
+   },
+   {
+    "id": "silver.instrument_identifiers",
+    "kind": "silver",
+    "label": "silver.instrument_identifiers",
+    "used_by": 0
+   },
+   {
+    "id": "silver.instruments",
+    "kind": "silver",
+    "label": "silver.instruments",
+    "used_by": 0
+   },
+   {
+    "id": "silver.legal_entities",
+    "kind": "silver",
+    "label": "silver.legal_entities",
+    "used_by": 0
+   },
+   {
+    "id": "silver.market_observations",
+    "kind": "silver",
+    "label": "silver.market_observations",
+    "used_by": 0
+   },
+   {
+    "id": "silver.metric_definitions",
+    "kind": "silver",
+    "label": "silver.metric_definitions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.metric_evidence",
+    "kind": "silver",
+    "label": "silver.metric_evidence",
+    "used_by": 0
+   },
+   {
+    "id": "silver.metric_values",
+    "kind": "silver",
+    "label": "silver.metric_values",
+    "used_by": 0
+   },
+   {
+    "id": "silver.nav_snapshots",
+    "kind": "silver",
+    "label": "silver.nav_snapshots",
+    "used_by": 0
+   },
+   {
+    "id": "silver.organizations",
+    "kind": "silver",
+    "label": "silver.organizations",
+    "used_by": 0
+   },
+   {
+    "id": "silver.portfolios",
+    "kind": "silver",
+    "label": "silver.portfolios",
+    "used_by": 0
+   },
+   {
+    "id": "silver.position_snapshots",
+    "kind": "silver",
+    "label": "silver.position_snapshots",
+    "used_by": 0
+   },
+   {
+    "id": "silver.pulse_items",
+    "kind": "silver",
+    "label": "silver.pulse_items",
+    "used_by": 0
+   },
+   {
+    "id": "silver.report_versions",
+    "kind": "silver",
+    "label": "silver.report_versions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.reports",
+    "kind": "silver",
+    "label": "silver.reports",
+    "used_by": 0
+   },
+   {
+    "id": "silver.rule_versions",
+    "kind": "silver",
+    "label": "silver.rule_versions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.sheet_mapping_columns",
+    "kind": "silver",
+    "label": "silver.sheet_mapping_columns",
+    "used_by": 0
+   },
+   {
+    "id": "silver.sheet_mappings",
+    "kind": "silver",
+    "label": "silver.sheet_mappings",
+    "used_by": 0
+   },
+   {
+    "id": "silver.source_batches",
+    "kind": "silver",
+    "label": "silver.source_batches",
+    "used_by": 0
+   },
+   {
+    "id": "silver.source_records",
+    "kind": "silver",
+    "label": "silver.source_records",
+    "used_by": 0
+   },
+   {
+    "id": "silver.source_systems",
+    "kind": "silver",
+    "label": "silver.source_systems",
+    "used_by": 0
+   },
+   {
+    "id": "silver.transactions",
+    "kind": "silver",
+    "label": "silver.transactions",
+    "used_by": 0
+   },
+   {
+    "id": "silver.users",
+    "kind": "silver",
+    "label": "silver.users",
+    "used_by": 0
+   },
+   {
+    "id": "silver.valuation_observations",
+    "kind": "silver",
+    "label": "silver.valuation_observations",
+    "used_by": 1
+   },
+   {
+    "id": "source:Fund administrator",
+    "kind": "source",
+    "label": "Fund administrator",
+    "used_by": 0
+   },
+   {
+    "id": "source:Manager statements by email",
+    "kind": "source",
+    "label": "Manager statements by email",
+    "used_by": 0
+   }
+  ],
+  "edges": [
+   {
+    "from": "bronze.administrator_export_valuations",
+    "to": "silver.valuation_observations"
+   },
+   {
+    "from": "gold.monthly_report_valuation_monthly",
+    "to": "dash:d1"
+   },
+   {
+    "from": "gold.monthly_report_valuation_monthly",
+    "to": "project:prj-3022ccae"
+   },
+   {
+    "from": "silver.valuation_observations",
+    "to": "gold.monthly_report_valuation_monthly"
+   },
+   {
+    "from": "source:Fund administrator",
+    "to": "bronze.administrator_export"
+   },
+   {
+    "from": "source:Fund administrator",
+    "to": "bronze.administrator_export_valuations"
+   },
+   {
+    "from": "source:Manager statements by email",
+    "to": "bronze.manager_email_statement"
+   }
+  ]
+ }
+}

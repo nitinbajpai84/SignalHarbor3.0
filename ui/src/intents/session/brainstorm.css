@@ -1,0 +1,73 @@
+/* The Brainstorm session (spec 36): the wall's tokens and card styles (wall.css) with one lane, a phase strip and a clock. */
+.bs-live .ds-wall__body { align-items: start; grid-template-columns: minmax(0, 1fr) 300px; }
+.bs-statement { display: flex; flex-direction: column; gap: 4px; }
+.bs-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ds-s3); }
+.bs-rule { margin: 4px 0 0; font-size: 14px; color: var(--ds-ink-muted); }
+.bs-clock { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ds-teal-bright); line-height: 1; }
+.bs-clock--over { color: var(--ds-red); }
+.bs-clock--none { font-size: 14px; font-weight: 400; color: var(--ds-ink-muted); }
+.bs-prompt { padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s1); }
+.bs-prompt p { margin: 0; font-size: 14px; line-height: 1.5; }
+.bs-box { padding: var(--ds-s2); display: flex; flex-direction: column; gap: var(--ds-s1); }
+.bs-box textarea, .bs-invite textarea, .bs-side textarea, .bs-box input, .bs-groups input, .bs-aside select, .bs-box select { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ds-line-2); background: var(--ds-ground); color: var(--ds-ink); font: inherit; font-size: 14px; min-height: 44px; box-sizing: border-box; width: 100%; resize: vertical; }
+.bs-bar select { width: auto; min-height: 36px; padding: 4px 8px; }
+.bs-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-s1); }
+.bs-note { margin: 0; font-size: 14px; color: var(--ds-ink-muted); }
+.bs-link { background: none; border: 0; padding: 4px 0; min-height: 32px; color: var(--ds-teal-bright); font: inherit; font-size: 14px; text-decoration: underline; cursor: pointer; text-align: left; }
+.bs-idea__text { background: none; border: 0; padding: 0; text-align: left; color: inherit; font: inherit; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; }
+.bs-idea__meta { display: inline-flex; gap: 6px; align-items: center; }
+.bs-panel { padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s1); margin-bottom: var(--ds-s2); }
+.bs-panel h3, .bs-groups h3, .bs-side h3 { margin: 0; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ds-teal-bright); }
+.bs-replies { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.bs-replies li { display: flex; justify-content: space-between; gap: var(--ds-s2); border-top: 1px solid var(--ds-line); padding-top: 4px; }
+.bs-replies small { color: var(--ds-ink-muted); white-space: nowrap; }
+.bs-groups ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bs-group { width: 100%; display: flex; justify-content: space-between; gap: var(--ds-s1); padding: 10px 12px; min-height: 44px; border-radius: 8px; border: 1px solid var(--ds-line-2); background: var(--ds-ground); color: var(--ds-ink); font: inherit; font-size: 14px; cursor: pointer; }
+.bs-group--on { border-color: var(--ds-teal-bright); }
+.bs-aside { display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bs-side { padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s1); }
+.bs-invite { max-width: 640px; display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bs-bottom { display: none; }
+.bs-proj { display: flex; flex-direction: column; gap: var(--ds-s3); padding: var(--ds-s5) 0; }
+.bs-proj__top { display: flex; justify-content: space-between; align-items: center; gap: var(--ds-s4); }
+.bs-proj__top h1 { margin: 0; font-size: 40px; }
+.bs-proj .bs-clock { font-size: 72px; }
+.bs-proj__phase { margin: 0; font-size: 20px; max-width: 70ch; }
+.bs-proj__count { margin: 0; font-size: 56px; font-weight: 700; }
+.bs-proj__groups { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ds-s2); font-size: 28px; }
+.bs-proj__groups li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--ds-line); padding: 8px 0; }
+.bs-proj__join { margin: 0; font-size: clamp(20px, 2.4vw, 40px); }
+.bs-proj__foot { margin: 0; color: var(--ds-teal-bright); text-transform: uppercase; letter-spacing: 1px; }
+@media (max-width: 700px) {
+  .bs-live .ds-wall__body { grid-template-columns: minmax(0, 1fr); }
+  .bs-live .bs-aside { display: none; }
+  .bs-live .bs-aside--open { display: flex; position: fixed; left: 0; right: 0; bottom: 64px; max-height: 70vh; overflow-y: auto; z-index: 20; border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0; }
+  .bs-statement .ds-wall__title { font-size: 18px; }
+  .bs-clock { font-size: 28px; }
+  .bs-bottom { display: flex; gap: var(--ds-s1); position: fixed; left: 0; right: 0; bottom: 0; padding: var(--ds-s2) var(--ds-s4); background: var(--ds-surface); border-top: 1px solid var(--ds-line); z-index: 21; }
+  .bs-bottom .ds-btn { flex: 1; }
+  .bs-live { padding-bottom: 96px; }
+  .bs-proj__top h1 { font-size: 24px; }
+}
+
+/* the start questions (spec 35) */
+.bs-start { display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bs-steps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 8px 0 16px; }
+.bs-cols { display: flex; gap: var(--ds-s5); flex-wrap: wrap; align-items: flex-start; }
+.bs-colmain { flex: 2 1 420px; min-width: 0; display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bs-colside { flex: 1 1 280px; position: sticky; top: var(--ds-s3); }
+.bs-fields { display: flex; flex-direction: column; gap: var(--ds-s1); }
+.bs-fields input, .bs-fields textarea { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ds-line-2); background: var(--ds-ground); color: var(--ds-ink); font: inherit; font-size: 14px; min-height: 44px; box-sizing: border-box; width: 100%; }
+.bs-fields input[type="date"], .bs-fields input[type="time"] { width: auto; }
+.bs-foot { display: flex; gap: var(--ds-s1); flex-wrap: wrap; }
+.bs-h { margin: var(--ds-s2) 0 4px; font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--ds-teal-bright); }
+.bs-people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bs-person { width: 100%; text-align: left; padding: 10px 12px; min-height: 44px; border-radius: 8px; border: 1px solid var(--ds-line-2); background: var(--ds-ground); color: var(--ds-ink); font: inherit; font-size: 14px; cursor: pointer; }
+.bs-person--on { border-color: var(--ds-teal-bright); background: var(--ds-surface-2); }
+.bs-sofar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+@media (max-width: 700px) {
+  .bs-foot { position: sticky; bottom: 0; background: var(--ds-surface); padding: var(--ds-s2) 0; z-index: 5; }
+  .bs-foot .ds-btn { flex: 1; }
+  .bs-colside { display: none; }
+}
+.bs-projector { position: fixed; inset: 0; z-index: 50; overflow: auto; background: var(--ds-ground); padding: var(--ds-s5); box-sizing: border-box; }  /* the room screen covers the shell, the North panel and the session bar (36 Screen C) */

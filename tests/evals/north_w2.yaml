@@ -1,0 +1,119 @@
+# North, wave 2 package N. Run offline: python tools/run_evals.py --offline --agents north_w2 --out <dir>. `replay:` is the model's part,
+# in the reply shapes recorded in docs/test-evidence/agents/new-uc (use cases A and B) and cycle-1/H-aqf15. `live: true` = owed to the live
+# 3-of-3 rerun once the model accounts are topped up (--agents north_w2 without --offline). Synthetic data only.
+- id: NW2-NU01
+  agent: north
+  role: analyst
+  live: true
+  desc: NU-01 (A16) - after the person answered, North does not ask the same question again, and the drafts line appears once.
+  replay:
+    - {say: '{"reply": "What decisions will Daniel make from it?", "asked": "readers", "sow_patch": {"goal": {"readers": ["Daniel Foo"]}}, "covered": []}'}
+    - {say: '{"reply": "Thanks. What decisions will Daniel make from it? I have proposed 1 thing to change; say yes to accept, or tell me what is wrong.", "asked": "readers", "sow_patch": {"goal": {"decisions": ["which managers to chase"]}}, "covered": []}'}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "A manager reporting timeliness scorecard for Daniel Foo.", save: {iid: id}, expect: {status: 200}}
+    - {say: "Daniel decides which managers to chase at the next manager meeting.", path: "/api/v1/intents/{saved.iid}/chat", expect: {status: 200}}
+  expected: {status: 200, forbidden: ["What decisions will Daniel make", "I have proposed 1 thing"]}
+  scorers: [turn_expect, words]
+
+- id: NW2-NU02
+  agent: north
+  role: analyst
+  live: true
+  desc: NU-02 (A10) - two sources turned down in words leave the pending proposal; only the kept source waits for a yes.
+  replay:
+    - {say: '{"reply": "Which rules apply?", "sow_patch": {"sources": [{"name": "Excel tracker", "kind": "file"}, {"name": "Signal Harbor", "kind": "system"}, {"name": "Fund register", "kind": "file"}]}, "covered": []}'}
+    - {say: '{"reply": "I have removed the Excel tracker and Signal Harbor from the sources. What does good look like?", "withdraw": ["Excel tracker", "Signal Harbor"], "covered": []}'}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "A manager reporting scorecard. Sources: the Excel tracker, Signal Harbor and the fund register.", save: {iid: id}, expect: {status: 200}}
+    - {say: "Not the Excel tracker and not 'Signal Harbor' as sources, please drop those two.", path: "/api/v1/intents/{saved.iid}/chat", expect: {status: 200}}
+    - {method: GET, path: "/api/v1/intents/{saved.iid}/proposals", expect: {status: 200, contains: ["sources/Fund register"]}}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: NW2-NU05
+  agent: north
+  role: analyst
+  live: true
+  desc: NU-03, NU-04, NU-05 (A7) - the use case B benchmark sentence lands as one sheet row with the person's -1.50; no row is cut from the sentence (no 30 or 2026 as figures).
+  replay:
+    - {say: '{"reply": "Which figures do you report?", "sow_patch": {"kpis": [{"name": "Manager exposure headroom", "definition": "55 minus the share, in points"}]}, "covered": []}'}
+    - {say: '{"reply": "Thank you. Which documents are involved?", "covered": ["benchmarks"], "sow_patch": {"kpis": [{"name": "Manager exposure headroom", "benchmark": "given"}]}, "benchmark_rows": [{"kpi": "Manager exposure headroom", "period": "2026-09", "by": {"manager": "Cedarpoint Ventures", "portfolio": "EG-B-OPS"}, "reported": "-1.50", "expected": "same"}]}'}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "Exposure by manager with limit headroom; the figure is manager exposure headroom.", save: {iid: id}, expect: {status: 200}}
+    - {say: "yes", path: "/api/v1/intents/{saved.iid}/chat", expect: {status: 200}}
+    - {say: "Success: the tile matches our sheet. Last month, 30 Sep 2026, we reported Cedarpoint Ventures at 56.50% of the Entity B portfolio EG-B-OPS (12,925,000 of 22,875,000), headroom -1.50 points; it should read the same after the load.",
+       path: "/api/v1/intents/{saved.iid}/chat", expect: {status: 200, absent: ["but not the figures yet"]}}
+    - {method: GET, path: "/api/v1/build/{saved.iid}/benchmarks/sheet", expect: {status: 200, contains: ["-1.5", "cedarpoint ventures"], absent: ["2026.0", "\"reported\": 30"]}}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: NW2-NU06
+  agent: north
+  role: analyst
+  live: true
+  desc: NU-06 (A10) - the recorded refused-argument shapes (section "kpis", content as JSON text) now draft the KPI; the turn ends in a pending draft, never "could not reach the model".
+  # the recorded argument shapes (tests/evals/replay.py _BAD_SECTION), now taken; the model then answers. (The repeated-call path, where North's
+  # no-tools "answer now" call follows, is in tests/v1/test_north_w2.py: the replay gives every no-tools call the side answer.)
+  replay:
+    - {calls: [[propose_intent_section, {section: kpis, content: {name: Manager concentration, unit: percent}}], [propose_intent_section, {section: kpi, content: '{"name": "Manager concentration", "unit": "percent"}'}]]}
+    - {say: "I have drafted the three figures for you to check."}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "We need a monthly manager concentration report. The figure: share of the portfolio per manager in percent.", save: {iid: id},
+       expect: {status: 200, absent: ["could not reach the model", "rules-only"]}}
+    - {method: GET, path: "/api/v1/intents/{saved.iid}/proposals", expect: {status: 200, contains: ["kpis/Manager concentration"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace]
+
+- id: NW2-H104
+  agent: north
+  role: analyst
+  live: true
+  desc: H1-04 (A2) - "what does the office already have" is answered after a tool call (the model is asked to look first).
+  replay:
+    - {say: "From your documents: the office has a monthly report."}
+    - {call: list_intents, args: {}}
+    - {say: '{"reply": "The office has one draft intent, the monthly investment report. What would you like to build?", "covered": []}'}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "What does the office already have about the monthly investment report? Two or three lines, please."}]
+  expected: {status: 200}
+  scorers: [loop_trace]
+
+- id: NW2-H106
+  agent: north
+  role: analyst
+  live: true
+  desc: H1-06 (A16) - the model claims it drafted six steps but nothing was proposed; the reply says the draft did not change.
+  replay: [{say: '{"reply": "Thanks, the note is clear and I have drafted the six steps, the hand-overs and the four manual steps. Who reads it?", "covered": []}'}]
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "Here is how we produce the monthly investment report today."}]
+  expected: {status: 200, words: ["Nothing in the draft has changed"], forbidden: ["drafted the six steps"]}
+  scorers: [words]
+
+- id: NW2-A1501
+  agent: north
+  role: analyst
+  live: true
+  desc: N1-A15-01 (A15) - a six-sentence model reply reaches the person as at most three sentences plus the drafts line, the question kept.
+  replay:
+    - {say: '{"reply": "You want the report monthly. It goes to Daniel Foo. It is due by the 3rd business day. Sofia owns the limits. Mei does steps one to three. Who approves a change?", "sow_patch": {"goal": {"readers": ["Daniel Foo"]}}, "covered": []}'}
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "A monthly investment report for Daniel Foo, due by the 3rd business day."}]
+  expected: {status: 200, words: ["Who approves a change?"], forbidden: ["Sofia owns the limits", "Mei does steps"]}
+  scorers: [words]
+
+- id: NW2-INT01
+  agent: north
+  role: analyst
+  live: true
+  desc: N1-INT-01 (A1) - a question on the landing is answered and leaves no open draft intent behind.
+  replay: [{say: '{"reply": "There is no intent for that yet. What would you like to build?", "covered": []}'}]
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "Which intents of work do we have?", expect: {status: 200, equals: {project_id: None}}}
+    - {method: GET, path: /api/v1/intents/open, expect: {status: 200, absent: ["new intent"]}}
+  expected: {}
+  scorers: [turn_expect]

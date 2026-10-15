@@ -1,0 +1,10 @@
+# E0c1 Data intake. Everyone signed in who works with data may read the census; upload, profile and load need the data engineer
+# seat (the analyst role; checked again in code).
+routes:
+  GET /api/v1/intake/files: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/intake/scan: {roles: [company_admin, analyst]}
+  POST /api/v1/intake/upload: {roles: [company_admin, analyst]}
+  POST /api/v1/intake/month: {roles: [company_admin, analyst]}
+  GET /api/v1/intake/files/{file_id}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/intake/files/{file_id}/profile: {roles: [company_admin, analyst]}
+  POST /api/v1/intake/files/{file_id}/load: {roles: [company_admin, analyst]}

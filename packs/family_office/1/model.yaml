@@ -1,0 +1,128 @@
+# Industry model family_office@1: what every family office starts with. Tables are the warehouse tables of the slim data model
+# (docs/v2/family-office-data-model-slim.dbml and family-office-data-model.dbml, as built in docs/v2/evidence-to-action-mvp.duckdb.sql).
+# Synonyms are spellings found in column_synonyms.yaml; derived properties come from glossary.yaml. A suggestion, not the office's own definition.
+template: family_office@1
+version: 1
+objects:
+  - name: entity
+    label: Legal entity
+    table: legal_entities
+    properties:
+      - {name: entity_code, label: Entity code, type: string, synonyms: []}
+      - {name: entity_name, label: Entity name, type: string, synonyms: []}
+      - {name: base_currency, label: Base currency, type: string, synonyms: [currency]}
+    relations: []
+  - name: portfolio
+    label: Portfolio
+    table: portfolios
+    properties:
+      - {name: portfolio_code, label: Portfolio code, type: string, synonyms: [Acct]}
+      - {name: portfolio_name, label: Portfolio name, type: string, synonyms: []}
+      - {name: base_currency, label: Reporting currency, type: string, synonyms: [reporting currency]}
+    relations:
+      - {to: entity, label: belongs to}
+  - name: instrument
+    label: Instrument
+    table: instruments
+    properties:
+      - {name: canonical_name, label: Name, type: string, synonyms: [Fund, Fund / Manager]}
+      - {name: instrument_type, label: Instrument type, type: string, synonyms: []}
+      - {name: asset_class, label: Asset class, type: string, synonyms: [Asset Cls]}
+      - {name: manager_name, label: Manager, type: string, synonyms: [Fund / Manager]}
+      - {name: currency, label: Currency, type: string, synonyms: []}
+    relations: []
+  - name: position
+    label: Position
+    table: position_snapshots
+    properties:
+      - {name: position_date, label: Position date, type: date, synonyms: [Val Date]}
+      - {name: quantity, label: Quantity, type: number, synonyms: []}
+      - {name: source_market_value, label: Market value, type: number, synonyms: [value_native, Mkt Value, Closing Value (SGD)]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+      - {name: view_type, label: View, type: string, synonyms: []}
+      - {name: data_status, label: Data status, type: string, synonyms: []}
+    relations:
+      - {to: portfolio, label: held in}
+      - {to: instrument, label: of}
+  - name: valuation
+    label: Valuation
+    table: valuation_observations
+    properties:
+      - {name: valuation_date, label: Valuation date, type: date, synonyms: [valuation_date]}
+      - {name: value_amount, label: Value, type: number, synonyms: [value_native, nav]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+      - {name: valuation_type, label: Valuation type, type: string, synonyms: []}
+      - {name: approval_status, label: Approval status, type: string, synonyms: []}
+      - {name: is_stale, label: Stale valuation, type: boolean, synonyms: [], derived: "valuation date older than the approved age for its asset class (glossary: Stale valuation)"}
+    relations:
+      - {to: instrument, label: values}
+      - {to: portfolio, label: reported for}
+  - name: commitment
+    label: Fund commitment
+    table: commitments
+    properties:
+      - {name: commitment_amount, label: Commitment, type: number, synonyms: []}
+      - {name: committed_on, label: Committed on, type: date, synonyms: []}
+      - {name: called_to_date, label: Called to date, type: number, synonyms: [unfunded_delta_native, unfunded_delta]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+      - {name: unfunded_commitment, label: Unfunded commitment, type: number, synonyms: [Unfunded Commitment (USD)], derived: "commitment_amount - called_to_date (glossary: Unfunded commitment)"}
+    relations:
+      - {to: entity, label: made by}
+      - {to: instrument, label: to}
+  - name: cash_movement
+    label: Cash movement
+    table: cash_movements
+    properties:
+      - {name: movement_type, label: Movement type, type: string, synonyms: [event_type]}
+      - {name: effective_date, label: Effective date, type: date, synonyms: []}
+      - {name: due_date, label: Due date, type: date, synonyms: [due_date]}
+      - {name: amount, label: Amount, type: number, synonyms: [amount_native, amount, amt]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+      - {name: notice_kind, label: Notice kind, type: string, synonyms: [notice_ref]}
+      - {name: confirmation_status, label: Confirmation status, type: string, synonyms: []}
+    relations:
+      - {to: portfolio, label: moves cash in}
+      - {to: commitment, label: answers}
+  - name: transaction
+    label: Transaction
+    table: transactions
+    properties:
+      - {name: transaction_type, label: Transaction type, type: string, synonyms: []}
+      - {name: trade_date, label: Trade date, type: date, synonyms: []}
+      - {name: settlement_date, label: Settlement date, type: date, synonyms: []}
+      - {name: quantity_delta, label: Quantity change, type: number, synonyms: []}
+      - {name: cash_amount, label: Cash amount, type: number, synonyms: [Net Flows]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+    relations:
+      - {to: portfolio, label: in}
+      - {to: instrument, label: of}
+  - name: nav_snapshot
+    label: Administrator NAV
+    table: nav_snapshots
+    properties:
+      - {name: nav_period_end, label: Period end, type: date, synonyms: []}
+      - {name: nav_amount, label: NAV, type: number, synonyms: [nav]}
+      - {name: currency, label: Currency, type: string, synonyms: [currency]}
+      - {name: nav_status, label: NAV status, type: string, synonyms: []}
+    relations:
+      - {to: portfolio, label: reports on}
+  - name: market_observation
+    label: Market observation
+    table: market_observations
+    properties:
+      - {name: series_key, label: Series, type: string, synonyms: []}
+      - {name: observation_type, label: Observation type, type: string, synonyms: []}
+      - {name: observed_at, label: Observed at, type: date, synonyms: [Date]}
+      - {name: value, label: Value, type: number, synonyms: [Level]}
+    relations:
+      - {to: instrument, label: prices}
+  - name: document
+    label: Document
+    table: documents
+    properties:
+      - {name: document_type, label: Document type, type: string, synonyms: []}
+      - {name: title, label: Title, type: string, synonyms: []}
+      - {name: document_date, label: Document date, type: date, synonyms: []}
+      - {name: valuation_date, label: Valuation date, type: date, synonyms: [valuation_date]}
+    relations:
+      - {to: instrument, label: evidence for}

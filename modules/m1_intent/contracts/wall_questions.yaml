@@ -1,0 +1,14 @@
+# The four wall questions North asks, in order, one at a time, when a person starts a card (A-055, A-056). Wording is "chosen".
+# `fills`: the note field(s) the answer goes to (a field of contracts/note_fields.yaml; `problem` is the note's own words, written as
+# its `text`). A quarter holds {text, mark: stated|guessed|unknown, from}. `unknown_ok`: "I don't know" is an answer (mark unknown).
+questions:
+  - {id: q1, lead: "What is it, in business words?", fills: [problem]}
+  - {id: q2, lead: "Where does it bite, and how hard? Who feels it, how often, and what does it cost?", fills: [affected, size], unknown_ok: true}
+  - {id: q3, lead: "How do you track it today, if at all, and where does the data come from?", fills: [data_guess], unknown_ok: true}
+  - {id: q4, lead: "What is the most technical definition you can give? \"I don't know\" is fine.", fills: [purpose], unknown_ok: true}
+min_answered: 2          # a card may be put on the wall with this many of the four answered (A-055)
+max_suggestions_per_lane: 3   # North's suggestion cards per lane per room (A-056)
+words:
+  draft_lead: "Here is a draft, from {from}: {text}. Keep it, or say it in your own words."
+  too_few: "Please answer at least {min} of the four questions before you put this on the wall."
+  suggested_label: "Suggested by North, from {from}"

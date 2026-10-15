@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: local vs production",
+    "subtitle": "One app in simple mode on a laptop; split into services on Railway in production mode",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-local-vs-production.html"
+  },
+  "components": [
+    {
+      "id": "l_browser",
+      "type": "frontend",
+      "label": "Browser",
+      "pos": [
+        40,
+        160
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "l_app",
+      "type": "backend",
+      "label": "Signal Harbor app",
+      "sublabel": "web, agents, scheduler",
+      "pos": [
+        220,
+        160
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "l_cache",
+      "type": "database",
+      "label": "In-memory cache",
+      "sublabel": "and limits",
+      "pos": [
+        220,
+        40
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "l_files",
+      "type": "database",
+      "label": "Files + DuckDB",
+      "sublabel": "warehouse on disk",
+      "pos": [
+        460,
+        160
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "l_egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "to model provider",
+      "pos": [
+        220,
+        300
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "l_docker",
+      "type": "cloud",
+      "label": "Docker (optional)",
+      "sublabel": "Postgres + Redis",
+      "tag": "to try production mode locally",
+      "pos": [
+        460,
+        300
+      ],
+      "size": [
+        190,
+        64
+      ]
+    },
+    {
+      "id": "p_browser",
+      "type": "frontend",
+      "label": "Browser",
+      "pos": [
+        720,
+        160
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_web",
+      "type": "backend",
+      "label": "Web service",
+      "sublabel": "pages, API, streams",
+      "pos": [
+        920,
+        160
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "p_postgres",
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "app state, versions",
+      "pos": [
+        1120,
+        160
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "p_redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "queue, cache, events",
+      "pos": [
+        920,
+        300
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "p_worker",
+      "type": "backend",
+      "label": "Worker",
+      "sublabel": "turns, pipelines, deliveries",
+      "pos": [
+        1120,
+        300
+      ],
+      "size": [
+        176,
+        64
+      ]
+    },
+    {
+      "id": "p_volume",
+      "type": "database",
+      "label": "Volume",
+      "sublabel": "DuckDB warehouse",
+      "pos": [
+        1360,
+        300
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "p_egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "model provider, Slack, email",
+      "pos": [
+        1120,
+        440
+      ],
+      "size": [
+        176,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "LOCAL: your laptop, simple mode",
+      "wraps": [
+        "l_browser",
+        "l_app",
+        "l_cache",
+        "l_files",
+        "l_egress",
+        "l_docker"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "region",
+      "label": "PRODUCTION: Railway, production mode",
+      "wraps": [
+        "p_browser",
+        "p_web",
+        "p_postgres",
+        "p_redis",
+        "p_worker",
+        "p_volume",
+        "p_egress"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "l_browser_app",
+      "from": "l_browser",
+      "to": "l_app",
+      "label": "HTTPS"
+    },
+    {
+      "id": "l_app_files",
+      "from": "l_app",
+      "to": "l_files",
+      "label": "data"
+    },
+    {
+      "id": "l_app_cache",
+      "from": "l_app",
+      "to": "l_cache",
+      "label": "limits",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "l_app_egress",
+      "from": "l_app",
+      "to": "l_egress",
+      "label": "model calls",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "p_browser_web",
+      "from": "p_browser",
+      "to": "p_web",
+      "label": "HTTPS"
+    },
+    {
+      "id": "p_web_postgres",
+      "from": "p_web",
+      "to": "p_postgres",
+      "label": "state"
+    },
+    {
+      "id": "p_web_redis",
+      "from": "p_web",
+      "to": "p_redis",
+      "label": "events",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "p_worker_postgres",
+      "from": "p_worker",
+      "to": "p_postgres",
+      "label": "state",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "p_worker_redis",
+      "from": "p_worker",
+      "to": "p_redis",
+      "label": "jobs",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "p_worker_volume",
+      "from": "p_worker",
+      "to": "p_volume",
+      "label": "DuckDB",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "p_worker_egress",
+      "from": "p_worker",
+      "to": "p_egress",
+      "label": "sends",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Switch",
+      "items": [
+        "Production mode is on when DATABASE_URL and REDIS_URL are set; remove them to go back to simple mode."
+      ]
+    }
+  ]
+}

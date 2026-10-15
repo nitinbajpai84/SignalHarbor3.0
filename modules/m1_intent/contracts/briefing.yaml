@@ -1,0 +1,28 @@
+# Module 1 briefing and timer settings (M1-05, M1-06, M1-07, M1-14). Values marked "chosen" were not given by the
+# spec or a decision: they are placeholders for Nitin to confirm (autonomous decision A-030). The one-minute
+# warning itself is `warning_seconds` in intent_session.yaml (M1-14); it is not repeated here.
+video:
+  allowed_types:                # content type -> file ending; chosen (M1-06 says only "file types come from a contract")
+    video/mp4: mp4
+    video/webm: webm
+  max_megabytes: 100            # chosen
+briefing_default_video:        # the shared default for a session that uploaded none and kept "standard"; read only, shipped with the module
+  file: assets/module-1-demo.mp4
+  content_type: video/mp4
+extension_minutes: [2, 5, 10]   # chosen: M1-14 says the organiser can extend, with no amounts
+nira:
+  question_max_chars: 300       # chosen
+  reply_max_chars: 600          # chosen
+read_aloud_unavailable: Reading aloud is not available yet.   # shown while the speech provider is the stub (A-018)
+rules:                          # fixed plain words around the prepared session's own text (chosen wording)
+  labels:
+    purpose: What this session is for
+    outcome: What we want to leave with
+    time: How the time is shared
+    notes: How notes are shown
+    kinds: What to write about
+  time_text: "{length} in all: {briefing} for this briefing, {individual} on your own in your room, {together} together."
+  kinds_text: "Tell us what you intend to do now. Also tell us what hurts today: who is affected and how often. In the future, what would you want to keep an eye on, and which outside or market signals could be an input? And which levers do you change today, and which KPIs do you watch to see the impact? You mark each note with the one that fits."   # chosen wording (Nitin, 4 Oct: the four things in plain words)
+  notes_text: "You write your notes on your own in your room. When the rooms close, the notes appear together on one board. For each note you choose whether your name is shown or it stays anonymous."
+  notes_text_named: "You write your notes on your own in your room. When the rooms close, the notes appear together on one board. The organiser has set this session as open: everyone's name is shown on their notes, so a note cannot be anonymous."
+  notes_text_anonymous: "You write your notes on your own in your room. When the rooms close, the notes appear together on one board. The organiser has set this session as anonymous: no name is ever shown on a note."

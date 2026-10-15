@@ -1,0 +1,69 @@
+# Synthetic, generic family-office pain points for the pain-point demo (no client or vendor names).
+# coverage: strong | partial | not_in_scope (needs `reason`). `link` is a UI path; `use_case` names the screen.
+painpoints:
+  - id: PP-01
+    cluster: Liquidity and cash
+    title: Nobody can say today's cash position across entities without a phone round
+    severity: high
+    does: Combines custodian and bank balances into one daily key-numbers band per currency, each figure with its source.
+    coverage: strong
+    use_case: Daily key numbers
+    link: /centre/consume
+  - id: PP-02
+    cluster: Liquidity and cash
+    title: Capital calls arrive by email and the cash to meet them is found late
+    severity: high
+    does: Flags upcoming calls against the liquidity view and drafts the follow-up for a person to send.
+    coverage: partial
+    use_case: Liquidity outlook
+    link: /centre/consume/signals
+  - id: PP-03
+    cluster: Performance
+    title: Returns by manager and fund are rebuilt by hand every month
+    severity: high
+    does: Shows profit and loss and fund league tables from the loaded data, with the trail behind every number.
+    coverage: strong
+    use_case: Profit and loss and fund league
+    link: /centre/consume/pnl
+  - id: PP-04
+    cluster: Performance
+    title: Our figures differ from the administrator's and nobody knows why
+    severity: medium
+    does: Lines up our NAV against the administrator's per portfolio and shows the difference and its reason.
+    coverage: partial
+    use_case: Administrator bridge
+    link: /centre/consume/reports
+  - id: PP-05
+    cluster: Operations
+    title: Manager statements arrive late or not at all and nobody tracks it
+    severity: medium
+    does: Lists the statements expected each month per manager and fund, marks late and missing, and drafts a reminder.
+    coverage: strong
+    use_case: Managers inbox
+    link: /centre/consume/managers
+  - id: PP-06
+    cluster: Operations
+    title: Trades and positions must be booked and reconciled every day
+    severity: high
+    does: Reads the booked positions that the portfolio system already holds; it does not book or reconcile trades.
+    coverage: not_in_scope
+    reason: Covered by your portfolio data management system, which stays the book of record.
+    use_case: Not shown
+    link: ""
+  - id: PP-07
+    cluster: Governance and reporting
+    title: The board pack is assembled from scattered files the night before
+    severity: medium
+    does: Builds the monthly report from the same trusted numbers and shares it as a dashboard people can comment on.
+    coverage: partial
+    use_case: Reports library
+    link: /centre/consume/reports
+  - id: PP-08
+    cluster: Governance and reporting
+    title: Tax filings and legal-entity compliance deadlines
+    severity: low
+    does: Nothing; Signal Harbor reads and explains data, it does not prepare filings.
+    coverage: not_in_scope
+    reason: Left to your tax advisers and entity-management tools.
+    use_case: Not shown
+    link: ""

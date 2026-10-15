@@ -1,0 +1,386 @@
+# Input ledger rows for spec 11: share link and visitor view.
+- id: "11.share_pick"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/share (people picker, area picker)"
+  input: "Who to share the intent with: people and areas"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the intent's own areas, offered ready as a pending list at closure"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: choosing recipients versus ticking the areas North prepared"
+  claim: "At closure North offers to share the outcome with the tagged areas; the organiser presses Share"
+  built: manual
+- id: "11.link_maker"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Make a link for anyone signed in to the company, Copy link)"
+  input: "Make a share link"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: finding the right document and emailing it"
+  claim: "A read-only link is one press; only a fingerprint is kept"
+- id: "11.expiry"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Expiry date, required)"
+  input: "When the share ends"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 2
+  minutes_with: 0.3
+  basis: "estimate: a date field"
+  claim: "No share lasts for ever; every share has an end date"
+- id: "11.share_press"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Share)"
+  input: "Share"
+  person: organiser
+  mode: manual
+  source: "the organiser; Nira writes the Pulse lines to the people named"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: preparing and sending a summary email"
+  claim: "One press shares read-only and tells each person named"
+- id: "11.guard_line"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (draft and cancelled guard)"
+  input: "Whether this intent can be shared yet"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the state of the intent"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: checking status"
+  claim: "North tells the organiser when an intent is a draft or cancelled before sharing"
+- id: "11.withdraw"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Withdraw, Withdraw all)"
+  input: "Withdraw a share"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: revoking access across emails and folders"
+  claim: "A share can be withdrawn immediately and the next open says it has ended"
+- id: "11.visitor_pulse"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "Pulse line kind shared and Shared with me list"
+  input: "A shared intent line for each person named"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "the share row; never the content"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: notifying people one by one"
+  claim: "Nira tells each person named that something was shared with them"
+- id: "11.visitor_view"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "/centre/shared/<id> and /centre/shared/t/<token> (read-only view)"
+  input: "The read-only view: stages, people, wall or session, closure, charter"
+  person: any
+  mode: automatic
+  source: "the intent record, filtered by the visitor's own rights, with sealed and anonymous material withheld"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: assembling a summary pack for an outsider"
+  claim: "Whoever the organiser names reads what was done, said and decided, with no pack prepared"
+- id: "11.visitor_note"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "visitor view (A note to the organiser, Send note)"
+  input: "A note from a visitor to the organiser"
+  person: any
+  mode: manual
+  source: "the visitor's own words"
+  minutes_without: 8
+  minutes_with: 2
+  basis: "estimate: emailing questions about a document"
+  claim: "A visitor can leave a note on the record without entering the session"
+- id: "11.note_line"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "Pulse line kind share_note and the share panel (Notes, Mark read)"
+  input: "Notes from visitors, mark read"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "the notes on the share, never the content of the intent"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: checking replies"
+  claim: "The organiser is told when a visitor leaves a note and marks it read"
+- id: "11.open_log"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (counts strip, Who opened it)"
+  input: "Who opened the share, when and how often"
+  person: organiser
+  mode: automatic
+  source: "the log line written when each visitor opens"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: asking whether people read the summary"
+  claim: "The organiser sees who opened it without asking"
+- id: "11.link_safety"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share routes (hashed token, expiry, failure lock)"
+  input: "Link token, hash, expiry check and failure lock"
+  person: system
+  mode: automatic
+  source: "the shared approver-link mechanism"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: managing secure document links by hand"
+  claim: "Links are secure by default: hashed, time limited, locked after failures"
+- id: "11.guard_text"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (draft and cancelled guard line)"
+  input: "The words that explain why a draft or cancelled intent needs care before sharing"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the intent state"
+  minutes_without: 1
+  minutes_with: 0
+  basis: "estimate: working out whether a draft may go out"
+  claim: "North states the guard line from the state; nobody writes it"
+- id: "11.closure_offer"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "closure screen (Share this outcome)"
+  input: "Offer to share the closed outcome with the areas tagged"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the intent's own areas"
+  minutes_without: 8
+  minutes_with: 0.5
+  basis: "estimate: remembering and listing who should hear the outcome"
+  claim: "North offers once at closure with the pending list ready; the organiser presses Share"
+  built: manual
+- id: "11.area_headcount"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (area picker head counts)"
+  input: "People tagged to each area at share time"
+  person: organiser
+  mode: derived
+  source: "the company profile areas and people"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting people in each department"
+  claim: "Each area shows how many people it reaches without a count by hand"
+- id: "11.pending_list"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (pending list, remove cross)"
+  input: "Review and remove rows before sharing"
+  person: organiser
+  mode: manual
+  source: "the organiser's picks"
+  minutes_without: 1
+  minutes_with: 0.3
+  basis: "estimate: rereading a recipient list"
+  claim: "The organiser sees exactly what will be shared before pressing Share"
+- id: "11.preview"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (What a visitor sees)"
+  input: "Preview of the read-only view"
+  person: organiser
+  mode: derived
+  source: "the visitor view rules for the intent state"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: checking a document for what to hide"
+  claim: "The organiser sees what a visitor sees without building a separate summary"
+- id: "11.link_result"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Link result, Copy link)"
+  input: "The share address shown once"
+  person: organiser
+  mode: automatic
+  source: "the platform link builder"
+  minutes_without: 3
+  minutes_with: 0.2
+  basis: "estimate: copying a document path into a message"
+  claim: "The address is built and shown once; only a fingerprint is kept"
+- id: "11.shared_now"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (Shared now list)"
+  input: "List of shares: kind, who, made by, made on, ends on, state, opens"
+  person: organiser
+  mode: automatic
+  source: "the share rows and open log"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: tracking who was sent what"
+  claim: "The organiser sees every live and ended share without keeping a list"
+- id: "11.expiry_state"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (live, ended, withdrawn)"
+  input: "Whether a share is still live"
+  person: system
+  mode: automatic
+  source: "the expiry date and the clock"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: remembering to cut off access"
+  claim: "Shares end by themselves on the date; nobody revokes them"
+- id: "11.replace_prior"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (re-share same target)"
+  input: "Earlier share for the same person, area or link made old"
+  person: system
+  mode: automatic
+  source: "the share rows"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: finding and cancelling the earlier send"
+  claim: "One live row per target; the earlier one is replaced by rule"
+- id: "11.counts_strip"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (counts strip)"
+  input: "Shared with N people, M areas, K links; opened by X; notes Y"
+  person: organiser
+  mode: automatic
+  source: "the share rows, open log and notes"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: tallying replies and reads"
+  claim: "Exact counts are computed from the records"
+- id: "11.visitor_banner"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "visitor view (share banner)"
+  input: "Banner naming the organiser, read-only, opened-and-logged and end date"
+  person: visitor
+  mode: automatic
+  source: "the share row"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: writing a covering note"
+  claim: "Every visitor is told it is read-only and logged, with no one writing the line"
+- id: "11.stage_strip"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "visitor view (stage strip)"
+  input: "Stages with current one and dates"
+  person: visitor
+  mode: derived
+  source: "the stage record of the intent"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: summarising progress for a reader"
+  claim: "Stages and dates come from the record"
+- id: "11.sealed_count"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "visitor view (sealed line)"
+  input: "Number of sealed cards not shown"
+  person: visitor
+  mode: automatic
+  source: "the wall"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: checking what to leave out"
+  claim: "Sealed cards are counted, never described"
+- id: "11.restricted_count"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "visitor view (restricted measures line)"
+  input: "Number of restricted measures not shown"
+  person: visitor
+  mode: derived
+  source: "the visitor's own rights over the measures"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: checking what to leave out"
+  claim: "Restricted measures are removed by the visitor's own rights and counted"
+- id: "11.log_window"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share record (log de-duplication)"
+  input: "One open line per account per window"
+  person: system
+  mode: automatic
+  source: "the visitor's account and the clock"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: discounting refreshes by hand"
+  claim: "A page refresh does not inflate the count"
+- id: "11.note_read_state"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (unread notes, Mark read)"
+  input: "Count of unread notes"
+  person: organiser
+  mode: automatic
+  source: "the note rows"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: remembering which replies were answered"
+  claim: "Unread notes are counted from read marks"
+- id: "11.expiry_range"
+  spec: "11"
+  journey: shared
+  stage: prove
+  screen: "share panel (expiry limits)"
+  input: "Earliest and latest allowed expiry date"
+  person: company admin
+  mode: manual
+  source: "the company admin"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: deciding a policy once; the value is not yet decided in the spec"
+  claim: "One company setting would bound every share; undecided in the spec"

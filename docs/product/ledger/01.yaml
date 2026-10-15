@@ -1,0 +1,416 @@
+# Input ledger rows for spec 01: the intent record and its lifecycle. Minutes are planning estimates.
+- id: "01.title"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (title, draft stage)"
+  input: "Intent title"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "what the organiser said in the start questions"
+  minutes_without: 3
+  minutes_with: 0.5
+  basis: "estimate: naming a piece of work versus reading a drafted title and pressing Open"
+  claim: "North drafts the title from what the organiser said; the organiser confirms by opening the intent"
+- id: "01.purpose"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (purpose, draft stage)"
+  input: "Intent purpose, one line"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the start answers"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a why-line for a meeting invite versus reading a drafted one"
+  claim: "North drafts the one-line purpose; the organiser edits or accepts"
+- id: "01.areas"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (areas chips)"
+  input: "Areas the intent touches"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the start answers and the tags of the people named, from the company profile"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: deciding who to copy on an email versus ticking suggested chips"
+  claim: "North proposes the areas; the organiser confirms, and the areas decide who learns the intent exists"
+- id: "01.affected"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (affected people)"
+  input: "Affected people"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the profile people tagged to the chosen areas"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: working out who is affected from an org chart versus confirming a drafted list"
+  claim: "North suggests who is affected from the company profile; the organiser confirms"
+- id: "01.participants"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (people)"
+  input: "Participants"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the company profile people and the areas"
+  minutes_without: 8
+  minutes_with: 1
+  basis: "estimate: choosing invitees by hand versus confirming suggestions"
+  claim: "North suggests participants from the profile; the organiser confirms"
+- id: "01.named_roles"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (people: sponsor, observers, advisers, decider, owner, reporter)"
+  input: "Sponsor, observers, advisers and the named slots"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser's choice"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: a few picks from a list"
+  claim: "Named roles are the organiser's own choice; nothing is assumed for them"
+- id: "01.affected_may_read"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/<id> (affected people may read, default off)"
+  input: "Affected people may read the content"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser's decision"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: one switch against a negotiated access request"
+  claim: "One switch decides whether affected people read the content; the default protects it"
+- id: "01.id"
+  spec: "01"
+  journey: shared
+  stage: notice
+  screen: "intent record"
+  input: "Intent id, type, company, created by, created at"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the server at create, from the signed-in person and company"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: logging a new item in a tracker by hand"
+  claim: "Every intent gets its identity from the system; nobody types an id"
+- id: "01.state"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "intent record (state)"
+  input: "Intent state (draft, open, in session, closing, closed, cancelled)"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the transition table, moved by a named person's button or the clock"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: updating a status column by hand each time"
+  claim: "The state is kept by the system; nobody updates a status column"
+- id: "01.time_box"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "intent record (time box), set when Open is pressed"
+  input: "Time box start and end"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the type default in working days"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting working days to a date in a calendar"
+  claim: "The end date is worked out in working days from the type; nobody counts days"
+- id: "01.stages"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "intent record (stages)"
+  input: "Stage list with opened and closed times"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the type's own routes as stages open and close"
+  minutes_without: 4
+  minutes_with: 0
+  basis: "estimate: a status update in a weekly report"
+  claim: "Stage progress is recorded as work happens, not reported"
+- id: "01.open_press"
+  spec: "01"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/<id> (Open)"
+  input: "Open the intent"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser's decision"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: sending a kick-off message against one press that also tells the people named"
+  claim: "One press opens the intent and tells the people named"
+- id: "01.extend"
+  spec: "01"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/<id> (Extend time box: new end and reason)"
+  input: "New end date and reason for extending"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser's decision; North proposes the option when the box will not hold"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: an email thread to agree more time versus a recorded press with a reason"
+  claim: "An extension is one press with a reason, kept in the record with who and why"
+- id: "01.closing_move"
+  spec: "01"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/<id> (Move to closing)"
+  input: "Move to closing"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser, or North when the time box ends or the last stage closes"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: calling time on a project"
+  claim: "North moves the intent to closing when the work or the clock is done"
+- id: "01.closure_text"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (summary, why it happened, what came out)"
+  input: "Closure summary, why it happened, what came out"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the intent's records: wall, charter, session, outcome"
+  minutes_without: 45
+  minutes_with: 5
+  basis: "estimate: writing a wrap-up note from memory versus editing a sourced draft"
+  claim: "North writes the closure from the records; the person who closes edits and signs"
+- id: "01.closure_next"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (what happens next)"
+  input: "What happens next (initiative, problem, decision, backlog, handled, nothing) with a reason each"
+  person: organiser
+  mode: confirm
+  built: manual
+  agent: North
+  source: "the outcome and what was left open"
+  minutes_without: 15
+  minutes_with: 3
+  basis: "estimate: agreeing follow-ups in a closing meeting versus picking from proposals"
+  claim: "North proposes what follows with a reason; the organiser picks one per proposal"
+- id: "01.close_press"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (Close intent)"
+  input: "Close the intent (signature)"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the person pressing; the closure draft is prepared by North"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: filing and announcing a closed project"
+  claim: "Agents never close; one named person closes, and the record becomes read-only"
+- id: "01.cancel"
+  spec: "01"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/<id> (Cancel intent: reason)"
+  input: "Cancel with a reason"
+  person: organiser
+  mode: manual
+  agent: ""
+  source: "the organiser's decision"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: telling people and noting why"
+  claim: "A cancelled intent keeps its reason and is shown in Past; nothing is deleted"
+- id: "01.history"
+  spec: "01"
+  journey: shared
+  stage: shared
+  screen: "intent record (history, version, updated time, event count)"
+  input: "History trail, version, updated time, event count"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the server on every write"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: keeping a change log by hand"
+  claim: "Every change is written to a trail by the system; nobody keeps a log"
+- id: "01.refs"
+  spec: "01"
+  journey: shared
+  stage: shared
+  screen: "intent record (refs to wall, charter, baseline, assessment)"
+  input: "Pointers to the wall, charter, baseline and assessment"
+  person: system
+  mode: automatic
+  agent: ""
+  source: "the routes that create or attach the thing"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: pasting links into a tracker"
+  claim: "The intent links to its work by reference, so nobody pastes links or copies content"
+- id: "01.counters"
+  spec: "01"
+  journey: admin
+  stage: prove
+  screen: "centre counters (by type and state, closed in time, extended, median days)"
+  input: "Intents by type and state; closed in time box; extended; median working days to close"
+  person: company_admin
+  mode: automatic
+  agent: ""
+  source: "the intent records in the company plane"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: compiling a portfolio status in a spreadsheet"
+  claim: "The portfolio numbers come from the records; nobody compiles a status sheet"
+- id: "01.start_session"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id> session view (Start session)"
+  input: "Start a live session"
+  person: organiser
+  mode: manual
+  source: "the type's session view while the intent is open"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: gathering people and opening a room versus one press"
+  claim: "One press starts the session; the stage opens and the session reference is written for the organiser"
+- id: "01.send_back"
+  spec: "01"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/<id>/close (Send back to open)"
+  input: "Send the closure back to open, with a reason"
+  person: organiser
+  mode: manual
+  source: "the closure draft and what was missing"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: telling the team the wrap-up was premature versus one press"
+  claim: "The closure draft is kept and the intent reopens in one press, with the reason on the trail"
+- id: "01.confirmer_sign"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (per-type confirmer)"
+  input: "Confirmer signs before the organiser closes"
+  person: sponsor
+  mode: manual
+  agent: North
+  source: "the closure draft and the outcome it rests on"
+  minutes_without: 20
+  minutes_with: 2
+  basis: "estimate: chasing a sponsor, decider or owner for sign-off versus reading a prepared closure and signing"
+  claim: "The named confirmer reads a sourced closure draft and signs; the organiser then closes"
+- id: "01.auto_closing"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id> (time box ended or last stage closed)"
+  input: "Move to closing when the time box ends or the last stage closes"
+  person: company_person
+  mode: automatic
+  agent: North
+  source: "time box end and stage list"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: someone remembering to call time versus a clock rule"
+  claim: "North moves the intent to closing and writes the closure draft in the same step; nobody has to remember"
+- id: "01.session_end"
+  spec: "01"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id> (session ends without the intent finishing)"
+  input: "Return from session to open"
+  person: organiser
+  mode: automatic
+  agent: North
+  source: "the session end event"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: updating a status by hand versus a rule"
+  claim: "The intent returns to open when a session ends unfinished, with the session stage closed and the trail written"
+- id: "01.version"
+  spec: "01"
+  journey: shared
+  stage: shared
+  screen: "intent record (version, updated time)"
+  input: "Record version and last-changed time"
+  person: company_person
+  mode: automatic
+  source: "every write to the record"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: spotting two people saving over each other versus a server counter"
+  claim: "Two people cannot save over each other; the version and last-changed time are kept without anyone typing them"
+- id: "01.closure_signed"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id>/close (signed flag, drafted by)"
+  input: "Who drafted the closure and whether a person signed it"
+  person: company_person
+  mode: automatic
+  source: "the closure record"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: checking who wrote the wrap-up versus a flag"
+  claim: "A draft never reads as signed; the record says who drafted it and whether a person pressed Close intent"
+- id: "01.event_count"
+  spec: "01"
+  journey: shared
+  stage: shared
+  screen: "intent record (event count)"
+  input: "Event count kept on the record"
+  person: company_person
+  mode: automatic
+  source: "the events file"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting activity by hand versus a counter"
+  claim: "The record shows how much has happened without anyone counting"
+- id: "01.closed_in_box"
+  spec: "01"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent (measures: closed in time box)"
+  input: "Closed in time box; extended at least once"
+  person: company_admin
+  mode: automatic
+  source: "closure date against the final time box end and the extension list"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: a monthly spreadsheet count versus a computed measure"
+  claim: "The share closed on time and the count extended are computed from the records, with small groups withheld"

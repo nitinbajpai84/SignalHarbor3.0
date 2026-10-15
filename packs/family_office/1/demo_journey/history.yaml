@@ -1,0 +1,112 @@
+# ILLUSTRATIVE. The synthetic calendar tools/seed_demo_history.py follows: six months of invented operating history (April to September 2026).
+# Every date, count and sentence here is made up for the demo; nothing comes from a real company or a real load.
+# No person is named: people are found at run time in the company's own profile by role (organiser, sponsor, steward,
+# owner_of:<measure code>). Dates are the only thing that varies by month; nothing is random.
+illustrative: true
+
+# The twelve measures with demo gold tables (demo_warehouse/gold.<code>.csv); their map nodes are measure:<code>.
+measures: [K01, K02, K03, K04, K05, K06, K09, K10, K12, K15, K16, K17]
+
+# Rows per run: the first key found in the source name, else default.
+rows: {custodian: 1840, fund_administrator: 96, capital_calls: 14, market_data: 2210, index_provider: 1460, exposure: 312,
+       general_ledger: 5120, payroll: 58, crm: 140, portfolio_accounting: 640, fee: 42, default: 480}
+
+# June: the custodian file arrives two days after its expected time.
+late: {month: "2026-06", source_match: [custodian], days: 2, note: "Custodian portal was down; file loaded two days late, marts still inside the SLA."}
+# August: a non-empty rule fails on the fee schedule source (first match). The contract's own non-empty rule is used when it has one.
+failed: {month: "2026-08", source_match: [fee, fund_administrator], rule: "K05:fee terms are not empty", count: 7,
+         note: "Blank fee terms after the schedule was re-saved; the owner re-sent the file."}
+# September: the K02 range break (the demo gold drops sharply in 2026-09). Left open.
+range_break: {month: "2026-09", measure: K02, day: 9}
+
+versions:
+  drafted: {month: "2026-04", day: 14, by: Lens, what: "Definition drafted from the industry pack and the baseline"}
+  confirmed: {month: "2026-05", day: 20, what: "Definition confirmed by the owner at the baseline review"}
+
+comments:
+  - {month: "2026-05", day: 12, measure: K02, kind: ambiguity, by: "owner_of:K09", decided_by: owner, state: answered,
+     text: "Is cash counted once at the consolidated level, or once per account?",
+     answer: "Once, at the consolidated level, as the definition says."}
+  - {month: "2026-06", day: 16, measure: K05, kind: comment, by: organiser,
+     text: "The custodian file came in late this month; unfunded commitments were refreshed once it landed."}
+  - {month: "2026-07", day: 8, measure: K12, kind: ambiguity, by: sponsor, decided_by: owner, state: answered,
+     text: "Is a valuation stale after one quarter, or after two missed statements?",
+     answer: "After one quarter without a final statement."}
+  - {month: "2026-07", day: 21, measure: K10, kind: suggestion, by: "owner_of:K15", decided_by: steward, state: declined,
+     text: "Show private-market allocation net of unfunded commitments as well.",
+     answer: "Declined for now: unfunded commitments are their own measure."}
+  - {month: "2026-08", day: 11, measure: K15, kind: suggestion, by: "owner_of:K17", decided_by: steward, state: accepted, also: [K16],
+     text: "Compare each fund with the benchmark its manager reports against, not the house index."}
+  - {month: "2026-09", day: 15, measure: K02, kind: comment, anonymous: true,
+     text: "The September drop in evidence coverage looks like missing statements, not a real change."}
+
+# One Nira message of each kind per month. Months before drafts_from are sent by the organiser; from it on they stay drafts.
+messages:
+  drafts_from: "2026-09"
+  day: 4
+  invite_roles: [sponsor, "owner_of:K12", "owner_of:K09"]
+  months:
+    "2026-04": {purpose: "the outcomes wall", closes: "on the twenty-fourth of April", ask: "Please make sure the risk team is on the wall."}
+    "2026-05": {purpose: "the baseline review", closes: "on the twenty-second of May", ask: "Can we have the owners confirm their definitions this month?"}
+    "2026-06": {purpose: "the data assessment", closes: "on the nineteenth of June", ask: "Please chase the custodian on the late file."}
+    "2026-07": {purpose: "the build plan review", closes: "on the twenty-fourth of July", ask: "I would like the blueprint signed before August."}
+    "2026-08": {purpose: "the trial run review", closes: "on the twenty-first of August", ask: "Please find out why the fee terms were blank."}
+    "2026-09": {purpose: "the quarter-end review", closes: "on the twenty-fifth of September", ask: "Can someone look at the drop in evidence coverage?"}
+
+# Memory: no figures, no contact details, no quotes (the filters drop them anyway). Person memory is North's.
+memory:
+  people:
+    - role: sponsor
+      entries:
+        - {month: "2026-04", kind: preference, text: "Wants the headline measures first and the detail only on request."}
+        - {month: "2026-06", kind: fact, text: "Signs off the committee pack once the funding headroom is confirmed."}
+        - {month: "2026-08", kind: decision, text: "Agreed that manager comparisons use the benchmark each manager reports against."}
+    - role: organiser
+      entries:
+        - {month: "2026-04", kind: fact, text: "Runs the outcomes wall and sends the invitations."}
+        - {month: "2026-05", kind: preference, text: "Prefers reminders on Monday mornings rather than Friday afternoons."}
+        - {month: "2026-07", kind: decision, text: "Moved the build plan review ahead of the summer break."}
+    - role: "owner_of:K12"
+      entries:
+        - {month: "2026-05", kind: fact, text: "Downloads the administrator statements by hand from the portal."}
+        - {month: "2026-06", kind: preference, text: "Wants a note the same day when the custodian file is late."}
+        - {month: "2026-09", kind: open, text: "Should stale valuations be flagged per fund or per manager?"}
+    - role: "name:Aaron Lyle"
+      entries:
+        - {month: "2026-04", kind: fact, text: "Works in risk and checks single-issuer concentration each month."}
+        - {month: "2026-06", kind: preference, text: "Likes to confirm a definition in writing before it goes on the map."}
+        - {month: "2026-09", kind: open, text: "Does look-through exposure count towards single-issuer concentration?"}
+    - role: "name:Katie Menon"
+      entries:
+        - {month: "2026-05", kind: fact, text: "Pastes benchmark index levels into the performance workbook by hand."}
+        - {month: "2026-07", kind: preference, text: "Prefers questions that can be answered from a file she already holds."}
+        - {month: "2026-08", kind: decision, text: "Named as the tester who signs each measure's acceptance."}
+    - role: "name:Grace Ward"
+      entries:
+        - {month: "2026-05", kind: fact, text: "Approves who may see the restricted measures."}
+        - {month: "2026-07", kind: preference, text: "Wants every restricted list reviewed before the quarter closes."}
+        - {month: "2026-09", kind: decision, text: "Confirmed that the pay-related measures stay restricted to a named list."}
+  company:
+    north:
+      - {month: "2026-04", kind: fact, text: "The family council reads the committee pack the week before each meeting."}
+      - {month: "2026-04", kind: preference, text: "Leadership prefers a one-page summary ahead of any detail."}
+      - {month: "2026-05", kind: decision, text: "Evidence coverage and stale valuations are reviewed together each month."}
+      - {month: "2026-06", kind: fact, text: "The custodian file lands first each month and other sources wait on it."}
+      - {month: "2026-07", kind: decision, text: "Private-market allocation is reported gross; unfunded commitments stay separate."}
+      - {month: "2026-08", kind: preference, text: "Benchmark comparisons use the index each manager reports against."}
+      - {month: "2026-08", kind: fact, text: "The fee schedule has no single owner yet and several copies exist."}
+      - {month: "2026-09", kind: open, text: "Why did evidence coverage fall sharply in September: missing statements or a real change?"}
+    lens:
+      - {month: "2026-04", kind: fact, text: "Measure definitions were first drafted from the industry pack and the glossary."}
+      - {month: "2026-05", kind: decision, text: "Each measure owner confirmed their definition at the baseline review."}
+      - {month: "2026-05", kind: preference, text: "Owners want definitions in plain words with the formula underneath."}
+      - {month: "2026-06", kind: fact, text: "Cash is counted once at the consolidated level in coverage measures."}
+      - {month: "2026-08", kind: decision, text: "The benchmark rule for manager performance changed after an accepted suggestion."}
+      - {month: "2026-09", kind: fact, text: "A valuation counts as stale after one quarter without a final statement."}
+      - {month: "2026-09", kind: open, text: "Should the fee schedule become its own source with a named owner?"}
+
+# Model calls in the egress log: counts only (module, bytes); the host is a placeholder, not a real provider.
+egress:
+  host: model-provider.example
+  day: 10
+  calls: [{module: north, bytes: 2140}, {module: lens, bytes: 3380}, {module: nira, bytes: 910}, {module: profile, bytes: 1820}, {module: m2_baseline, bytes: 2630}]

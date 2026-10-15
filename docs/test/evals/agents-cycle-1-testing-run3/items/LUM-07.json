@@ -1,0 +1,146 @@
+{
+  "id": "LUM-07",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"line in blue\" edits the last tile (blue line).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": false,
+      "detail": "fewer than two tiles proposed"
+    }
+  ],
+  "error": null,
+  "latency_ms": 5151,
+  "cost": {
+    "calls": 1,
+    "tokens": 616,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 3,
+  "egress_blocked": 2,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "mark": "line",
+      "color": "blue"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD per month. It is waiting for you: accept it or choose Not this. I used what I remember about you: blue lines.",
+        "proposals": [
+          {
+            "id": "t-dd5ecf",
+            "title": "Net worth USD per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true,
+                "color": "#2563eb"
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "period": "month",
+              "color": "blue",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [
+                "blue lines"
+              ],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 1617,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "line in blue"
+      },
+      "status": 200,
+      "json": {
+        "reply": "That is already how the tile looks.",
+        "proposals": [],
+        "dashboard_id": "dash-7398c035",
+        "edited": false,
+        "remembered": []
+      },
+      "ms": 3534,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 2121,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:47:06+0800"
+    },
+    {
+      "bytes": 13499,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:47:06+0800"
+    },
+    {
+      "bytes": 13570,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:47:04+0800"
+    }
+  ]
+}

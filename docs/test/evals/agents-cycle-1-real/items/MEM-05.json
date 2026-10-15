@@ -1,0 +1,167 @@
+{
+  "id": "MEM-05",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "And the other way - the sponsor's quarterly preference does not reach the analyst.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6186,
+  "cost": {
+    "calls": 1,
+    "tokens": 1161,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 1,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures quarterly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference; gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like figures by quarter. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": [
+          "you like figures by quarter"
+        ]
+      },
+      "ms": 6141,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-91e87716",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants a monthly investment report in USD and SGD for the CIO, due early in each month.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:05+00:00",
+            "source": {
+              "said": "",
+              "convo": "ini-f8b2ab7e10cabeb5f886c8366c0ae532",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 11,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "quarterly"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-f9fea07c",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures by quarter",
+            "sure": "said",
+            "at": "2026-10-09T17:33:33+00:00",
+            "source": {
+              "said": "From now on show my figures quarterly",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-df4dc74c",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:23+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 17,
+      "expect": null,
+      "cleanup": true
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-f9fea07c",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-f9fea07c"
+      },
+      "ms": 17,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 1495,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:33:33+0800"
+    },
+    {
+      "bytes": 12991,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:32+0800"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+# V6 b10: the Architecture step (design pack). Everyone on the project may read; the data team seat answers, samples, drafts, corrects and sends;
+# the head of data seat approves or sends back, never the person who made the version. Seats are checked again in code.
+routes:
+  GET /api/v1/build/p/{pid}/architecture/summary: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/build/p/{pid}/architecture/questions: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/architecture/questions/accept-all: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/questions/{qid}: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/systems/confirm: {roles: [company_admin, analyst]}
+  PUT /api/v1/build/p/{pid}/architecture/systems/{sid}: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/samples/{sid}/table: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/samples/{sid}/pdf: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/architecture/samples/{sid}/lines: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/architecture/samples/{sid}/mark: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/architecture/pack: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/architecture/pack/generate: {roles: [company_admin, analyst]}
+  PUT /api/v1/build/p/{pid}/architecture/pack/edit: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/pack/submit: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/pack/approve: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/pack/reject: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/architecture/pack/diff: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/architecture/pack/plan: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/architecture/pack/plan/approve: {roles: [company_admin, analyst]}

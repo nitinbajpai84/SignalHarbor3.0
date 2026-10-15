@@ -1,0 +1,43 @@
+# Module 1 session settings (spec section 8; M1-01, M1-02). Every list and limit the Prepare screens offer
+# is read from this file, never from code. Values marked "chosen" were not given by the spec or a decision:
+# they are placeholders for Nitin to confirm (autonomous decision A-028).
+seats:
+  min: 1        # D-004: one person can run it alone
+  max: 10       # D-004: a room of up to ten
+time_presets_minutes: [5, 10, 20, 30]   # M1-02
+custom_length_minutes:                  # chosen: M1-02 allows a custom length but gives no bounds
+  min: 5
+  max: 120
+min_stage_minutes: 1                    # chosen: each of the three parts needs at least one minute
+default_length_minutes: 20              # chosen: one of the presets
+default_split_percent:                  # chosen: how a new session's time is shared; must add up to 100
+  briefing: 20
+  individual: 40
+  together: 40
+warning_seconds: 60                     # M1-14: a warning one minute before the end of a stage
+text_limits:                            # chosen: plain size caps
+  purpose: 500
+  outcome: 500
+  approver_name: 120
+  template_name: 80
+briefing_video_options: [standard, none]   # M1-06: the standard video, or none; the file itself comes later
+
+# The wall window (IC-2f, spec section 3). Prepare field `wall_window_days`: a whole number from 1 to 20 or null; the screen shows 5 but writes it only when the organiser confirms it.
+# Working days are Monday to Friday, no holidays (UTC). When the organiser starts the room (draft to lobby) the private rooms'
+# length is set to that many working days from that moment, converted to minutes, in the split's "individual" part.
+# Only when the window is set (not null) does it replace the private rooms' length; null keeps the length from the split.
+# The rule is in domain/preparation.py (WALL_DAYS_DEFAULT, WALL_DAYS_MAX) and domain/timer.py (window_minutes); an older session has null.
+# When the private rooms end (timer, organiser close or everyone done) the wall is frozen: no card is added or changed.
+input_counters:                            # LI-M1: session counters, numbers only
+  actions: "Human actions taken in the session"
+  free_text: "Free-text entries typed by humans"
+  cards_new: "New cards (notes) written by participants"
+  cards_confirmed: "Cards kept from North's draft (confirmed)"
+  cards_sealed: "Cards saved with restricted access"
+
+# Walls per topic or department (IC-2t). A company may run several walls at once, each a session.
+# Prepare field `topic`: text of 1 to 60 characters, or null (blank counts as null; an older session has null). The session's `purpose` (the sentence for "What are we here for?") is the existing field above.
+# One open wall per topic: when the room starts (draft to lobby) and another wall of the company is open (any state but draft or closed), the topic is required
+# and must differ (ignoring capitals) from every open wall's, else the start is refused in plain words (409). The company's only wall needs no topic.
+# Every card written to the profile from a session carries that session's `topic` (cards.<id>.topic) beside `room`, so the wall and Define can group by it.
+# Reads: GET /walls lists the company's started walls: id, topic, purpose, state, cards_count, people_count (numbers only). The together view serves `topic`.

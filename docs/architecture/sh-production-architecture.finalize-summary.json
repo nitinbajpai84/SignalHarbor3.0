@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-production-architecture.json",
+    "sha256": "e6463ec075de0515f2685ff4520093ee1625f60eb891eedb6aced2eb3ce0e9bc",
+    "bytes": 9906
+  },
+  "artifact": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-production-architecture.html"
+  },
+  "gates": {
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
+  },
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "composition/desktop-readability",
+      "severity": "error",
+      "message": "Final artifact failed composition/desktop-readability.",
+      "subject": {
+        "check": "composition"
+      },
+      "evidence": {
+        "owner": {
+          "kind": "edge",
+          "id": null,
+          "from": "browser",
+          "to": "web"
+        },
+        "viewportWidth": 1440,
+        "viewportHeight": 900,
+        "availableDiagramWidth": 930,
+        "budgetBasis": "legacy-930",
+        "readerContract": "declared-wide-v1",
+        "requestedTargetPx": 7.5,
+        "requestedTargetMet": false,
+        "budgetLimit": "legacy",
+        "viewBoxWidth": 1642,
+        "scale": 0.5663824604141291,
+        "text": "HTTPS JSON",
+        "detail": "edge",
+        "sourceFontPx": 8,
+        "projectedFontPx": 4.531059683313033,
+        "minimumProjectedFontPx": 6
+      },
+      "supportedFixes": [
+        "Preserve the semantic text and any supplied coordinates, routes, sides, channels, and labels. Compactly reflow automatic spacing and empty corridors so the complete viewBox width is at most 1240px (current 1642px; 8px source text at 930px desktop budget). If supplied geometry fixes that width, use a renderer-supported semantic text-size setting or renderer-level fix instead. Position-only label controls cannot repair its projection."
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-production-architecture.finalize.json",
+    "summaryReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-production-architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 26944,
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-production-architecture.json",
+    "constraint": "Preserve all semantics and user-fixed geometry. Use references/architecture-layout-repair.md to choose a local repair or connected-scene reflow; edit the existing candidate.",
+    "then": "finalize-once"
+  }
+}

@@ -1,0 +1,78 @@
+/**
+ * Screen-specific CSS for group E1 (command-center, intent-studio,
+ * intent-charter). Appended-only file per the build plan's coordination
+ * rule — other screen-builder groups add their own css/screens-<group>.css
+ * and their own <link> line in index.html. Everything here layers on top
+ * of css/nirvana.css tokens/components; no hex colors, var(--token) only.
+ */
+
+/* ---- Command Center: intents portfolio ---- */
+.n-e1-intents { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 1080px) { .n-e1-intents { grid-template-columns: 1fr; } }
+.n-e1-intent-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.n-e1-intent-card.primary { border-color: var(--border-luminous); box-shadow: var(--shadow-glow-accent); }
+.n-e1-intent-card.illustrative { opacity: 0.72; }
+.n-e1-intent-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.n-e1-intent-title { font-size: 13.5px; font-weight: 700; }
+.n-e1-intent-sponsor { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.n-e1-intent-value { font-family: var(--font-mono); font-size: 15px; font-weight: 700; color: var(--accent-2); }
+.n-e1-intent-value .lbl { font-family: var(--font-sans); font-weight: 600; font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 2px; }
+.n-e1-mini-rail { display: flex; gap: 2px; margin-top: 2px; }
+.n-e1-mini-seg { flex: 1; height: 4px; border-radius: 2px; background: var(--border-hairline); }
+.n-e1-mini-seg.done { background: var(--success); }
+.n-e1-mini-seg.current { background: var(--accent-2); }
+.n-e1-illustrative-flag { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: 999px; padding: 1px 7px; }
+
+/* ---- Intent Studio: interview layout ---- */
+.n-e1-studio-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 1080px) { .n-e1-studio-grid { grid-template-columns: 1fr; } }
+.n-e1-transcript { max-height: 620px; overflow-y: auto; padding-right: 4px; scroll-behavior: smooth; }
+.n-e1-transcript::-webkit-scrollbar { width: 6px; }
+.n-e1-transcript::-webkit-scrollbar-thumb { background: var(--border-hairline); border-radius: 3px; }
+.n-e1-turn { transition: outline-color .2s, background .2s; border-radius: var(--radius-md); }
+.n-e1-turn.past-reveal { opacity: 0.45; }
+.n-e1-turn.flash { background: var(--accent-soft); }
+.n-e1-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 0; }
+.n-e1-chip {
+  font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+  background: var(--surface); border: 1px dashed var(--border-hairline); color: var(--text-muted);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.n-e1-chip.reasoning { border-style: solid; border-color: var(--accent); color: var(--accent-2); background: var(--accent-soft); }
+.n-e1-chip.followup { cursor: default; }
+.n-e1-stepper { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.n-e1-stepper .n-e1-progress { flex: 1; height: 4px; background: var(--border-hairline); border-radius: 2px; overflow: hidden; min-width: 80px; }
+.n-e1-stepper .n-e1-progress-fill { height: 100%; background: var(--accent-2); transition: width .2s; }
+.n-e1-stepper .n-e1-step-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+.n-e1-side-item { border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--surface); }
+.n-e1-side-item + .n-e1-side-item { margin-top: 6px; }
+.n-e1-side-item .head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.n-e1-side-item .name { font-size: 12.5px; font-weight: 600; }
+.n-e1-side-item .val { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.n-e1-provenance { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.n-e1-provenance:hover { color: var(--accent-2); }
+.n-e1-fade-enter { animation: n-e1-fadein .3s ease; }
+@keyframes n-e1-fadein { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+/* ---- Intent Charter ---- */
+.n-e1-charter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1080px) { .n-e1-charter-grid { grid-template-columns: 1fr; } }
+.n-e1-def-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-hairline); font-size: 12.5px; }
+.n-e1-def-row:last-child { border-bottom: none; }
+.n-e1-def-name { font-weight: 600; }
+.n-e1-def-note { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+.n-e1-signature {
+  border: 1px solid var(--border-luminous); border-radius: var(--radius-md);
+  padding: 16px; background: var(--surface-elevated);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.n-e1-signature .sig-meta { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.n-e1-signature .sig-actor { font-size: 15px; font-weight: 700; color: var(--text-primary); font-family: var(--font-sans); }
+.n-e1-owner-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; }

@@ -1,0 +1,179 @@
+# Template insurance@1 column synonyms (V3-03 brief item 6). Seeded ONLY from spellings actually
+# found in sh_data/workspaces/star-insurance/contracts/discovery/insurance/*.profile.json, this
+# repo's source contracts (docs/signal-harbor/cmo-proof/kpis.json source_tables/formula text),
+# and the research note. Every spelling below carries its own source; where only one spelling is
+# known (the canonical one), the synonym list is empty rather than invented.
+#
+# Regex patterns are plain, case-insensitive, anchored alternations of the known spellings --
+# no attempt to guess spellings that have not actually been seen anywhere in this pack's sources.
+template: insurance@1
+status: proposed
+feeds:
+  policies:
+    policy_id:
+      spellings:
+        - spelling: policy_id
+          source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula (pol_policies.policy_id)"
+        - spelling: policy_id
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_policy_ddl.profile.json columns[0].name"
+      regex: "^(?i:policy_id)$"
+    inception_date:
+      spellings:
+        - spelling: inception_date
+          source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula (pol_policies.inception_date)"
+        - spelling: start_date
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_policy_ddl.profile.json columns[3].name"
+      regex: "^(?i:inception_date|start_date)$"
+    policy_status:
+      spellings:
+        - spelling: policy_status
+          source: "docs/signal-harbor/cmo-proof/kpis.json observed_jan_jun_2026.status (pol_policies.policy_status)"
+      regex: "^(?i:policy_status)$"
+    currency_code:
+      spellings:
+        - spelling: currency_code
+          source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula (pol_policies.currency_code)"
+      regex: "^(?i:currency_code)$"
+    ape_amount:
+      spellings:
+        - spelling: ape_amount
+          source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula (pol_policy_coverages.ape_amount)"
+      regex: "^(?i:ape_amount)$"
+    premium_amount:
+      spellings:
+        - spelling: premium
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_policy_ddl.profile.json columns[2].name (status: proposal -- relationship to ape_amount not confirmed, see feeds.yaml)"
+      regex: "^(?i:premium)$"
+    product_category:
+      spellings:
+        - spelling: product_category
+          source: "docs/signal-harbor/cmo-proof/kpis.json K14 source_tables (pol_products.product_category)"
+      regex: "^(?i:product_category)$"
+    lbu_code:
+      spellings:
+        - spelling: lbu_code
+          source: "docs/signal-harbor/cmo-proof/kpis.json K01 grain (lbu_code); sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[4].name"
+      regex: "^(?i:lbu_code)$"
+    customer_id:
+      spellings:
+        - spelling: customer_id
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[0].name"
+      regex: "^(?i:customer_id)$"
+  agents:
+    agent_id:
+      spellings: []
+      regex: "^(?i:agent_id)$"
+    branch:
+      spellings:
+        - spelling: branch
+          source: "docs/signal-harbor/cmo-proof/kpis.json K07/K17 grain (dist_agents.branch)"
+      regex: "^(?i:branch)$"
+  leads:
+    lead_id:
+      spellings:
+        - spelling: lead_id
+          source: "docs/signal-harbor/cmo-proof/kpis.json K05 formula (lms_leads.lead_id)"
+        - spelling: lead_id
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_lead_dict.profile.json columns[0].name"
+      regex: "^(?i:lead_id)$"
+    lead_source:
+      spellings:
+        - spelling: lead_source
+          source: "docs/signal-harbor/cmo-proof/kpis.json K05 data_support (lms_leads.lead_source)"
+        - spelling: source
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_lead_dict.profile.json columns[1].name"
+      regex: "^(?i:lead_source|source)$"
+    campaign_id:
+      spellings:
+        - spelling: campaign_id
+          source: "docs/signal-harbor/cmo-proof/kpis.json K10 formula (lms_leads.campaign_id)"
+      regex: "^(?i:campaign_id)$"
+    lead_created_date:
+      spellings:
+        - spelling: lead_created_date
+          source: "docs/signal-harbor/cmo-proof/kpis.json K05 formula (lms_leads.lead_created_date)"
+        - spelling: created_at
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_lead_dict.profile.json columns[2].name"
+      regex: "^(?i:lead_created_date|created_at)$"
+    distributed_date:
+      spellings:
+        - spelling: distributed_date
+          source: "docs/signal-harbor/cmo-proof/kpis.json K07 formula (lms_leads.distributed_date)"
+      regex: "^(?i:distributed_date)$"
+    accepted_date:
+      spellings:
+        - spelling: accepted_date
+          source: "docs/signal-harbor/cmo-proof/kpis.json K07 formula (lms_leads.accepted_date)"
+      regex: "^(?i:accepted_date)$"
+  campaigns:
+    campaign_id:
+      spellings:
+        - spelling: campaign_id
+          source: "docs/signal-harbor/cmo-proof/kpis.json K10 source_tables (mkt_campaigns.campaign_id)"
+      regex: "^(?i:campaign_id)$"
+    spend_usd:
+      spellings:
+        - spelling: spend_usd
+          source: "docs/signal-harbor/cmo-proof/kpis.json K11 formula (mkt_campaign_spend.spend_usd, not present in the monthly drops)"
+      regex: "^(?i:spend_usd)$"
+  claims: {}
+  cep_sends:
+    send_id:
+      spellings: []
+      regex: "^(?i:send_id)$"
+    channel_name:
+      spellings:
+        - spelling: channel_name
+          source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula (cep_channels.channel_name)"
+      regex: "^(?i:channel_name)$"
+    send_date:
+      spellings: []
+      regex: "^(?i:send_date)$"
+    delivered_flag:
+      spellings:
+        - spelling: delivered_flag
+          source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula (cep_send_events.delivered_flag)"
+      regex: "^(?i:delivered_flag)$"
+    opened_flag:
+      spellings:
+        - spelling: opened_flag
+          source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula (cep_send_events.opened_flag)"
+      regex: "^(?i:opened_flag)$"
+    clicked_flag:
+      spellings:
+        - spelling: clicked_flag
+          source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula (cep_send_events.clicked_flag)"
+      regex: "^(?i:clicked_flag)$"
+    journey_id:
+      spellings:
+        - spelling: journey_id
+          source: "docs/signal-harbor/cmo-proof/kpis.json K15 formula (cumulative.json attribution.cep.by_journey)"
+      regex: "^(?i:journey_id)$"
+  customers:
+    customer_id:
+      spellings:
+        - spelling: customer_id
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[0].name"
+      regex: "^(?i:customer_id)$"
+    customer_segment:
+      spellings:
+        - spelling: customer_segment
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[1].name"
+      regex: "^(?i:customer_segment)$"
+    customer_since_date:
+      spellings:
+        - spelling: customer_since_date
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[3].name"
+      regex: "^(?i:customer_since_date)$"
+    lbu_code:
+      spellings:
+        - spelling: lbu_code
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json columns[4].name"
+      regex: "^(?i:lbu_code)$"
+    customer_email:
+      spellings:
+        - spelling: customer_email
+          source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_policy_ddl.profile.json columns[1].name"
+      regex: "^(?i:customer_email)$"
+open_questions:
+  - "customer_type (v2s2_crm_meta/v2s2_crm_ui/demo_crm/crm_customers.profile.json) is a constant 'Customer' in every sampled row and is not referenced by any kpis.json formula -- left out of feeds.yaml/column_synonyms.yaml rather than guessed into a meaning."

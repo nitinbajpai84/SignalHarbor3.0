@@ -1,0 +1,1142 @@
+{
+  "id": "NOR-11",
+  "agent": "north",
+  "role": "analyst",
+  "desc": "Controls from the narrative reach the SOP (the 5,000 USD cash tolerance).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 5000"
+    },
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "groundedness",
+      "passed": false,
+      "detail": "not from the program: 35"
+    }
+  ],
+  "error": null,
+  "latency_ms": 46596,
+  "cost": {
+    "calls": 3,
+    "tokens": 31915,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/intents/chat"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "5000"
+    ],
+    "words_any": [
+      [
+        "control"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/intents/chat",
+      "request": {
+        "text": "Draft the intent and for each step list the control and the exception.",
+        "files": [
+          "month_end_process_narrative-751578cc.md"
+        ]
+      },
+      "status": 200,
+      "json": {
+        "id": "ini-d31c8d2b1121475e7694c4c4cdc7765e",
+        "intent_id": "ini-d31c8d2b1121475e7694c4c4cdc7765e",
+        "turns": [
+          {
+            "id": "t_6957d14ad2bd",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Draft the intent and for each step list the control and the exception.",
+            "at": "2026-10-09T17:36:46+00:00",
+            "need": null,
+            "files": [
+              {
+                "name": "month_end_process_narrative-751578cc.md",
+                "path": "documents/month_end_process_narrative-751578cc.md",
+                "kind": "document"
+              }
+            ]
+          },
+          {
+            "id": "t_aacd10ec9048",
+            "by": "north",
+            "name": "North",
+            "text": "I read month_end_process_narrative-751578cc.md: 85 lines; it covers Evergreen Office: how we produce the monthly investment report today, 1. Purpose, 2. People and systems, 3. Steps today. I've drafted the intent for assembling the monthly investment pack, including the goal, readers, and when it's needed. I've also mapped out the six process steps, noting who does what, the system used, and the controls and exceptions for each, as described in your narrative. I've also captured the handovers between steps. To help define the data inputs, what information do you take from each manager statement, and which fields are always required? I have proposed 48 things to change; say yes to accept, or tell me what is wrong.",
+            "at": "2026-10-09T17:37:32+00:00",
+            "need": null,
+            "files": []
+          }
+        ],
+        "needs_done": [
+          "goal",
+          "access",
+          "readers",
+          "frequency",
+          "process",
+          "inputs"
+        ],
+        "state": "open",
+        "asked": "extraction",
+        "sow": {
+          "id": "sow-ini-d31c8d2b1121475e7694c4c4cdc7765e",
+          "intent_id": "ini-d31c8d2b1121475e7694c4c4cdc7765e",
+          "title": "Draft the intent and for each step list the control and the exception",
+          "state": "draft",
+          "version": 1,
+          "goal": {
+            "line": "Draft the intent and for each step list the control and the exception.",
+            "why": "",
+            "readers": [],
+            "decisions": [],
+            "needed_by": ""
+          },
+          "process": {
+            "steps": [],
+            "handovers": []
+          },
+          "kpis": [],
+          "sources": [],
+          "catalogue": [],
+          "governance": [],
+          "unclear": [],
+          "signature": null
+        },
+        "process_map": {
+          "steps": [],
+          "handovers": []
+        },
+        "layout": {
+          "documents": [
+            {
+              "kind": "intent_of_work",
+              "title": "Intent of work",
+              "template": {
+                "id": "standard-intent-of-work",
+                "name": "Reporting automation",
+                "version": 1
+              },
+              "choices": [],
+              "sections": [
+                {
+                  "key": "goal",
+                  "instruction": "A line or two: what is wanted and why now.",
+                  "example": "A monthly wealth report for the family council, so they stop waiting for spreadsheets.",
+                  "required": true,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "What you want to build, and why it matters now",
+                  "filled": true,
+                  "value": "Draft the intent and for each step list the control and the exception.",
+                  "edits": [
+                    {
+                      "label": "Goal",
+                      "section": "goal",
+                      "field": "line",
+                      "value": "Draft the intent and for each step list the control and the exception."
+                    },
+                    {
+                      "label": "Why",
+                      "section": "goal",
+                      "field": "why",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "access",
+                  "instruction": "Everyone in the company, only the people you name, or only you and the people you name with no preview for others.",
+                  "example": "Only the people you name",
+                  "required": false,
+                  "type": "choice",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Who should be able to see this work",
+                  "filled": false,
+                  "value": "",
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "readers",
+                  "instruction": "Who reads this and what they decide.",
+                  "example": "The family council; they decide whether to rebalance and how much to draw.",
+                  "required": true,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Who reads the result and what they decide from it",
+                  "filled": false,
+                  "value": "",
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "frequency",
+                  "instruction": "The date it is needed by, and how often after that.",
+                  "example": "By the eighth working day each month.",
+                  "required": true,
+                  "type": "text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "When it is needed and how often",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Needed by",
+                      "section": "goal",
+                      "field": "needed_by",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "process",
+                  "instruction": "Each step, who does it and with which file or system.",
+                  "example": "1. Custodian sends positions. 2. Analyst copies them into the workbook. 3. Partner reviews and sends.",
+                  "required": true,
+                  "type": "list",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "How it is done today, step by step",
+                  "filled": false,
+                  "value": [],
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "result",
+                  "instruction": "The sections of the report and the figures on each.",
+                  "example": "One page per portfolio: net worth, allocation, performance against benchmark and fees.",
+                  "required": true,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "What the result looks like",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "What the result looks like",
+                      "section": "template_fields",
+                      "field": "result",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "kpis",
+                  "instruction": "One row per figure, in business words.",
+                  "example": "Net worth | market value of all positions plus cash | monthly",
+                  "required": true,
+                  "type": "table",
+                  "columns": [
+                    "name",
+                    "definition",
+                    "formula",
+                    "unit",
+                    "period",
+                    "owner"
+                  ],
+                  "labels": {
+                    "name": "Name",
+                    "definition": "Plain meaning"
+                  },
+                  "view": null,
+                  "heading": "The figures, and how you work each one out today",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "name",
+                      "definition",
+                      "formula",
+                      "unit",
+                      "period",
+                      "owner"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "inputs",
+                  "instruction": "One row per file or system and who looks after it.",
+                  "example": "Custodian positions file | file | month-end positions | Operations",
+                  "required": true,
+                  "type": "table",
+                  "columns": [
+                    "name",
+                    "kind",
+                    "holds",
+                    "owner"
+                  ],
+                  "labels": {
+                    "name": "Name",
+                    "kind": "Kind",
+                    "holds": "What it holds"
+                  },
+                  "view": null,
+                  "heading": "Where the data comes from and who owns it",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "name",
+                      "kind",
+                      "holds",
+                      "owner"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "strategic",
+                  "instruction": "The sources that matter most or are hard to replace.",
+                  "example": "The custodian file.",
+                  "required": false,
+                  "type": "text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Which sources you could not do without",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Which sources you could not do without",
+                      "section": "template_fields",
+                      "field": "strategic",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "documents",
+                  "instruction": "Policies, statements, notices or emails that feed the result.",
+                  "example": "The investment policy statement.",
+                  "required": false,
+                  "type": "text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Documents or emails it depends on",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Documents or emails it depends on",
+                      "section": "template_fields",
+                      "field": "documents",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "manual",
+                  "instruction": "Adjustments, reclassifications, overrides and corrections.",
+                  "example": "Reclassify two accounts the custodian codes wrongly.",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "What you change by hand before a figure is right",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "What you change by hand before a figure is right",
+                      "section": "template_fields",
+                      "field": "manual",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "rules",
+                  "instruction": "Access, retention and approval, in plain words.",
+                  "example": "Family members see their own portfolios; history kept ten years; the partner approves changes.",
+                  "required": true,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Who may see what, how long to keep it, who approves a change",
+                  "filled": false,
+                  "value": "",
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "disputes",
+                  "instruction": "Anything two people might read differently, and which document wins.",
+                  "example": "Whether performance fees count in total cost.",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Limits or definitions that could be disputed",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Limits or definitions that could be disputed",
+                      "section": "template_fields",
+                      "field": "disputes",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "success",
+                  "instruction": "What good looks like, in a sentence.",
+                  "example": "The pack goes out by the eighth working day with no manual copying.",
+                  "required": true,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "How you will know it worked",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "How you will know it worked",
+                      "section": "template_fields",
+                      "field": "success",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "unclear",
+                  "instruction": "Open points, each with the person who can settle it.",
+                  "example": "Which benchmark applies to the growth portfolio (the partner can settle).",
+                  "required": true,
+                  "type": "list",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "What is still unclear, and who can settle it",
+                  "filled": false,
+                  "value": [],
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "extraction",
+                  "instruction": "For each kind of document, the values to read out of it.",
+                  "example": "From a monthly statement: account, date, closing value, fees.",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "What to take out of each kind of document",
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "What to take out of each kind of document",
+                      "section": "template_fields",
+                      "field": "extraction",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                },
+                {
+                  "key": "benchmarks",
+                  "instruction": "One row per figure: last period's figure and what the load should give.",
+                  "example": "Net worth | September | 41.2 million | within 0.1 percent",
+                  "required": true,
+                  "type": "table",
+                  "columns": [
+                    "kpi",
+                    "period",
+                    "reported",
+                    "expected"
+                  ],
+                  "labels": {
+                    "kpi": "Figure"
+                  },
+                  "view": null,
+                  "heading": "For each figure, what you reported last period and what it should read after the load",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "kpi",
+                      "period",
+                      "reported",
+                      "expected"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "comments",
+                  "heading": "Anything else",
+                  "instruction": "Anything the template does not ask for.",
+                  "example": "",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Anything else",
+                      "section": "template_fields",
+                      "field": "comments",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                }
+              ]
+            },
+            {
+              "kind": "process_map",
+              "title": "Process map",
+              "template": {
+                "id": "standard-process-map",
+                "name": "Swim lane",
+                "version": 1
+              },
+              "choices": [
+                {
+                  "id": "standard-process-map",
+                  "name": "Swim lane"
+                },
+                {
+                  "id": "step-list",
+                  "name": "Step list"
+                }
+              ],
+              "sections": [
+                {
+                  "key": "steps",
+                  "instruction": "One column per step, in order; a lane for each team. Manual steps are flagged.",
+                  "example": "1 | Pull custodian file | Operations | Custodian portal",
+                  "required": true,
+                  "type": "table",
+                  "columns": [
+                    "name",
+                    "who",
+                    "does",
+                    "inputs",
+                    "outputs",
+                    "system"
+                  ],
+                  "labels": {
+                    "name": "Step",
+                    "who": "Who",
+                    "does": "What they do",
+                    "inputs": "In",
+                    "outputs": "Out",
+                    "system": "System"
+                  },
+                  "view": "swimlane",
+                  "heading": "Lanes and steps",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "name",
+                      "who",
+                      "does",
+                      "inputs",
+                      "outputs",
+                      "system"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "handovers",
+                  "instruction": "Who passes what to whom.",
+                  "example": "Step 1 to step 2: positions file",
+                  "required": false,
+                  "type": "table",
+                  "columns": [
+                    "from_step",
+                    "to_step",
+                    "what"
+                  ],
+                  "labels": {
+                    "from_step": "From step",
+                    "to_step": "To step",
+                    "what": "What is passed"
+                  },
+                  "view": null,
+                  "heading": "Hand-overs",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "from_step",
+                      "to_step",
+                      "what"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "manual_steps",
+                  "instruction": "Every step done by hand and how long it takes.",
+                  "example": "Reconcile cash in a spreadsheet, two hours",
+                  "required": false,
+                  "type": "list",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Manual steps and time taken",
+                  "filled": false,
+                  "value": [],
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "comments",
+                  "heading": "Anything else",
+                  "instruction": "Anything the template does not ask for.",
+                  "example": "",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Anything else",
+                      "section": "template_fields",
+                      "field": "comments",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                }
+              ],
+              "map": {
+                "steps": [],
+                "handovers": []
+              }
+            },
+            {
+              "kind": "definitions",
+              "title": "Definitions",
+              "template": {
+                "id": "standard-definitions",
+                "name": "KPI glossary",
+                "version": 1
+              },
+              "choices": [
+                {
+                  "id": "kpi-cards",
+                  "name": "KPI cards"
+                },
+                {
+                  "id": "standard-definitions",
+                  "name": "KPI glossary"
+                }
+              ],
+              "sections": [
+                {
+                  "key": "kpis",
+                  "instruction": "One row per figure.",
+                  "example": "Net worth | market value of all positions plus cash",
+                  "required": true,
+                  "type": "table",
+                  "columns": [
+                    "name",
+                    "definition",
+                    "formula",
+                    "unit",
+                    "period",
+                    "owner",
+                    "source"
+                  ],
+                  "labels": {
+                    "name": "KPI",
+                    "definition": "Plain meaning",
+                    "formula": "Formula",
+                    "unit": "Unit",
+                    "period": "Period",
+                    "owner": "Owner",
+                    "source": "Source"
+                  },
+                  "view": "table",
+                  "heading": "KPI glossary",
+                  "filled": false,
+                  "value": {
+                    "columns": [
+                      "name",
+                      "definition",
+                      "formula",
+                      "unit",
+                      "period",
+                      "owner",
+                      "source"
+                    ],
+                    "rows": []
+                  },
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "terms",
+                  "instruction": "Words the figures use that need a plain meaning.",
+                  "example": "Position: what we hold in one security",
+                  "required": false,
+                  "type": "list",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Other terms",
+                  "filled": false,
+                  "value": [],
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "open_points",
+                  "instruction": "Definitions still to be settled.",
+                  "example": "Net or gross of fees?",
+                  "required": false,
+                  "type": "list",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "heading": "Open points",
+                  "filled": false,
+                  "value": [],
+                  "edits": [],
+                  "from": []
+                },
+                {
+                  "key": "comments",
+                  "heading": "Anything else",
+                  "instruction": "Anything the template does not ask for.",
+                  "example": "",
+                  "required": false,
+                  "type": "long_text",
+                  "columns": null,
+                  "labels": null,
+                  "view": null,
+                  "filled": false,
+                  "value": "",
+                  "edits": [
+                    {
+                      "label": "Anything else",
+                      "section": "template_fields",
+                      "field": "comments",
+                      "value": ""
+                    }
+                  ],
+                  "from": []
+                }
+              ]
+            }
+          ]
+        },
+        "proposals": {
+          "pending": [
+            {
+              "id": "pr_aa26250f8515",
+              "document": "sow",
+              "summary": "North changed 35 things in the intent of work",
+              "changes": [
+                {
+                  "op": "change",
+                  "path": "goal/line",
+                  "before": "Draft the intent and for each step list the control and the exception.",
+                  "after": "Assemble the monthly investment pack in USD and SGD."
+                },
+                {
+                  "op": "add",
+                  "path": "goal/why",
+                  "before": "",
+                  "after": "To map and automate the current process, as requested by Leo Park and Anita Rao."
+                },
+                {
+                  "op": "add",
+                  "path": "goal/readers",
+                  "before": "",
+                  "after": "Daniel Foo, the Chief Investment Officer, Sofia Reyes, Risk"
+                },
+                {
+                  "op": "add",
+                  "path": "goal/decisions",
+                  "before": "",
+                  "after": "Daniel Foo approves the issued pack, Sofia Reyes owns the limits"
+                },
+                {
+                  "op": "add",
+                  "path": "goal/needed_by",
+                  "before": "",
+                  "after": "3rd business day of each month"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Net worth",
+                  "before": "",
+                  "after": "name: Net worth"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Time-weighted return net of fees",
+                  "before": "",
+                  "after": "name: Time-weighted return net of fees"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Allocation drift",
+                  "before": "",
+                  "after": "name: Allocation drift"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Single-issuer concentration",
+                  "before": "",
+                  "after": "name: Single-issuer concentration"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Cash drag",
+                  "before": "",
+                  "after": "name: Cash drag"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Fee ratio",
+                  "before": "",
+                  "after": "name: Fee ratio"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Liquidity runway",
+                  "before": "",
+                  "after": "name: Liquidity runway"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Manager performance versus benchmark",
+                  "before": "",
+                  "after": "name: Manager performance versus benchmark"
+                },
+                {
+                  "op": "add",
+                  "path": "kpis/Excess return versus benchmark (alpha)",
+                  "before": "",
+                  "after": "name: Excess return versus benchmark (alpha)"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Administrator positions export",
+                  "before": "",
+                  "after": "name: Administrator positions export; kind: system; holds: positions; owner: Administrator (implied); structure: structured; arrives: monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Trading system positions export",
+                  "before": "",
+                  "after": "name: Trading system positions export; kind: system; holds: positions; owner: Trading system (implied); structure: structured; arrives: monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Administrator cash balances",
+                  "before": "",
+                  "after": "name: Administrator cash balances; kind: system; holds: cash; owner: Administrator (implied); structure: structured; arrives: monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Trading export balances",
+                  "before": "",
+                  "after": "name: Trading export balances; kind: system; holds: cash; owner: Trading system (implied); structure: structured; arrives: monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Manager statements",
+                  "before": "",
+                  "after": "name: Manager statements; kind: document; holds: fund, period end, value, received date; owner: Fund managers; structure: unstructured; arrives: monthly/quarterly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/WMR 4pm USD/SGD fixing",
+                  "before": "",
+                  "after": "name: WMR 4pm USD/SGD fixing; kind: file; holds: FX rates; owner: Market data provider (implied); structure: structured; arrives: daily/monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Reconciliation workbook",
+                  "before": "",
+                  "after": "name: Reconciliation workbook; kind: file; holds: cash reconciliation; owner: Mei Chen; structure: structured; arrives: as needed"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Statements tracker",
+                  "before": "",
+                  "after": "name: Statements tracker; kind: file; holds: statement tracking; owner: Mei Chen; structure: structured; arrives: as needed"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Converted figures Excel file",
+                  "before": "",
+                  "after": "name: Converted figures Excel file; kind: file; holds: converted holdings and cash; owner: Raj Patel; structure: structured; arrives: as needed"
+                },
+                {
+                  "op": "add",
+                  "path": "sources/Pack pack",
+                  "before": "",
+                  "after": "name: Pack pack; kind: file; holds: final report; owner: Raj Patel; structure: structured; arrives: monthly"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Net worth, defined as the industry u",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Net worth, defined as the industry usually does?; about: Net worth; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Time-weighted return net of fees, de",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Time-weighted return net of fees, defined as the industry usually does?; about: Time-weighted return net of fees; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Allocation drift, defined as the ind",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Allocation drift, defined as the industry usually does?; about: Allocation drift; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Single-issuer concentration, defined",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Single-issuer concentration, defined as the industry usually does?; about: Single-issuer concentration; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Cash drag, defined as the industry u",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Cash drag, defined as the industry usually does?; about: Cash drag; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Fee ratio, defined as the industry u",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Fee ratio, defined as the industry usually does?; about: Fee ratio; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Liquidity runway, defined as the ind",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Liquidity runway, defined as the industry usually does?; about: Liquidity runway; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Manager performance versus benchmark",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Manager performance versus benchmark, defined as the industry usually does?; about: Manager performance versus benchmark; who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "unclear/Industry practice (suggestion): do you want Excess return versus benchmark (alph",
+                  "before": "",
+                  "after": "question: Industry practice (suggestion): do you want Excess return versus benchmark (alpha), defined as the industry usually does?; about: Excess return versus benchmark (alpha); who_can_settle: The person who raised it"
+                },
+                {
+                  "op": "add",
+                  "path": "template_fields/access",
+                  "before": "",
+                  "after": "Internal"
+                },
+                {
+                  "op": "add",
+                  "path": "template_fields/frequency",
+                  "before": "",
+                  "after": "monthly, by the 3rd business day of each month"
+                }
+              ],
+              "by": "north",
+              "at": "2026-10-09T17:37:32+00:00",
+              "status": "pending"
+            },
+            {
+              "id": "pr_af7245dafcb0",
+              "document": "process_map",
+              "summary": "North changed 13 things in the process map",
+              "changes": [
+                {
+                  "op": "add",
+                  "path": "process/steps/Collect the exports",
+                  "before": "",
+                  "after": "name: Collect the exports; who: Mei Chen; does: Downloads administrator positions export and trading system positions export (CSV) from portals, saves them to the shared file drop under /MonthEnd/<yyyy-mm>/raw. Opens each file, counts the rows and compares the row count and control total in the foot"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Check cash against the administrator",
+                  "before": "",
+                  "after": "name: Check cash against the administrator; who: Mei Chen; does: Opens the cash tab of her reconciliation workbook (Cash_Recon_<yyyy-mm>.xlsx) and pastes the administrator cash balances beside the trading export balances, one row per Entity per day. A formula column shows the difference.; inputs: Ad"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Collect manager statements",
+                  "before": "",
+                  "after": "name: Collect manager statements; who: Mei Chen; does: Managers send statements to the shared statements inbox. Mei saves the PDF to the manager folder, types the fund, period end, value and received date into the statements tracker (Excel), and checks the tracker against the expected list.; inputs:"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Convert to SGD",
+                  "before": "",
+                  "after": "name: Convert to SGD; who: Raj Patel; does: Takes the holdings values from the tracker and the cash from the recon workbook and converts them to SGD in a separate Excel file, looking up the WMR 4pm USD/SGD fixing for the period end in the market data file.; inputs: Holdings values from tracker (Exce"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Review and approve the report",
+                  "before": "",
+                  "after": "name: Review and approve the report; who: Raj Patel; does: Assembles the report pack from the converted figures and sends it for review.; inputs: Converted figures (Excel); outputs: Assembled report pack; system: Pack pack; control: Maker never checker; estimates only in the investment report (estim"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Read the report",
+                  "before": "",
+                  "after": "name: Read the report; who: Daniel Foo; does: Reads the issued pack. The pack shows the version and the cutoff time.; inputs: Issued report pack; outputs: Read pack, Questions for managers logged as open questions; system: Pack pack; control: Issued version with cutoff shown.; exception: Questions t"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Review and approve the pack",
+                  "before": "",
+                  "after": "name: Review and approve the pack; who: Raj Patel; does: Assembles the pack from converted figures and sends for review.; system: Pack pack"
+                },
+                {
+                  "op": "add",
+                  "path": "process/steps/Read the pack",
+                  "before": "",
+                  "after": "name: Read the pack; who: Daniel Foo; does: Reads the issued pack.; system: Pack pack"
+                },
+                {
+                  "op": "add",
+                  "path": "process/handovers/item 1",
+                  "before": "",
+                  "after": "from_step: 1; to_step: 2; what: Same person, different tool: the file is re-saved and re-typed."
+                },
+                {
+                  "op": "add",
+                  "path": "process/handovers/item 2",
+                  "before": "",
+                  "after": "from_step: 2; to_step: 3; what: Same person, different tool: the file is re-saved and re-typed."
+                },
+                {
+                  "op": "add",
+                  "path": "process/handovers/item 3",
+                  "before": "",
+                  "after": "from_step: 3; to_step: 4; what: By email with the workbook attached; there is no log of what was sent."
+                },
+                {
+                  "op": "add",
+                  "path": "process/handovers/item 4",
+                  "before": "",
+                  "after": "from_step: 4; to_step: 5; what: Same person, different tool: the file is re-saved and re-typed."
+                },
+                {
+                  "op": "add",
+                  "path": "process/handovers/item 5",
+                  "before": "",
+                  "after": "from_step: 5; to_step: 6; what: By email with the workbook attached; there is no log of what was sent."
+                }
+              ],
+              "by": "north",
+              "at": "2026-10-09T17:37:32+00:00",
+              "status": "pending"
+            }
+          ],
+          "recent": []
+        },
+        "project_id": "prj-417c371d",
+        "build": null,
+        "stage": "talking"
+      },
+      "ms": 46595,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 39131,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:37:02+0800"
+    },
+    {
+      "bytes": 36738,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:36:58+0800"
+    },
+    {
+      "bytes": 36073,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:36:47+0800"
+    }
+  ]
+}

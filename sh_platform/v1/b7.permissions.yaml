@@ -1,0 +1,18 @@
+# DS1: the dashboard studio in Build. Makers (company_admin, analyst) build and send for approval; approval is by the head of data (architect seat) or the
+# project sponsor, checked again in code (never the maker). The sponsor may also open what was submitted. Default deny: every route is listed.
+routes:
+  GET /api/v1/build/p/{pid}/studio: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/p/{pid}/studio: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/studio/{did}: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/v1/build/p/{pid}/studio/{did}: {roles: [company_admin, analyst]}
+  PUT /api/v1/build/p/{pid}/studio/{did}/layout: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/widgets: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/ask: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/tiles/{tid}/accept: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/tiles/{tid}/reject: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/studio/{did}/tiles/{tid}/data: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/submit: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/approve: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/send-back: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/build/p/{pid}/studio/starter: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/starter/accept: {roles: [company_admin, analyst]}

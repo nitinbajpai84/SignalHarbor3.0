@@ -1,0 +1,302 @@
+# Template family_office@1 problem templates: the eight intents of
+# Family Office Data/Signal_Harbor_Intent_Test_Pack/Expected_Intent_Extraction.json, one problem
+# each. `decision` is that file's own decision text; kpi_ids are the KPI_Catalog.json metrics whose
+# intent_id names the intent (INT-SCOPE and INT-GOV own no metric there, so theirs is empty).
+# customer_decides lists only matters the synthetic interview (interview.jsonl) itself leaves to
+# the family office. target is always null (CLAUDE.md rule 4). suggested.moscow is a builder's
+# proposal, not a pack fact -- see packages/FO-01/report.md, Open Questions.
+template: family_office@1
+status: draft - not adopted; for practitioner review
+note: >-
+  Suggestions only. No targets or thresholds. kpi_ids refer to kpi_tree.yaml ids (K01..K15).
+problems:
+  - id: INT-LIQ
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Can we take on another investment without compromising our cash needs?
+    decision: Whether additional investment funding leaves adequate monthly liquidity
+    kpi_ids: [K01, K04, K05, K06]
+    related_kpi_ids: [K14, K03]  # call notices arrive as documents and the pack that shows them takes effort
+    signals: []
+    breakdowns: [entity, currency, monthly bucket, scenario]
+    needs: [cash_balances, obligations, commitments, commitment_events, fx_rates, policy_rules]
+    belief_to_test: Funding shortfalls matter more than temporary market volatility.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Pace commitments, arrange funding or delay the proposal
+    customer_decides:
+      - "The reserve amount: SGD 5 million is a pilot assumption pending CIO confirmation"
+      - The timing of stress capital calls
+      - Whether estimated distributions count in the base case
+    suggested:
+      moscow: must
+      owner_role: CIO
+      phase: pilot
+      cadence: Weekly and on new notice
+    target: null
+    source: "Expected_Intent_Extraction.json INT-LIQ (turns T01, T04-T08, T10); KPI_Catalog.json K01/K04/K05/K06"
+  - id: INT-TRUST
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Can we trust the consolidated picture?
+    decision: Whether reported figures are fit to use
+    kpi_ids: [K02, K07, K12]
+    signals: []
+    breakdowns: [entity, asset class, reporting date]
+    needs: [positions, cash_balances, documents, evidence, issues]
+    belief_to_test: A private valuation is not a live price.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Resolve missing evidence and request new marks before a dependent decision
+    customer_decides:
+      - The materiality definition for a conflict
+      - The stale-valuation threshold for each asset class
+      - Which source controls when a manager email disagrees with a statement
+    suggested:
+      moscow: must
+      owner_role: Investment analyst
+      phase: pilot
+      cadence: On refresh
+    target: null
+    source: "Expected_Intent_Extraction.json INT-TRUST (turns T01, T11, T12, T18); KPI_Catalog.json K02/K07/K12"
+  - id: INT-SCOPE
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which entities belong in one consolidated ownership view?
+    decision: Which entities and internal flows to include
+    kpi_ids: []
+    signals: []
+    breakdowns: [entity]
+    needs: [entities, ownership, accounts]
+    belief_to_test: Internal transfers should not look like investment returns.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Eliminate internal transfers on consolidation and count cash once
+    customer_decides:
+      - Which entities and sleeves are in scope
+    suggested:
+      moscow: must
+      owner_role: CIO
+      phase: pilot
+      cadence: On change of structure
+    target: null
+    source: "Expected_Intent_Extraction.json INT-SCOPE (turns T02, T03)"
+  - id: INT-RISK
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Where are we concentrated, and which exposures need review?
+    decision: Which exposures need review and approved exceptions
+    kpi_ids: [K08, K09, K10, K11]
+    related_kpi_ids: [K02, K12]  # an exposure view is only as good as the evidence and the age of the values behind it
+    signals: []
+    breakdowns: [issuer, manager, currency, public versus private]
+    needs: [positions, investments, exposures, policy_rules, fx_rates]
+    belief_to_test: Strategic holdings are not automatically exempt from limits.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Show the potential breach and ask for the relevant approved exception
+    customer_decides:
+      - Whether allocation limits apply to strategic holdings
+      - Which exceptions are approved, and by whom
+    suggested:
+      moscow: should
+      owner_role: CIO
+      phase: pilot
+      cadence: Weekly
+    target: null
+    source: "Expected_Intent_Extraction.json INT-RISK (turns T04, T13, T14); KPI_Catalog.json K08-K11"
+  - id: INT-PERF
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: What changed the value of our assets?
+    decision: Separate flows, local-price change and FX; defer manager alpha
+    kpi_ids: [K13, K15]
+    signals: []
+    breakdowns: [reporting period, entity]
+    needs: [positions, cash_ledger, fx_rates]
+    belief_to_test: A change in value is not an investment return.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Explain the change and investigate the residual
+    customer_decides:
+      - The benchmark and the performance methodology
+      - The cash-flow timing and FX convention for the bridge
+    suggested:
+      moscow: could
+      owner_role: Investment analyst
+      phase: pilot
+      cadence: Monthly
+    target: null
+    source: "Expected_Intent_Extraction.json INT-PERF (turns T15, T16); KPI_Catalog.json K13/K15"
+  - id: INT-OPS
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: How much effort does the investment meeting pack take?
+    decision: What to automate in meeting-pack preparation
+    kpi_ids: [K03]
+    signals: []
+    breakdowns: [meeting pack]
+    needs: [task records, time logs, pack approvals]
+    belief_to_test: Collecting documents and checking numbers takes most of the effort.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Automate collection, reconciliation and drafting
+    customer_decides:
+      - How preparation hours are logged, so a baseline can be measured
+    suggested:
+      moscow: must
+      owner_role: Operations lead
+      phase: pilot
+      cadence: Per meeting
+    target: null
+    source: "Expected_Intent_Extraction.json INT-OPS (turns T17, T18); KPI_Catalog.json K03"
+  - id: INT-DOC
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which facts can we take from incoming documents?
+    decision: Which facts can be promoted from incoming documents
+    kpi_ids: [K14]
+    signals: []
+    breakdowns: [document type]
+    needs: [documents, evidence, issues]
+    belief_to_test: A corrected notice is usually a replacement, not a second obligation.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Assign reviewers and fix intake templates
+    customer_decides:
+      - Whether a corrected notice replaces the earlier one or adds a payment
+    suggested:
+      moscow: should
+      owner_role: Operations lead
+      phase: pilot
+      cadence: Daily
+    target: null
+    source: "Expected_Intent_Extraction.json INT-DOC (turns T09, T10); KPI_Catalog.json K14"
+  - id: INT-GOV
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: What may the agents read, and what must a person approve?
+    decision: What the agents may read and what humans must approve
+    kpi_ids: []
+    signals: []
+    breakdowns: []
+    needs: [approved processing environment, permitted folders]
+    belief_to_test: Humans approve policies, financial promotions and investment decisions.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Show insufficient data and ask the responsible person, never a fabricated recommendation
+    customer_decides:
+      - The approved processing environment, permitted folders and access
+    suggested:
+      moscow: must
+      owner_role: CIO
+      phase: pilot
+      cadence: On change
+    target: null
+    source: "Expected_Intent_Extraction.json INT-GOV (turns T22, T23)"
+  # Added from the illustrative demo story (Signal Harbor). Proposals, pending practitioner review.
+  - id: INT-BENCH
+    status: proposal
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are our managers beating their benchmarks?
+    decision: Whether each fund and manager is ahead of or behind its agreed benchmark, net of fees
+    kpi_ids: [K15, K16, K17]
+    signals: []
+    breakdowns: [manager, asset class, benchmark, period]
+    needs: [positions, cash_ledger, benchmark_levels, manager_statements, nav_reports]
+    belief_to_test: A manager is only ahead if it beats a benchmark chosen before the result is known.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Agree one benchmark per holding, then review managers that trail it over a full period
+    customer_decides:
+      - Which benchmark applies to each fund, and who approves a change
+      - Which return method is used for public funds and which for private funds
+    suggested:
+      moscow: must
+      owner_role: Head of Investments
+      phase: pilot
+      cadence: Quarterly
+    target: null
+    source: illustrative demo story (Signal Harbor), pending practitioner review
+  - id: INT-PAY
+    status: proposal
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Can we pay people on numbers we trust?
+    decision: Whether the performance figures behind bonuses and manager reviews are fit to use
+    kpi_ids: [K16, K18]
+    signals: []
+    breakdowns: [person, team, period]
+    needs: [performance_figures, compensation_inputs, policy_rules]
+    belief_to_test: Pay should rest on one agreed figure that HR can see without waiting for a spreadsheet.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Reconcile pay inputs to the agreed performance figure before the bonus round
+    customer_decides:
+      - Which performance figure the bonus policy uses
+      - Who may see individual pay figures
+    suggested:
+      moscow: should
+      owner_role: Head of Investments
+      phase: pilot
+      cadence: Quarterly
+    target: null
+    source: illustrative demo story (Signal Harbor), pending practitioner review
+  - id: INT-DATAGOV
+    status: proposal
+    roles: [stakeholder]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Who owns our data definitions and who may see what?
+    decision: Which terms need one agreed definition and a named owner, and who may see personal data
+    kpi_ids: [K19]
+    signals: []
+    breakdowns: [term, owner, source]
+    needs: [glossary, owners, access_rules]
+    belief_to_test: A word such as return needs one definition and one named owner.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Name an owner for each key definition and for each benchmark choice, and restrict pay data
+    customer_decides:
+      - Who owns the definition of return and the choice of benchmarks
+      - Who may see the pay workbook
+    suggested:
+      moscow: must
+      owner_role: Head of Investments
+      phase: pilot
+      cadence: On change
+    target: null
+    source: illustrative demo story (Signal Harbor), pending practitioner review

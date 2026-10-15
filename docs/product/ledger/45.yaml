@@ -1,0 +1,420 @@
+- id: 45.list.build
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: GET /api/intents/waiting and GET /api/pulse
+  input: The person's whole list of what waits on them across all intents
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: every intent record that names the person
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: keeping a personal list of requests from email, chat and meetings'
+  claim: Nira builds each person's list of everything waiting on them from the records
+- id: 45.list.priority
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: Your turn strip and Pulse
+  input: 'Order: signatures and decisions first, then due date, never by who asks'
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: kind, due and source.at of each line
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: deciding what to do first from a mixed inbox'
+  claim: The order is a rule on kind and date, never on who asked or how senior they are
+- id: 45.list.cap
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: Pulse (And N more in the Intent Centre)
+  input: Top seven lines on Pulse and the count of the rest
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: the ordered list
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Pulse stays short and says how many more wait
+- id: 45.strip.heading
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Your turn heading)
+  input: 5 things wait for you
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: the count of lines just built
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: counting open requests'
+  claim: The count of what waits on you is exact
+- id: 45.strip.line
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Your turn, Line)
+  input: One plain sentence with an action, a due date and the source intent
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: the intent record, one line per kind
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: reading an email to find what is asked'
+  claim: Each line says what to do, by when and for which intent
+- id: 45.strip.filter
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Kind filter)
+  input: All, signatures and decisions, questions, ratings
+  person: any person
+  mode: manual
+  agent: null
+  source: the person's choice of four chips
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The strip can be narrowed in one tap
+- id: 45.strip.show_all
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Show all)
+  input: Expand the strip to every line
+  person: any person
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Nothing is hidden behind the cap on the strip
+- id: 45.line.invited
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind invited)
+  input: Invited and not joined
+  person: invited person
+  mode: automatic
+  agent: Nira
+  source: people with no entry in the open stage
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking who has not joined'
+  claim: People who have not joined are listed with their own wording per type
+- id: 45.line.start_question
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind start_question)
+  input: Your start question not yet answered
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: a draft where a required answer is empty
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: remembering a half-started form'
+  claim: A draft left half finished comes back as a line
+- id: 45.line.card_confirm
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind card_confirm)
+  input: Your card to confirm
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: drafts_to_confirm naming the person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: reading a thread to find what needs checking'
+  claim: A card drafted for you to check is on your list
+- id: 45.line.vote
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind vote)
+  input: Your vote or backing
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: an open round listing the person and no cast_by
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: chasing votes by email'
+  claim: An open vote or backing shows up for exactly the people who still owe it
+- id: 45.line.definition_confirm
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind definition_confirm)
+  input: Your definition to confirm
+  person: owner
+  mode: automatic
+  agent: Nira
+  source: definitions_waiting naming the person as owner
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a chase for sign-off on definitions'
+  claim: Definitions waiting on an owner appear on that owner's list
+- id: 45.line.process_confirm
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind process_confirm)
+  input: Your process step to confirm
+  person: owner
+  mode: automatic
+  agent: Nira
+  source: process steps drafted by Lens naming the person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a chase for process sign-off'
+  claim: Process steps waiting on an owner appear on that owner's list
+- id: 45.line.signature
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind signature)
+  input: Your signature on a charter or closure
+  person: approver
+  mode: automatic
+  agent: Nira
+  source: a charter or closure awaiting the person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a reminder to sign'
+  claim: A document waiting for a signature is first on the list
+- id: 45.line.rating
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind rating)
+  input: Your rating
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: a closed intent in the rating window with no entry
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a survey request'
+  claim: A rating shows only while the window is open and you have not rated
+- id: 45.line.week_entry
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind week_entry)
+  input: Your week entry
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: a check-in in collect with no items from the person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a reminder to add the weekly update'
+  claim: People who have not added their week are listed without a chase
+- id: 45.line.problem_accept
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind problem_accept)
+  input: Your problem to accept
+  person: owner
+  mode: automatic
+  agent: Nira
+  source: a problem naming the person as owner with no owner_accepted_at
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a ticket assigned in a queue'
+  claim: A problem assigned to you is on your list with its time left
+- id: 45.line.decision
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind decision)
+  input: Your decision
+  person: decider
+  mode: automatic
+  agent: Nira
+  source: a decision in stage decide naming the person as decider
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a request for a decision in a long email'
+  claim: A decision waiting on you shows with its due date
+- id: 45.line.review
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind review)
+  input: Your review of a week, a problem or a build-ready list
+  person: reader
+  mode: automatic
+  agent: Nira
+  source: waiting_on naming the person as reader, reporter or sponsor
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a request to read and respond'
+  claim: A review waiting on you says what to read and what to confirm
+- id: 45.line.overdue
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kinds overdue and clock)
+  input: Overdue or time box warning for the organiser or closer
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: time_box against the clock
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: watching a deadline'
+  claim: Overdue items are listed for the organiser by the clock
+- id: 45.line.ask
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (line kind ask)
+  input: Wall readiness asks
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: the wall readiness check
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The old readiness asks stay as lines in the same list
+- id: 45.line.done
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: Your turn strip
+  input: A line disappears when the record changes
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: the record, never a stored done flag
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: ticking off a to-do list'
+  claim: A line is gone when the thing is done and nobody ticks it off
+- id: 45.strip.error
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Reason line, Error)
+  input: Count of intents Nira could not read
+  person: any person
+  mode: automatic
+  agent: Nira
+  source: failed reads
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The strip says plainly what it could not read
+- id: 45.who.heading
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Who has not acted)
+  input: 3 of 6 in this stage
+  person: organiser
+  mode: automatic
+  agent: null
+  source: people and stages of the intent
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking who has replied'
+  claim: The organiser sees how many have not acted without chasing anyone
+- id: 45.who.rows
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Who has not acted, rows)
+  input: Name, what they owe and since when
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: the stage opened_at and each person's entries
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: tallying replies in a spreadsheet'
+  claim: Each quiet person is named with what they owe and since when
+- id: 45.who.anonymous
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Anonymous note)
+  input: Anonymous ideas are counted, not named
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the stage allows anonymous input
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Anonymity is kept even in the list of who has not acted
+- id: 45.who.select
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Select)
+  input: Tick who to nudge
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser, all ticked at first
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: choosing recipients'
+  claim: All are ticked at first and the organiser unticks anyone
+- id: 45.who.nudge
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Nudge)
+  input: Draft of one message for the ticked people
+  person: organiser
+  mode: confirm
+  agent: Nira
+  source: the ticked people and what each owes
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: writing a chase email'
+  claim: Nira drafts the nudge; the organiser reads, edits and copies; nothing is sent by Nira
+- id: 45.who.cooldown
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Nudged earlier)
+  input: Nudged yesterday chip
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the cooldown on the last nudge
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: remembering who was chased'
+  claim: The system shows who was nudged so nobody is chased twice
+- id: 45.who.send
+  spec: '45'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Send)
+  input: Send the nudge
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser presses the existing send route
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Sending stays a person's press

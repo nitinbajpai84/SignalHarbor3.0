@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Harbor product testing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F1B2D; --navy2:#1A2B44; --teal:#177878; --aqua:#5FC2C2; --amber:#E0A34A;
+    --paper:#F6F4EF; --ink:#0F1B2D; --muted:#5B6678; --line:#D9DED8; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0b1321;overflow:hidden;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--ink)}
+  h1,h2,h3,.serif{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-.01em}
+
+  /* stage: fixed 1280x720 design, scaled to fit */
+  .stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;width:1280px;height:720px;background:var(--paper);padding:56px 72px 64px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  .slide.dark{background:var(--navy);color:var(--white)}
+  .kicker{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:10px}
+  .dark .kicker{color:var(--aqua)}
+  h2{font-size:40px;line-height:1.12;margin-bottom:22px;max-width:1100px}
+  h3{font-size:22px;margin-bottom:8px}
+  p,li{font-size:20px;line-height:1.45}
+  ul{list-style:none}
+  li{padding-left:22px;position:relative;margin-bottom:9px}
+  li:before{content:"";position:absolute;left:0;top:.6em;width:9px;height:9px;border-radius:50%;background:var(--teal)}
+  .dark li:before{background:var(--aqua)}
+  .muted{color:var(--muted)}
+  .small{font-size:15px;line-height:1.4}
+  .foot{position:absolute;left:72px;right:72px;bottom:24px;display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .dark .foot{color:#9FB0C4}
+  .num{font-variant-numeric:tabular-nums}
+  .amber{color:#8A5B12}
+  .tag{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+  .tag.m{background:#D7EFEF;color:var(--teal)}
+  .tag.e{background:#F7E6C6;color:#7A4E0C}
+  .flag{background:#FBEFD9;border-left:5px solid var(--amber);padding:12px 16px;font-size:17px;line-height:1.4}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  .dark .card{background:var(--navy2);border-color:#2A3D5C}
+  .row{display:flex;gap:24px}
+  .col{flex:1;min-width:0}
+  .shot{border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 6px 18px rgba(15,27,45,.12);object-fit:cover;object-position:top left;width:100%;height:400px;display:block}
+  .cap{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.35}
+
+  .tight li{font-size:17px;line-height:1.35;margin-bottom:6px}
+  .tight table{font-size:15px}
+  .tight th,.tight td{padding:6px 10px}
+  .tight h2{font-size:34px;margin-bottom:16px}
+
+  /* title and closing */
+  .title h1{font-size:76px;line-height:1.05;margin-top:auto;max-width:1000px}
+  .title h1 em{font-style:normal;color:var(--aqua)}
+  .title .sub{font-size:24px;color:#C9D4E2;margin-top:24px;max-width:900px;line-height:1.4}
+  .bar{width:120px;height:6px;background:var(--amber);border-radius:3px;margin-bottom:34px}
+
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:10px;margin:6px 0 18px}
+  .flow div{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 12px;font-size:16px;line-height:1.3}
+  .flow div b{display:block;font-family:"Fraunces",serif;font-size:19px;margin-bottom:4px;color:var(--teal)}
+  .flow div.hl{border-color:var(--amber);background:#FFF8EA}
+  .arr{align-self:center;color:var(--teal);font-size:22px;flex:0 0 auto}
+
+  /* grid of four */
+  .four{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .four .card h3{color:var(--teal)}
+  .four .card p{font-size:17px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:17px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.35}
+  th{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  /* architecture */
+  .arch{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px}
+  .lay{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:stretch}
+  .lay .lab{font-family:"Fraunces",serif;font-size:19px;color:var(--teal);display:flex;align-items:center}
+  .lay .boxes{display:flex;gap:10px}
+  .box{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;line-height:1.3}
+  .box.hl{border-color:var(--amber);background:#FFF8EA}
+  .box.nv{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .box b{font-weight:600}
+
+  /* ui */
+  .ui{position:fixed;left:0;right:0;bottom:0;height:34px;display:flex;align-items:center;justify-content:center;gap:14px;color:#9FB0C4;font:13px "IBM Plex Sans",sans-serif;background:rgba(11,19,33,.82);z-index:10;opacity:.35;transition:opacity .2s}
+  .ui:hover{opacity:1}
+  .ui button{background:none;border:1px solid #3A4E6B;color:#D5DEEA;border-radius:4px;padding:2px 10px;cursor:pointer;font:inherit}
+  .ui .n{min-width:70px;text-align:center}
+
+  @page{size:1280px 720px;margin:0}
+  @media print{
+    html,body{overflow:visible;height:auto;background:#fff}
+    .ui{display:none !important}
+    .stage{position:static;transform:none !important;width:1280px;height:auto}
+    .slide{position:relative;display:flex !important;page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .slide:last-child{page-break-after:auto}
+  }
+.shot{object-fit:contain;object-position:top center;background:#0F1B2D}</style>
+</head>
+<body>
+<div class="stage" id="stage">
+<section class="slide dark title"><div class="bar"></div><h1>Testing Signal Harbor <em>the way you will use it</em></h1><p class="sub">Product testing for Evergreen Office. Real use cases, synthetic data, month by month.</p><p class="sub small" style="margin-top:12px">13 October 2026</p><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide"><div class="kicker">Method</div><h2>How we test the product</h2><ul><li>We take a real family-office question and run it end to end.</li><li>All data is synthetic. Evergreen Office, its entities and funds are invented.</li><li>We run month by month: a build month, then the months after it.</li><li>Each step is done as the person who would do it: owner, sponsor, data engineer, head of data, approver.</li><li>Every figure is checked against an answer key written before the run.</li><li>Every run has a run ID, so any figure can be traced back to its files.</li><li>What breaks is written down, fixed, and run again.</li></ul><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">Scope</div><h2>The ten family-office use cases</h2><table class="num"><tr><th></th><th>Use case</th><th>The question it answers</th></tr><tr><td>UC1</td><td>P&amp;L and NAV explanation</td><td>Why did NAV move this month?</td></tr><tr><td>UC2</td><td>Reconciliation and break desk</td><td>Where do two records of the same money disagree?</td></tr><tr><td>UC3</td><td>Manager information inbox</td><td>What did our managers send, and what is late?</td></tr><tr><td>UC4</td><td>Certified reporting and benchmark</td><td>Is the signed monthly report right against the benchmark?</td></tr><tr><td>UC5</td><td>Allocation and limit monitoring</td><td>Are we inside our limits?</td></tr><tr><td>UC6</td><td>Private-asset liquidity and commitments</td><td>Can we meet the capital calls?</td></tr><tr><td>UC7</td><td>Manager diligence research</td><td>What do we know about this manager, in one place?</td></tr><tr><td>UC8</td><td>Trade and valuation control</td><td>Do our trades agree with the administrator?</td></tr><tr><td>UC9</td><td>Process map and SOP builder</td><td>How is the monthly work done, step by step?</td></tr><tr><td>UC10</td><td>Data pipeline and insight builder</td><td>How does a question become a live dashboard?</td></tr></table><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide"><div class="kicker">Why these three</div><h2>Why we ran UC5, UC6 and UC8 first</h2><div class="flow"><div><b>Files</b>Bank, administrator, notices, trades</div><span class="arr">&rarr;</span><div><b>Bronze</b>Kept exactly as received</div><span class="arr">&rarr;</span><div><b>Silver</b>Clean, shared tables</div><span class="arr">&rarr;</span><div><b>Gold</b>One table per question</div><span class="arr">&rarr;</span><div><b>Dashboards and cases</b>What people read and act on</div></div><ul><li>They load new files every month, so the whole data path is tested, not a demo screen.</li><li>They end in something a person uses: a Lumen dashboard and Tally cases in Action.</li><li>Together they cover limits, liquidity and trades, the three monthly worries of a family office.</li><li>They use all four centres and all three agents.</li></ul><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide"><div class="kicker">The journey</div><h2>Every use case takes the same path</h2><div class="flow"><div><b>Intent</b>North drafts with the owner. The sponsor signs.</div><span class="arr">&rarr;</span><div><b>Build</b>Span designs. Files land in bronze. Silver is reused. Gold is built.</div><span class="arr">&rarr;</span><div><b>Prove</b>The first run is on a copy, checked against the answer key. Then it goes live.</div><span class="arr">&rarr;</span><div><b>Consume</b>Lumen builds the dashboard. Every figure says where it came from.</div><span class="arr">&rarr;</span><div><b>Action</b>Tally opens a case for each break. A person decides.</div></div><ul><li>Humans act at four points: sign the intent, approve the design, go live, close a case.</li><li>Agents draft and check. People decide.</li></ul><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC5 · Limits</div><h2>Are we inside our limits?</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Each month the office checks every portfolio against its signed limits.</li><li>Limits cover share in an asset class, a manager and a single holding.</li><li>The risk owner runs the check. The CIO signs any change to a limit.</li><li>A breach becomes a case with a maker and a checker.</li><li>Run: July 2026 as the build month, then August, September and October.</li></ul></div><div class="col"><img class="shot" src="img/uc5-limits-run.png" alt=""><p class="cap">Reconciliations: the monthly check, with the date the files were received.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC5 · Result</div><h2>September matched the answer key</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Hedge funds 54.95% and listed equity 80.61%, as in the key.</li><li>Two breaches, each split into real or stale.</li><li>Harborview: 5.75% against a 5% limit. Real. Over by USD 308,000.</li><li>Cedarpoint: 56.50%, over by USD 343,750, because one input was stale.</li><li>Tally wrote the case from the records. The person decides what to do.</li><li>Run ID run-20261012-235352-2869.</li></ul></div><div class="col"><img class="shot" src="img/uc5-case.png" alt=""><p class="cap">The Harborview case: what Tally found and what to do next.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC5 · Found and fixed</div><h2>What the test found, and what we changed</h2><table class="num"><tr><th>Found in the test</th><th>Fixed</th></tr><tr><td>A file loaded late never counted for the day it arrived</td><td>The check now reads by the date a file was received</td></tr><tr><td>A breach that stayed open opened a new case every month</td><td>One case per standing breach; later months are added to it</td></tr><tr><td>The administrator's totals block under the data was ignored</td><td>Read as control totals and checked against the rows</td></tr><tr><td>Limit changes had to be typed in by hand</td><td>Import the signed limits workbook; the CIO signs the changes</td></tr><tr><td>Still open: a limits dashboard in Consume, and new valuations inside the administrator file</td><td>Two decisions for you; see the last slide</td></tr></table><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC6 · Liquidity</div><h2>Can we meet the capital calls?</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>The CFO wants one page per month: cash per entity, calls due in 30 and in 31 to 60 days, and any shortfall.</li><li>It also shows what is still to be called on each private fund.</li><li>Mei, the owner, described it to North in plain words. North drafted the intent beside her.</li><li>Daniel, the sponsor, read it and signed it.</li></ul></div><div class="col"><img class="shot" src="img/uc6-north.png" alt=""><p class="cap">Intent: North drafts the intent as Mei talks.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC6 · Journey</div><h2>Two months, end to end</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Mei handed the project to Leo, the data engineer.</li><li>Span drafted the design pack. Anita, head of data, approved it.</li><li>July: six files in. Commitments loaded after the five funds were approved.</li><li>Run on a copy: 11 of 11 checks passed. Then live.</li><li>Lumen's starter dashboard, six tiles, approved by Anita.</li><li>August loaded with July's mappings and no edits.</li></ul></div><div class="col"><img class="shot" src="img/uc6-pack.png" alt=""><p class="cap">Build: Span's design pack, with gold tables and silver reused.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC6 · Result</div><h2>Cash by entity matched to the cent</h2><table class="num"><tr><th>Figure</th><th>Key July</th><th>Run July</th><th>Key August</th><th>Run August</th></tr><tr><td>Cash, Holdings</td><td>2,305,906.48</td><td>2,305,906.48</td><td>2,287,630.12</td><td>2,287,630.12</td></tr><tr><td>Cash, Trust</td><td>1,252,492.34</td><td>1,252,492.34</td><td>1,199,690.58</td><td>1,199,690.58</td></tr><tr><td>Cash, Entity B</td><td>905,000.00</td><td>905,000.00</td><td>654,014.07</td><td>654,014.07</td></tr><tr><td>Cash, three entities</td><td>4,463,398.82</td><td>4,463,398.82</td><td>4,141,334.77</td><td>4,141,334.77</td></tr><tr><td>Calls due, shortfall</td><td>none</td><td>none</td><td>none</td><td>none</td></tr></table><p class="flag" style="margin-top:16px">Fixed after the test: Span's first gold design did not run; one late notice changed the amount still to be called; North listed some figures as sources. Still open: Action raised a case for a call already paid.</p><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC6 · Action</div><h2>What a person sees in Action</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>One list of what needs a person today.</li><li>Each line says what happened and the one thing to do.</li><li>Here: a capital call case from Tally, with a button to take it.</li><li>The test showed this call was already paid, so Mei dismissed it as paid. Next: paid calls will not raise a case.</li></ul></div><div class="col"><img class="shot" src="img/uc6-action.png" alt=""><p class="cap">Action, as Raj the approver, in the August cycle.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC8 · Trades</div><h2>Do our trades agree with the administrator?</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Each month, every trade in our export is matched to the administrator's file.</li><li>A break above USD 5,000 needs a person. Raj approves corrections.</li><li>Mei wrote the intent with North in about 20 minutes.</li><li>Daniel signed it. Span drafted the design. Anita approved it.</li></ul></div><div class="col"><img class="shot" src="img/uc8-signed.png" alt=""><p class="cap">The signed intent: purpose, readers, figures and sources.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">UC8 · Honest result</div><h2>Blocked at the first load, and why</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Intent, signature and design approval all worked.</li><li>July's trades did not reach the silver trades table, so the check compared 0 trades.</li><li>The check itself works and holds the signed USD 5,000 allowance.</li><li>Months 2 to 4 were not run; they would only repeat the empty check.</li><li>Next: a trade loader into silver, then rerun from the load step.</li></ul></div><div class="col"><img class="shot" src="img/uc8-check.png" alt=""><p class="cap">The trade check before any trades were loaded.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">Data</div><h2>Silver layer and lineage</h2><div class="row"><div class="col"><img class="shot" style="height:330px" src="img/data-model.png" alt=""><p class="cap">Map, Data model: bronze, silver and gold, and what a change would touch.</p></div><div class="col"><img class="shot" style="height:330px" src="img/uc6-runs.png" alt=""><p class="cap">Operations: every source, every run, every run ID.</p></div></div><div style="margin-top:14px"><ul><li>Source to bronze: kept exactly as received, with arrival time.</li><li>Bronze to silver: clean shared tables for entity, fund, cash and trades. Reused, not rebuilt.</li><li>Silver to gold: one table per question. Every figure keeps its trail back to file and row.</li></ul></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Studio</div><h2>A dashboard studio shaped by conversation</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>You say what you want in plain words. Lumen places the tile at once.</li><li>Select a tile and talk about that tile only.</li><li>Every change is a numbered step, so you can go back.</li><li>Comments and approval stay on the dashboard.</li></ul></div><div class="col"><img class="shot" src="img/studio.png" alt=""><p class="cap">The studio: talk to Lumen on the left, the tiles it placed on the right.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Sketch</div><h2>From a sketch to a dashboard</h2><div class="row"><div class="col"><img class="shot" style="height:380px" src="img/sketch-drawn.png" alt=""><p class="cap">1. The sketch, drawn by hand</p></div><div class="col"><img class="shot" style="height:380px" src="img/sketch-read.png" alt=""><p class="cap">2. What Lumen read</p></div><div class="col"><img class="shot" style="height:380px" src="img/sketch-built.png" alt=""><p class="cap">3. The built dashboard</p></div></div><div style="margin-top:14px"><ul><li>Draw the page you want. Lumen reads the boxes and labels, says what it understood, and builds it on your data.</li></ul></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Options</div><h2>Lumen offers three options</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>For any tile, Lumen offers three ways to show it.</li><li>Each option says why, in one line, based on industry practice.</li><li>One is marked as Lumen's pick. You choose.</li><li>If you choose otherwise, Lumen does it your way.</li></ul></div><div class="col"><img class="shot" src="img/options.png" alt=""><p class="cap">Lumen's pick, with the industry practice behind it. The next option follows below.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Checks</div><h2>Chart checks before you publish</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Lumen checks the dashboard before anyone reads it.</li><li>Same money counted twice.</li><li>A trend flattened by the wrong scale.</li><li>Wasted space, house style, too many things on one page.</li><li>Each check offers a one-click fix.</li></ul></div><div class="col"><img class="shot" src="img/checks.png" alt=""><p class="cap">The checks panel, each finding with its fix.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Charts</div><h2>New chart types</h2><div class="row"><div class="col" style="flex:0 0 470px"><ul><li>Bullet: a figure against its target or limit.</li><li>Waterfall: what moved a total.</li><li>Small multiples: one small chart per entity, same scale.</li><li>Calendar: what falls due on which day.</li><li>Treemap and KPI strip: the whole and the headline figures.</li></ul></div><div class="col"><img class="shot" src="img/new-charts.png" alt=""><p class="cap">New chart types on synthetic data.</p></div></div><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide tight"><div class="kicker">New · Teach the agents</div><h2>Books distilled into playbooks for the agents</h2><div class="row"><div class="col card"><h3>Lumen: how to build a dashboard</h3><ul><li>Ask who reads it and the three to five questions it answers.</li><li>Lead with the answer, each figure beside a comparison.</li><li>Match the chart to the question: line for trend, sorted bars to compare, waterfall for what moved.</li><li>No pies, gauges or 3-D. Check for double counting first.</li></ul></div><div class="col card"><h3>Span: how to design the data</h3><ul><li>Name the business question before any column.</li><li>Reuse the shared silver tables; a new one needs a reason.</li><li>Write the grain of each table in one sentence.</li><li>Balances are taken at a date, never added across dates.</li></ul></div></div><p class="flag" style="margin-top:16px">Drawn from classic books on dashboard design, data modelling and investment basics. Practice is suggested, never forced: the person decides.</p><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+<section class="slide dark"><div class="kicker">Next</div><h2>What is next</h2><ul><li>UC8: build the trade loader into silver, then rerun July to October.</li><li>UC5: two decisions for you: a limits dashboard in Consume, and new valuations in the administrator file.</li><li>UC6: Span's gold design runs first time, with no hand rewrite.</li><li>Run UC1 to UC4, UC7, UC9 and UC10 the same way, month by month.</li><li>Then a trial month on a copy of your own files.</li></ul><div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div></section>
+</div>
+
+<div class="ui">
+  <button id="prev" type="button" aria-label="Previous slide">&larr;</button>
+  <span class="n" id="num"></span>
+  <button id="next" type="button" aria-label="Next slide">&rarr;</button>
+  <span>Arrow keys or click. P to print.</span>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var num = document.getElementById('num');
+  var total = slides.length;
+  var cur = 0;
+
+  slides.forEach(function(s, i){
+    var sn = s.querySelector('.sn');
+    if (sn) sn.textContent = (i + 1) + ' / ' + total;
+  });
+
+  function fit(){
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+
+  function show(i){
+    if (i < 0) i = 0;
+    if (i > total - 1) i = total - 1;
+    cur = i;
+    slides.forEach(function(s, k){ s.classList.toggle('active', k === i); });
+    num.textContent = (i + 1) + ' / ' + total;
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+  }
+
+  function go(d){ show(cur + d); }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+    else if (e.key === 'p' || e.key === 'P') window.print();
+  });
+
+  document.addEventListener('click', function(e){
+    if (e.target.closest('a, button, input, select, textarea')) return;
+    if (e.target.closest('.ui')) return;
+    var x = e.clientX / window.innerWidth;
+    go(x < 0.3 ? -1 : 1);
+  });
+
+  document.getElementById('prev').addEventListener('click', function(e){ e.stopPropagation(); go(-1); });
+  document.getElementById('next').addEventListener('click', function(e){ e.stopPropagation(); go(1); });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('beforeprint', function(){ stage.style.transform = 'none'; });
+  window.addEventListener('afterprint', fit);
+
+  var start = parseInt((location.hash || '#1').slice(1), 10);
+  fit();
+  show(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>

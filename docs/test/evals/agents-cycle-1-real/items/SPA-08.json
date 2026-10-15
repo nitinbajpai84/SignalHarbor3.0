@@ -1,0 +1,109 @@
+{
+  "id": "SPA-08",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Outside any project, Span answers in words about the company model.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "5 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 22850,
+  "cost": {
+    "calls": 5,
+    "tokens": 18527,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 5,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What tables does the company model hold?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The model has not available yet tables in three layers:\n\n- **Bronze (not available yet tables):** each source file as it arrived. They are `bronze_administrator_positions` and `bronze_trading_export_positions`.\n- **Silver (not available yet tables):** the shared company data model, the same for every project. It is split into groups: access, agents, intake, master data, observations, rules and benchmarks, intents and outputs, documents and RAG, and exceptions and pulse.\n- **Gold (not available yet tables):** built per project for reports. All three belong to the investment report:\n  - `gold_investment_report_benchmark_monthly`\n  - `gold_investment_report_cash_daily`\n  - `gold_investment_report_holdings_monthly`\n\nThe `gold_investment_report_entity_monthly` table proposed on 2026-10-09 isn't in the model yet. It still needs your acceptance or rejection.\n\nAsk about a table for detail.\nNote: I could not use a tool I asked for, so part of this answer may be incomplete.",
+        "rules_only": false
+      },
+      "ms": 22850,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12022,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:29+0800"
+    },
+    {
+      "bytes": 12022,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:25+0800"
+    },
+    {
+      "bytes": 7799,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:20+0800"
+    },
+    {
+      "bytes": 3801,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:16+0800"
+    },
+    {
+      "bytes": 3663,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:26:13+0800"
+    }
+  ]
+}

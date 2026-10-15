@@ -1,0 +1,5 @@
+# W3 jobs and events: the admin page is the data engineer seat; the event stream is any signed-in seat (filtered to the company in code).
+routes:
+  GET /api/v1/jobs: {roles: [company_admin, analyst]}
+  POST /api/v1/jobs/{jid}/retry: {roles: [company_admin, analyst]}
+  GET /api/v1/events/stream: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}

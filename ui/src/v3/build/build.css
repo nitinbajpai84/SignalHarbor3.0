@@ -1,0 +1,156 @@
+/* Build board, use-case page and thread page. Colour carries meaning (docs/v3/COLOURS.md): tokens only, never a raw colour.
+   Scoped to .b3 so the shared v3 classes look the same everywhere else. */
+
+/* ---- shared bits ---- */
+.v3 .b3-back{font-size:14px;margin-right:14px}
+.b3 .v3-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--info)}
+.b3-titlerow{justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:nowrap}
+.b3-titlerow h1{font-size:28px;margin:0;line-height:1.2}
+
+/* ---- the board ---- */
+.b3-board{padding:30px 40px 48px;display:flex;flex-direction:column;gap:24px;max-width:1360px;width:100%;box-sizing:border-box;margin:0 auto}
+.b3-board h2{font-family:var(--font-head);font-size:20px}
+.b3-cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;align-items:start}
+.b3-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.b3 .b3-col h2{display:flex;align-items:center;gap:8px;font-family:var(--font-body);font-size:13px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--info);margin:0}
+.b3-count{min-width:22px;padding:1px 8px;border-radius:999px;background:var(--info-soft);color:var(--info);font:600 12px var(--font-body);letter-spacing:0;text-align:center;box-sizing:border-box}
+.b3-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--lift-sm)}
+.b3-card b{font-size:15px;font-weight:600}
+.b3-card.needs{border-left:4px solid var(--needs)}
+.b3-start{display:flex;gap:10px;align-items:center;max-width:760px}
+.b3-start textarea{flex:1}
+
+/* ---- the stages ---- */
+.b3-prog{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+.b3-prog span{display:inline-block;padding:5px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--info)}
+.b3-prog span.done{background:var(--done-soft);border-color:var(--done-soft);color:var(--done);font-weight:600}
+.b3-prog span.done::before{content:"\2713  "}
+.b3-prog span.needs{background:var(--needs);border-color:var(--needs);color:var(--card);font-weight:600}
+.b3-prog span.harbor{background:var(--harbor-soft);border-color:var(--harbor);color:color-mix(in srgb,var(--harbor) 70%,var(--ink));font-weight:600}
+.b3-now{margin:0;font-size:14px;padding:10px 14px;border-radius:12px;background:var(--harbor-soft);border-left:3px solid var(--harbor)}
+.b3-now b{color:color-mix(in srgb,var(--harbor) 70%,var(--ink))}
+
+/* ---- the conversation ---- */
+.v3-av.needs{background:var(--needs)}.v3-av.done{background:var(--done)}
+.b3 .v3-av{width:30px;height:30px;font-size:13px}
+.b3 .v3-dot.harbor{width:8px;height:8px;margin-top:12px}
+.b3 .v3-pill{align-self:flex-start}
+.b3 .v3-bubble{border-radius:18px;box-shadow:var(--lift-sm)}
+.b3 .v3-bubble.me{background:var(--act-soft);border-color:var(--act-soft);border-top-left-radius:6px}
+.b3 .v3-bubble.harbor{border-top-left-radius:6px}
+.b3 .v3-bubble.needs{background:var(--needs-soft);border-color:var(--needs)}
+.b3 .v3-bubble.done{background:var(--done-soft);border-color:var(--done-soft)}
+.b3 .v3-chips span{background:var(--harbor-soft);border-color:var(--harbor-soft);color:var(--ink)}
+.b3 .v3-compose textarea{border-radius:16px}
+.b3 .v3-updating{background:var(--harbor-soft);color:var(--ink);border-left:3px solid var(--harbor)}
+.b3 .v3-err{color:var(--problem)}
+.b3-fail{color:var(--problem);font-size:13px}
+
+/* ---- decisions ---- */
+.b3 .v3-dec{border:1px solid var(--line);border-left:4px solid var(--needs);border-radius:18px;box-shadow:var(--lift-sm)}
+.b3 .v3-dec .v3-kicker{color:color-mix(in srgb,var(--needs) 80%,var(--ink))}
+.b3 .v3-gap{color:color-mix(in srgb,var(--needs) 80%,var(--ink));background:var(--needs-soft);padding:8px 12px;border-radius:10px}
+.b3 .v3-card.need{border-left-color:var(--needs)}
+.b3 .v3-card.need .v3-kicker{color:color-mix(in srgb,var(--needs) 80%,var(--ink))}
+.b3-checks{width:100%;border-collapse:collapse;font-size:14px}
+.b3-checks th{text-align:left;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--info);padding:0 8px 6px 0}
+.b3-checks td{border-top:1px solid var(--line);padding:10px 8px 10px 0;vertical-align:top}
+.b3-checks tr.bad td{background:var(--problem-soft)}
+.b3-live p{font-family:var(--font-head);font-size:20px}
+.b3-harborkick.v3-kicker{color:color-mix(in srgb,var(--harbor) 70%,var(--ink))}
+.b3-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.b3-steps li{display:flex;align-items:center;gap:8px}
+.b3-steps li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--done);flex:none}
+.b3-steps li.harbor::before{background:var(--harbor);box-shadow:0 0 0 4px var(--harbor-soft)}
+
+/* ---- the brief lines (graph editor, phone list, thread Decision 1) ---- */
+.b3 .v3-bgroup{border-top:1px solid var(--line)}
+.b3 .v3-bgroup h3{font-family:var(--font-body);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--info)}
+.b3 .v3-bline dt{color:var(--info)}
+.b3 .v3-bline dd textarea{border:1px solid var(--line)}
+.b3 .v3-bline.changed{background:var(--harbor-soft);box-shadow:0 0 0 2px var(--harbor)}
+.b3 .v3-pencil{color:var(--act);min-width:32px;min-height:32px;border-radius:8px}
+.b3 .v3-pencil:hover{background:var(--act-soft)}
+.b3 .v3-sug{background:var(--harbor-soft);color:color-mix(in srgb,var(--harbor) 70%,var(--ink))}
+.b3 .v3-new{background:var(--harbor);color:var(--card)}
+.b3-brief{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px 18px 14px;display:flex;flex-direction:column;gap:4px}
+.b3-brief .v3-bgroup:first-child{border-top:0}
+
+/* ---- the record ---- */
+.b3 .v3-record dt{color:var(--info)}
+.b3 .v3-record.signed{border-left:4px solid var(--done)}
+.b3 .v3-record .v3-pill{margin-right:6px;vertical-align:1px}
+
+/* ---- the graph ---- */
+.b3-graph{display:flex;flex-direction:column;gap:10px;min-width:0}
+.b3-graph svg{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:18px}
+.b3-edge{stroke:var(--line);stroke-width:1.5}
+.b3-edge.dashed{stroke-dasharray:5 4}
+.b3-edge.suggested{stroke:var(--harbor);stroke-dasharray:3 4}
+.b3-node{cursor:pointer;outline:none}
+.b3-node rect{fill:var(--card);stroke:var(--line);stroke-width:1.5}
+.b3-node.question rect{fill:var(--act);stroke:var(--act)}
+.b3-node.question text{fill:var(--card)}
+.b3-node.suggested rect{fill:var(--harbor-soft);stroke:var(--harbor);stroke-dasharray:4 3}
+.b3-node:hover rect,.b3-node:focus-visible rect,.b3-node.on rect{stroke:var(--act);stroke-width:2.5;stroke-dasharray:none}
+.b3-node.glow rect{stroke:var(--harbor);stroke-width:3;stroke-dasharray:none;filter:drop-shadow(0 0 6px var(--harbor))}
+.b3-ndot.done{fill:var(--done)}
+.b3-ndot.needs{fill:var(--needs)}
+.b3-t1{font-size:13px;font-weight:600;fill:var(--ink);font-family:var(--font-body)}
+.b3-t2{font-size:11px;fill:var(--info);font-family:var(--font-body)}
+.b3-tag{font-size:10px;font-weight:600;fill:var(--harbor);font-family:var(--font-body)}
+.b3-edit dl{margin:0;display:flex;flex-direction:column;gap:6px}
+
+/* ---- files for this use case ---- */
+.b3-band{display:grid;grid-template-columns:minmax(260px,1fr) 2fr;gap:24px;padding:24px 40px 40px;border-top:1px solid var(--line);max-width:1360px;width:100%;box-sizing:border-box;margin:0 auto}
+.b3-band .v3-kicker{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--info)}
+.b3-drop{border:2px dashed var(--act);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;background:var(--card)}
+.b3-drop.over{background:var(--act-soft)}
+.b3-drop .v3-pick{padding:10px 18px;border-radius:12px;background:var(--act);color:var(--card);font-weight:600;font-size:14px;cursor:pointer;position:relative}
+.b3-drop .v3-pick input{position:absolute;width:1px;height:1px;opacity:0}
+.b3-drop .v3-up{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;width:100%}
+.b3-drop progress{width:100%;accent-color:var(--act)}
+.b3-files{display:flex;flex-direction:column;gap:10px;min-width:0}
+.b3-chips{display:flex;flex-wrap:wrap;gap:8px}
+.b3-chip{padding:5px 12px;border-radius:999px;font-size:13px;font-weight:500}
+.b3-chip.needs{border:1px dashed var(--needs);background:var(--needs-soft);color:color-mix(in srgb,var(--needs) 80%,var(--ink))}
+.b3-chip.done{border:1px solid var(--done-soft);background:var(--done-soft);color:var(--done)}
+.b3-chip.problem{border:1px solid var(--problem);background:var(--problem-soft);color:var(--problem)}
+.b3-recent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.b3-recent li{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}
+.b3-fdot{width:8px;height:8px;border-radius:50%;flex:none;align-self:center}
+.b3-fdot.done{background:var(--done)}.b3-fdot.needs{background:var(--needs)}
+
+@media (max-width:900px){.b3-cols{grid-template-columns:repeat(2,minmax(0,1fr))}.b3-band{grid-template-columns:1fr;padding:16px}}
+
+/* ---- phone: stacked board, tabs on the use case, the composer stays at the bottom ---- */
+@media (max-width:719px){
+  .b3-board{padding:18px 16px 96px;gap:18px}
+  .b3-board h1{font-size:26px}
+  .b3-cols{grid-template-columns:1fr;gap:22px}
+  .b3-start{flex-wrap:wrap}
+  .b3-start textarea{flex:1 1 100%}
+  .b3-start .go{flex:1}
+  .b3-titlerow h1{font-size:22px}
+  .b3-phone{display:flex;flex-direction:column;gap:14px;padding:0 16px 24px;min-width:0}
+  .b3-phone .v3-talk{display:flex;flex-direction:column;gap:12px;max-width:none}
+  .b3-phone .b3-titlerow{margin:0}
+  .b3-tabs{position:sticky;top:0;z-index:5;display:flex;gap:4px;margin:0 -16px;padding:10px 16px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .v3 .b3-tabs button{flex:1;border:0;border-radius:999px;padding:9px 0;background:transparent;color:var(--info);font-weight:600}
+  .v3 .b3-tabs button[aria-selected="true"]{background:var(--act);color:var(--card)}
+  .b3-phonepane{display:flex;flex-direction:column;gap:14px}
+  .b3 .v3-ev{gap:10px}
+  .b3 .v3-rail{width:30px}
+  .b3 .v3-bubble{font-size:15px;padding:12px 14px}
+  .b3 .v3-dec{padding:16px}
+  .b3 .v3-dec .v3-row>button{flex:1 1 auto}
+  .b3 .v3-compose{position:sticky;bottom:calc(var(--v3-tabbar-h,64px) + env(safe-area-inset-bottom,0px) + 8px);z-index:4;margin-top:8px;padding:8px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--lift-lg)}
+  .b3 .v3-compose textarea{border:0;padding:8px 10px;min-height:44px}
+  .b3 .v3-compose .go{padding:10px 14px}
+  .b3-band{padding:0;border:0;gap:16px}
+  .b3-record dl,.b3 .v3-record dl{grid-template-columns:1fr;gap:2px 0}
+  .b3 .v3-record dd{margin-bottom:8px}
+  .b3-checks{font-size:13px}
+  .v3-main.b3{padding:18px 16px 96px}
+  .v3-main.b3 .v3-side{min-width:0;position:static;flex:1 1 100%}
+}

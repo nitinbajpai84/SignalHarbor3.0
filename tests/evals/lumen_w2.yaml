@@ -1,0 +1,159 @@
+# W2-L: Lumen, wave 2 (NU-17, NU-19, NU-22, NU-27, DG-2, H1-07, SP-C1-04, LT-5, EVT-11, LQ-9). One item per fix that is agent behaviour.
+# `replay:` items run offline with the model's recorded failure shape (python tools/run_evals.py --offline --agents lumen_w2); `live: true`
+# items are owed to the live 3-of-3 rerun once the model accounts are topped up (python tools/run_evals.py --agents lumen_w2 --items <id>).
+# Seeded dashboard {did}: three entities (Entity A, B, C), holdings in USD and SGD, cash in USD only. Synthetic data only.
+- id: LW2-NU17
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: NU-17 / NU-27 (A4) "only X and Y" on the tile in focus keeps only those two, split by entity; never "already how the tile looks".
+  replay: [{say: "Sure, I can do that."}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "Show me net worth by entity per month as bars"}
+    - say: "As bars, only Entity B and Evergreen Family Trust."
+      expect: {contains: ["entity b and evergreen family trust only"], absent: ["already how the tile looks", "evergreen holdings"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-NU17-SPLIT
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: NU-17 (A1) "one bar colour per entity, only Entity B and Evergreen" in one ask (both Evergreens) - split by entity along the months, filter kept.
+  replay: [{say: "Which months do you want?"}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "As bars of net worth per month, one bar colour per entity, only Entity B and Evergreen."
+      expect: {contains: ["net worth by entity, per month", "entity b and evergreen family trust and evergreen holdings only"], absent: ["which months"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-NU27
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: NU-27 (A1) a column name with underscores is understood; a model that asks "what period?" instead of proposing still ends in a tile.
+  replay: [{say: "What period do you want to see: month, quarter, or year?"}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "net_worth_usd by entity as bars"
+      expect: {contains: ["net worth by entity"], absent: ["could not tell which figure", "what period"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-NU27-RANGE
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: NU-27 (A4) "September 2025 to September 2026" on the tile in focus keeps 13 month-ends (the program counts them), not the last 12.
+  replay: [{say: "Done."}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "Show me net worth per month"}
+    - say: "September 2025 to September 2026, by month"
+      expect: {contains: ["for the last 13 months"], absent: ["last 12 months"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-NU19
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: NU-19 (A1) one ask naming two figures held in two tables gets two tiles, not one tile and a question for a column name.
+  replay: [{say: "Which figure would you like first?"}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "Show net worth and cash per month"
+      expect: {contains: ["2 tiles", "net worth", "cash"], absent: ["which figure"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-DG2
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: DG-2 (A4, A5) the remembered "show SGD first" reaches the next tile; cash, kept in USD only, says so instead of silently staying USD.
+  replay: [{say: "Noted."}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "From now on show SGD first."}
+    - say: "Show me net worth by entity per month"
+      expect: {contains: ["(sgd)"]}
+    - say: "Now show cash by entity as bars in SGD"
+      expect: {contains: ["kept in usd only"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-H107
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: H1-07 (A5) after a fresh talk the thread is empty, and a colour the model brings from an old talk (none said, none remembered) is not put on the next tile.
+  replay:
+    - {call: propose_tile, args: {table: "gold_investment_report_holdings_monthly", figure: "net_worth_usd", kind: "line", period: "month", color: "blue"}}
+    - {say: "Here is the tile, in blue as you like it."}
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "What does net worth include?"}
+    - {body: {new_talk: true}, expect: {contains: ["a fresh talk"]}}
+    - {method: GET, path: "/api/v1/consume/p/{pid}/dashboards/{did}", expect: {absent: ["what does net worth include?"]}}
+    - say: "Show total net worth by month"
+      expect: {absent: ["#2563eb"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-NU22
+  agent: lumen
+  role: sponsor
+  desc: NU-22 (A6) the dashboard read after a turn carries the person's talk with Lumen, so a reload shows it.
+  replay: [{say: "Net worth is the value of every holding at the month end."}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "What does net worth include?"}
+    - {method: GET, path: "/api/v1/consume/p/{pid}/dashboards/{did}", expect: {contains: ["\"talk\"", "what does net worth include?"]}}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LW2-LQ9
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: LQ-9 (A16) recorded shape tr-6cbf4828740c4e6b - the model fetches August and September and says the change is "not a figure I can state"; the program states it.
+  replay:
+    - {calls: [[query_figure, {table: "gold_investment_report_holdings_monthly", figure: "net_worth_usd", group_by: "entity", month: "2026-08"}],
+               [query_figure, {table: "gold_investment_report_holdings_monthly", figure: "net_worth_usd", group_by: "entity", month: "2026-09"}]]}
+    - {say: "I have not calculated the change: the difference between those two months is not a figure I can state. The administrator would know why."}
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns: [{say: "Why did net worth move in September?"}]
+  expected: {status: 200, words_any: [["3,367,000", "3367000"]], forbidden: ["not a figure I can state", "have not calculated"]}
+  scorers: [words, loop_trace]
+
+- id: LW2-SPC104
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: SP-C1-04 (A1) a figure whose result has under five rows in all is written by the program (Entity B 880,400 on 8 Oct, both views), never "fewer than five rows".
+  replay:
+    - {call: query_figure, args: {table: "gold_investment_report_cash_daily", figure: "cash_usd", filters: ["entity=Entity B"]}}
+    - {say: "I cannot show that figure because there are fewer than five rows."}
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns: [{say: "What is the cash of Entity B?"}]
+  expected: {status: 200, words_any: [["880,400", "880400"]], forbidden: ["fewer than five"]}
+  scorers: [words]
+
+- id: LW2-LT5
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: LT-5 / EVT-11 (A2, A4) recorded shape - "make it dots" answered in words first; after the nudge the loop makes the edit. Offline the model never calls the tool, so the rules edit; live, check worded_by model on each turn.
+  replay: [{say: "Dots would work well here."}]
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "Show me holdings by status"}
+    - say: "make it dots"
+      expect: {contains: ["shown as dots"], absent: ["already how the tile looks", "with columns"]}
+    - say: "in blue"
+      expect: {contains: ["in blue"], absent: ["with columns"]}
+  expected: {status: 200}
+  scorers: [turn_expect]

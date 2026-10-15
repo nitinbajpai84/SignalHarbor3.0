@@ -1,0 +1,148 @@
+# Input ledger rows for spec 04: the Intent Centre home.
+- id: "04.lanes"
+  spec: "04"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent (lanes of intent cards per area)"
+  input: "Which intents are running in the viewer's areas"
+  person: any
+  mode: automatic
+  source: "intent records filtered for the viewer by area and role"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: asking around or reading a project tracker to see what is running"
+  claim: "Everyone sees what is happening in their areas without asking"
+- id: "04.card"
+  spec: "04"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent (intent card: stage label, days left, people count, your role, extended marker)"
+  input: "Stage, days left, people count, own role and extended marker on each card"
+  person: any
+  mode: automatic
+  source: "the stages, time box and people of each record, worked out on read"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: updating a status line per project"
+  claim: "Stage, time left and who is in it are worked out when the page loads, not reported"
+- id: "04.your_turn"
+  spec: "04"
+  journey: shared
+  stage: run
+  screen: "/centre/intent (Your turn strip)"
+  input: "What is waiting for this person, which intent, days left"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "intents where the viewer is named in an open step, plus the readiness asks"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: checking email and chat for what is waiting on you"
+  claim: "Nira lists what is waiting for you, ordered by days left"
+- id: "04.filters"
+  spec: "04"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent (type chips, state chips, area select, Mine or All)"
+  input: "Filter the lanes by type, state, area, mine or all"
+  person: any
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: filtering a tracker"
+  claim: "Filters are kept in the link so a view can be shared"
+- id: "04.start_button"
+  spec: "04"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent (Start an intent)"
+  input: "Start an intent"
+  person: organiser
+  mode: manual
+  source: "the person's intent"
+  minutes_without: 5
+  minutes_with: 0.2
+  basis: "estimate: finding the right form"
+  claim: "One button is always in view and opens the chooser"
+- id: "04.earlier_work"
+  spec: "04"
+  journey: admin
+  stage: notice
+  screen: "/centre/intent (North notice: records created from earlier work)"
+  input: "Intent records for walls and charters made before the centre"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "existing wall sessions, baselines and charters"
+  minutes_without: 60
+  minutes_with: 1
+  basis: "estimate: re-entering earlier projects into a new tracker versus checking one line"
+  claim: "North creates an intent record for each piece of earlier work so nothing is left outside the centre"
+- id: "04.outcome_line"
+  spec: "04"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent (Past intents: outcome one-liner)"
+  input: "One-line outcome of a closed intent, up to 140 characters"
+  person: organiser
+  mode: confirm
+  built: derived
+  agent: North
+  source: "the closure"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a headline for the archive versus confirming a drafted one"
+  claim: "North drafts the one-line outcome at closure; the organiser confirms it"
+- id: "04.past_list"
+  spec: "04"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent (Past intents card)"
+  input: "Latest closed and cancelled intents with outcome and reason"
+  person: any
+  mode: automatic
+  source: "closed and cancelled intent records"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: searching old email and folders for what came out of past work"
+  claim: "Past work and what came out of it is listed without anyone keeping an archive"
+- id: "04.company_wide"
+  spec: "04"
+  journey: shared
+  stage: notice
+  screen: "intent start (is this for the whole company)"
+  input: "Mark an intent company-wide"
+  person: organiser
+  mode: manual
+  source: "the organiser's choice"
+  minutes_without: 1
+  minutes_with: 0.2
+  basis: "estimate: one question"
+  claim: "A company-wide intent is visible to everyone in the Company-wide lane"
+- id: "04.counters"
+  spec: "04"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent (four counters: opened this month, closed in time box, average rating, build-ready charters)"
+  input: "Intents opened this month, closed inside the time box, average rating, build-ready charters"
+  person: company_admin
+  mode: automatic
+  source: "the intent records, ratings and build-ready flags"
+  minutes_without: 90
+  minutes_with: 0
+  basis: "estimate: compiling a monthly project report"
+  claim: "The four headline numbers come from the records, each with the list it was counted from"
+- id: "04.governed_card"
+  spec: "04"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent (Governed state aside card)"
+  input: "Four governed-state bars: owner, classified, who may see, sealed"
+  person: company_admin
+  mode: automatic
+  source: "reported measures in the company profile"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: assembling a data governance summary"
+  claim: "Governance coverage is read from the profile, not compiled"

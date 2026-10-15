@@ -1,0 +1,15 @@
+# K10 Consume reading room (Today, Financial health, Markets, the Morning Note as sent, fund league, reports library). Anyone signed in may ask;
+# every figure is filtered by E1d (fail closed) inside k4_office, k5_managers and k6_liquidity, and the PDF prints only the lines the person may see.
+routes:
+  GET /api/v1/consume/today: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/health: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/note: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/email-note: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/pnl: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/signals: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/league: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/index-map: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/index-map: {roles: [company_admin, analyst]}  # the head of data seat is checked again in k10_note
+  GET /api/v1/consume/reports: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/reports/{version_id}/pdf: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/reports/{version_id}/pptx: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

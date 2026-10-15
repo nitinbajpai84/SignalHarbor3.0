@@ -1,0 +1,38 @@
+# Template family_office@1 -- market data sources and whether each is safe to show in a client
+# demo. Served by GET /api/family-office/evidence (emitters/family_office.py). `covers` and `note`
+# are the provider's own "purpose" and "use" lines from
+# Family Office Data/Signal_Harbor_Intent_Test_Pack/Market_API_Options.md; demo_safe follows that
+# file's "Recommended first prototype" (reference FX, macro series and issuer filings first; stock
+# quotes only once business-demo rights are confirmed). No endpoint was verified live.
+template: family_office@1
+status: proposed
+sources:
+  - name: Frankfurter
+    covers: Reference FX
+    demo_safe: true
+    note: API permits commercial use; underlying provider terms still apply. Daily reference rates, not executable intraday FX.
+  - name: FRED
+    covers: Macro, rates and inflation
+    demo_safe: true
+    note: Needs a registered key. Check source-series notes and third-party rights; not blanket redistribution permission.
+  - name: SEC EDGAR
+    covers: US issuer filings and reported financial facts
+    demo_safe: true
+    note: Public access under SEC fair-access rules, with attribution. Not a price feed.
+  - name: Alpha Vantage
+    covers: Equity historical data and optional market datasets
+    demo_safe: false
+    note: Commercial use requires provider confirmation; do not assume free client-demo rights.
+  - name: Twelve Data
+    covers: Stock and FX quotes
+    demo_safe: false
+    note: Terms prohibit commercial use of the Free Tier.
+  - name: Finnhub
+    covers: Stock and news data
+    demo_safe: false
+    note: Commercial use has a separate enterprise offering; free rights are not established for a client demo.
+  - name: SGX / authorised vendor
+    covers: Singapore securities quotes and events
+    demo_safe: false
+    note: No verified free commercial live quote API identified; a licensed feed is needed.
+source: "Family Office Data/Signal_Harbor_Intent_Test_Pack/Market_API_Options.md"

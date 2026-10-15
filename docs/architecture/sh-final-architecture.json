@@ -1,0 +1,1142 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor Final Architecture",
+    "subtitle": "People to browser to API to agents to one exit, over a per-company data plane, on Railway",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-final-architecture.html"
+  },
+  "components": [
+    {
+      "id": "p_sponsor",
+      "type": "external",
+      "label": "Sponsor, CIO",
+      "sublabel": "signs charter",
+      "pos": [
+        40,
+        140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_risk",
+      "type": "external",
+      "label": "Participant, risk",
+      "sublabel": "explains cases",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_analyst",
+      "type": "external",
+      "label": "Analyst",
+      "sublabel": "builds, works",
+      "pos": [
+        40,
+        340
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_finance",
+      "type": "external",
+      "label": "Approver, finance",
+      "sublabel": "approves",
+      "pos": [
+        40,
+        440
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_data",
+      "type": "external",
+      "label": "Head of data",
+      "sublabel": "owns the map",
+      "pos": [
+        40,
+        540
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "p_admin",
+      "type": "external",
+      "label": "Admin",
+      "sublabel": "company, platform",
+      "pos": [
+        40,
+        640
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_intent",
+      "type": "frontend",
+      "label": "Intent",
+      "sublabel": "talk to North",
+      "pos": [
+        184,
+        140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_action",
+      "type": "frontend",
+      "label": "Action",
+      "sublabel": "Today, cases",
+      "pos": [
+        184,
+        240
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_build",
+      "type": "frontend",
+      "label": "Build",
+      "sublabel": "Studio, pipelines",
+      "pos": [
+        184,
+        340
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_consume",
+      "type": "frontend",
+      "label": "Consume",
+      "sublabel": "offers",
+      "pos": [
+        184,
+        440
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_map",
+      "type": "frontend",
+      "label": "Map",
+      "sublabel": "tables, lineage",
+      "pos": [
+        184,
+        540
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "u_settings",
+      "type": "frontend",
+      "label": "Settings",
+      "sublabel": "people, model",
+      "pos": [
+        184,
+        640
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API (FastAPI)",
+      "sublabel": "serves UI and API",
+      "pos": [
+        372,
+        140
+      ],
+      "size": [
+        112,
+        564
+      ],
+      "tag": "default deny"
+    },
+    {
+      "id": "control",
+      "type": "security",
+      "label": "Control plane",
+      "sublabel": "companies, modules",
+      "pos": [
+        372,
+        40
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "entitlements"
+    },
+    {
+      "id": "packs",
+      "type": "database",
+      "label": "Packs",
+      "sublabel": "industry rules",
+      "pos": [
+        560,
+        40
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "a_north",
+      "type": "backend",
+      "label": "North",
+      "sublabel": "intent, SOW, map",
+      "pos": [
+        560,
+        140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "a_tally",
+      "type": "backend",
+      "label": "Tally",
+      "sublabel": "data analyst",
+      "pos": [
+        560,
+        240
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "a_span",
+      "type": "backend",
+      "label": "Span",
+      "sublabel": "design, mapping",
+      "pos": [
+        560,
+        340
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "a_lumen",
+      "type": "backend",
+      "label": "Lumen",
+      "sublabel": "dashboards",
+      "pos": [
+        560,
+        440
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "loop",
+      "type": "backend",
+      "label": "Shared agent loop",
+      "sublabel": "one code path",
+      "pos": [
+        748,
+        140
+      ],
+      "size": [
+        112,
+        364
+      ],
+      "tag": "all 4 agents"
+    },
+    {
+      "id": "tools",
+      "type": "backend",
+      "label": "Tools",
+      "sublabel": "read-only",
+      "pos": [
+        936,
+        140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "Guard",
+      "sublabel": "figures grounded",
+      "pos": [
+        936,
+        240
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "injection too"
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "Memory",
+      "sublabel": "short, long, shared",
+      "pos": [
+        936,
+        340
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "ctx",
+      "type": "database",
+      "label": "Context map, RAG",
+      "sublabel": "local passages",
+      "pos": [
+        936,
+        440
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "stays local"
+    },
+    {
+      "id": "router",
+      "type": "cloud",
+      "label": "Model router",
+      "sublabel": "3 tiers, Testing/Real",
+      "pos": [
+        748,
+        540
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "Testing / Real"
+    },
+    {
+      "id": "egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "allowlist, vault, log",
+      "pos": [
+        748,
+        640
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "single exit"
+    },
+    {
+      "id": "or",
+      "type": "external",
+      "label": "Model provider",
+      "sublabel": "two model sets",
+      "pos": [
+        1076,
+        640
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "gs",
+      "type": "external",
+      "label": "Speech service",
+      "sublabel": "speech in and out",
+      "pos": [
+        1076,
+        740
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "airflow",
+      "type": "external",
+      "label": "Airflow export",
+      "sublabel": "DAG file",
+      "pos": [
+        560,
+        540
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "pipes",
+      "type": "backend",
+      "label": "Pipelines",
+      "sublabel": "plan, sandbox, live",
+      "pos": [
+        560,
+        640
+      ],
+      "size": [
+        112,
+        64
+      ],
+      "tag": "approval before live"
+    },
+    {
+      "id": "logs",
+      "type": "database",
+      "label": "Logs, traces",
+      "sublabel": "calls, runs",
+      "pos": [
+        748,
+        840
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "landing",
+      "type": "database",
+      "label": "Landing",
+      "sublabel": "originals",
+      "pos": [
+        184,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "Bronze",
+      "sublabel": "loaded as is",
+      "pos": [
+        372,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "silver",
+      "type": "database",
+      "label": "Silver core model",
+      "sublabel": "entities",
+      "pos": [
+        560,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "gold",
+      "type": "database",
+      "label": "Gold per project",
+      "sublabel": "dashboards read",
+      "pos": [
+        748,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "checks",
+      "type": "backend",
+      "label": "Checks",
+      "sublabel": "recon, limits, trades",
+      "pos": [
+        936,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "docs",
+      "type": "database",
+      "label": "Documents",
+      "sublabel": "text, passages",
+      "pos": [
+        184,
+        1040
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "graph",
+      "type": "database",
+      "label": "Graph",
+      "sublabel": "rebuilt",
+      "pos": [
+        372,
+        1040
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "studio",
+      "type": "backend",
+      "label": "Dashboard studio",
+      "sublabel": "maker, approver",
+      "pos": [
+        748,
+        1040
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "cases",
+      "type": "database",
+      "label": "Cases",
+      "sublabel": "shown on Today",
+      "pos": [
+        936,
+        1040
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "pub",
+      "type": "database",
+      "label": "Approved views",
+      "sublabel": "Consume shows",
+      "pos": [
+        748,
+        1140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "comments",
+      "type": "database",
+      "label": "Comments",
+      "sublabel": "notes on cases",
+      "pos": [
+        936,
+        1140
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "src",
+      "type": "external",
+      "label": "Company files",
+      "sublabel": "files, exports",
+      "pos": [
+        40,
+        940
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "vid",
+      "type": "backend",
+      "label": "Demo-video tool",
+      "sublabel": "offline script",
+      "pos": [
+        40,
+        1240
+      ],
+      "size": [
+        112,
+        64
+      ]
+    },
+    {
+      "id": "oa",
+      "type": "external",
+      "label": "Demo voice",
+      "sublabel": "not the app",
+      "pos": [
+        184,
+        1240
+      ],
+      "size": [
+        112,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Railway: one service, one volume, variables, public URL",
+      "wraps": [
+        "u_intent",
+        "u_action",
+        "u_build",
+        "u_consume",
+        "u_map",
+        "u_settings",
+        "api",
+        "control",
+        "packs",
+        "a_north",
+        "a_tally",
+        "a_span",
+        "a_lumen",
+        "loop",
+        "tools",
+        "guard",
+        "memory",
+        "ctx",
+        "router",
+        "egress",
+        "airflow",
+        "pipes",
+        "logs",
+        "landing",
+        "bronze",
+        "silver",
+        "gold",
+        "checks",
+        "docs",
+        "graph",
+        "studio",
+        "cases",
+        "pub",
+        "comments"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Company data plane (volume /data)",
+      "wraps": [
+        "logs",
+        "landing",
+        "bronze",
+        "silver",
+        "gold",
+        "checks",
+        "docs",
+        "graph",
+        "studio",
+        "cases",
+        "pub",
+        "comments"
+      ],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "e_p_sponsor",
+      "from": "p_sponsor",
+      "to": "u_intent",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_p_risk",
+      "from": "p_risk",
+      "to": "u_action",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_p_analyst",
+      "from": "p_analyst",
+      "to": "u_build",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_p_finance",
+      "from": "p_finance",
+      "to": "u_consume",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_p_data",
+      "from": "p_data",
+      "to": "u_map",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_p_admin",
+      "from": "p_admin",
+      "to": "u_settings",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_intent",
+      "from": "u_intent",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_action",
+      "from": "u_action",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_build",
+      "from": "u_build",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_consume",
+      "from": "u_consume",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_map",
+      "from": "u_map",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_u_settings",
+      "from": "u_settings",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "c_api",
+      "from": "control",
+      "to": "api",
+      "label": "may use",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_api_a_north",
+      "from": "api",
+      "to": "a_north",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_api_a_tally",
+      "from": "api",
+      "to": "a_tally",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_api_a_span",
+      "from": "api",
+      "to": "a_span",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_api_a_lumen",
+      "from": "api",
+      "to": "a_lumen",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "c_packs",
+      "from": "packs",
+      "to": "a_north",
+      "label": "starts from",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_loop_a_north",
+      "from": "a_north",
+      "to": "loop",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_a_tally",
+      "from": "a_tally",
+      "to": "loop",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_a_span",
+      "from": "a_span",
+      "to": "loop",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_a_lumen",
+      "from": "a_lumen",
+      "to": "loop",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_tools",
+      "from": "loop",
+      "to": "tools",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_guard",
+      "from": "loop",
+      "to": "guard",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_memory",
+      "from": "loop",
+      "to": "memory",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_ctx",
+      "from": "loop",
+      "to": "ctx",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_loop_router",
+      "from": "loop",
+      "to": "router",
+      "label": "model call",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_router_egress",
+      "from": "router",
+      "to": "egress",
+      "label": "guarded",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_eg_or",
+      "from": "egress",
+      "to": "or",
+      "label": "text",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_eg_gs",
+      "from": "egress",
+      "to": "gs",
+      "label": "audio",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_api_pipes",
+      "from": "api",
+      "to": "pipes",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_pipes_air",
+      "from": "pipes",
+      "to": "airflow",
+      "label": "export",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "e_vid",
+      "from": "vid",
+      "to": "oa",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_src",
+      "from": "src",
+      "to": "landing",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_land_bronze",
+      "from": "landing",
+      "to": "bronze",
+      "label": "load",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_bronze_silver",
+      "from": "bronze",
+      "to": "silver",
+      "label": "model",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_silver_gold",
+      "from": "silver",
+      "to": "gold",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_gold_checks",
+      "from": "silver",
+      "to": "checks",
+      "fromSide": "top",
+      "toSide": "top",
+      "label": "core tables"
+    },
+    {
+      "id": "e_land_docs",
+      "from": "landing",
+      "to": "docs",
+      "label": "text",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_docs_graph",
+      "from": "docs",
+      "to": "graph",
+      "label": "link",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "e_silver_graph",
+      "from": "silver",
+      "to": "graph",
+      "label": "rebuild",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "e_api_bronze",
+      "from": "api",
+      "to": "bronze",
+      "label": "company scoped",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_pipes_silver",
+      "from": "pipes",
+      "to": "silver",
+      "label": "builds tables",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_checks_cases",
+      "from": "checks",
+      "to": "cases",
+      "label": "opens cases",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_cases_comments",
+      "from": "cases",
+      "to": "comments",
+      "label": "notes",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_gold_studio",
+      "from": "gold",
+      "to": "studio",
+      "label": "tiles",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_studio_pub",
+      "from": "studio",
+      "to": "pub",
+      "label": "approve",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "e_eg_logs",
+      "from": "egress",
+      "to": "logs",
+      "label": "every call logged",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Flow 1: a figure from file to dashboard",
+      "items": [
+        "1 Company files are dropped or connected and land untouched in Landing",
+        "2 Pipelines (planned by Span, run in sandbox, then live after approval) load Bronze, model into Silver, and build Gold per project",
+        "3 Checks (cash, NAV, limits, trades) read the Silver core tables and open Cases on Today",
+        "4 In the Dashboard studio Lumen proposes tiles over Gold; the maker builds, another person approves",
+        "5 Only the approved version appears in Consume, and the figure traces back on the Map"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Flow 2: an agent answer",
+      "items": [
+        "1 A person asks in a centre; the API checks the route and the company",
+        "2 The shared loop reads memory and searches local passages, then calls read-only tools that return counts and totals",
+        "3 The router picks the tier (fast, specialist, manager) in the company mode (Testing or Real); the egress gateway masks names, blocks raw rows, checks the allowlist and logs the call",
+        "4 The answer returns; the Guard replaces any figure that traces to no recorded fact",
+        "5 The reply, the trace and the new memory are stored in the company plane"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Who uses what",
+      "items": [
+        "Sponsor, CIO: Intent, signs charter and baseline",
+        "Participant, risk: explains cases on Action",
+        "Analyst: builds in Build, works cases on Action",
+        "Approver, finance: approves dashboards and cases",
+        "Head of data: owns the Map, approves plans",
+        "Admin: company admin runs people and Settings; super admin runs the control plane"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Where the walls are",
+      "items": [
+        "Default deny: a route not in the permission table gives 403",
+        "One data plane per company; the control plane holds no company data",
+        "Only the egress gateway reaches the internet: the model provider, and speech",
+        "Demo voice (offline) belongs to the offline demo-video tool, not to the running app"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Deployment",
+      "items": [
+        "One Railway service built from the Dockerfile: the React UI is built, then served by the same uvicorn process as the API",
+        "A persistent volume at /data holds every company plane",
+        "Keys and the model mode live in Railway variables, never in the repo or this diagram",
+        "Health check at /api/health; the seed runs on every start and never deletes"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+# Template family_office@1 -- the context layer's cluster taxonomy for a family office workspace,
+# in the schema of contracts/context/clusters.yaml (read by sh_platform/context/taxonomy.py).
+# Installed as <workspace>/contracts/context/clusters.yaml, which the loader prefers over the
+# platform default.
+#
+# Status: Proposal. The six subject clusters are the pack's own intents
+# (Signal_Harbor_Intent_Test_Pack/Expected_Intent_Extraction.json): liquidity, trust, scope, risk,
+# performance, operations. Its documents intent sits in "Documents and evidence" and its governance
+# intent in "Governance and people", next to the generic topics those clusters already hold.
+#
+# How a node is placed (taxonomy.py cluster_for_node): the first id_overrides rule whose `contains`
+# text appears in the node's id or name wins; otherwise type_defaults; otherwise "unsorted".
+# Every pack topic is placed by its own id below: a KPI goes with the intent KPI_Catalog.json
+# names for it (intent_id), a term with the KPI or interview turn its glossary entry cites. A
+# wrong rule only moves a card; it never hides one.
+
+clusters:
+  - id: liquidity_funding
+    label: Liquidity and funding
+    summary: Whether another investment can be funded -- cash, known payments, commitments still to be called and the reserve.
+  - id: trust_evidence
+    label: Trust and evidence
+    summary: Whether the reported figures can be relied on -- source evidence, conflicts and the age of valuations.
+  - id: scope_ownership
+    label: Scope and ownership
+    summary: Which entities are in the consolidated view, and how movements between them are treated.
+  - id: risk_concentration
+    label: Risk and concentration
+    summary: Where exposure is concentrated, what cannot be seen through, and mandate exceptions.
+  - id: performance
+    label: Performance
+    summary: What changed the value of the assets -- flows, prices and currency. Manager performance is deferred.
+  - id: operations_reporting
+    label: Operations and reporting
+    summary: The effort of preparing the investment meeting pack, and what could be automated.
+  - id: evidence_documents
+    label: Documents and evidence
+    summary: Incoming notices, statements and reports -- what can be taken from them, and uploaded material that backs a topic.
+  - id: governance_people
+    label: Governance and people
+    summary: What the agents may read, what a person must approve, and who is accountable for each answer.
+  - id: sources_data
+    label: Sources and data
+    summary: Where the numbers come from -- source systems, tables, columns and their contracts.
+  - id: beliefs_open_questions
+    label: Beliefs and open questions
+    summary: What the team believes to be true, and what is still unresolved or unproven.
+  - id: decisions_actions
+    label: Decisions and actions
+    summary: What was decided, and what the platform did about it.
+  - id: market_signals
+    label: Market signals
+    summary: External indicators and events the family office does not control but watches.
+  - id: unsorted
+    label: Unsorted
+    summary: Not yet mapped to a cluster -- lands here until a person or a later projector places it.
+
+# First match wins; substring match against the node's id or name (both lower-cased).
+id_overrides:
+  # -- intents (Expected_Intent_Extraction.json) --
+  - {contains: "family_office.int-liq", cluster: liquidity_funding}
+  - {contains: "family_office.int-trust", cluster: trust_evidence}
+  - {contains: "family_office.int-scope", cluster: scope_ownership}
+  - {contains: "family_office.int-risk", cluster: risk_concentration}
+  - {contains: "family_office.int-perf", cluster: performance}
+  - {contains: "family_office.int-ops", cluster: operations_reporting}
+  - {contains: "family_office.int-doc", cluster: evidence_documents}
+  - {contains: "family_office.int-gov", cluster: governance_people}
+  # -- KPIs and their metric definitions, by KPI_Catalog.json intent_id --
+  - {contains: "family_office.k01", cluster: liquidity_funding}
+  - {contains: "family_office.k04", cluster: liquidity_funding}
+  - {contains: "family_office.k05", cluster: liquidity_funding}
+  - {contains: "family_office.k06", cluster: liquidity_funding}
+  - {contains: "family_office.k02", cluster: trust_evidence}
+  - {contains: "family_office.k07", cluster: trust_evidence}
+  - {contains: "family_office.k12", cluster: trust_evidence}
+  - {contains: "family_office.k08", cluster: risk_concentration}
+  - {contains: "family_office.k09", cluster: risk_concentration}
+  - {contains: "family_office.k10", cluster: risk_concentration}
+  - {contains: "family_office.k11", cluster: risk_concentration}
+  - {contains: "family_office.k13", cluster: performance}
+  - {contains: "family_office.k15", cluster: performance}
+  - {contains: "family_office.k03", cluster: operations_reporting}
+  - {contains: "family_office.k14", cluster: evidence_documents}
+  # -- levers (kpi_tree.yaml: each moves one KPI) --
+  - {contains: "lever:family_office.commitment_pacing", cluster: liquidity_funding}
+  - {contains: "lever:family_office.evidence_intake", cluster: trust_evidence}
+  - {contains: "lever:family_office.pack_automation", cluster: operations_reporting}
+  # -- glossary terms, by the source each glossary.yaml entry cites --
+  - {contains: "term:family_office.funding-headroom", cluster: liquidity_funding}
+  - {contains: "term:family_office.minimum-reserve", cluster: liquidity_funding}
+  - {contains: "term:family_office.known-obligation", cluster: liquidity_funding}
+  - {contains: "term:family_office.unfunded-commitment", cluster: liquidity_funding}
+  - {contains: "term:family_office.capital-call", cluster: liquidity_funding}
+  - {contains: "term:family_office.recallable-distribution", cluster: liquidity_funding}
+  - {contains: "term:family_office.stress-funding-requirement", cluster: liquidity_funding}
+  - {contains: "term:family_office.evidence-coverage", cluster: trust_evidence}
+  - {contains: "term:family_office.stale-valuation", cluster: trust_evidence}
+  - {contains: "term:family_office.consolidated-view", cluster: scope_ownership}
+  - {contains: "term:family_office.internal-transfer", cluster: scope_ownership}
+  - {contains: "term:family_office.reporting-currency", cluster: scope_ownership}
+  - {contains: "term:family_office.look-through-exposure", cluster: risk_concentration}
+  - {contains: "term:family_office.strategic-holding", cluster: risk_concentration}
+  - {contains: "term:family_office.policy-exception", cluster: risk_concentration}
+  - {contains: "term:family_office.asset-value-change-bridge", cluster: performance}
+  - {contains: "term:family_office.meeting-pack", cluster: operations_reporting}
+  - {contains: "term:family_office.superseded-notice", cluster: evidence_documents}
+
+# Node type -> default cluster for anything not placed above. A KPI, lever or intent added later
+# has no pack rule yet, so it lands in "unsorted" until someone places it.
+type_defaults:
+  KPI: unsorted
+  MetricDefinition: unsorted
+  Lever: unsorted
+  Intent: unsorted
+  Source: sources_data
+  Table: sources_data
+  Column: sources_data
+  Contract: sources_data
+  Belief: beliefs_open_questions
+  OpenQuestion: beliefs_open_questions
+  Gap: beliefs_open_questions
+  Situation: beliefs_open_questions
+  Fact: beliefs_open_questions
+  Preference: beliefs_open_questions
+  Correction: beliefs_open_questions
+  Term: beliefs_open_questions
+  Decision: decisions_actions
+  Proposal: decisions_actions
+  Signal: market_signals
+  Agent: governance_people
+  Role: governance_people
+  Person: governance_people
+  Document: evidence_documents
+
+excluded_types:
+  - Run
+  - Domain
+  - Workspace
+
+# Same small-cell rule as the platform contract (approved there, ND-18); carried over unchanged so
+# a workspace copy never weakens it.
+privacy:
+  min_cell_count: 5
+  status: "Approved by Nitin 2026-09-30 (ND-18)"
+  description: >
+    Below this count, a projector must never write the exact number into a node prop, an edge
+    reason/prop, a topic page or Nira's context -- show "fewer than <min_cell_count> of <total>"
+    instead, and omit the exact count/share fields for that cell entirely. Cells that sum to a
+    visible total are suppressed as one group, not independently.
+
+type_order:
+  MetricDefinition: 0
+  Fact: 1

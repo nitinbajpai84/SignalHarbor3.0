@@ -1,0 +1,414 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: data layers",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-data-layers.html"
+  },
+  "components": [
+    {
+      "id": "src_fa",
+      "type": "external",
+      "label": "Fund administrator export",
+      "sublabel": "files as the administrator sends them",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "src_trade",
+      "type": "external",
+      "label": "Trading export",
+      "sublabel": "orders and fills",
+      "pos": [
+        40,
+        150
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "src_pdf",
+      "type": "external",
+      "label": "Manager statement PDFs",
+      "sublabel": "read on the machine",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "src_api",
+      "type": "external",
+      "label": "Market data",
+      "sublabel": "Connect an API: Frankfurter, FRED, Finnhub, MAS",
+      "pos": [
+        40,
+        330
+      ],
+      "size": [
+        210,
+        80
+      ]
+    },
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "Bronze",
+      "sublabel": "as it arrived: batches and records",
+      "tag": "source_batches, source_records",
+      "pos": [
+        310,
+        180
+      ],
+      "size": [
+        190,
+        88
+      ]
+    },
+    {
+      "id": "s_access",
+      "type": "database",
+      "label": "Access",
+      "sublabel": "5 tables: organisations, users, access groups",
+      "pos": [
+        610,
+        60
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_master",
+      "type": "database",
+      "label": "Master data",
+      "sublabel": "4 tables: entities, portfolios, instruments",
+      "pos": [
+        610,
+        120
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_intake",
+      "type": "database",
+      "label": "Intake",
+      "sublabel": "6 tables: sources, mappings, batches, records",
+      "pos": [
+        610,
+        180
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_docs",
+      "type": "database",
+      "label": "Documents",
+      "sublabel": "3 tables: documents, passages, extracted fields",
+      "pos": [
+        610,
+        240
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_obs",
+      "type": "database",
+      "label": "Observations",
+      "sublabel": "7 tables: transactions, positions, valuations, market",
+      "pos": [
+        610,
+        300
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_rules",
+      "type": "database",
+      "label": "Rules and benchmarks",
+      "sublabel": "4 tables: rules, versions, benchmarks",
+      "pos": [
+        610,
+        360
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_intents",
+      "type": "database",
+      "label": "Intents and outputs",
+      "sublabel": "7 tables: intents, metrics, runs, reports",
+      "pos": [
+        610,
+        420
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_exc",
+      "type": "database",
+      "label": "Exceptions and pulse",
+      "sublabel": "5 tables: exceptions, impacts, approvals",
+      "pos": [
+        610,
+        480
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "s_agents",
+      "type": "database",
+      "label": "Agents",
+      "sublabel": "1 table: agent_runs",
+      "pos": [
+        610,
+        540
+      ],
+      "size": [
+        270,
+        48
+      ]
+    },
+    {
+      "id": "gold",
+      "type": "database",
+      "label": "Gold",
+      "sublabel": "one table per question a project answers",
+      "tag": "e.g. gold.investment_report_holdings_monthly",
+      "pos": [
+        960,
+        240
+      ],
+      "size": [
+        210,
+        88
+      ]
+    },
+    {
+      "id": "consume",
+      "type": "frontend",
+      "label": "Dashboards and reports",
+      "sublabel": "Consume centre",
+      "pos": [
+        1220,
+        150
+      ],
+      "size": [
+        210,
+        72
+      ]
+    },
+    {
+      "id": "action",
+      "type": "backend",
+      "label": "Action",
+      "sublabel": "decision intents and exceptions",
+      "pos": [
+        1220,
+        330
+      ],
+      "size": [
+        210,
+        72
+      ]
+    },
+    {
+      "id": "span",
+      "type": "backend",
+      "label": "Span, the architect",
+      "sublabel": "proposes a model extension",
+      "pos": [
+        310,
+        640
+      ],
+      "size": [
+        210,
+        72
+      ]
+    },
+    {
+      "id": "head",
+      "type": "external",
+      "label": "Head of data",
+      "sublabel": "approves the extension",
+      "pos": [
+        600,
+        640
+      ],
+      "size": [
+        210,
+        72
+      ]
+    },
+    {
+      "id": "mver",
+      "type": "database",
+      "label": "New model version",
+      "sublabel": "company addition, versioned",
+      "pos": [
+        900,
+        640
+      ],
+      "size": [
+        210,
+        72
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "SILVER: the office's clean model, 42 core tables in 9 groups",
+      "wraps": [
+        "s_access",
+        "s_master",
+        "s_intake",
+        "s_docs",
+        "s_obs",
+        "s_rules",
+        "s_intents",
+        "s_exc",
+        "s_agents"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "src_fa_bronze",
+      "from": "src_fa",
+      "to": "bronze",
+      "label": "files"
+    },
+    {
+      "id": "src_trade_bronze",
+      "from": "src_trade",
+      "to": "bronze",
+      "label": "files"
+    },
+    {
+      "id": "src_pdf_bronze",
+      "from": "src_pdf",
+      "to": "bronze",
+      "label": "read"
+    },
+    {
+      "id": "src_api_bronze",
+      "from": "src_api",
+      "to": "bronze",
+      "label": "pulled",
+      "variant": "dashed"
+    },
+    {
+      "id": "bronze_intake",
+      "from": "bronze",
+      "to": "s_intake",
+      "label": "mapped"
+    },
+    {
+      "id": "silver_gold_obs",
+      "from": "s_obs",
+      "to": "gold",
+      "label": "change lights",
+      "variant": "emphasis"
+    },
+    {
+      "id": "silver_gold_rules",
+      "from": "s_rules",
+      "to": "gold",
+      "label": "rules apply"
+    },
+    {
+      "id": "silver_gold_intents",
+      "from": "s_intents",
+      "to": "gold",
+      "label": "metrics"
+    },
+    {
+      "id": "gold_consume",
+      "from": "gold",
+      "to": "consume",
+      "label": "reads",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gold_action",
+      "from": "gold",
+      "to": "action",
+      "label": "feeds"
+    },
+    {
+      "id": "span_head",
+      "from": "span",
+      "to": "head",
+      "label": "proposes"
+    },
+    {
+      "id": "head_mver",
+      "from": "head",
+      "to": "mver",
+      "label": "approves"
+    },
+    {
+      "id": "mver_silver",
+      "from": "mver",
+      "to": "s_agents",
+      "label": "added to silver",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Lineage and impact",
+      "items": [
+        "A change to a silver table lights every gold table built from it, and every dashboard and report that reads those.",
+        "Example: a change to valuations in Observations lights the metric and calculation tables, then the Consume views."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Company additions",
+      "items": [
+        "Span proposes an extra table or column. The head of data approves it. It goes in as a new model version, never edited in place."
+      ]
+    }
+  ]
+}

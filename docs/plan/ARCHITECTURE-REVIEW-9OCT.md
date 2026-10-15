@@ -1,0 +1,31 @@
+# Architecture review, 9 October 2026
+
+Picture: `docs/architecture/sh-four-centres.html` (every box cites the code it comes from). Method: for each point, what it is worth, what it costs, what happens if we leave it. **Verified** means I read it in the code or a log. **Assumed** means I did not check it end to end.
+
+## What the product is today
+
+One web app (React screens, one Python server) on one machine. A person signs in; the top bar shows four centres, Intent, Action, Build and Consume, plus Map for the data team and Settings in the avatar menu, with a Testing / Real use switch. Three agents do the drafting: **North** (Intent: one chat that drafts the statement of work), **Span** (Build: the build plan) and **Lumen** (Consume: dashboard tiles). The main path works like this: a person talks to North, a person signs the intent, Span proposes a plan, the head of data approves it, the pipeline writes gold tables, Lumen turns them into tiles, a shared dashboard puts a card on each allowed person's Today list. Each company has its own DuckDB database file and folder. Every model call goes through the router and then the egress gateway, the only way out.
+
+## What is strong (verified)
+
+- **One exit.** Every model call goes through `router.py` and then `egress/gateway.py`. The gateway swaps names for tokens and checks each call before it leaves. It logs the call without its content.
+- **Figures come from code, not the model.** Span and Lumen use their rules first, and the model only fills the gaps (`b6_span.py`, `cx_lumen.py`). The office view, benchmark and CIO brief get every number from the database (`k4_office.py`, `k7_benchmark.py`).
+- **Default deny.** A route with no declared permission is refused. The server also refuses a route it cannot classify (`auth/__init__.py` 56-61).
+- **People act at the gates.** Only the head of data can approve a plan, never the person who proposed it (`b6_plan.py` 249). Cases use maker-checker (`e4_cases.py`). Evidence rows are only ever added, never changed (`e1_write.py`).
+- **Each feature is a pair of files.** Builders rarely touch a shared file. Document search runs on this machine (`doc_embed.py`).
+
+## Risks, and what to do for the ten-use-case demo
+
+| # | Risk (evidence) | Fix now? | Cost | Simplest fix |
+|---|---|---|---|---|
+| 1 | **Built but unreachable.** The file intake page has no way in. `shell/redirects.ts` line 14 sends `/centre/data/intake` (and its file pages) to `/centre/build`. Build's own **Add files** button (`v1/b6/Steps.tsx` line 23) links to that path, so it just reloads Build. The redirect table catches 11 old paths in total. Most of those screens are reused inside Action or Settings, but the intake page is not. Verified. | **Yes**, if any use case uploads a file on screen | 30 min | Mount the intake page at `/centre/build/intake` and point the button there, or remove line 14 |
+| 2 | **One database file, scheduler in the same process.** `wh.py` opens every connection read-write (lines 54-56), and the pipeline scheduler thread runs inside the server (`app.py` 183-198). Within one process this works. A second process that opens the same file while the server runs (a seed script, a test run, a second server worker) will be locked out or block the server. An older 2.0 database (`warehouse/company.duckdb`) also still exists next to the new one (`evidence.duckdb`). Verified. Assumed: the demo runs one server process. | No, just take care | 0 | Demo from one server. Stop it before running scripts. Set `SH_SCHEDULER=off` unless the demo shows a scheduled run |
+| 3 | **Old and new routes overlap.** `app.py` still mounts about 72 router lines (2.0 `ic_*` stubs, feeds, market, what-if) beside the 59 new card routers. `App.tsx` keeps 2.0 pages on old paths (`consume/feeds`, `consume/market`, `consume/what-if`, `build/blueprint`, `build/pipelines`, `/legacy`). On the Consume side, `/api/v1/consume` (c1) and `/api/v1/consume/p/...` (cx) both serve, and the c1 screen (`p3/ConsumeEntry.tsx`) is no longer mounted anywhere. `docs/plan/v1-landings/I3.md` notes that which `intent/new` route wins depends on mount order. Verified. | No | 0 now; about 1 day later | Do not open old links in the demo. After the demo, delete the 2.0 pages and stubs that no new screen calls |
+| 4 | **Permissions are spread over 60 files.** These are `route_permissions.yaml` plus 59 card files. The loader keeps the first key it sees (`auth/permissions.py` 36-41). The kernel file wins, which is safe, but if two cards declare the same route, one silently wins by file name. Default deny still holds. Verified. | No | 1 hour | Add one test that fails when two card files declare the same route |
+| 5 | **Some tests depend on order and timing.** Timing tests fail when the machine is busy. A repo-tree guard fails when the live server writes under `data/` during the run (`HANDOVER.md` line 30, `v1-landings/R1.md` 56, `K2.md` 41). The last UI run had 7 failures out of 1,430 (`../v3-suite.txt`). Verified from the logs. I did not rerun the tests. | Partly | 2 hours now, half a day later | Before the demo, run the backend suite with the server stopped and rerun any failure on its own. Later, mark timing tests as slow and give each test its own data folder |
+| 6 | **The "only writer" rule is not enforced.** `e1_write.py` says it is the only writer of evidence rows. About 10 other modules insert rows directly (cases, pulse, sharing, liquidity, reports). Verified that the inserts exist. Assumed: some of those tables count as evidence. | No | half a day later | Decide which tables are evidence and route only those through `e1_write` |
+| 7 | **Span's chat may not follow the mode switch.** North and Lumen call `route()` directly. Span's chat (`a1_chat.py`) uses the model from `build/agents/runtime.py`, and I did not trace whether that model is routed. Assumed. | **Yes, check it** | 10 min | Flip Testing / Real use and check the router cost log for a Span entry |
+
+## Bottom line
+
+The structure is sound for the demo. There is one exit, numbers come from code, approvals are made by people, and each company keeps its data separately. Before the demo, do only #1 (the intake way in), #7 (a ten-minute check), and #2 and #5 as run discipline. Leave #3, #4 and #6 until after the demo. They are clean-up work, not breakages.

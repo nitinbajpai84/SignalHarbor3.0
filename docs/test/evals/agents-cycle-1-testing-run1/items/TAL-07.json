@@ -1,0 +1,202 @@
+{
+  "id": "TAL-07",
+  "agent": "tally",
+  "role": "participant",
+  "desc": "P18 breach caused by stale valuations - Cedarpoint Ventures 56.50% against 55%, over by 343,750, cause stale data.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 343750, 12925000, 22875000"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 30945,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Cedarpoint|type=limit_breach}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "56.5",
+      "55",
+      "343750",
+      "12925000",
+      "22875000"
+    ],
+    "words_any": [
+      [
+        "stale",
+        "older than 90 days"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/cases/f66f7b07-47f2-4c8e-aa09-680f4d4ca0be/ask",
+      "request": {
+        "question": "Why is Cedarpoint over the limit?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "f66f7b07-47f2-4c8e-aa09-680f4d4ca0be",
+        "kind": "limit_breach",
+        "summary": "The Cedarpoint Ventures shows an exposure of 56.50% against a maximum limit of 55% of the Entity B operating portfolio. 3 input values of the 3 in the portfolio are older than 90 days or not yet verified: Saltmarsh Infrastructure Fund II (not yet verified, 9 days old), Cedarpoint Ventures III (valued 30 Jun 2026, 101 days old) and Cedarpoint Opportunities II (valued 31 Mar 2026, 192 days old). The share may be out of date: a stale-data cause, not yet a proven breach.",
+        "findings": [
+          {
+            "key": "exposure",
+            "text": "Cedarpoint Ventures in Entity B operating portfolio: 56.50% of the portfolio against a maximum of 55%. The Cedarpoint Ventures share of each portfolio must be at most 55%.",
+            "figure": "56.50%",
+            "chips": []
+          },
+          {
+            "key": "input",
+            "text": "Saltmarsh Infrastructure Fund II: 9,950,000 USD, valued 30 Sep 2026 (9 days old), status pending, counted in the portfolio total, stale.",
+            "figure": "9,950,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "d2f317fc-9034-4ea6-8a97-2e7e5523dd4c"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "60e85cb5-4c96-4560-a863-851afbaec18e"
+              }
+            ]
+          },
+          {
+            "key": "input",
+            "text": "Cedarpoint Ventures III: 8,275,000 USD, valued 30 Jun 2026 (101 days old), status approved, stale.",
+            "figure": "8,275,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "3d34a607-952c-47b1-baa1-f5a466858b43"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "a3391751-dc18-4f1b-befa-c2cdced8cca5"
+              }
+            ]
+          },
+          {
+            "key": "input",
+            "text": "Cedarpoint Opportunities II: 4,650,000 USD, valued 31 Mar 2026 (192 days old), status approved, stale.",
+            "figure": "4,650,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "abdca647-0274-466e-ae09-3296ee15d873"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "6035b6cf-636a-4f6c-ab62-4b86404d90a2"
+              }
+            ]
+          },
+          {
+            "key": "cause",
+            "text": "3 input values of the 3 in the portfolio are older than 90 days or not yet verified: Saltmarsh Infrastructure Fund II (not yet verified, 9 days old), Cedarpoint Ventures III (valued 30 Jun 2026, 101 days old) and Cedarpoint Opportunities II (valued 31 Mar 2026, 192 days old). The share may be out of date: a stale-data cause, not yet a proven breach.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Chase the manager for the latest statement of the oldest input and get it confirmed."
+          },
+          {
+            "who": "Case owner",
+            "text": "Hold the case until the statement is in; recheck the limit then."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "valuation d2f317fc-9034-4ea6-8a97-2e7e5523dd4c",
+          "Statement",
+          "valuation 3d34a607-952c-47b1-baa1-f5a466858b43",
+          "Statement",
+          "valuation abdca647-0274-466e-ae09-3296ee15d873",
+          "Statement"
+        ],
+        "worded_by": "model",
+        "question": "Why is Cedarpoint over the limit?",
+        "answer": "Nothing needed for this check is missing. The share may be out of date: a stale-data cause, not yet a proven breach.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 30903,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12430,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:44+0800"
+    },
+    {
+      "bytes": 11468,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:41+0800"
+    },
+    {
+      "bytes": 12251,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:34+0800"
+    },
+    {
+      "bytes": 11289,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:32+0800"
+    }
+  ]
+}

@@ -1,0 +1,510 @@
+{
+ "flow": {
+  "stages": [
+   {
+    "id": "source",
+    "label": "Sources"
+   },
+   {
+    "id": "file",
+    "label": "Files"
+   },
+   {
+    "id": "bronze",
+    "label": "Raw data"
+   },
+   {
+    "id": "silver",
+    "label": "Company model"
+   },
+   {
+    "id": "gold",
+    "label": "Ready for reports"
+   },
+   {
+    "id": "dashboard",
+    "label": "Dashboards"
+   },
+   {
+    "id": "person",
+    "label": "People"
+   }
+  ],
+  "nodes": [
+   {
+    "id": "source:administrator",
+    "stage": "source",
+    "label": "Fund administrator",
+    "owner": "Mei Tan",
+    "last_load": null,
+    "note": "Arrives daily",
+    "project_id": null,
+    "table": null,
+    "feeds": [
+     "files:administrator"
+    ],
+    "fed_by": []
+   },
+   {
+    "id": "source:manager_email",
+    "stage": "source",
+    "label": "Manager statements by email",
+    "owner": "Grace Ong",
+    "last_load": null,
+    "note": "Arrives monthly",
+    "project_id": null,
+    "table": null,
+    "feeds": [
+     "files:manager_email"
+    ],
+    "fed_by": []
+   },
+   {
+    "id": "files:administrator",
+    "stage": "file",
+    "label": "Files from Fund administrator",
+    "owner": "Mei Tan",
+    "last_load": "2026-10-05T08:00:00+00:00",
+    "note": "1 file",
+    "project_id": null,
+    "table": null,
+    "feeds": [
+     "table:bronze_administrator_export",
+     "table:bronze_administrator_export_valuations"
+    ],
+    "fed_by": [
+     "source:administrator"
+    ]
+   },
+   {
+    "id": "files:manager_email",
+    "stage": "file",
+    "label": "Files from Manager statements by email",
+    "owner": "Grace Ong",
+    "last_load": "2026-08-10T08:00:00+00:00",
+    "note": "3 files, 2 not accepted",
+    "project_id": null,
+    "table": null,
+    "fed_by": [
+     "source:manager_email"
+    ],
+    "feeds": [
+     "table:bronze_manager_email_statement"
+    ]
+   },
+   {
+    "id": "table:bronze_administrator_export",
+    "stage": "bronze",
+    "label": "Administrator export",
+    "owner": "Mei Tan",
+    "last_load": "2026-10-05T08:00:00+00:00",
+    "note": "1 columns known",
+    "project_id": null,
+    "table": "bronze_administrator_export",
+    "fed_by": [
+     "files:administrator"
+    ],
+    "feeds": []
+   },
+   {
+    "id": "table:bronze_administrator_export_valuations",
+    "stage": "bronze",
+    "label": "Administrator export valuations",
+    "owner": null,
+    "last_load": null,
+    "note": "Valuations as landed",
+    "project_id": null,
+    "table": "bronze_administrator_export_valuations",
+    "fed_by": [
+     "files:administrator"
+    ],
+    "feeds": [
+     "table:valuation_observations"
+    ]
+   },
+   {
+    "id": "table:bronze_manager_email_statement",
+    "stage": "bronze",
+    "label": "Manager email statement",
+    "owner": "Grace Ong",
+    "last_load": "2026-08-10T08:00:00+00:00",
+    "note": "",
+    "project_id": null,
+    "table": "bronze_manager_email_statement",
+    "fed_by": [
+     "files:manager_email"
+    ],
+    "feeds": []
+   },
+   {
+    "id": "table:valuation_observations",
+    "stage": "silver",
+    "label": "Valuation observations",
+    "owner": null,
+    "last_load": null,
+    "note": "Valuations",
+    "project_id": null,
+    "table": "valuation_observations",
+    "feeds": [
+     "table:gold_monthly_report_valuation_monthly"
+    ],
+    "fed_by": [
+     "table:bronze_administrator_export_valuations"
+    ]
+   },
+   {
+    "id": "table:gold_monthly_report_valuation_monthly",
+    "stage": "gold",
+    "label": "Monthly report valuation monthly",
+    "owner": "Leela Raman",
+    "last_load": "2026-10-08T06:00:00+00:00",
+    "note": "Value by month",
+    "project_id": "prj-94bf0e23",
+    "table": "gold_monthly_report_valuation_monthly",
+    "state": "live",
+    "feeds": [
+     "dash:d1"
+    ],
+    "fed_by": [
+     "table:valuation_observations"
+    ]
+   },
+   {
+    "id": "dash:d1",
+    "stage": "dashboard",
+    "label": "Net worth by month",
+    "owner": "Ada",
+    "last_load": "2026-10-08T07:00:00+00:00",
+    "note": "Refreshes daily",
+    "project_id": "prj-94bf0e23",
+    "table": null,
+    "feeds": [
+     "person:Ada",
+     "person:Investment office",
+     "person:Mei Tan"
+    ],
+    "fed_by": [
+     "table:gold_monthly_report_valuation_monthly"
+    ]
+   },
+   {
+    "id": "person:Ada",
+    "stage": "person",
+    "label": "Ada",
+    "owner": null,
+    "last_load": null,
+    "note": "",
+    "project_id": null,
+    "table": null,
+    "fed_by": [
+     "dash:d1"
+    ],
+    "feeds": []
+   },
+   {
+    "id": "person:Investment office",
+    "stage": "person",
+    "label": "Investment office",
+    "owner": null,
+    "last_load": null,
+    "note": "",
+    "project_id": null,
+    "table": null,
+    "fed_by": [
+     "dash:d1"
+    ],
+    "feeds": []
+   },
+   {
+    "id": "person:Mei Tan",
+    "stage": "person",
+    "label": "Mei Tan",
+    "owner": null,
+    "last_load": null,
+    "note": "",
+    "project_id": null,
+    "table": null,
+    "fed_by": [
+     "dash:d1"
+    ],
+    "feeds": []
+   }
+  ],
+  "edges": [
+   {
+    "from": "dash:d1",
+    "to": "person:Ada"
+   },
+   {
+    "from": "dash:d1",
+    "to": "person:Investment office"
+   },
+   {
+    "from": "dash:d1",
+    "to": "person:Mei Tan"
+   },
+   {
+    "from": "files:administrator",
+    "to": "table:bronze_administrator_export"
+   },
+   {
+    "from": "files:administrator",
+    "to": "table:bronze_administrator_export_valuations"
+   },
+   {
+    "from": "files:manager_email",
+    "to": "table:bronze_manager_email_statement"
+   },
+   {
+    "from": "source:administrator",
+    "to": "files:administrator"
+   },
+   {
+    "from": "source:manager_email",
+    "to": "files:manager_email"
+   },
+   {
+    "from": "table:bronze_administrator_export_valuations",
+    "to": "table:valuation_observations"
+   },
+   {
+    "from": "table:gold_monthly_report_valuation_monthly",
+    "to": "dash:d1"
+   },
+   {
+    "from": "table:valuation_observations",
+    "to": "table:gold_monthly_report_valuation_monthly"
+   }
+  ]
+ },
+ "processes": {
+  "processes": [
+   {
+    "iid": "rep1",
+    "project_id": "prj-94bf0e23",
+    "title": "Monthly investment report",
+    "owner": "Ada",
+    "signed_on": "2026-10-01T09:00:00+00:00",
+    "locked": false,
+    "process": {
+     "steps": [
+      {
+       "n": 1,
+       "name": "Collect statements",
+       "who": "Operations",
+       "system": "Email",
+       "does": "Gather manager statements by hand"
+      },
+      {
+       "n": 2,
+       "name": "Review",
+       "who": "Finance",
+       "system": "Warehouse",
+       "does": "Check the figures"
+      }
+     ],
+     "handovers": [
+      {
+       "from_step": 1,
+       "to_step": 2,
+       "what": "Pack goes to review"
+      }
+     ]
+    }
+   },
+   {
+    "iid": "fin",
+    "project_id": "prj-8988947a",
+    "title": "Pack fin",
+    "owner": "Ada",
+    "signed_on": "2026-10-01T09:00:00+00:00",
+    "locked": false,
+    "process": {
+     "steps": [
+      {
+       "n": 1,
+       "name": "Collect statements",
+       "who": "Operations",
+       "system": "Email",
+       "does": "Gather manager statements by hand"
+      },
+      {
+       "n": 2,
+       "name": "Review",
+       "who": "Finance",
+       "system": "Warehouse",
+       "does": "Check the figures"
+      }
+     ],
+     "handovers": [
+      {
+       "from_step": 1,
+       "to_step": 2,
+       "what": "Pack goes to review"
+      }
+     ]
+    }
+   },
+   {
+    "iid": "perf",
+    "project_id": "prj-1b98e540",
+    "title": "Pack perf",
+    "owner": "Ada",
+    "signed_on": "2026-10-01T09:00:00+00:00",
+    "locked": false,
+    "process": {
+     "steps": [
+      {
+       "n": 1,
+       "name": "Collect statements",
+       "who": "Operations",
+       "system": "Email",
+       "does": "Gather manager statements by hand"
+      },
+      {
+       "n": 2,
+       "name": "Review",
+       "who": "Finance",
+       "system": "Warehouse",
+       "does": "Check the figures"
+      }
+     ],
+     "handovers": [
+      {
+       "from_step": 1,
+       "to_step": 2,
+       "what": "Pack goes to review"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "definitions": {
+  "concepts": [
+   {
+    "id": "concept:net-worth",
+    "name": "Net worth",
+    "synonyms": [],
+    "variants": [
+     {
+      "id": "def:fin:NW",
+      "iid": "fin",
+      "code": "NW",
+      "name": "Net worth",
+      "team": "Fiona",
+      "project": "Pack fin",
+      "project_id": "prj-8988947a",
+      "owner": "Fiona",
+      "definition": "Assets minus liabilities",
+      "formula": "",
+      "unit": "USD",
+      "period": "monthly",
+      "version": 1,
+      "why_different": null,
+      "signed_on": "2026-10-01T09:00:00+00:00"
+     },
+     {
+      "id": "def:perf:NW",
+      "iid": "perf",
+      "code": "NW",
+      "name": "Net worth",
+      "team": "Pete",
+      "project": "Pack perf",
+      "project_id": "prj-1b98e540",
+      "owner": "Pete",
+      "definition": "Assets less fees",
+      "formula": "",
+      "unit": "USD",
+      "period": "monthly",
+      "version": 1,
+      "why_different": null,
+      "signed_on": "2026-10-01T09:00:00+00:00"
+     }
+    ],
+    "difference": "Worded differently: Fiona says \"Assets minus liabilities\"; Pete says \"Assets less fees\"."
+   }
+  ]
+ },
+ "health": {
+  "allowed": true,
+  "sources": [
+   {
+    "code": "administrator",
+    "name": "Fund administrator",
+    "owner": "Mei Tan",
+    "cadence": "daily",
+    "last_received": "2026-10-05T08:00:00+00:00",
+    "never_received": false,
+    "days_late": 3,
+    "is_late": true,
+    "rejected": 0,
+    "stale": 1,
+    "unverified": 0,
+    "open_breaks": 1
+   },
+   {
+    "code": "manager_email",
+    "name": "Manager statements by email",
+    "owner": "Grace Ong",
+    "cadence": "monthly",
+    "last_received": "2026-09-30T08:00:00+00:00",
+    "never_received": false,
+    "days_late": null,
+    "is_late": false,
+    "rejected": 3,
+    "stale": 0,
+    "unverified": 1,
+    "open_breaks": 1
+   }
+  ],
+  "totals": {
+   "late": 1,
+   "rejected": 3,
+   "open_breaks": 2
+  }
+ },
+ "health_none": {
+  "allowed": true,
+  "sources": [
+   {
+    "code": "administrator",
+    "name": "Fund administrator",
+    "owner": "Mei Tan",
+    "cadence": "daily",
+    "last_received": "2026-10-05T08:00:00+00:00",
+    "never_received": false,
+    "days_late": 3,
+    "is_late": true,
+    "rejected": 0,
+    "stale": null,
+    "unverified": null,
+    "open_breaks": null
+   },
+   {
+    "code": "manager_email",
+    "name": "Manager statements by email",
+    "owner": "Grace Ong",
+    "cadence": "monthly",
+    "last_received": "2026-09-30T08:00:00+00:00",
+    "never_received": false,
+    "days_late": null,
+    "is_late": false,
+    "rejected": 3,
+    "stale": null,
+    "unverified": null,
+    "open_breaks": null
+   }
+  ],
+  "totals": {
+   "late": 1,
+   "rejected": 3,
+   "open_breaks": null
+  }
+ },
+ "health_refused": {
+  "sources": [],
+  "totals": {},
+  "allowed": false
+ }
+}

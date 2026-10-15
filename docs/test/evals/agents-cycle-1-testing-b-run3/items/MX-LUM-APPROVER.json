@@ -1,0 +1,246 @@
+{
+  "id": "MX-LUM-APPROVER",
+  "agent": "lumen",
+  "role": "approver",
+  "desc": "A1 approver asks Lumen for net worth by entity at the end of September.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Lumen: context -> model -> tool -> model -> tool -> model -> guard; tools list_gold_tables, query_figure"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": false,
+      "detail": "not from the program: 16,580,000, 22,875,000, 63,950,000"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "3 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "19660 ms",
+      "value": 19660
+    },
+    {
+      "name": "cost",
+      "passed": null,
+      "detail": "no cost rows (program-only route, or log not readable)"
+    }
+  ],
+  "error": null,
+  "latency_ms": 19660,
+  "cost": null,
+  "trace_id": "tr-lumen-413e179b-b92058af",
+  "forgotten": [],
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "net worth",
+        "entity",
+        "entities"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "POST",
+      "path": "/api/v1/consume/chat",
+      "request": {
+        "text": "What was the net worth of each entity at the end of September 2026?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Net worth on 1 Sep 2026, from the rows: Entity B 22,875,000; Evergreen Family Trust 63,950,000; Evergreen Holdings 16,580,000. I cannot provide the net worth of each entity at the end of September 2026, as the available data is for September 1, 2026.",
+        "rules_only": false,
+        "trace_id": "tr-lumen-413e179b-b92058af"
+      },
+      "ms": 19660,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12513,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:51:10+0800",
+      "trace_id": "tr-lumen-413e179b-b92058af"
+    },
+    {
+      "bytes": 11595,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:51:05+0800",
+      "trace_id": "tr-lumen-413e179b-b92058af"
+    },
+    {
+      "bytes": 10553,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:50:59+0800",
+      "trace_id": "tr-lumen-413e179b-b92058af"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-413e179b-b92058af",
+      "status": 200,
+      "runs": [
+        {
+          "id": "e8eb9528a0004cf79ceaddf7631e8f67",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:51:16+00:00",
+          "elapsed_ms": 18328,
+          "steps": 7,
+          "tool_calls": 2,
+          "cost_usd": 0.003333,
+          "trace_id": "tr-lumen-413e179b-b92058af",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-413e179b-b92058af",
+          "at": "2026-10-10T02:51:16+00:00",
+          "run_id": "e8eb9528a0004cf79ceaddf7631e8f67",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 18328,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "3"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 6640,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3077,
+              "tokens_out": 26,
+              "cost_usd": 0.000988
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_gold_tables",
+              "arg_keys": [
+                "project"
+              ],
+              "result_chars": 812,
+              "refused": false,
+              "reason": null,
+              "ms": 47
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3952,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3331,
+              "tokens_out": 76,
+              "cost_usd": 0.001189
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "query_figure",
+              "arg_keys": [
+                "period",
+                "table",
+                "month",
+                "figure",
+                "filters",
+                "project",
+                "currency",
+                "group_by"
+              ],
+              "result_chars": 485,
+              "refused": false,
+              "reason": null,
+              "ms": 172
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 7515,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3554,
+              "tokens_out": 36,
+              "cost_usd": 0.001156
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.003333,
+        "tokens": 10100
+      }
+    }
+  ]
+}

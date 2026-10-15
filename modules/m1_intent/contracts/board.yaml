@@ -1,0 +1,53 @@
+# The board and "back in the room" (M1-17 to M1-23, D-020). Wording and limits marked "chosen" were not given by the
+# spec or a decision: placeholders for Nitin to confirm (autonomous decision A-032).
+vote_options:                 # D-020: voting like a live poll; the four options, no restrictions, the tally is the priority
+  - {id: must, label: Must}
+  - {id: should, label: Should}
+  - {id: could, label: Could}
+  - {id: not_this_time, label: Not this time}
+auto_tick:                    # LI-M1: the vote decides which groups go into the charter, the organiser only breaks ties or removes one
+  priorities: [must, should]  # votes for these count as backing a group
+  min_votes: 1                # a group needs at least this many backing votes
+                              # rule: backing votes (Must + Should) more than the other votes together = ticked; equal = a tie for the organiser
+limits:                       # chosen
+  cluster_name_chars: 80
+  comment_chars: 300
+  comments_per_cluster: 100
+  min_cluster_notes: 2        # a group North makes of fewer notes stays "on its own"
+  note_chars_sent: 400        # how much of one note North reads
+  notes_chars_sent: 15000     # how much North reads in one go; notes beyond it stay "on their own", none is dropped
+wording:                      # chosen
+  split_suffix: "(part)"
+  default_cluster_name: A group of notes
+# What read_together_result(plane, session_id) in domain/together.py returns (read by M1-P09, the charter):
+#   {session_id, stage,
+#    ticked:  [cluster],     # in board order: the clusters the organiser ticked into the charter
+#    carried: [{id, name, note_count}],   # not ticked: "carried to a later session"; never deleted
+#    parked:  [{id, name, note_count, reason, review_date}],  # on the Future shelf (A-058): in neither ticked nor carried,
+#                            # present only when something is parked; so not a charter problem and not in the module 2 hand-off; listed under "Parked for later"
+#    on_its_own_count: int}  # notes in no cluster
+# Shelves (A-058, IC-3b): must, should, good_to_have, future. `could` is the old name of `good_to_have`: it is read as
+# good_to_have everywhere (domain/together.py shelf_id) and shelves are written as good_to_have. The ids in vote_options
+# and in the result's `priority` / `votes` keys stay `could` for now (stored votes are not migrated and the charter
+# reads priority_options in charter.yaml); the rename of those ids is a later contract change. A shelf set by the
+# organiser (POST .../together/clusters/{id}/shelf) is the cluster's `priority` in the result; the shelves and the
+# audit of every move ({by, at, cluster, from, to}) are in together_shelves/<session id>.json (store/together_shelves.py).
+#   cluster = {id, name, note_ids,       # public note ids only: read the notes through NoteStore.board
+#              note_count, agree_count, comment_count,
+#              votes: {must, should, could, not_this_time}, vote_total,   # the tally (counts, never who voted)
+#              priority}                 # the one option with more votes than any other; null on a tie or no votes
+colour:
+  indices: [0, 1, 2, 3, 4, 5, 6, 7]
+  rule: |
+    Each cluster gets a stable colour index (0-7) assigned when the cluster is created (lowest unused index).
+    A restored cluster keeps its original colour. Regrouping a note never changes any cluster's colour.
+    When a cluster with a colour is removed, that colour is reused for the next new cluster.
+    The board response includes the colour for each cluster.
+result_shape:
+  top: [session_id, stage, ticked, carried, parked, on_its_own_count]
+  cluster: [id, name, note_ids, note_count, agree_count, comment_count, votes, vote_total, priority, colour]
+# Together view only (GET .../together, IC-3t), optional on each cluster for the Define screen: `colour` is the board's index
+# (same cluster id, same colour, read from the stored board); `measure_codes` are the pack measure ids the cluster's pack
+# problem lists (the charter's link; [] with no pack problem); `baseline_id` is the id of the company's latest signed module 2
+# baseline outcome, null when none. `governed` is IC-3c's and is not served here.
+together_cluster_extra: [colour, measure_codes, baseline_id]

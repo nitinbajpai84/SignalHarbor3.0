@@ -1,0 +1,48 @@
+{
+  "id": "TAL-15",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "A case that does not exist gives 404, not an invented explanation.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "access",
+      "passed": true,
+      "detail": "status 404, wanted 404"
+    }
+  ],
+  "error": null,
+  "latency_ms": 8,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/cases/does-not-exist/tally"
+  },
+  "expected": {
+    "status": 404
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/cases/does-not-exist/tally",
+      "request": null,
+      "status": 404,
+      "json": {
+        "detail": "That case does not exist."
+      },
+      "ms": 8,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

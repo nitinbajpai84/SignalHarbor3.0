@@ -1,0 +1,28 @@
+# Template family_office@1 -- which KPI an extracted document field feeds, used by
+# GET /api/family-office/evidence to fill each document's `feeds_kpis`. A field is linked to a KPI
+# only where Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json names that input in the KPI's own
+# required_fields or definition. A proposal for the investment analyst to review; it gates nothing.
+template: family_office@1
+status: proposed
+fields:
+  reserve_sgd: {kpis: [K01], unit: SGD, source: "KPI_Catalog.json K01 required_fields 'reserve'"}
+  private_allocation_limit: {kpis: [K08, K10], unit: ratio, source: "KPI_Catalog.json K08 probable_sources 'Mandate'; K10"}
+  single_investment_limit: {kpis: [K08, K09], unit: ratio, source: "KPI_Catalog.json K08 probable_sources 'Mandate'; K09"}
+  stale_threshold: {kpis: [K12], unit: null, source: "KPI_Catalog.json K12 required_fields 'class_threshold'"}
+  cash_sgd: {kpis: [K01, K02], unit: SGD, source: "KPI_Catalog.json K01 required_fields 'cash'; K02 'Include cash once'"}
+  positions_value_sgd: {kpis: [K02], unit: SGD, source: "KPI_Catalog.json K02 required_fields 'carrying_value_sgd'"}
+  account_total_sgd: {kpis: [K02], unit: SGD, source: "KPI_Catalog.json K02 required_fields 'carrying_value_sgd'"}
+  nav: {kpis: [K02], unit: null, source: "KPI_Catalog.json K02 probable_sources 'Fund reports'"}
+  nav_estimate: {kpis: [K07], unit: null, source: "KPI_Catalog.json K07 required_fields 'amount_difference'"}
+  conflicts_with: {kpis: [K07], unit: null, source: "KPI_Catalog.json K07 definition 'open reconciliation issues'"}
+  valuation_date: {kpis: [K12], unit: date, source: "KPI_Catalog.json K12 required_fields 'valuation_date'"}
+  unfunded: {kpis: [K05], unit: null, source: "KPI_Catalog.json K05 required_fields 'opening_unfunded'"}
+  unfunded_delta: {kpis: [K05], unit: null, source: "KPI_Catalog.json K05 required_fields 'unfunded_delta'"}
+  recallable: {kpis: [K05], unit: null, source: "KPI_Catalog.json K05 definition 'recallable adjustments'"}
+  outside_commitment_fee: {kpis: [K05], unit: null, source: "KPI_Catalog.json K05 definition 'Separate fees outside commitment'"}
+  lookthrough_coverage: {kpis: [K09], unit: ratio, source: "KPI_Catalog.json K09 required_fields 'coverage'"}
+  amount: {kpis: [K01, K04], unit: null, source: "KPI_Catalog.json K04 required_fields 'amount'"}
+  due_date: {kpis: [K01, K04], unit: date, source: "KPI_Catalog.json K04 required_fields 'due_date'"}
+  cash_inflow: {kpis: [K01], unit: null, source: "KPI_Catalog.json K01 required_fields 'inflows'"}
+  estimated_distribution: {kpis: [K01], unit: null, source: "KPI_Catalog.json K01 caveat 'Estimated distributions excluded from downside'"}
+  concentration_exemption: {kpis: [K08], unit: null, source: "KPI_Catalog.json K08 required_fields 'exception_status'"}

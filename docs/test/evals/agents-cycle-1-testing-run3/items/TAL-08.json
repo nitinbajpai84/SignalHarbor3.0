@@ -1,0 +1,182 @@
+{
+  "id": "TAL-08",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P02 revision - Fund A 10,000,000 issued, 10,180,000 known now, +180,000, over the 100,000 materiality.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 100000"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 3498,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 2,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Evergreen Growth I|type=revision}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "180000",
+      "10180000",
+      "10000000",
+      "100000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/cases/23714e7b-b326-4f56-8bf9-2d3e5a71bb8e/ask",
+      "request": {
+        "question": "What changed and why does it matter?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "23714e7b-b326-4f56-8bf9-2d3e5a71bb8e",
+        "kind": "revision",
+        "summary": "The manager-reported valuation of Evergreen Growth I for 2026-09-30 is now 10,180,000 USD, against 10,000,000 USD used in the issued report: a manager-reported valuation difference of 180,000 USD. Mei Chen confirmed the amended statement on 7 Oct 2026. Official NAV is untouched. The report September investment report, issued 2026-10-03, used the earlier value and stays as issued.",
+        "findings": [
+          {
+            "key": "bridge",
+            "text": "Value used in the issued report: 10,000,000 USD.",
+            "figure": "10,000,000 USD",
+            "chips": []
+          },
+          {
+            "key": "bridge",
+            "text": "Manager-reported valuation now: 10,180,000 USD.",
+            "figure": "10,180,000 USD",
+            "chips": [
+              {
+                "label": "Statement: Evergreen Growth I statement 30 Sep 2026 (amended)",
+                "kind": "document",
+                "id": "520aebd4-612c-4c35-ad9d-551abe75b17f"
+              }
+            ]
+          },
+          {
+            "key": "bridge",
+            "text": "Manager-reported valuation difference: 180,000 USD.",
+            "figure": "180,000 USD",
+            "chips": [
+              {
+                "label": "Statement: Evergreen Growth I statement 30 Sep 2026 (amended)",
+                "kind": "document",
+                "id": "520aebd4-612c-4c35-ad9d-551abe75b17f"
+              }
+            ]
+          },
+          {
+            "key": "chain",
+            "text": "Valuation for 30 Sep 2026 of 10,180,000 USD, received 7 Oct 2026, status pending, from Evergreen Growth I statement 30 Sep 2026 (amended).",
+            "figure": "10,180,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "be09f6cf-364a-48a5-a296-d59355aeca55"
+              },
+              {
+                "label": "Evergreen Growth I statement 30 Sep 2026 (amended)",
+                "kind": "document",
+                "id": "520aebd4-612c-4c35-ad9d-551abe75b17f"
+              }
+            ]
+          },
+          {
+            "key": "chain",
+            "text": "Valuation for 30 Sep 2026 of 10,180,000 USD, received 7 Oct 2026, status confirmed, from Evergreen Growth I statement 30 Sep 2026 (amended).",
+            "figure": "10,180,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "53490c29-e39b-45e5-bec6-bbb6d5710f12"
+              },
+              {
+                "label": "Evergreen Growth I statement 30 Sep 2026 (amended)",
+                "kind": "document",
+                "id": "520aebd4-612c-4c35-ad9d-551abe75b17f"
+              }
+            ]
+          },
+          {
+            "key": "report",
+            "text": "September investment report, period ending 30 Sep 2026, issued 3 Oct 2026, used 10,000,000 USD; it stays as issued.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Case owner",
+            "text": "Operations has confirmed the reading: send the explanation for check; the issued report stays as issued."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "document 520aebd4-612c-4c35-ad9d-551abe75b17f (Evergreen Growth I statement 30 Sep 2026 (amended))",
+          "extracted field 91f6bd5b-bd59-488a-b99c-2db354ded2fb",
+          "extracted field aa1bd848-1c7c-4ea5-9690-35d6c1d9a0f4",
+          "extracted field 61cde039-a2b7-4289-a3b4-91c73f08ba25",
+          "extracted field 419b54e6-b5a8-46b7-94d6-0aeb4273676c",
+          "valuation be09f6cf-364a-48a5-a296-d59355aeca55",
+          "valuation 53490c29-e39b-45e5-bec6-bbb6d5710f12",
+          "report version b4c2c0aa-2ff5-4766-ac3b-0ee881a26309"
+        ],
+        "worded_by": "rules",
+        "question": "What changed and why does it matter?",
+        "answer": "I cannot tell that from the records of this case. What they show: The manager-reported valuation of Evergreen Growth I for 2026-09-30 is now 10,180,000 USD, against 10,000,000 USD used in the issued report: a manager-reported valuation difference of 180,000 USD. Mei Chen confirmed the amended statement on 7 Oct 2026. Official NAV is untouched. The report September investment report, issued 2026-10-03, used the earlier value and stays as issued.",
+        "answer_worded_by": "rules",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 3450,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12810,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:49:01+0800"
+    },
+    {
+      "bytes": 12343,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:49:00+0800"
+    }
+  ]
+}

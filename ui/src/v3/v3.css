@@ -1,0 +1,168 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap");
+/* Legacy names kept for other folders. --green is NOT green here: it is the old name for the navy action colour,
+   so the old app's green (styles/legacy/sh.css) never reaches a 3.0 page. Green appears only as --done. */
+:root,.v3,.v3c{--paper:#F4F6F9;--ink:#0E1A2B;--green:#1B3A5C;--amber:#B7791F;--card:#FFFFFF;--line:#DCE3EB;--mute:#5A6878;--primary:#1B3A5C;--primary-dark:#12293F;--primary-soft:#E6ECF3;--accent:#B08D57;--accent-soft:#F3ECE0;--pos:#1E7B4F;--pos-soft:#E3F1EA;--neg:#B23B32;--neg-soft:#F8E6E4;--warn:#B7791F;--warn-soft:#FBF1DF;--font-head:Fraunces,Georgia,serif;--font-body:'Instrument Sans','Segoe UI',sans-serif;--font-num:'JetBrains Mono',monospace}
+.v3{
+  min-height:100vh;box-sizing:border-box;background:var(--paper);color:var(--ink);font-family:var(--font-body);display:flex;flex-direction:column}
+.v3 a{color:var(--act);text-decoration:none}.v3 a:hover{color:var(--act-dark)}
+.v3 h1,.v3 h2,.v3 .brand{font-family:var(--font-head);font-weight:500;margin:0}
+.v3 .num{font-family:var(--font-num)}
+.v3-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:18px 40px;border-bottom:1px solid var(--line)}
+.v3-top .brand{font-size:22px;font-weight:600}
+.v3-nav{display:flex;gap:6px;flex-wrap:wrap}
+.v3-nav a{padding:8px 14px;border-radius:999px;font-size:14px;font-weight:500;color:var(--ink)}
+.v3-nav a[aria-current="page"]{background:var(--act);color:var(--card)}
+.v3-main{display:flex;flex-wrap:wrap;gap:32px;padding:36px 40px 48px;align-items:flex-start}
+.v3-col{min-width:0;display:flex;flex-direction:column;gap:14px}
+.v3-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.v3-card.need{border-left:4px solid var(--needs)}
+.v3-kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--info)}
+.v3-card p{margin:0;font-size:17px;line-height:1.4}
+.v3-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.v3 button{font:500 14px var(--font-body);padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.v3 button.go{background:var(--act);color:var(--card);border:0;font-weight:600}
+.v3 button:disabled{opacity:.5;cursor:default}
+.v3 :focus-visible{outline:2px solid var(--act);outline-offset:2px}
+.v3 input,.v3 textarea{flex:1;min-width:0;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);font:15px var(--font-body);color:var(--ink)}
+.v3-note{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 32px;display:flex;flex-direction:column;gap:18px}
+.v3-note p{margin:0;font-size:18px;line-height:1.55}
+.v3-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.v3-fig{background:var(--paper);border-radius:12px;padding:14px 16px}
+.v3-fig small{display:block;font-size:12px;color:var(--info)}.v3-fig .num{font-size:24px}
+.v3-link{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:var(--ink)!important}
+.v3-link b{display:flex;justify-content:space-between;font-size:16px}
+.v3-link small{display:block;font-size:13px;color:var(--info);margin-top:4px}
+.v3-mute{font-size:13px;color:var(--info);margin:0}
+.v3-err{color:var(--problem);font-size:14px;margin:0}
+.v3-tl{flex:999 1 640px;min-width:0;display:flex;flex-direction:column;list-style:none;margin:0;padding:0}
+.v3-ev{display:flex;gap:18px}
+.v3-rail{width:28px;display:flex;flex-direction:column;align-items:center}
+.v3-rail:after{content:"";flex:1;width:2px;background:var(--line)}
+.v3-ev:last-child .v3-rail:after{display:none}
+/* Dots: one meaning each. A chip dot is something Harbor offered. */
+.v3-dot{width:12px;height:12px;border-radius:50%;background:var(--info);margin-top:8px;flex:none;box-sizing:border-box}
+.v3-dot.chip,.v3-dot.harbor{background:var(--harbor)}
+.v3-dot.done{background:var(--done)}.v3-dot.needs{background:var(--needs)}.v3-dot.problem{background:var(--problem)}
+.v3-dot.info{background:transparent;border:2px solid var(--info);opacity:.55}
+/* Numbered step badge: plain = finished, amber = still waits on a person. */
+.v3-badge{width:28px;height:28px;border-radius:50%;background:var(--done);color:var(--card);font:600 12px var(--font-num);display:flex;align-items:center;justify-content:center;flex:none}
+.v3-badge.amber{background:var(--needs)}
+/* In a conversation the badge is an avatar: Harbor in brass, the person in navy. Prefer .v3-av below in new code. */
+.v3-ev:has(>.v3-body>small:first-child) .v3-badge{background:var(--harbor);font-family:var(--font-body)}
+.v3-ev:has(>.v3-body>small:first-child) .v3-badge.amber{background:var(--act)}
+.v3-av{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;font:600 12px var(--font-body);color:var(--card);background:var(--act)}
+.v3-av.harbor{background:var(--harbor)}.v3-av.person{background:var(--act)}
+.v3-body{flex:1;min-width:0;padding-bottom:26px;display:flex;flex-direction:column;gap:8px;max-width:760px}
+.v3-bubble{margin:0;font-size:17px;line-height:1.5;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;max-width:640px}
+.v3-chips{display:flex;flex-wrap:wrap;gap:8px}
+.v3-chips span{padding:7px 12px;border-radius:999px;background:var(--card);border:1px solid var(--harbor);color:var(--ink);font-size:13px}
+.v3-dec{background:var(--card);border:1px solid var(--needs);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+.v3-dec.open3{border:2px solid var(--needs)}
+.v3-dec dl{margin:0;display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 14px;font-size:15px;line-height:1.45}
+.v3-dec dt{color:var(--info)}.v3-dec dd{margin:0}
+.v3-ok{padding:8px 14px;border-radius:10px;background:var(--done-soft);color:var(--done);font-size:14px;font-weight:600}
+.v3-checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.v3-checks div{background:var(--paper);border-radius:12px;padding:12px 14px}.v3-checks div.bad{background:var(--problem-soft)}
+.v3-checks small{display:block;font-size:12px;color:var(--info)}.v3-checks .num{font-size:20px}
+.v3-compose{margin-top:28px;display:flex;gap:10px;align-items:center;max-width:806px}
+.v3-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.v3-side h2{font-size:20px}
+.v3-side ol{margin:0;padding-left:20px;font-size:14px;line-height:1.7}
+.v3-dark{background:var(--ink);color:var(--paper);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.v3-dark p{margin:0;font-size:14px;line-height:1.5;color:var(--line)}.v3-dark b{color:var(--paper)}
+@media (max-width:640px){.v3-top,.v3-main{padding-left:16px;padding-right:16px}.v3-dec dl{grid-template-columns:1fr}}
+.v3-brandrow{display:flex;align-items:center;gap:14px}
+.v3-logo{width:28px;height:28px;border-radius:8px;background:var(--act);display:inline-block}
+.v3-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:0 40px;border-bottom:1px solid var(--line)}
+.v3-tabs a{padding:12px 14px;font-size:14px;font-weight:500;color:var(--info);border-bottom:2px solid transparent}
+.v3-tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--act)}
+.v3-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.v3-head h1{font-size:34px}.v3-head .num{font-size:13px;color:var(--info)}.v3-head .num.needs{color:var(--needs)}
+.v3 button.dashed{border:1px dashed var(--info);border-radius:14px;padding:14px 16px;font-size:15px;text-align:left}
+@media (max-width:640px){.v3-tabs{padding:0 16px}}
+
+.v3-bgroup{border-top:1px solid var(--line);padding-top:10px}
+.v3-bgroup h3{margin:0 0 6px;font-size:15px;font-family:var(--font-head);font-weight:500}
+.v3-bgroup dl{display:flex;flex-direction:column;gap:2px;margin:0}
+.v3-bline{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:start;padding:5px 0}
+.v3-bline dt{color:var(--info);font-size:13px}
+.v3-bline dd{margin:0;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;font-size:14px;flex-wrap:wrap}
+.v3-bline dd textarea{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+.v3-pencil{border:0;background:transparent;color:var(--act);padding:2px 4px;cursor:pointer;flex:none}
+.v3-sug{margin-left:6px;font-size:11px;padding:1px 6px;border-radius:999px;background:var(--harbor-soft);color:var(--harbor)}
+.v3-gap{margin:0;font-size:13px;color:var(--needs)}
+@media (max-width:640px){.v3-bline{grid-template-columns:1fr}}
+.v3-bline.changed{background:var(--act-soft);border-radius:8px;padding:5px 6px}
+.v3-new{margin-left:6px;font-size:11px;padding:1px 6px;border-radius:999px;background:var(--act);color:var(--paper)}
+.v3-updating{margin:0;padding:8px 10px;border-radius:10px;background:var(--harbor-soft);color:var(--ink);font-size:13px;border-left:3px solid var(--harbor)}
+.v3-talk{flex:1 1 520px;max-width:720px;min-width:0}
+.v3-main:has(.v3-talk){gap:0;flex-wrap:nowrap}
+.v3-main:has(.v3-talk) .v3-side{flex:1 1 360px;min-width:360px;position:sticky;top:16px}
+.v3-record dl{display:grid;grid-template-columns:180px minmax(0,1fr);gap:6px 10px;margin:0;font-size:14px}
+.v3-record dt{color:var(--info)}
+.v3-record dd{margin:0}
+.v3-split{flex:0 0 14px;align-self:stretch;min-height:400px;cursor:col-resize;position:relative;margin:0 9px}
+.v3-split::before{content:"";position:absolute;left:6px;top:0;bottom:0;width:2px;border-radius:2px;background:var(--line)}
+.v3-split:hover::before,.v3-split:focus-visible::before{background:var(--act);width:4px;left:5px}
+.v3-split:focus-visible{outline:none}
+@media (max-width:900px){.v3-main:has(.v3-talk){flex-wrap:wrap;gap:24px}.v3-split{display:none}.v3-talk{flex:1 1 100%!important}.v3-main:has(.v3-talk) .v3-side{min-width:0;position:static}}
+.v3-threadrow{display:flex;gap:8px;align-items:stretch}
+.v3-threadrow .v3-link{flex:1 1 auto;min-width:0}
+.v3-discard{border:1px solid var(--line);background:transparent;color:var(--info);border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+.v3-discard:hover{color:var(--problem);border-color:var(--problem)}
+.v3-discard.small{align-self:center;padding:6px 10px;font-size:13px}
+.v3-discard-ask{display:flex;flex-direction:column;gap:8px;max-width:360px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:13px}
+.v3-discard-ask input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+.v3-discard-ask .danger{background:var(--problem);color:var(--card);border:0;border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer}
+.v3-home{display:inline-flex;align-items:center;gap:10px;color:inherit}
+/* One style for the whole app (15 Oct): the Consume look on a light, corporate palette. */
+.v3-top{background:var(--card);box-shadow:0 1px 0 var(--line)}
+.v3-nav a:hover:not([aria-current="page"]){background:var(--act-soft)}
+.v3-main{max-width:1360px;width:100%;box-sizing:border-box;margin:0 auto;padding:30px 40px 48px}
+.v3 h1{font-size:34px;letter-spacing:-.01em}
+.v3-card,.v3-note{border-radius:18px;padding:22px 26px;box-shadow:var(--lift)}
+.v3-kicker{font-weight:500}
+.v3-card.need .v3-kicker{color:var(--needs)}
+.v3 button{border-radius:12px;background:var(--card)}
+.v3 button.go:hover:not(:disabled){background:var(--act-dark)}
+.v3 button.danger{background:var(--problem);color:var(--card);border:0}
+.v3 input,.v3 textarea{border-radius:14px}
+.v3 input:focus,.v3 textarea:focus{border-color:var(--act);outline:none}
+
+/* Shared meaning pills: <span class="v3-pill needs">2 waiting</span>. */
+.v3-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--info-soft);color:var(--info)}
+.v3-pill.needs{background:var(--needs-soft);color:var(--needs)}
+.v3-pill.done{background:var(--done-soft);color:var(--done)}
+.v3-pill.problem{background:var(--problem-soft);color:var(--problem)}
+.v3-pill.harbor{background:var(--harbor-soft);color:var(--harbor)}
+.v3-pill.info{background:var(--info-soft);color:var(--info)}
+/* Uppercase small label, the Consume way. */
+.v3-label{margin:0;font:500 13px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--info)}
+
+/* Phone tab bar: the nav moves to the bottom. Hidden bits on desktop. */
+.v3-nav .v3-ico,.v3-nav .v3-only-phone{display:none}
+.v3-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:var(--needs);color:var(--card);font:600 11px var(--font-body)}
+@media (max-width:719px){
+  .v3{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+  .v3-top{padding:12px 16px;gap:10px}
+  .v3-top .brand{font-size:19px}
+  .v3-top>.v3-mute,.v3-brandrow>.v3-mute{display:none}
+  .v3-main{padding:18px 16px 24px}
+  .v3 h1{font-size:28px}
+  .v3-card,.v3-note{padding:18px;border-radius:18px}
+  .v3-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;flex-wrap:nowrap;gap:0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+  .v3-nav a{flex:1 1 0;min-width:0;min-height:56px;padding:4px 2px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--info);position:relative}
+  .v3-nav a[aria-current="page"]{background:transparent;color:var(--act);font-weight:600}
+  .v3-nav a:hover:not([aria-current="page"]){background:transparent}
+  .v3-nav .v3-ico{display:block}
+  .v3-nav .v3-only-phone{display:flex}
+  .v3-nav .v3-count{position:absolute;top:4px;left:calc(50% + 6px)}
+  /* Consume's own section tabs sit just above the main bar. */
+  .v3 .v3c-tabs{bottom:calc(64px + env(safe-area-inset-bottom));padding-bottom:6px}
+  .v3:has(.v3c-tabs) .v3c{padding-bottom:76px}
+}
+/* Colour means one thing everywhere (see docs/v3/COLOURS.md). Use these names, never a raw colour. */
+:root,.v3,.v3c{--act:#1B3A5C;--act-dark:#12293F;--act-soft:#E6ECF3;--needs:#B7791F;--needs-soft:#FBF1DF;--done:#1E7B4F;--done-soft:#E3F1EA;
+  --problem:#B23B32;--problem-soft:#F8E6E4;--harbor:#B08D57;--harbor-soft:#F3ECE0;--info:#5A6878;--info-soft:#EEF2F6;
+  --lift:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent)}
+:root,.v3,.v3c{--on-fill:#FFFFFF;--lift-sm:0 1px 2px rgba(14,26,43,.05);--lift-lg:0 4px 16px rgba(14,26,43,.10);--print-ink:#000000;--print-line:#999999;--print-soft:#EEEEEE}

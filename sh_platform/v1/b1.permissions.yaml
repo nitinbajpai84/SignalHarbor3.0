@@ -1,0 +1,4 @@
+# B1 Architect design. Handlers: POST only for the architect seat (analyst, company_admin) and a signed SOW.
+routes:
+  GET /api/v1/build/{iid}/design: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}
+  POST /api/v1/build/{iid}/design: {roles: [company_admin, analyst]}

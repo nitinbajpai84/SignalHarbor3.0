@@ -1,0 +1,900 @@
+{
+  "id": "MEM-10",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "Context map - after a talk with Span, the Map page's conversations graph (GET /api/v1/memory/graph, MEM2a) answers with nodes and edges.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 5206,
+  "cost": {
+    "calls": 2,
+    "tokens": 5411,
+    "usd": 0.001782,
+    "estimated": false
+  },
+  "trace_id": "tr-span-3ae73a59-589ea152",
+  "forgotten": [
+    "analyst: summary s-2253f6ae"
+  ],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/memory/graph"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "There isn't a gold table that specifically holds cash by entity. The gold layer has tables for a monthly benchmark report, a daily cash report, and monthly holdings.\n\nThe data team can add new tables to the data model if needed.",
+        "rules_only": false,
+        "trace_id": "tr-span-3ae73a59-589ea152"
+      },
+      "ms": 5155,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/graph",
+      "request": null,
+      "status": 200,
+      "json": {
+        "built_at": "2026-10-10T01:55:52+00:00",
+        "nodes": [
+          {
+            "id": "person:e5b837eed55a9e44",
+            "type": "person",
+            "label": "Mei Chen"
+          },
+          {
+            "id": "agent:north",
+            "type": "agent",
+            "label": "North"
+          },
+          {
+            "id": "convo:c-2c05f30323590544",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-3942cfa7",
+            "type": "project",
+            "label": "Here is how we produce the monthly investment report today"
+          },
+          {
+            "id": "intent:ini-c85c8f53a5bdff1f16d1d947def750cb",
+            "type": "intent",
+            "label": "Intent ini-c85c8f53a5bdff1f16d1d947def750cb"
+          },
+          {
+            "id": "convo:c-8fa2233ebfe00362",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ff61fa5b",
+            "type": "project",
+            "label": "Draft the swim lane for this process"
+          },
+          {
+            "id": "intent:ini-1c989a947c13f08ae2a765b15bed0d66",
+            "type": "intent",
+            "label": "Intent ini-1c989a947c13f08ae2a765b15bed0d66"
+          },
+          {
+            "id": "convo:c-c1f2088cf7d7accc",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ec0387a1",
+            "type": "project",
+            "label": "Draft the intent from this note"
+          },
+          {
+            "id": "intent:ini-87c057b2475e43f729c0502782a7a320",
+            "type": "intent",
+            "label": "Intent ini-87c057b2475e43f729c0502782a7a320"
+          },
+          {
+            "id": "convo:c-5d58ec883199052a",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-8ddd2a76",
+            "type": "project",
+            "label": "Draft the intent and the process map"
+          },
+          {
+            "id": "intent:ini-d1f33002427b824573e6a0b7cf544182",
+            "type": "intent",
+            "label": "Intent ini-d1f33002427b824573e6a0b7cf544182"
+          },
+          {
+            "id": "convo:c-e242bdf437ef2e9d",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-78a0c85e",
+            "type": "project",
+            "label": "Draft the swim lane from this note"
+          },
+          {
+            "id": "intent:ini-894e8c44f879077027760f9209160967",
+            "type": "intent",
+            "label": "Intent ini-894e8c44f879077027760f9209160967"
+          },
+          {
+            "id": "convo:c-2784e38a1cedcf5b",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-181f38a4",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD for the CIO by the 3rd business day of "
+          },
+          {
+            "id": "intent:ini-43570ed65b2dbdb58230b4c7b47c66cc",
+            "type": "intent",
+            "label": "Intent ini-43570ed65b2dbdb58230b4c7b47c66cc"
+          },
+          {
+            "id": "convo:c-7c010d562df69809",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-0473eeb2",
+            "type": "project",
+            "label": "Better report"
+          },
+          {
+            "id": "intent:ini-ea0abe0f72cd013ac20b687130002a8c",
+            "type": "intent",
+            "label": "Intent ini-ea0abe0f72cd013ac20b687130002a8c"
+          },
+          {
+            "id": "convo:c-0990118af4b68ff8",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-99b6b1e7",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-f08618befc405fdd6ba644cd91d28492",
+            "type": "intent",
+            "label": "Intent ini-f08618befc405fdd6ba644cd91d28492"
+          },
+          {
+            "id": "person:b2d271bfd8d5a1b2",
+            "type": "person",
+            "label": "Daniel Foo"
+          },
+          {
+            "id": "convo:c-307604103ab473e1",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-56168975",
+            "type": "project",
+            "label": "Draft the intent and for each step list the control and the exception"
+          },
+          {
+            "id": "intent:ini-124e8f0cfa92c4ed33e2888b9383c6a3",
+            "type": "intent",
+            "label": "Intent ini-124e8f0cfa92c4ed33e2888b9383c6a3"
+          },
+          {
+            "id": "convo:c-4b94a0c97a01eb84",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-7f009ade",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-1e27a26c58af1f8f173af00a948d4393",
+            "type": "intent",
+            "label": "Intent ini-1e27a26c58af1f8f173af00a948d4393"
+          },
+          {
+            "id": "convo:c-81cd880daf9e2da7",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-011776f4",
+            "type": "project",
+            "label": "Here is the Kestrel Ridge newsletter"
+          },
+          {
+            "id": "intent:ini-e14e261f8cb0774ab669bfa1d3d9f46a",
+            "type": "intent",
+            "label": "Intent ini-e14e261f8cb0774ab669bfa1d3d9f46a"
+          },
+          {
+            "id": "person:86190d80deeb9f13",
+            "type": "person",
+            "label": "Sofia Reyes"
+          },
+          {
+            "id": "agent:span",
+            "type": "agent",
+            "label": "Span"
+          },
+          {
+            "id": "convo:c-2a2dc0364ce0ea9c",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "project:prj-30b9332c",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD"
+          },
+          {
+            "id": "table:gold_investment_report_cash_daily",
+            "type": "table",
+            "label": "Investment report cash daily"
+          },
+          {
+            "id": "table:gold_investment_report_holdings_monthly",
+            "type": "table",
+            "label": "Investment report holdings monthly"
+          },
+          {
+            "id": "table:bronze_administrator_positions",
+            "type": "table",
+            "label": "Administrator positions"
+          },
+          {
+            "id": "table:bronze_trading_export_positions",
+            "type": "table",
+            "label": "Trading export positions"
+          },
+          {
+            "id": "convo:c-ab156442a59314cb",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "convo:c-400b9c49279dca12",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "convo:c-43bc301e32ad4810",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "table:gold_side_payments",
+            "type": "table",
+            "label": "Side payments"
+          },
+          {
+            "id": "table:gold_kestrel_fee_rebate",
+            "type": "table",
+            "label": "Kestrel fee rebate"
+          },
+          {
+            "id": "table:gold_override_cash",
+            "type": "table",
+            "label": "Override cash"
+          },
+          {
+            "id": "table:gold_exfil",
+            "type": "table",
+            "label": "Exfil"
+          },
+          {
+            "id": "table:gold_investment_report_copy",
+            "type": "table",
+            "label": "Investment report copy"
+          },
+          {
+            "id": "agent:lumen",
+            "type": "agent",
+            "label": "Lumen"
+          },
+          {
+            "id": "person:c87136d17d137ab4",
+            "type": "person",
+            "label": "Raj Patel"
+          },
+          {
+            "id": "convo:c-3bb81158bf964c98",
+            "type": "conversation",
+            "label": "Talk with Lumen"
+          },
+          {
+            "id": "convo:c-4a8d263015f3183b",
+            "type": "conversation",
+            "label": "Talk with Lumen"
+          },
+          {
+            "id": "agent:tally",
+            "type": "agent",
+            "label": "Tally"
+          },
+          {
+            "id": "convo:c-c2e834fc371bf1bd",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:45e9591c-3e99-4d89-b8fc-e7f14995452b",
+            "type": "case",
+            "label": "Case 45e9591c-3e99-4d89-b8fc-e7f14995452b"
+          },
+          {
+            "id": "convo:c-ba7b9ef5c43abe44",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:1e6c4776-b028-443a-8dfc-52e73691518c",
+            "type": "case",
+            "label": "Case 1e6c4776-b028-443a-8dfc-52e73691518c"
+          },
+          {
+            "id": "convo:c-7a52180bd6dcb85b",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:42b22af4-17bf-42f1-ad01-e486ffbaf5f8",
+            "type": "case",
+            "label": "Case 42b22af4-17bf-42f1-ad01-e486ffbaf5f8"
+          },
+          {
+            "id": "convo:c-7d921edcd8663678",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:c0f665ef-06ba-408d-8a8c-854423b44c1a",
+            "type": "case",
+            "label": "Case c0f665ef-06ba-408d-8a8c-854423b44c1a"
+          },
+          {
+            "id": "summary:s-2253f6ae",
+            "type": "summary",
+            "label": "Administrator positions, Investment report cash daily, Exfil",
+            "summary": {
+              "text": "With Span about Administrator positions, Investment report cash daily, Exfil.",
+              "agent_name": "Span",
+              "who": "Mei Chen",
+              "at": "2026-10-10T01:55:52+00:00",
+              "decisions": [],
+              "open": [],
+              "prefs": [],
+              "topics": [],
+              "source": {
+                "agent": "span",
+                "talk": "400b9c49279dca12",
+                "from": "2026-10-10T01:46:23+00:00",
+                "to": "2026-10-10T01:55:52+00:00",
+                "turns": 8
+              },
+              "superseded": false,
+              "id": "s-2253f6ae"
+            }
+          }
+        ],
+        "edges": [
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2c05f30323590544",
+            "to": "project:prj-3942cfa7",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2c05f30323590544",
+            "to": "intent:ini-c85c8f53a5bdff1f16d1d947def750cb",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-8fa2233ebfe00362",
+            "to": "project:prj-ff61fa5b",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-8fa2233ebfe00362",
+            "to": "intent:ini-1c989a947c13f08ae2a765b15bed0d66",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-c1f2088cf7d7accc",
+            "to": "project:prj-ec0387a1",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-c1f2088cf7d7accc",
+            "to": "intent:ini-87c057b2475e43f729c0502782a7a320",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-5d58ec883199052a",
+            "to": "project:prj-8ddd2a76",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-5d58ec883199052a",
+            "to": "intent:ini-d1f33002427b824573e6a0b7cf544182",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-e242bdf437ef2e9d",
+            "to": "project:prj-78a0c85e",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-e242bdf437ef2e9d",
+            "to": "intent:ini-894e8c44f879077027760f9209160967",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2784e38a1cedcf5b",
+            "to": "project:prj-181f38a4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2784e38a1cedcf5b",
+            "to": "intent:ini-43570ed65b2dbdb58230b4c7b47c66cc",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7c010d562df69809",
+            "to": "project:prj-0473eeb2",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-7c010d562df69809",
+            "to": "intent:ini-ea0abe0f72cd013ac20b687130002a8c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-0990118af4b68ff8",
+            "to": "project:prj-99b6b1e7",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-0990118af4b68ff8",
+            "to": "intent:ini-f08618befc405fdd6ba644cd91d28492",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-307604103ab473e1",
+            "to": "project:prj-56168975",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-307604103ab473e1",
+            "to": "intent:ini-124e8f0cfa92c4ed33e2888b9383c6a3",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-4b94a0c97a01eb84",
+            "to": "project:prj-7f009ade",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-4b94a0c97a01eb84",
+            "to": "intent:ini-1e27a26c58af1f8f173af00a948d4393",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-81cd880daf9e2da7",
+            "to": "project:prj-011776f4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-81cd880daf9e2da7",
+            "to": "intent:ini-e14e261f8cb0774ab669bfa1d3d9f46a",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_holdings_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:bronze_administrator_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:bronze_trading_export_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "person:86190d80deeb9f13",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-ab156442a59314cb",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:bronze_administrator_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_investment_report_holdings_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "person:b2d271bfd8d5a1b2",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-43bc301e32ad4810",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-43bc301e32ad4810",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_side_payments",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_kestrel_fee_rebate",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-ab156442a59314cb",
+            "to": "table:gold_override_cash",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_exfil",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_copy",
+            "type": "mentions"
+          },
+          {
+            "from": "person:b2d271bfd8d5a1b2",
+            "to": "agent:lumen",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-3bb81158bf964c98",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:c87136d17d137ab4",
+            "to": "agent:lumen",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-4a8d263015f3183b",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-c2e834fc371bf1bd",
+            "to": "case:45e9591c-3e99-4d89-b8fc-e7f14995452b",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-ba7b9ef5c43abe44",
+            "to": "case:1e6c4776-b028-443a-8dfc-52e73691518c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7a52180bd6dcb85b",
+            "to": "case:42b22af4-17bf-42f1-ad01-e486ffbaf5f8",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7d921edcd8663678",
+            "to": "case:c0f665ef-06ba-408d-8a8c-854423b44c1a",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "summary:s-2253f6ae",
+            "type": "talked_with"
+          },
+          {
+            "from": "summary:s-2253f6ae",
+            "to": "convo:c-400b9c49279dca12",
+            "type": "refers_to"
+          },
+          {
+            "from": "summary:s-2253f6ae",
+            "to": "table:bronze_administrator_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "summary:s-2253f6ae",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "summary:s-2253f6ae",
+            "to": "table:gold_exfil",
+            "type": "mentions"
+          }
+        ]
+      },
+      "ms": 52,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "\"conversation\"",
+          "\"edges\""
+        ]
+      },
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 10348,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:55:50+0800",
+      "trace_id": "tr-span-3ae73a59-589ea152"
+    },
+    {
+      "bytes": 9884,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:55:48+0800",
+      "trace_id": "tr-span-3ae73a59-589ea152"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-3ae73a59-589ea152",
+      "status": 200,
+      "runs": [
+        {
+          "id": "9113eeff4e534f059f1d4c8d429980de",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:55:52+00:00",
+          "elapsed_ms": 4890,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.001782,
+          "trace_id": "tr-span-3ae73a59-589ea152",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-3ae73a59-589ea152",
+          "at": "2026-10-10T01:55:52+00:00",
+          "run_id": "9113eeff4e534f059f1d4c8d429980de",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 4890,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "3"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2296,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2622,
+              "tokens_out": 23,
+              "cost_usd": 0.000844
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "starts_with",
+                "layer"
+              ],
+              "result_chars": 222,
+              "refused": false,
+              "reason": null,
+              "ms": 78
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 2515,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2717,
+              "tokens_out": 49,
+              "cost_usd": 0.000938
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.0017820000000000002,
+        "tokens": 5411
+      }
+    }
+  ]
+}

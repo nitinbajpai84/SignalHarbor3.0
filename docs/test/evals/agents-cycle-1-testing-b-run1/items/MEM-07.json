@@ -1,0 +1,51 @@
+{
+  "id": "MEM-07",
+  "agent": "memory",
+  "role": "participant",
+  "desc": "Company memory is written only by the administrator and analysts - a participant gets 403.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "access",
+      "passed": true,
+      "detail": "status 403, wanted 403"
+    }
+  ],
+  "error": null,
+  "latency_ms": 5,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/memory/company"
+  },
+  "expected": {
+    "status": 403
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/memory/company",
+      "request": {
+        "text": "Eval check: this should not be stored"
+      },
+      "status": 403,
+      "json": {
+        "error": "forbidden",
+        "message": "Only the company administrator or the data team can do this; Mei Chen or Anita Rao or Leo Park can."
+      },
+      "ms": 5,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

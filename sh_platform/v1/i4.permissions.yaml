@@ -1,0 +1,7 @@
+# Card I4: intent of work page, sign, download. Handlers also check the seat (sh_platform/v1/seats.py).
+routes:
+  GET /api/v1/intents/{iid}/sow: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PUT /api/v1/intents/{iid}/sow: {roles: [participant, owner, approver, sponsor, analyst, company_admin]}  # handler: the raiser or sponsor, draft only
+  POST /api/v1/intents/{iid}/sow/sign: {roles: [participant, owner, approver, sponsor, analyst, company_admin]}  # handler: the raiser or sponsor, confirm, no open unclear
+  POST /api/v1/intents/{iid}/sow/send-back: {roles: [participant, owner, approver, sponsor, analyst, company_admin]}  # handler: the raiser or sponsor
+  GET /api/v1/intents/{iid}/sow/download: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

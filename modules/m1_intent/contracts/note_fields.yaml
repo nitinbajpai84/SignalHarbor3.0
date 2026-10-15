@@ -1,0 +1,48 @@
+# The note form (M1-11): the fields of a note, in order. The form, the API and North's pre-fill all follow this file.
+# kind: text | number | labels. `person_only`: only the person fills it, North never proposes it (the belief number).
+# `guess`: shown and stored as a guess. `ask`: what North asks when the person has not said it yet. Wording is "chosen".
+# The first field (problem) is the note's own words.
+# Not a form field: a note also carries two choices saved with it. `anonymous` (By name / Anonymous) and `restricted` (the seal:
+# true seals the note; the wall and the board show "A sealed card" to anyone not on the matching restricted area's list, and to
+# everyone when no area matches). Both are booleans sent to the note save route, never inside `fields`.
+fields:
+  - {id: problem, label: The problem, kind: text, required: true, ask: "What is the problem, in your own words?"}
+  - {id: purpose, label: The business purpose, kind: text, ask: "What is this for? What would solving it let the business do?"}
+  - {id: affected, label: Who is affected, kind: text, kinds: [intent], ask: "Who is affected by it?"}
+  - {id: size, label: How often and how big, kind: text, kinds: [intent], ask: "How often does it happen, and how big is it?"}
+  - {id: belief, label: What you believe today, kind: number, person_only: true, ask: "What number do you believe today? Only you can give it."}
+  - {id: data_guess, label: Where the data might be, kind: text, guess: true, ask: "Where do you think the data might be? A guess is fine."}
+  - {id: labels, label: Labels, kind: labels, ask: "Which labels fit this note?"}
+# The kinds of note (Nitin, 4 Oct): what a person intends to do now, what hurts today, what to watch in future, and a lever
+# they change. `label` is on the note form, `heading` on the board and the charter. Each kind may carry its own optional
+# details (`fields`, same shape as above); a field with no `kinds` above applies to every kind. A note with no kind is an
+# intent, so notes saved before kinds existed load unchanged. The first kind is the default.
+kinds:
+  - id: intent
+    label: Something we intend to do now
+    heading: Problems to solve now
+    ask: "What do you intend to do now, or what problem do you want solved now?"
+  - id: pain_point
+    label: Something that hurts today
+    heading: Pain points
+    ask: "What hurts today? Who is affected, and how often?"
+    fields:
+      - {id: who, label: Who is affected, kind: text, ask: "Who is affected by it?"}
+      - {id: how_often, label: How often, kind: text, ask: "How often does it hurt?"}
+      - {id: kpi, label: KPI it shows up in, kind: text, ask: "Which KPI would show it, if you watch one?"}
+  - id: future_signal
+    label: Something to watch in future
+    heading: What to track for the future
+    ask: "In the future, what would you want to keep an eye on?"
+    fields:
+      - {id: source, label: Outside or market signal, kind: text, ask: "Which outside or market signals could be an input?"}
+  - id: lever
+    label: A lever we change
+    heading: Levers for what-if
+    ask: "Which levers do you change today, and which KPIs do you watch to see the impact?"
+    fields:
+      - {id: moves, label: KPIs it moves, kind: text, ask: "Which KPIs do you watch to see the impact?"}
+limits:                     # chosen
+  field_chars: 400
+  labels_max: 5
+  label_chars: 30

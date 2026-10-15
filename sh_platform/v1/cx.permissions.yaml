@@ -1,0 +1,20 @@
+# C1 Consume: dashboards over a project's gold tables. Any signed-in role may read what it is allowed to see (the logic checks the
+# maker, the admin and the audience, and E1d access), make its OWN dashboard and ask Lumen on it; deciding tiles and sharing are for the roles
+# that build, and the logic also requires the person to be the dashboard's maker or the company admin.
+routes:
+  GET /api/v1/consume/p/{pid}/tables: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/p/{pid}/dashboards: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/p/{pid}/dashboards: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/p/{pid}/dashboards/{did}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/p/{pid}/dashboards/{did}/ask: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/p/{pid}/dashboards/{did}/tiles/{tid}/accept: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/consume/p/{pid}/dashboards/{did}/tiles/{tid}/reject: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/consume/p/{pid}/dashboards/{did}/tiles/{tid}/data: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/p/{pid}/dashboards/{did}/tiles/{tid}/why: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/p/{pid}/dashboards/{did}/audience: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PUT /api/v1/consume/p/{pid}/dashboards/{did}/audience: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/consume/p/{pid}/people: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/consume/dashboards/{did}/view: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/shared: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/consume/dashboards/{did}/refresh: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

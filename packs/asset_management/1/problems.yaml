@@ -1,0 +1,472 @@
+# Template asset_management@1 problem templates (V3-13), same schema as insurance@1's
+# problems.yaml (V3-03). 17 problem templates by role. Every typical_actions item is labelled
+# "Industry practice (suggestion)" per ND-35 -- it is never a business rule, and target is always
+# null (CLAUDE.md rule 4). Nothing in this file is approved; it is PACK-DEFAULT content written by
+# a builder agent from general asset-management practice, pending practitioner review (see
+# packages/V3-13/report.md, Open Questions).
+#
+# kpi_ids refer to this pack's own kpi_tree.yaml ids (kpi:<slug>) -- there is no kpis.json
+# catalogue for asset management. lines_of_business/products/channels are left as [] on every
+# entry: this builder has no sourced mapping from a problem to a product/channel taxonomy
+# (assigning one would be inventing a business rule). `signals` is [] on every entry for the same
+# reason -- no asset-management signal has been defined on the platform yet.
+template: asset_management@1
+status: draft - not adopted; for practitioner review
+note: >-
+  Suggestions only. No targets or thresholds (CLAUDE.md rule 4). kpi_ids refer to
+  templates/asset_management/1/kpi_tree.yaml ids, every one verified present there
+  (tests/test_asset_management_pack.py).
+problems:
+  - id: T-CMO-01
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are we on track for the net-flow plan, and where is the gap?
+    decision: Where to point sales effort and client engagement budget this month.
+    kpi_ids: ["kpi:net_flows", "kpi:gross_subscriptions", "kpi:redemptions"]
+    signals: []
+    breakdowns: [fund, client segment, distributor, month]
+    needs: [flows, portfolios]
+    belief_to_test: The gap sits in a few funds or one client segment, not across the board.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Split the gap into weaker subscriptions versus higher redemptions before acting on it
+        - Move sales coverage toward the segment where subscriptions fell furthest behind plan
+    customer_decides:
+      - The plan figure for each fund and client segment
+      - Whether switches between our own funds count as flows
+    suggested:
+      moscow: must
+      owner_role: Head of Distribution
+      phase: wave 1
+      cadence: Monthly, with a weekly flash
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-CMO-02
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is our AUM growth coming from clients or from the market?
+    decision: Whether the growth story we tell the board rests on flows we earned or on market movement.
+    kpi_ids: ["kpi:aum", "kpi:net_flows", "kpi:market_movement", "kpi:organic_growth_rate"]
+    signals: []
+    breakdowns: [fund, asset class, quarter]
+    needs: [positions, flows, portfolios]
+    belief_to_test: Most of our AUM growth is market movement, not net new money.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Report organic growth next to AUM growth every period so the two are never confused
+        - Review funds whose AUM grew while their net flows were negative
+    customer_decides:
+      - What counts in AUM (cash, accruals, fund-of-funds holdings counted once or twice)
+      - The valuation date AUM is struck on
+    suggested:
+      moscow: must
+      owner_role: Head of Distribution
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-CMO-03
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which funds are losing money to redemptions, and why?
+    decision: Which funds get a retention effort, a repositioning or a product review.
+    kpi_ids: ["kpi:redemptions", "kpi:redemption_rate", "kpi:performance_vs_benchmark"]
+    signals: []
+    breakdowns: [fund, client segment, distributor, month]
+    needs: [flows, positions, performance]
+    belief_to_test: Redemptions follow weak performance against the benchmark.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Call the clients and distributors behind the largest redemptions and record the stated reason
+        - Give sales a clear performance explanation for any fund behind its benchmark
+    customer_decides:
+      - Whether the redemption rate is measured against opening or average AUM
+      - Which redemption reasons are recorded, and by whom
+    suggested:
+      moscow: must
+      owner_role: Head of Distribution
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-CMO-04
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is our share-class mix drifting toward lower-fee classes?
+    decision: Share-class offering and pricing guidance for distributors.
+    kpi_ids: ["kpi:share_class_mix", "kpi:fee_yield"]
+    signals: []
+    breakdowns: [fund, share class group, distributor, quarter]
+    needs: [client_holdings, share_classes, fees]
+    belief_to_test: New money arrives in cheaper share classes than the money that leaves.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Track the fee rate of money coming in against the fee rate of money going out
+        - Review which share classes each distributor is entitled to
+    customer_decides:
+      - How share classes are grouped (for example retail, institutional, clean)
+    suggested:
+      moscow: should
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-DIST-01
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which distributors bring money that stays?
+    decision: Where to put sales coverage, and which distributor relationships to rework.
+    kpi_ids: ["kpi:distributor_net_flows", "kpi:redemption_rate"]
+    signals: []
+    breakdowns: [distributor, distributor type, fund, quarter]
+    needs: [flows, distributors]
+    belief_to_test: The distributors with the largest subscriptions also have the largest redemptions.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Rank distributors on net flows and on how long money stays, not on gross sales alone
+        - Run joint client events with the distributors whose money stays longest
+    customer_decides:
+      - Which field identifies the distributor when flows arrive through an omnibus or nominee account
+    suggested:
+      moscow: must
+      owner_role: Head of Distribution
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-DIST-02
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are we paying distributors more than their flows are worth?
+    decision: Rebate and fee-sharing terms at the next distributor review.
+    kpi_ids: ["kpi:distribution_cost", "kpi:distributor_net_flows", "kpi:fee_revenue"]
+    signals: []
+    breakdowns: [distributor, fund, quarter]
+    needs: [fees, flows, distributors]
+    belief_to_test: A few distributors take most of the fee sharing and bring little net new money.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Compare what each distributor is paid with the fee revenue on the assets it holds
+        - Tie part of the fee sharing to money that stays, where the agreement allows it
+    customer_decides:
+      - Which payments to distributors count as distribution cost
+      - Whether distributor payments are booked as a cost or netted off revenue
+    suggested:
+      moscow: should
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-DIST-03
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are we winning or losing mandates, and why?
+    decision: Which strategies to pitch, and what to fix in the pitch process.
+    kpi_ids: ["kpi:mandate_wins_losses"]
+    signals: []
+    breakdowns: [strategy, client type, consultant, quarter]
+    needs: [mandates, clients]
+    belief_to_test: We lose mandates on fees more often than on performance.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Record a reason for every mandate lost and every pitch not won
+        - Review the pitches that reached the final round and were not won
+    customer_decides:
+      - "When a mandate counts as won: awarded, contract signed or first funded"
+      - The list of loss reasons
+    suggested:
+      moscow: should
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml. Note: no mandates source exists in contracts/sources/asset_management -- the 'mandates' need is a proposal feed (feeds.yaml)."
+  - id: T-DIST-04
+    roles: [distribution, operations]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: How long does it take to onboard a new client, and where does it stall?
+    decision: What to fix in the onboarding process, and who owns each step.
+    kpi_ids: ["kpi:onboarding_time"]
+    signals: []
+    breakdowns: [client type, onboarding step, month]
+    needs: [clients]
+    belief_to_test: Most of the delay is waiting for client documents, not our own checks.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Time each onboarding step separately so the slow one is visible
+        - Send the full document list to the client once, at the start
+    customer_decides:
+      - What starts and what stops the onboarding clock
+      - The onboarding time limit itself (none is assumed by this pack)
+    suggested:
+      moscow: should
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-RET-01
+    roles: [retention]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which clients are likely to redeem next, and can we keep them?
+    decision: Who the client team contacts first, and with what.
+    kpi_ids: ["kpi:client_retention", "kpi:redemptions"]
+    signals: []
+    breakdowns: [client segment, fund, relationship manager]
+    needs: [flows, clients, client_holdings]
+    belief_to_test: Clients redeem in steps, so a first partial redemption warns of a full one.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Contact clients after a first partial redemption rather than after the last one
+        - Review clients holding funds that are behind their benchmark
+    customer_decides:
+      - "What counts as a lost client: a full redemption, or no holding for a period the company sets"
+      - Contact and consent rules for each client type
+    suggested:
+      moscow: must
+      owner_role: Client engagement analyst
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-RET-02
+    roles: [retention, ceo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: How dependent are we on a few large clients?
+    decision: Where to diversify the client base, and which relationships need senior cover.
+    kpi_ids: ["kpi:client_concentration", "kpi:aum"]
+    signals: []
+    breakdowns: [client, client type, fund]
+    needs: [client_holdings, clients]
+    belief_to_test: A handful of clients hold a large share of our AUM, and of single funds.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Report concentration by fund as well as for the firm, since one client can dominate one fund
+        - Give each of the largest clients a named senior sponsor
+    customer_decides:
+      - How many clients count as "the largest"
+      - "The level a client is counted at: account, legal entity or group"
+    suggested:
+      moscow: should
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-RET-03
+    roles: [retention]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which existing clients hold only one of our funds?
+    decision: Who gets the next conversation about a second fund or strategy.
+    kpi_ids: ["kpi:gross_subscriptions", "kpi:client_retention"]
+    signals: []
+    breakdowns: [client segment, fund held, relationship manager]
+    needs: [client_holdings, clients]
+    belief_to_test: Clients who hold more than one of our funds stay longer.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Offer single-fund clients a review of their holding against our wider range
+    customer_decides:
+      - Which clients must not be approached (opt-outs, complaints, suitability limits)
+    suggested:
+      moscow: could
+      owner_role: Client engagement analyst
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-INV-01
+    roles: [investment]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are our funds beating their benchmarks after fees?
+    decision: Which funds need a review with the investment team, and what sales may say about them.
+    kpi_ids: ["kpi:performance_vs_benchmark"]
+    signals: []
+    breakdowns: [fund, share class, period]
+    needs: [performance, portfolios]
+    belief_to_test: Our funds beat their benchmarks before fees but not after.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Report performance before and after fees side by side, over more than one period
+        - Review any fund behind its benchmark over the longer periods
+    customer_decides:
+      - The official benchmark for each fund
+      - Which periods are reported, and whether returns are shown before or after fees
+    suggested:
+      moscow: must
+      owner_role: Investment performance analyst
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-INV-02
+    roles: [investment, cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Does performance explain our flows?
+    decision: Whether a flow problem is a product problem or a sales problem.
+    kpi_ids: ["kpi:performance_vs_benchmark", "kpi:net_flows"]
+    signals: []
+    breakdowns: [fund, quarter]
+    needs: [performance, flows]
+    belief_to_test: Flows follow performance with a delay.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Flag funds with good performance and weak flows as a sales and awareness problem
+        - Flag funds with weak performance and strong flows as a redemption risk
+    customer_decides:
+      - The performance period flows are compared against
+    suggested:
+      moscow: should
+      owner_role: Investment performance analyst
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-PROD-01
+    roles: [product]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which funds and share classes are too small to earn their keep?
+    decision: Which funds to merge, close, reprice or relaunch.
+    kpi_ids: ["kpi:aum", "kpi:fee_revenue", "kpi:net_flows"]
+    signals: []
+    breakdowns: [fund, share class, launch year]
+    needs: [positions, fees, flows, share_classes]
+    belief_to_test: A long tail of small funds costs more to run than it earns.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Review every fund that is small, shrinking and behind its benchmark at the same time
+        - Merge share classes that duplicate each other
+    customer_decides:
+      - The size below which a fund is reviewed
+      - How fund running costs are allocated
+    suggested:
+      moscow: could
+      owner_role: Head of Distribution
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-FIN-01
+    roles: [finance]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is our fee margin holding?
+    decision: Pricing guidance, and where fee discounts need sign-off.
+    kpi_ids: ["kpi:fee_yield", "kpi:fee_revenue", "kpi:share_class_mix"]
+    signals: []
+    breakdowns: [fund, share class group, client type, quarter]
+    needs: [fees, positions, share_classes]
+    belief_to_test: Fee yield is falling because of mix, not because we cut prices.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Split the change in fee yield into price change and mix change
+        - Require sign-off for fee discounts on new mandates
+    customer_decides:
+      - Which fee types count as revenue (management, performance, entry and exit charges)
+      - Whether fee yield is shown before or after distributor payments
+    suggested:
+      moscow: must
+      owner_role: CFO
+      phase: wave 1
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"
+  - id: T-FIN-02
+    roles: [finance]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is cost growing faster than income?
+    decision: Next year's cost budget, and where to hold spending.
+    kpi_ids: ["kpi:cost_to_income", "kpi:fee_revenue", "kpi:distribution_cost"]
+    signals: []
+    breakdowns: [cost category, quarter]
+    needs: [costs, fees]
+    belief_to_test: Our cost base is mostly fixed, so falling markets hit profit harder than revenue.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Report cost-to-income with and without performance fees, since they vary year to year
+        - Separate costs that move with AUM from costs that do not
+    customer_decides:
+      - Which cost lines count in the ratio
+      - Whether performance fees count as income in the ratio
+    suggested:
+      moscow: should
+      owner_role: CFO
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml. Note: no cost source exists in contracts/sources/asset_management -- the 'costs' need is a proposal feed (feeds.yaml)."
+  - id: T-CEO-01
+    roles: [ceo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: "One page for the board: assets, flows, performance, margin"
+    decision: Board narrative and the priorities for next quarter.
+    kpi_ids: ["kpi:aum", "kpi:net_flows", "kpi:performance_vs_benchmark", "kpi:fee_yield", "kpi:cost_to_income"]
+    signals: []
+    breakdowns: [quarter, client type]
+    needs: [whatever the templates above already use]
+    belief_to_test: We are growing, and that growth is earned and profitable.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Start each quarterly review with the belief check for this template
+    customer_decides:
+      - Which numbers go to the board
+      - Who signs them off before they are sent
+    suggested:
+      moscow: could
+      owner_role: CEO
+      phase: wave 3
+      cadence: Quarterly
+    target: null
+    source: "Pack default (V3-13 builder draft, general asset-management practice; not practitioner-reviewed); kpi_ids verified against templates/asset_management/1/kpi_tree.yaml"

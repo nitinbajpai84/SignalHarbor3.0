@@ -1,0 +1,70 @@
+# W2-H: agent behaviour under the failure shapes recorded in docs/test-evidence/agents/, replayed offline (tests/evals/replay.py).
+# Run: python tools/run_evals.py --offline --agents offline --out <dir>. Not in the default --agents list: `replay:` only applies offline.
+# `live: true` = the expectation also holds with the real model and the item is owed to the live 3-of-3 rerun once the accounts are topped up
+# (run it live with --agents offline --items <id>). Each item names the ticket whose fix it proves; a fail here is that package's, not H's.
+- id: OFF-NOCREDIT
+  agent: north
+  role: analyst
+  desc: NU-28, AQF10-01, TAQ-S2 (S) - out of credit everywhere; the trace names no_credit and North claims nothing was proposed or drafted.
+  replay: no_credit
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "Which intents of work do we have, and what is still open on the monthly investment report?"}]
+  expected: {status: 200, model_failure: no_credit, forbidden: ["I have proposed", "drafted"]}
+  scorers: [words, model_failure, trace_complete]
+
+- id: OFF-TRANSPORT
+  agent: span
+  role: analyst
+  desc: H1-01 (S) - every call drops; the trace says transport_failed (not no_credit) and Span invents no table name.
+  replay: transport_failed
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Which gold table holds the cash by entity?"}]
+  expected: {status: 200, model_failure: transport_failed, forbidden: ["gold_investment_report_cash_daily holds"]}
+  scorers: [words, model_failure]
+
+- id: OFF-WORDS
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-25, H1-06 (SP) - the model says it drafted a change but called no tool; Span must not pass the claim on, no change is pending.
+  replay: words_not_tool
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns:
+    - {say: "Please add a gold scorecard of manager reporting: statements received against expected, per manager, latest month."}
+    - {method: GET, path: "/api/v1/build/p/{pid}/plan", expect: {status: 200, absent: ["gold_manager_reporting_scorecard"]}}
+  expected: {status: 200, forbidden: ["awaiting approval", "I have drafted"]}
+  scorers: [words, turn_expect]
+
+- id: OFF-QUALIFY
+  agent: span
+  role: analyst
+  desc: NU-14 (SP) - the recorded QUALIFY-before-GROUP-BY draft (ch-eb7c061c) is refused by the plan check, never left pending.
+  replay: qualify_sql
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns:
+    - {say: "Add a gold table by manager, portfolio and entity with the latest value per instrument up to 30 Sep 2026 and each manager's share."}
+    - {method: GET, path: "/api/v1/build/p/{pid}/plan", expect: {status: 200, absent: ["gold_exposure_by_manager_across_ent_summary"]}}
+  expected: {status: 200, tools_refused: [propose_plan_change]}
+  scorers: [turn_expect, tool_outcome]
+
+- id: OFF-MULTILINE
+  agent: span
+  role: analyst
+  desc: NU-12 (S) - a dry run of a normal multi-line SELECT runs (line breaks are not control characters to refuse).
+  replay: multiline_sql
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Try a select of the latest holdings value by manager, portfolio and entity."}]
+  expected: {status: 200, tools_ok: [dry_run_sql]}
+  scorers: [tool_outcome]
+
+- id: OFF-ARGS24
+  agent: north
+  role: analyst
+  live: true
+  desc: NU-06 (N) - the recorded 24 propose_intent_section shapes in one turn; the model was reached, so North never says it could not reach it (an accepted draft or a named reason).
+  replay: refused_args_24
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - say: "We need a monthly manager concentration report for the family council. The three figures: share of the portfolio per manager in percent, the largest manager's share, and the headroom to the 25 percent limit."
+  expected: {status: 200, forbidden: ["could not reach the model", "rules-only"]}
+  scorers: [words, loop_trace]

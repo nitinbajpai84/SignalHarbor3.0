@@ -1,0 +1,5 @@
+# FIXE2: the company's cycle date. Everyone in the company reads it (the header shows it); the handler lets only the administrator or the head of data
+# (held beside analyst) change it. Default deny: every route is listed.
+routes:
+  GET /api/v1/cycle-date: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PUT /api/v1/cycle-date: {roles: [company_admin, analyst]}

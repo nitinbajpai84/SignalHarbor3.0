@@ -1,0 +1,204 @@
+# Template asset_management@1 KPI scaffold (design section 3.1, OQ-5 -- "Proposal, pending
+# sign-off"). NO values, NO targets, NO thresholds -- those are business rules for the
+# workspace's own Intent Centre to set (CLAUDE.md rule 4).
+#
+# V3-13: grown from the 5-KPI scaffold to 18 KPIs, at parity with insurance@1's kpi_tree.yaml.
+# The five original ids (kpi:aum, kpi:net_flows, kpi:fee_yield, kpi:performance_vs_benchmark,
+# kpi:client_retention) are UNCHANGED; new ids use the same `kpi:<slug>` scheme. Unlike insurance
+# (whose ids come from docs/signal-harbor/cmo-proof/kpis.json), NO KPI catalogue exists for asset
+# management in this repo -- these ids are pack-local and this file is their only definition
+# (see packages/V3-13/report.md, Open Questions).
+#
+# Every "drives" edge is either an arithmetic identity stated in its own `source` (one KPI is a
+# term in another's definition) or carries `status: proposal` (a behavioural link carried over
+# from the original scaffold, for a practitioner to confirm). The original scaffold's
+# `strength: high/medium` ratings are dropped, as insurance@1 dropped them in V3-03: they had no
+# source. No edge is a weight or an elasticity.
+template: asset_management@1
+status: proposed
+open_question: "OQ-5: the asset management KPI scaffold contents -- this is a Proposal, not gated."
+kpis:
+  - id: kpi:aum
+    name: AUM
+    tier: north_star
+    unit: currency
+    drives:
+      - kpi: kpi:fee_revenue
+        sign: "+"
+        source: "Definition: an asset-based management fee is a fee rate applied to AUM, so fee revenue rises with AUM at an unchanged rate"
+    source: "Pack default (V3-13); closest contract metric: contracts/semantics/asset_management.gold.yaml total_market_value = SUM(market_value)"
+  - id: kpi:net_flows
+    name: Net flows
+    tier: north_star
+    unit: currency
+    drives:
+      - kpi: kpi:aum
+        sign: "+"
+        source: "Identity: closing AUM = opening AUM + net flows + market movement"
+    source: "Pack default (V3-13); templates/asset_management/1/glossary.yaml 'Net flows'"
+  - id: kpi:gross_subscriptions
+    name: Gross subscriptions
+    tier: driver
+    unit: currency
+    drives:
+      - kpi: kpi:net_flows
+        sign: "+"
+        source: "Identity: net flows = gross subscriptions - redemptions"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:redemptions
+    name: Redemptions
+    tier: driver
+    unit: currency
+    drives:
+      - kpi: kpi:net_flows
+        sign: "-"
+        source: "Identity: net flows = gross subscriptions - redemptions"
+      - kpi: kpi:redemption_rate
+        sign: "+"
+        source: "Definition: redemption rate = redemptions / opening (or average) AUM"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:redemption_rate
+    name: Redemption rate
+    tier: retention
+    unit: percent
+    drives: []
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:organic_growth_rate
+    name: Organic growth rate
+    tier: driver
+    unit: percent
+    drives: []
+    source: "Pack default (V3-13); definition: net flows / opening AUM (net flows is the numerator, so kpi:net_flows feeds it by definition)"
+  - id: kpi:market_movement
+    name: Market movement
+    tier: driver
+    unit: currency
+    drives:
+      - kpi: kpi:aum
+        sign: "+"
+        source: "Identity: closing AUM = opening AUM + net flows + market movement"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:fee_revenue
+    name: Fee revenue
+    tier: north_star
+    unit: currency
+    drives:
+      - kpi: kpi:cost_to_income
+        sign: "-"
+        source: "Definition: cost-to-income ratio = operating cost / income -- higher income at unchanged cost lowers the ratio"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:fee_yield
+    name: Fee yield
+    tier: efficiency
+    unit: percent
+    drives:
+      - kpi: kpi:fee_revenue
+        sign: "+"
+        status: proposal
+        source: "A rearrangement of the definition fee yield = fee revenue / average AUM, not an independent driver -- fee yield is computed FROM fee revenue; kept as a proposal for a practitioner to keep or drop"
+    source: "Pack default (original scaffold); templates/asset_management/1/glossary.yaml 'Fee yield'"
+  - id: kpi:performance_vs_benchmark
+    name: Performance vs benchmark
+    tier: driver
+    unit: percent
+    drives:
+      - kpi: kpi:net_flows
+        sign: "+"
+        status: proposal
+        source: "Carried over from the original OQ-5 scaffold -- a behavioural link, not an identity; a practitioner must confirm it (see problems.yaml T-INV-02, which tests exactly this belief)"
+    source: "Pack default (original scaffold); templates/asset_management/1/glossary.yaml 'Benchmark'"
+  - id: kpi:client_retention
+    name: Client retention
+    tier: retention
+    unit: percent
+    drives:
+      - kpi: kpi:net_flows
+        sign: "+"
+        status: proposal
+        source: "Carried over from the original OQ-5 scaffold -- a behavioural link, not an identity; a practitioner must confirm it"
+    source: "Pack default (original scaffold)"
+  - id: kpi:client_concentration
+    name: Client concentration (share of AUM held by the largest clients)
+    tier: mix
+    unit: percent
+    drives: []
+    source: "Pack default (V3-13); how many clients count as 'the largest' is the customer's to set, never a pack value"
+  - id: kpi:share_class_mix
+    name: Share-class mix (share of AUM by share class group)
+    tier: mix
+    unit: percent
+    drives:
+      - kpi: kpi:fee_yield
+        sign: "+"
+        status: proposal
+        source: "Share classes carry different fee rates, so the mix of AUM across them moves the blended fee yield; the direction depends on which group the share is measured for, so the sign is a proposal for a practitioner to confirm"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:distributor_net_flows
+    name: Net flows by distributor
+    tier: channel
+    unit: currency
+    drives:
+      - kpi: kpi:net_flows
+        sign: "+"
+        source: "Definition: net flows by distributor is kpi:net_flows split by distributor -- each distributor's figure is a component of the total"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:mandate_wins_losses
+    name: Mandate wins and losses
+    tier: driver
+    unit: mixed
+    drives:
+      - kpi: kpi:net_flows
+        sign: "+"
+        status: proposal
+        source: "A funded mandate win is a subscription and a terminated mandate is a redemption, but a win counted before funding is not yet a flow -- holds only under the customer's own 'when is a mandate won' rule; a practitioner must confirm"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:distribution_cost
+    name: Distribution cost (fees shared with or paid to distributors)
+    tier: efficiency
+    unit: currency
+    drives:
+      - kpi: kpi:cost_to_income
+        sign: "+"
+        status: proposal
+        source: "Whether distributor payments are booked as a cost or netted off revenue is a house accounting convention -- the edge holds only under the first; a practitioner must confirm"
+    source: "Pack default (V3-13); standard asset management terminology"
+  - id: kpi:cost_to_income
+    name: Cost-to-income ratio
+    tier: efficiency
+    unit: percent
+    drives: []
+    source: "Pack default (V3-13); standard financial-services terminology"
+  - id: kpi:onboarding_time
+    name: Client onboarding time
+    tier: operations
+    unit: days
+    drives: []
+    source: "Pack default (V3-13); standard asset management terminology"
+levers:
+  - id: lever:client_engagement_spend
+    name: Client engagement spend
+    moves:
+      - kpi: kpi:client_retention
+        sign: "+"
+    source: "Pack default (original scaffold, OQ-5)"
+  - id: lever:distributor_coverage
+    name: Distributor coverage and sales effort
+    moves:
+      - kpi: kpi:distributor_net_flows
+        sign: "+"
+    source: "Pack default (V3-13) -- proposal for practitioner review"
+  - id: lever:fee_pricing
+    name: Fee pricing and share-class offering
+    moves:
+      - kpi: kpi:fee_yield
+        sign: "+"
+    source: "Pack default (V3-13) -- proposal for practitioner review"
+  - id: lever:onboarding_process
+    name: Onboarding process design
+    moves:
+      - kpi: kpi:onboarding_time
+        sign: "-"
+    source: "Pack default (V3-13) -- proposal for practitioner review"
+open_questions:
+  - "All drives signs are directional only -- none is a weighted strength or a quantified elasticity. Edges marked `status: proposal` are behavioural or convention-dependent and need a practitioner's confirmation."
+  - "No KPI catalogue (the equivalent of docs/signal-harbor/cmo-proof/kpis.json) exists for asset management; these 18 ids are pack-local. If one is authored later, this tree's ids should be re-pointed to it."

@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor Module 4: Build (proposal)",
+    "output": "docs/architecture/sh-m4-build.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "path-build",
+        "label": "Nothing exists: build",
+        "focus": [
+          "inputs",
+          "env",
+          "architect",
+          "signoff",
+          "sources",
+          "builder",
+          "wh",
+          "prover",
+          "release",
+          "watcher"
+        ],
+        "note": "No warehouse today. Agents build sources to bronze, silver and gold."
+      },
+      {
+        "id": "path-improve",
+        "label": "Warehouse exists: improve",
+        "focus": [
+          "env",
+          "scan",
+          "existing",
+          "architect",
+          "signoff",
+          "builder",
+          "wh",
+          "prover",
+          "release"
+        ],
+        "note": "Scan first. Build only the measures the existing warehouse cannot answer."
+      },
+      {
+        "id": "path-adopt",
+        "label": "Warehouse is good: adopt",
+        "focus": [
+          "env",
+          "scan",
+          "existing",
+          "architect",
+          "signoff",
+          "prover",
+          "release",
+          "watcher"
+        ],
+        "note": "No pipelines built. KPI definitions are mapped onto existing tables and proven."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "existing",
+      "type": "database",
+      "label": "Existing warehouse",
+      "sublabel": "customer's own, if any",
+      "pos": [
+        540,
+        40
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "read-only"
+    },
+    {
+      "id": "inputs",
+      "type": "external",
+      "label": "Signed inputs",
+      "sublabel": "plan, baseline, profile",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "Modules 1-3"
+    },
+    {
+      "id": "env",
+      "type": "frontend",
+      "label": "Environment check",
+      "sublabel": "five prefilled questions",
+      "pos": [
+        290,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "scan",
+      "type": "backend",
+      "label": "Estate scanner",
+      "sublabel": "reuse, improve or build",
+      "pos": [
+        540,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "architect",
+      "type": "backend",
+      "label": "Architect agent",
+      "sublabel": "data + infra blueprint",
+      "pos": [
+        790,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "signoff",
+      "type": "security",
+      "label": "Blueprint sign-off",
+      "sublabel": "auto-drawn diagrams",
+      "pos": [
+        1040,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "Head of data + IT"
+    },
+    {
+      "id": "watcher",
+      "type": "backend",
+      "label": "Watcher",
+      "sublabel": "freshness, drift, alerts",
+      "pos": [
+        290,
+        400
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "release",
+      "type": "security",
+      "label": "Release sign-off",
+      "sublabel": "evidence pack per KPI",
+      "pos": [
+        540,
+        400
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "Sponsor"
+    },
+    {
+      "id": "prover",
+      "type": "backend",
+      "label": "Prover",
+      "sublabel": "KPI vs reported figure",
+      "pos": [
+        790,
+        400
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "builder",
+      "type": "backend",
+      "label": "Build agents",
+      "sublabel": "bronze, silver, gold code",
+      "pos": [
+        1040,
+        400
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "Priority sources",
+      "sublabel": "Now band of the plan",
+      "pos": [
+        1290,
+        400
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "wh",
+      "type": "database",
+      "label": "Warehouse",
+      "sublabel": "DuckDB or client cloud",
+      "pos": [
+        1040,
+        580
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "KPI marts"
+    }
+  ],
+  "connections": [
+    {
+      "id": "inputs-env",
+      "from": "inputs",
+      "to": "env",
+      "label": "plan",
+      "variant": "emphasis"
+    },
+    {
+      "id": "env-scan",
+      "from": "env",
+      "to": "scan",
+      "label": "answers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "scan-existing",
+      "from": "scan",
+      "to": "existing",
+      "label": "metadata",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "scan-architect",
+      "from": "scan",
+      "to": "architect",
+      "label": "fit report",
+      "variant": "emphasis"
+    },
+    {
+      "id": "architect-signoff",
+      "from": "architect",
+      "to": "signoff",
+      "label": "blueprint",
+      "variant": "emphasis"
+    },
+    {
+      "id": "signoff-builder",
+      "from": "signoff",
+      "to": "builder",
+      "label": "approved",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "sources-builder",
+      "from": "sources",
+      "to": "builder",
+      "label": "extract"
+    },
+    {
+      "id": "builder-wh",
+      "from": "builder",
+      "to": "wh",
+      "label": "load",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "wh-prover",
+      "from": "wh",
+      "to": "prover",
+      "label": "KPI results",
+      "fromSide": "left",
+      "toSide": "bottom"
+    },
+    {
+      "id": "prover-release",
+      "from": "prover",
+      "to": "release",
+      "label": "evidence",
+      "variant": "emphasis"
+    },
+    {
+      "id": "release-watcher",
+      "from": "release",
+      "to": "watcher",
+      "label": "go-live",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What the client gives",
+      "items": [
+        "Nothing new except five environment answers",
+        "Read-only access to a warehouse, if one exists",
+        "Two signatures: blueprint and release"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "What the client gets",
+      "items": [
+        "Signed data and infrastructure blueprint",
+        "Fit report: reuse, improve or build per measure",
+        "Working pipeline and KPI marts",
+        "Each KPI reconciled to their own reported figure"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Three paths, chosen per measure",
+      "items": [
+        "Build: no warehouse, agents create it",
+        "Improve: fill gaps in the existing one",
+        "Adopt: map definitions onto existing tables, build nothing"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Kept running",
+      "items": [
+        "Every run checks schema drift, freshness and volumes",
+        "Monthly re-check against the reported figures",
+        "Next plan band reuses the same blueprint"
+      ]
+    }
+  ]
+}

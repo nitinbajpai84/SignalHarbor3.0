@@ -1,0 +1,21 @@
+# M2-P03 process map: the values the screen and the routes read (M2-22: the status values come from a contract).
+# The step shape itself is in SHARED.md (process_map.json). Extra file of this package: process_map_tracking.json.
+statuses:               # SHARED.md kpis.json `tracking`; M2-22 in the backlog names four, see the open question in the report
+  - {id: tracked_now, label: Tracked now}
+  - {id: partly, label: Partly tracked}
+  - {id: not_tracked, label: Not tracked}
+step_states: [proposal, validated, edited, removed]
+limits: {lane_chars: 60, text_chars: 200, next_step_chars: 300}
+verb_classes:           # what a step's verb does, so two owners' wording of one step can be told from two steps; plain English, no industry
+  light: [conduct, do, perform, carry, make, run, undertake, hold, handle]
+  enter: [paste, copy, key, type, enter, input, load, upload, transcribe, record, log, update, populate, add]
+  check: [review, check, verify, approve, reconcile, validate, sign, inspect, confirm]
+  send: [send, email, forward, share, publish, distribute, issue, circulate, post, deliver]
+  receive: [receive, get, collect, download, pull, obtain, gather, fetch, import, extract]
+  build: [build, prepare, create, draft, compile, produce, calculate, compute, assemble, generate, write, convert]
+tidy:                   # Lens may only reword; the map is drawn without it when no model is set up
+  module_id: m2_baseline
+  instruction: >-
+    You are Lens, a business analyst. Reword each numbered process step so it reads as one short, plain phrase.
+    Do not add, remove or change any fact, name, number, system or who does what. Keep the owner's own verb: never add a verb they did not use. Reply with exactly one line per
+    step, in the same order, as plain text with no numbering and no extra commentary.

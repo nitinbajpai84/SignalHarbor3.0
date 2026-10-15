@@ -1,0 +1,194 @@
+# Template asset_management@1 column synonyms (V3-13), same schema as insurance@1's
+# column_synonyms.yaml. Seeded ONLY from spellings actually found in this repo's own
+# asset-management source contracts (contracts/sources/asset_management/awm_*.source.yaml) --
+# no discovery profile exists yet for the star-asset-management workspace. Every spelling carries
+# its own source; where no spelling has been seen (every field of the nine proposal feeds), the
+# synonym list is empty rather than invented and the regex is the canonical field id only.
+#
+# Regex patterns are plain, case-insensitive, anchored alternations of the known spellings -- no
+# attempt to guess spellings that have not been seen in this pack's sources.
+template: asset_management@1
+status: proposed
+feeds:
+  portfolios:
+    portfolio_code:
+      spellings:
+        - spelling: portfolio_code
+          source: "contracts/sources/asset_management/awm_portfolios.source.yaml schema[0].name"
+      regex: "^(?i:portfolio_code)$"
+    portfolio_name:
+      spellings:
+        - spelling: portfolio_name
+          source: "contracts/sources/asset_management/awm_portfolios.source.yaml schema[1].name"
+      regex: "^(?i:portfolio_name)$"
+    base_currency:
+      spellings:
+        - spelling: base_currency
+          source: "contracts/sources/asset_management/awm_portfolios.source.yaml schema[2].name"
+      regex: "^(?i:base_currency)$"
+    portfolio_type:
+      spellings:
+        - spelling: portfolio_type
+          source: "contracts/sources/asset_management/awm_portfolios.source.yaml schema[3].name"
+      regex: "^(?i:portfolio_type)$"
+  instruments:
+    instrument_code:
+      spellings:
+        - spelling: instrument_code
+          source: "contracts/sources/asset_management/awm_instruments.source.yaml schema[0].name"
+      regex: "^(?i:instrument_code)$"
+    instrument_name:
+      spellings:
+        - spelling: instrument_name
+          source: "contracts/sources/asset_management/awm_instruments.source.yaml schema[1].name"
+      regex: "^(?i:instrument_name)$"
+    instrument_type:
+      spellings:
+        - spelling: instrument_type
+          source: "contracts/sources/asset_management/awm_instruments.source.yaml schema[2].name"
+      regex: "^(?i:instrument_type)$"
+  positions:
+    portfolio_code:
+      spellings:
+        - spelling: portfolio_code
+          source: "contracts/sources/asset_management/awm_positions.source.yaml schema[0].name"
+      regex: "^(?i:portfolio_code)$"
+    as_of_date:
+      spellings:
+        - spelling: as_of_date
+          source: "contracts/sources/asset_management/awm_positions.source.yaml schema[1].name"
+      regex: "^(?i:as_of_date)$"
+    instrument_code:
+      spellings:
+        - spelling: instrument_code
+          source: "contracts/sources/asset_management/awm_positions.source.yaml schema[2].name"
+      regex: "^(?i:instrument_code)$"
+    quantity:
+      spellings:
+        - spelling: quantity
+          source: "contracts/sources/asset_management/awm_positions.source.yaml schema[3].name"
+      regex: "^(?i:quantity)$"
+    market_value:
+      spellings:
+        - spelling: market_value
+          source: "contracts/sources/asset_management/awm_positions.source.yaml schema[4].name"
+      regex: "^(?i:market_value)$"
+  flows:
+    transaction_id:
+      spellings: []
+      regex: "^(?i:transaction_id)$"
+    trade_date:
+      spellings: []
+      regex: "^(?i:trade_date)$"
+    settlement_date:
+      spellings: []
+      regex: "^(?i:settlement_date)$"
+    transaction_type:
+      spellings: []
+      regex: "^(?i:transaction_type)$"
+    amount:
+      spellings: []
+      regex: "^(?i:amount)$"
+    distributor_id:
+      spellings: []
+      regex: "^(?i:distributor_id)$"
+  clients:
+    client_id:
+      spellings: []
+      regex: "^(?i:client_id)$"
+    client_type:
+      spellings: []
+      regex: "^(?i:client_type)$"
+    client_since_date:
+      spellings: []
+      regex: "^(?i:client_since_date)$"
+    relationship_end_date:
+      spellings: []
+      regex: "^(?i:relationship_end_date)$"
+    onboarding_start_date:
+      spellings: []
+      regex: "^(?i:onboarding_start_date)$"
+    onboarding_complete_date:
+      spellings: []
+      regex: "^(?i:onboarding_complete_date)$"
+  client_holdings:
+    holding_date:
+      spellings: []
+      regex: "^(?i:holding_date)$"
+    holding_value:
+      spellings: []
+      regex: "^(?i:holding_value)$"
+  distributors:
+    distributor_id:
+      spellings: []
+      regex: "^(?i:distributor_id)$"
+    distributor_name:
+      spellings: []
+      regex: "^(?i:distributor_name)$"
+    distributor_type:
+      spellings: []
+      regex: "^(?i:distributor_type)$"
+  share_classes:
+    share_class_code:
+      spellings: []
+      regex: "^(?i:share_class_code)$"
+    share_class_group:
+      spellings: []
+      regex: "^(?i:share_class_group)$"
+    management_fee_rate:
+      spellings: []
+      regex: "^(?i:management_fee_rate)$"
+  fees:
+    fee_period_end_date:
+      spellings: []
+      regex: "^(?i:fee_period_end_date)$"
+    fee_type:
+      spellings: []
+      regex: "^(?i:fee_type)$"
+    fee_amount:
+      spellings: []
+      regex: "^(?i:fee_amount)$"
+    distributor_payment_amount:
+      spellings: []
+      regex: "^(?i:distributor_payment_amount)$"
+  performance:
+    performance_period_end_date:
+      spellings: []
+      regex: "^(?i:performance_period_end_date)$"
+    portfolio_return:
+      spellings: []
+      regex: "^(?i:portfolio_return)$"
+    benchmark_code:
+      spellings: []
+      regex: "^(?i:benchmark_code)$"
+    benchmark_return:
+      spellings: []
+      regex: "^(?i:benchmark_return)$"
+  mandates:
+    mandate_id:
+      spellings: []
+      regex: "^(?i:mandate_id)$"
+    mandate_event_type:
+      spellings: []
+      regex: "^(?i:mandate_event_type)$"
+    mandate_event_date:
+      spellings: []
+      regex: "^(?i:mandate_event_date)$"
+    mandate_amount:
+      spellings: []
+      regex: "^(?i:mandate_amount)$"
+    mandate_loss_reason:
+      spellings: []
+      regex: "^(?i:mandate_loss_reason)$"
+  costs:
+    cost_period_end_date:
+      spellings: []
+      regex: "^(?i:cost_period_end_date)$"
+    cost_category:
+      spellings: []
+      regex: "^(?i:cost_category)$"
+    cost_amount:
+      spellings: []
+      regex: "^(?i:cost_amount)$"
+open_questions:
+  - "Only the three awm_* source contracts supply seen spellings. Common real-world spellings (for example an ISIN column for instrument_code, or a NAV column) are deliberately NOT listed: none has been seen in this repo's sources, and insurance@1 set the rule that unseen spellings are never guessed. A Head of Data should add them, with their source, when a real system is onboarded."

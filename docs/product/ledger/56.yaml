@@ -1,0 +1,224 @@
+- id: 56.opp.notice
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: /centre/build/ops (Opportunities)
+  input: A pattern in the run log, alerts, feeds and check-ins
+  person: ops manager
+  mode: derived
+  agent: Watcher
+  source: runs.json, alerts, feeds, week files and map edges
+  minutes_without: 180
+  minutes_with: 0
+  basis: 'estimate: typical office: noticing a repeated problem only when someone complains'
+  claim: The Watcher notices repeated patterns from the records with no one asking
+- id: 56.opp.numbers
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: opportunity, 'What was noticed'
+  input: The numbers behind the pattern, each with a trace
+  person: ops manager
+  mode: automatic
+  agent: Watcher
+  source: run rows, alert ids, week items and feed values
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: collecting evidence from five places by hand'
+  claim: Every number in the pattern opens the record it came from
+- id: 56.opp.raise
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Raise an opportunity'' sheet'
+  input: Raise an opportunity by hand
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person's own observation; one measure, process or source named
+  minutes_without: 10
+  minutes_with: 6
+  basis: 'estimate: an email to the ops lead versus a short sheet'
+  claim: A person can raise what the Watcher has not seen; it needs a named measure, process or source
+- id: 56.opp.evidence.lens
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: opportunity evidence list
+  input: Definitions, owners and process step as evidence
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the pack, pipeline contracts and the process map
+  minutes_without: 40
+  minutes_with: 0
+  basis: 'estimate: looking up the definition and owner by hand'
+  claim: Lens adds the definition, owner and process step as evidence lines
+- id: 56.opp.evidence.add
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Add evidence'''
+  input: A line of evidence with a source record
+  person: analyst
+  mode: manual
+  agent: null
+  source: the analyst's own knowledge
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: a note in an email versus a linked line'
+  claim: People add evidence linked to a source record
+- id: 56.opp.dispute
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Dispute'''
+  input: Dispute with a reason
+  person: analyst
+  mode: manual
+  agent: null
+  source: the analyst's reason
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: disagreeing in a meeting versus a recorded dispute'
+  claim: A dispute is kept as evidence and North re-judges
+- id: 56.opp.judge
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''North''s judgement'''
+  input: Fits an Initiative, why, and how sure
+  person: ops manager
+  mode: derived
+  agent: North
+  source: the evidence lines
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: an analyst''s judgement paper'
+  claim: North says whether it fits an Initiative in two or three sentences and how sure it is
+- id: 56.opp.answers
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Proposed start answers'''
+  input: The six Initiative start answers
+  person: ops manager
+  mode: derived
+  agent: North
+  source: the opportunity record
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: writing an Initiative proposal'
+  claim: North drafts all six start answers, each marked Guessed
+- id: 56.opp.suggest
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (dashed suggested card)
+  input: A suggested Initiative on the home
+  person: organiser
+  mode: derived
+  agent: North
+  source: a proposed opportunity
+  minutes_without: 0
+  minutes_with: 0
+  basis: 'estimate: no equivalent: opportunities usually do not surface at all'
+  claim: A dashed card suggests an Initiative from the records; only a person picks it up
+- id: 56.opp.pickup
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Pick it up'''
+  input: Pick the opportunity up
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the ops manager; opens the Initiative start prefilled
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: writing the proposal then starting the project'
+  claim: Picking up opens the Initiative start with the answers filled in and links back
+- id: 56.opp.park
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Park'''
+  input: Park with a reason and a review date
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the ops manager
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a note to self versus a dated park'
+  claim: Parking is a person's act with a reason and a review date
+- id: 56.opp.dismiss
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Dismiss'''
+  input: Dismiss with a reason
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the ops manager
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: ignoring versus a recorded reason'
+  claim: Dismissing keeps the reason; nothing is deleted
+- id: 56.opp.bringback
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Bring back'''
+  input: Bring a parked or dismissed item back
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the ops manager, or the review date reminder
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: remembering to revisit versus a reminder'
+  claim: A parked item returns for review when its date arrives; nothing moves by itself
+- id: 56.opp.history
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: opportunity history
+  input: State changes and evidence over time
+  person: ops manager
+  mode: automatic
+  agent: null
+  source: the opportunity record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: reconstructing who did what versus a history'
+  claim: Every state change is kept with who and when
+- id: 56.opp.became
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: '''Became'' link'
+  input: The Initiative this became
+  person: organiser
+  mode: automatic
+  agent: null
+  source: links.from on the Initiative
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: tracing where an idea went versus a link'
+  claim: An opportunity links to the Initiative that came from it
+- id: 56.opp.counters
+  spec: '56'
+  journey: shared
+  stage: notice
+  screen: backlog opportunity counters
+  input: Opportunities noticed, picked up, parked, dismissed
+  person: admin
+  mode: automatic
+  agent: null
+  source: the opportunity records
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: counting from a tracker'
+  claim: Counts of opportunities by state come from the records

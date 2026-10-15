@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Production deployment on Railway",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-deployment-railway.html"
+  },
+  "components": [
+    {
+      "id": "gh",
+      "type": "external",
+      "label": "GitHub",
+      "sublabel": "push to the main branch",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Browser",
+      "sublabel": "people and their accounts",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "rw_health",
+      "type": "cloud",
+      "label": "Health check",
+      "sublabel": "GET /api/health, waits up to 300 s",
+      "pos": [
+        340,
+        60
+      ],
+      "size": [
+        240,
+        64
+      ]
+    },
+    {
+      "id": "mode",
+      "type": "backend",
+      "label": "Mode switch",
+      "sublabel": "production when DATABASE_URL and REDIS_URL are both set",
+      "pos": [
+        620,
+        60
+      ],
+      "size": [
+        260,
+        64
+      ]
+    },
+    {
+      "id": "web",
+      "type": "backend",
+      "label": "Web app",
+      "sublabel": "pages, API, streams",
+      "pos": [
+        340,
+        200
+      ],
+      "size": [
+        240,
+        72
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Job worker",
+      "sublabel": "turns, pipelines, deliveries, scheduler",
+      "pos": [
+        620,
+        200
+      ],
+      "size": [
+        260,
+        72
+      ]
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Postgres",
+      "sublabel": "app state with versions, outbox events",
+      "pos": [
+        340,
+        360
+      ],
+      "size": [
+        240,
+        72
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis",
+      "sublabel": "job queue, cache, rate limit",
+      "pos": [
+        620,
+        360
+      ],
+      "size": [
+        260,
+        72
+      ]
+    },
+    {
+      "id": "vol",
+      "type": "database",
+      "label": "Volume /data",
+      "sublabel": "each company's DuckDB warehouse and files",
+      "pos": [
+        990,
+        200
+      ],
+      "size": [
+        240,
+        72
+      ]
+    },
+    {
+      "id": "egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "the only way out: allowlist, keys by env name",
+      "pos": [
+        990,
+        360
+      ],
+      "size": [
+        240,
+        72
+      ]
+    },
+    {
+      "id": "provider",
+      "type": "external",
+      "label": "Model provider",
+      "sublabel": "outside the machine",
+      "pos": [
+        1280,
+        300
+      ],
+      "size": [
+        210,
+        64
+      ]
+    },
+    {
+      "id": "market",
+      "type": "external",
+      "label": "Market data APIs",
+      "sublabel": "Frankfurter, FRED, Finnhub, MAS",
+      "pos": [
+        1280,
+        430
+      ],
+      "size": [
+        210,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "One service, one container: web app and job worker",
+      "wraps": [
+        "web",
+        "worker"
+      ],
+      "pad": 18
+    },
+    {
+      "kind": "region",
+      "label": "RAILWAY: production mode",
+      "wraps": [
+        "rw_health",
+        "mode",
+        "web",
+        "worker",
+        "pg",
+        "redis",
+        "vol",
+        "egress"
+      ],
+      "pad": 26
+    }
+  ],
+  "connections": [
+    {
+      "id": "gh_web",
+      "from": "gh",
+      "to": "web",
+      "label": "push: auto deploy"
+    },
+    {
+      "id": "browser_web",
+      "from": "browser",
+      "to": "web",
+      "label": "HTTPS"
+    },
+    {
+      "id": "health_web",
+      "from": "rw_health",
+      "to": "web",
+      "label": "probe",
+      "variant": "dashed"
+    },
+    {
+      "id": "mode_web",
+      "from": "mode",
+      "to": "web",
+      "label": "read at start",
+      "variant": "dashed"
+    },
+    {
+      "id": "web_pg",
+      "from": "web",
+      "to": "pg",
+      "label": "state"
+    },
+    {
+      "id": "web_redis",
+      "from": "web",
+      "to": "redis",
+      "label": "events"
+    },
+    {
+      "id": "worker_pg",
+      "from": "worker",
+      "to": "pg",
+      "label": "state and outbox"
+    },
+    {
+      "id": "worker_redis",
+      "from": "worker",
+      "to": "redis",
+      "label": "jobs"
+    },
+    {
+      "id": "worker_vol",
+      "from": "worker",
+      "to": "vol",
+      "label": "DuckDB, files"
+    },
+    {
+      "id": "web_egress",
+      "from": "web",
+      "to": "egress",
+      "label": "agent calls",
+      "variant": "security"
+    },
+    {
+      "id": "worker_egress",
+      "from": "worker",
+      "to": "egress",
+      "label": "scheduled calls",
+      "variant": "security"
+    },
+    {
+      "id": "egress_provider",
+      "from": "egress",
+      "to": "provider",
+      "label": "model prompts",
+      "variant": "security"
+    },
+    {
+      "id": "egress_market",
+      "from": "egress",
+      "to": "market",
+      "label": "allowlisted pulls",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Simple mode vs production mode",
+      "items": [
+        "Simple mode (no DATABASE_URL, no REDIS_URL): one process, JSON files and DuckDB on the volume, jobs run in the request.",
+        "Production mode (both set): state moves to Postgres, jobs to Redis, and the worker runs in the same container."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Deploy and keys",
+      "items": [
+        "Railway builds the Dockerfile on each push; tools/start.sh seeds an empty volume, never wipes it.",
+        "Keys are Railway variables named by env name (for example the model key and the market data keys); never in the repo, the chat or the logs."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "id": "TAL-12",
+  "agent": "tally",
+  "role": "company_admin",
+  "desc": "Grace Ong (company admin) sees the policy-question case.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": false,
+      "detail": "missing 'Agree the definition of benchmark'"
+    }
+  ],
+  "error": null,
+  "latency_ms": 30,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/cases"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "Agree the definition of benchmark"
+    ]
+  },
+  "turns": [
+    {
+      "role": "company_admin",
+      "method": "GET",
+      "path": "/api/v1/cases",
+      "request": null,
+      "status": 200,
+      "json": {
+        "cases": [
+          {
+            "id": "fada92bd-cddf-4783-8b0d-7b99655b6808",
+            "organization_id": "9606be01-7130-5166-bd6b-107cb3cf0f51",
+            "decision_intent_id": null,
+            "calculation_run_id": null,
+            "portfolio_id": "6cd18634-d1a1-4d16-86d3-a1c80555b789",
+            "instrument_id": null,
+            "exception_type": "break",
+            "title": "Cash differs \u00b7 Entity B \u00b7 2026-10-08",
+            "description": "Entity B cash, administrator against trading export: 880,400.00 against 868,000.00 USD on 2026-10-08, a difference of 12,400.00 USD.",
+            "detected_at": "2026-10-09T15:55:04.745154+08:00",
+            "candidate_impact_amount": 12400.0,
+            "impact_currency": "USD",
+            "materiality_status": "material",
+            "materiality_rule_version_id": "ea9430c3-803c-42c0-8322-b12347cc1aa2",
+            "status": "investigating",
+            "owner_user_id": "4c8d784f-fb0f-4034-ac3d-a34d224b1605",
+            "due_at": null,
+            "resolution_code": null,
+            "resolved_at": null,
+            "materiality": "high",
+            "due": null,
+            "state": "investigating",
+            "amount": 12400.0,
+            "currency": "USD",
+            "number": "CASE-0002",
+            "owner": "Mei Chen"
+          }
+        ]
+      },
+      "ms": 30,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

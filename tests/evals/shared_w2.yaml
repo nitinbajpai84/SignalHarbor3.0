@@ -1,0 +1,76 @@
+# W2-S: shared runtime, wave 2 (billing message, TAQ-S1, TAQ-S2, H1-01, H1-02, SP-C1-03, SP-C1-05, L-AQ1-05, AQF10-03). One item per fix that
+# is agent behaviour. `replay:` items run offline (python tools/run_evals.py --offline --agents shared_w2); `live: true` items are owed to the
+# live 3-of-3 rerun once the model accounts are topped up (python tools/run_evals.py --agents shared_w2 --items <id>). Synthetic data only.
+- id: SW2-BILL-ADMIN
+  agent: span
+  role: company_admin
+  live: true
+  desc: Billing message (S contract, worded by each agent) - out of credit everywhere; the administrator's reply names the provider and the fix, the trace says no_credit.
+  replay: no_credit
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns: [{say: "Which gold tables hold the monthly investment report?"}]
+  expected: {status: 200, model_failure: no_credit, words: ["out of credit"]}
+  scorers: [words, model_failure]
+
+- id: SW2-BILL-PART
+  agent: span
+  role: participant
+  desc: Billing message - the same failure for a participant says nothing about billing or providers (model_trouble_note is None for them).
+  replay: no_credit
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns: [{say: "Which gold tables hold the monthly investment report?"}]
+  expected: {status: 200, forbidden: ["out of credit", "OpenRouter", "top it up"]}
+  scorers: [words]
+
+- id: SW2-H102
+  agent: lumen
+  role: owner
+  desc: H1-02 (A14) - a failed loop and the rules reply after it are one trace; the answer's trace id opens the context, the failed model step and the rules step.
+  replay: no_credit
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "What was the net worth of each entity at the end of September 2026?"}]
+  expected: {status: 200, model_failure: no_credit}
+  scorers: [model_failure]  # trace_complete scores a model-worded answer; the one-trace check is in tests/v1/test_s_wave2.py
+
+- id: SW2-TAQS1
+  agent: tally
+  role: analyst
+  live: true
+  desc: TAQ-S1 (A15, A16) - "Who should I ask?" in plain words; the vault never turns "Ask" (or Evergreen, Cedarpoint, Ridge) into a person token.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Who should I ask about this?"}]
+  expected: {status: 200, forbidden: ["should Ask,", "PERSON_", "COMPANY_"], words_any: [["administrator", "owns this case", "Nobody owns"]]}
+  scorers: [words, egress_clean]
+
+- id: SW2-SPC105
+  agent: span
+  role: analyst
+  live: true
+  desc: SP-C1-05 (A15) - "which silver tables does this project use?" counts the silver tables its plan reads, not all 42 of the shared model.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Which silver tables does this project use?"}]
+  expected: {status: 200, forbidden: ["42 silver", "uses 42"]}
+  scorers: [words, loop_trace]
+
+- id: SW2-LAQ105
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: L-AQ1-05 (A13) - "where does this figure come from?" is answered by the loop (explain_figure_source no longer carries a figure the gateway suppresses).
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "Where does the net worth by entity figure come from?"}]
+  expected: {status: 200, forbidden: ["rules-only"]}
+  scorers: [words, loop_trace]
+
+- id: SW2-AQF1003
+  agent: north
+  role: analyst
+  live: true
+  desc: AQF10-03 (A2) - a figure question on a long thread is answered, not empty (Gemini 2.5 thinking capped at 2,048 of the 8,192 output tokens).
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns: [{say: "Which figures does the monthly investment report need, and which of them do we already have?"}]
+  expected: {status: 200, forbidden: ["could not reach the model", "rules-only"]}
+  scorers: [words, loop_trace]

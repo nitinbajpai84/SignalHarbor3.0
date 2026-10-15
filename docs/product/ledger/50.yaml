@@ -1,0 +1,532 @@
+- id: 50.s01.type
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent (chooser, step 1)
+  input: Pick the Initiative type
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's own choice among five tiles
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one tap against writing an email to ask who starts a project'
+  claim: One tap starts an Initiative; the draft is private to the organiser until opened
+- id: 50.s02.goal
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/new?type=initiative&step=goal
+  input: What are you trying to achieve, and why
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the profile and the organiser's first line
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: a project brief paragraph versus reading a draft and tapping'
+  claim: North drafts the goal and why from the profile; the organiser corrects it
+- id: 50.s02.people
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: step=people
+  input: Who to involve and who is affected
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the profile people list and areas
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: chasing a distribution list versus accepting named people'
+  claim: North names sponsor, participants and affected people from the profile; it never invites anyone
+- id: 50.s02.build
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: step=build
+  input: Does this need a build
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the goal answer and the company systems list
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a meeting with IT versus one tap on a guess'
+  claim: North proposes whether a build is needed; the organiser taps to agree
+- id: 50.s02.definitions
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: step=definitions
+  input: Do we have definitions already
+  person: organiser
+  mode: derived
+  agent: Lens
+  source: the glossary and catalogue look-up on the saved goal
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: searching old documents by hand versus a look-up that runs on its own'
+  claim: Existing definitions are found from the goal with no one asked
+- id: 50.s02.areas
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: step=areas
+  input: Which areas this touches
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the goal and the profile areas
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a list scribbled in email versus one tap on a draft'
+  claim: North suggests the areas; the organiser confirms
+- id: 50.s02.deadline
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: step=deadline
+  input: Decide-by date
+  person: organiser
+  mode: confirm
+  agent: North
+  source: ten working days from today
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: agreeing a date by email versus accepting a prefilled one'
+  claim: The decide-by date is prefilled from the time box
+- id: 50.s02.clock
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id> (clock)
+  input: The ten-day time box and stage split
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the type's stage split in the catalogue
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: building a plan with dates versus none'
+  claim: Time box and stage clocks start themselves when the intent opens
+- id: 50.s03.invites
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (invite panel)
+  input: Send each invitation and the join link
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the people named at start
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: writing six emails versus approving drafted invitations'
+  claim: North drafts every invitation; the organiser approves and copies one link
+- id: 50.s03.pulse
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: Pulse line 'Add your cards'
+  input: A line on each person's page asking for cards
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the invitation and the seat record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: a chaser email each versus a line that appears by itself'
+  claim: Each invitee finds their own request on their Pulse with nobody writing it
+- id: 50.s04.cards
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (private room)
+  input: A person's cards in four quarters
+  person: participant
+  mode: confirm
+  agent: North
+  source: North's interview of the person, the pack and company documents
+  minutes_without: 25
+  minutes_with: 5
+  basis: 'estimate: a workshop sticky-note round versus a five-minute interview'
+  claim: People answer four plain questions and North drafts their cards for them to keep, edit or reject
+- id: 50.s04.q4
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: private room, question 4
+  input: Most technical definition when the person says 'I don't know'
+  person: participant
+  mode: derived
+  agent: Lens
+  source: company documents, marked guessed with the document named
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: asking an analyst versus Lens reading the files'
+  claim: Lens fills the technical definition from documents and marks it guessed
+- id: 50.s04.seal
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: private room (Anonymous, Seal it)
+  input: Seal or anonymise one card
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's own choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: an off-the-record conversation versus one tick'
+  claim: Only the author decides to seal or hide a name; no agent reads it into a shared draft
+- id: 50.s04.suggest
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: wall, dashed suggestion cards
+  input: Pick up a suggestion card
+  person: participant
+  mode: derived
+  agent: North
+  source: the pack and company documents, at most three per lane
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: brainstorming gaps versus one tap on a ready card'
+  claim: North adds up to three suggestion cards per lane; one tap picks one up
+- id: 50.s05.freeze
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (Close the wall)
+  input: Close the wall and freeze it
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's confirmation; agents never close
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: chasing contributions then compiling versus one confirm'
+  claim: A person closes the wall; the frozen snapshot becomes page one of the charter
+- id: 50.s05.cluster
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: wall, clusters and shelves
+  input: Name, colour and group the cards
+  person: organiser
+  mode: derived
+  agent: North
+  source: the frozen cards
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: typical office: a half-day affinity-sorting session'
+  claim: North clusters and names the cards with no one touching them
+- id: 50.s05.counts
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: wall stage bar
+  input: Counts per lane and who has contributed
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the wall session and seat records
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: tallying notes by hand versus a counter'
+  claim: Lane counts and contribution counts are kept by the system
+- id: 50.s06.shelf
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/define (Clusters)
+  input: Move a cluster to Must, Should, Good to have or Future
+  person: organiser
+  mode: manual
+  agent: null
+  source: the committee's judgement; each move kept with person and time
+  minutes_without: 30
+  minutes_with: 20
+  basis: 'estimate: a committee ranking session, a planning estimate for both'
+  claim: Only the committee orders its priorities; the product keeps every move
+- id: 50.s06.vote
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define, vote
+  input: Vote on a cluster
+  person: participant
+  mode: manual
+  agent: null
+  source: the voter's own view
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: show of hands and minutes versus a tap'
+  claim: A vote is one tap, tallied by the system
+- id: 50.s06.confirm
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define, 'Confirm the definition'
+  input: Confirm Lens's definition for a cluster
+  person: approver
+  mode: confirm
+  agent: Lens
+  source: the cluster's cards and the pack definition
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: writing the definition versus reading and confirming'
+  claim: Lens drafts each cluster's definition; a person confirms or sends back with a note
+- id: 50.s07.process
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define?tab=process-map
+  input: Process map per cluster
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: cards, documents and the profile
+  minutes_without: 45
+  minutes_with: 10
+  basis: 'estimate: a process-mapping workshop versus editing a draft'
+  claim: Lens drafts steps, people and systems for each process; the analyst confirms or edits
+- id: 50.s07.source
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define?tab=data-sources (Pulse line to the source owner)
+  input: Confirm how my source works
+  person: source owner
+  mode: confirm
+  agent: Lens
+  source: the sources map and pipeline contracts
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: an email thread with the owner versus one confirm'
+  claim: The source owner confirms a drafted source row or says 'Not mine, it is X'
+- id: 50.s08.meaning
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define?tab=glossary
+  input: Pick a meaning for an ambiguous term
+  person: approver
+  mode: manual
+  agent: null
+  source: Grace's judgement among meanings Lens found and located
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: a meeting to settle one term versus a pick from found meanings'
+  claim: A person chooses the meaning; Lens shows where each meaning was found
+- id: 50.s08.catalogue
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define?tab=catalogue
+  input: Technical definition and catalogue entry per measure
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the pack, documents and the sources map
+  minutes_without: 45
+  minutes_with: 8
+  basis: 'estimate: writing a data dictionary versus confirming drafts'
+  claim: Lens drafts source, fields, calculation, period, currency and class; the data owner confirms
+- id: 50.s09.governed
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define?tab=governed
+  input: Owners, class, who may see, resolving team, downstream, review date
+  person: approver
+  mode: confirm
+  agent: Lens
+  source: the profile, pipelines and the catalogue, each with provenance
+  minutes_without: 40
+  minutes_with: 8
+  basis: 'estimate: a governance spreadsheet versus six confirms per measure'
+  claim: Lens drafts all six governed fields with provenance; named people confirm
+- id: 50.s09.ring
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: define cluster ring
+  input: Governed ring and percentages
+  person: organiser
+  mode: automatic
+  agent: null
+  source: confirmed governed cells
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: tracking status in a sheet versus a ring that fills'
+  claim: The governed ring and percentages are computed from confirmations
+- id: 50.s10.sothat
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter
+  input: '''So that'' line for each problem'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the frozen wall and the cluster definitions
+  minutes_without: 20
+  minutes_with: 4
+  basis: 'estimate: drafting a charter versus tapping Use this'
+  claim: North drafts each 'so that'; the organiser uses or edits it
+- id: 50.s10.sign
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: charter, 'Sign the charter'
+  input: The sponsor's signature
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor alone; North checks readiness and says 'Ask Daniel to sign'
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: circulating a PDF for signature versus one signed page'
+  claim: Only the sponsor signs; North prepares and checks the page first
+- id: 50.s10.sendback
+  spec: '50'
+  journey: initiative
+  stage: decide
+  screen: charter, 'Send back with a note'
+  input: A note when the sponsor sends the charter back
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's words
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: an email with comments versus a required note on the record'
+  claim: A send-back note is kept with name and time and North drafts what to change
+- id: 50.s11.roles
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: charter?focus=roles
+  input: 'Who does what: six roles'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: people on the wall and in the catalogue
+  minutes_without: 20
+  minutes_with: 4
+  basis: 'estimate: a RACI meeting versus editing a draft'
+  claim: North drafts the six roles from the people it saw; only named people appear
+- id: 50.s11.accept
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: Pulse line 'Accept' or 'Decline'
+  input: Each named person accepts or declines a role
+  person: participant
+  mode: manual
+  agent: null
+  source: the named person
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: an email reply versus a tap'
+  claim: Each person answers for themselves in one tap
+- id: 50.s12.check
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: /centre/intent/<id>/build-ready
+  input: The seven-line build-ready check
+  person: organiser
+  mode: automatic
+  agent: North
+  source: charter, definitions, owners, sources, roles
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: a manual readiness review versus a check that reruns on every write'
+  claim: Readiness is recomputed on every write and each failing line names a person
+- id: 50.s12.missing
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: build-ready, 'Fix it'
+  input: A missing definition
+  person: analyst
+  mode: confirm
+  agent: Lens
+  source: the pack and the cards
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: writing it from scratch versus confirming a draft'
+  claim: Lens drafts any missing definition for a person to confirm
+- id: 50.s13.handoff
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: build-ready, 'Hand to Build'
+  input: Hand to Build
+  person: organiser
+  mode: manual
+  agent: null
+  source: a named person; agents never hand off
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: a handover meeting and pack versus one confirm at 7 of 7'
+  claim: Build opens at gap analysis with the charter's measures and roles; no re-keying
+- id: 50.s13.closure
+  spec: '50'
+  journey: initiative
+  stage: build
+  screen: /centre/intent/<id>/close
+  input: Closure summary, why it happened, what came out
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the intent record from start to end
+  minutes_without: 25
+  minutes_with: 3
+  basis: 'estimate: writing a project close report versus reading a draft'
+  claim: North drafts the whole closure; the organiser edits and closes
+- id: 50.b2.nudge
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: North card to the organiser (branch B2)
+  input: Who has not added cards
+  person: organiser
+  mode: automatic
+  agent: North
+  source: seat records, as a count
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking around versus a nudge at half time'
+  claim: North names who has not contributed at half the window; it removes no one
+- id: 50.b6.status
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: North status at half time (branch B6)
+  input: Status of the Initiative at 50 percent
+  person: organiser
+  mode: derived
+  agent: North
+  source: 'the record only: steps done, replies missing'
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: a status meeting versus a drafted status'
+  claim: North drafts a status from the record at the halfway mark
+- id: 50.b6.extend
+  spec: '50'
+  journey: initiative
+  stage: think
+  screen: time box options (branches B6, B7)
+  input: Extend with a reason, close with what we have, or cancel
+  person: organiser
+  mode: manual
+  agent: null
+  source: a named person with a reason
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: an email to ask for more time versus an option with a reason'
+  claim: Agents never extend, close or cancel; a named person acts each time

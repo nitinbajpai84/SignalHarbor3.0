@@ -1,0 +1,65 @@
+{
+  "id": "MEM-06",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "Person B cannot forget person A's item (404 or 403) and it stays.",
+  "status": "error",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 1: status 403, wanted 200; turn 2: missing 'week'"
+    }
+  ],
+  "error": "nothing saved as 'mid'",
+  "latency_ms": 37,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures weekly"
+      },
+      "status": 403,
+      "json": {
+        "error": "not_allowed",
+        "message": "You do not have access to this dashboard."
+      },
+      "ms": 31,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 5,
+      "expect": {
+        "contains": [
+          "week"
+        ]
+      },
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

@@ -1,0 +1,350 @@
+{
+  "id": "LUM-SP-01",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "ER-06: on the Consume landing Lumen reads a figure through query_figure (Lumen's tools are registered on the talk route).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "groundedness",
+      "passed": null,
+      "detail": "no worded answer"
+    },
+    {
+      "name": "loop_trace",
+      "passed": false,
+      "detail": "answered by the rules, not the agent's loop (rules_only)"
+    },
+    {
+      "name": "trace_complete",
+      "passed": false,
+      "detail": "Lumen: no context step; Lumen: no model step; Lumen: no guard step"
+    }
+  ],
+  "error": null,
+  "latency_ms": 48238,
+  "cost": {
+    "calls": 5,
+    "tokens": 14899,
+    "usd": 0.006334,
+    "estimated": false
+  },
+  "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+  "forgotten": [
+    "sponsor: summary s-aeb69814"
+  ],
+  "egress_lines": 5,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "880,400",
+        "880400"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/chat",
+      "request": {
+        "text": "What was Entity B's cash at the administrator on 8 October 2026?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Rules-only reply: About Monthly investment report in USD and SGD: Cash USD: Entity B, accounting 880,400; Entity B, operational 868,000; Evergreen Family Trust, accounting 1,150,000; Evergreen Family Trust, operational 1,148,200; Evergreen Holdings, accounting 2,300,000; Evergreen Holdings, operational 2,300,000. The tile shows one period, the latest in the data, so I cannot pick another month from it. From the tile 'Cash by entity' on the dashboard 'Monthly investment report in USD and SGD', last refreshed 2026-10-09.",
+        "rules_only": true,
+        "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+      },
+      "ms": 48238,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 8067,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:17:39+0800",
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+    },
+    {
+      "bytes": 8067,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:17:30+0800",
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+    },
+    {
+      "bytes": 12227,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:17:24+0800",
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+    },
+    {
+      "bytes": 11971,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:17:19+0800",
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+    },
+    {
+      "bytes": 10929,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:17:10+0800",
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+      "status": 200,
+      "runs": [
+        {
+          "id": "b961f797f74b4113a78d7c70497d0e60",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:17:47+00:00",
+          "elapsed_ms": 43936,
+          "steps": 9,
+          "tool_calls": 3,
+          "cost_usd": 0.006334,
+          "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+          "kind": "loop",
+          "worded_by": "model"
+        },
+        {
+          "id": null,
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:17:47+00:00",
+          "elapsed_ms": 0,
+          "steps": 1,
+          "tool_calls": 0,
+          "cost_usd": null,
+          "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+          "kind": "loop",
+          "worded_by": "rules"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+          "at": "2026-10-10T02:17:47+00:00",
+          "run_id": "b961f797f74b4113a78d7c70497d0e60",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 43936,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "1"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 12484,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3139,
+              "tokens_out": 26,
+              "cost_usd": 0.001007
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_gold_tables",
+              "arg_keys": [
+                "project"
+              ],
+              "result_chars": 812,
+              "refused": false,
+              "reason": null,
+              "ms": 125
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 6297,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3393,
+              "tokens_out": 91,
+              "cost_usd": 0.001245
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "query_figure",
+              "arg_keys": [
+                "figure",
+                "filters",
+                "group_by",
+                "month",
+                "table",
+                "project"
+              ],
+              "result_chars": 58,
+              "refused": true,
+              "reason": "wrong_arguments",
+              "ms": 0,
+              "tried": {
+                "figure": {
+                  "type": "str",
+                  "chars": 8
+                },
+                "filters": {
+                  "type": "list"
+                },
+                "group_by": {
+                  "type": "str",
+                  "chars": 9
+                },
+                "month": {
+                  "type": "str",
+                  "chars": 7
+                },
+                "table": {
+                  "type": "str",
+                  "chars": 33
+                },
+                "project": {
+                  "type": "str",
+                  "chars": 12
+                }
+              }
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 6811,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3443,
+              "tokens_out": 589,
+              "cost_usd": 0.002505
+            },
+            {
+              "kind": "tool",
+              "n": 3,
+              "tool": "query_figure",
+              "repeat": true,
+              "result_chars": 0,
+              "refused": false,
+              "reason": null,
+              "ms": 0
+            },
+            {
+              "kind": "model",
+              "n": 4,
+              "ok": true,
+              "ms": 18218,
+              "tool_calls": 0,
+              "tries": 2,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4076,
+              "tokens_out": 142,
+              "cost_usd": 0.0015769999999999998,
+              "attempts": [
+                {
+                  "tier": "specialist",
+                  "model": "gemini-2.5-flash",
+                  "step": "first",
+                  "ok": "number_guard",
+                  "tokens_in": 2038,
+                  "tokens_out": 80,
+                  "cost_usd": 0.000811,
+                  "ms": 10214
+                },
+                {
+                  "tier": "manager",
+                  "model": "gemini-2.5-flash",
+                  "step": "retry_up",
+                  "ok": "number_guard",
+                  "tokens_in": 2038,
+                  "tokens_out": 62,
+                  "cost_usd": 0.000766,
+                  "ms": 7993
+                }
+              ],
+              "final": true
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 2
+            }
+          ]
+        },
+        {
+          "trace_id": "tr-lumen-c2bf28ad-4c9195ba",
+          "at": "2026-10-10T02:17:47+00:00",
+          "run_id": null,
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 0,
+          "steps": [
+            {
+              "kind": "rules",
+              "reason": "model_untraced_figure"
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.006333999999999999,
+        "tokens": 14899
+      }
+    }
+  ]
+}

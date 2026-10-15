@@ -1,0 +1,189 @@
+{
+  "id": "MEM-09",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "No client figure is stored as memory text - 103,405,000 is not kept.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 1390,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 1,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on remember that the net worth is 103,405,000"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD per month. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-8e8c10",
+            "title": "Net worth USD per month",
+            "kpi": "net_worth_usd",
+            "sql": "select \"report_month\" as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-7398c035",
+        "remembered": []
+      },
+      "ms": 1374,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-b6f60a38",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:26+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-dcc5f3a0",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants to track progress on the month-end report.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-e18424b01941488f7a2714db02c65c39",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 6,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "103,405,000",
+          "103405000"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-b6f60a38",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:26+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-dcc5f3a0",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants to track progress on the month-end report.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-e18424b01941488f7a2714db02c65c39",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 8,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12692,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:38+0800"
+    }
+  ]
+}

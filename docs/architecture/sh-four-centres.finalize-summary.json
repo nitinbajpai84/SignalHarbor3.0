@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-four-centres.json",
+    "sha256": "6102f8b6265d279553bb4a4e72342310ec73fce9c95c709aaebe42b8c00719cd",
+    "bytes": 17472
+  },
+  "artifact": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-four-centres.html",
+    "sha256": "044fa3da7bb2c250f5d3e93e7ca179b0bb95246c037d90eab921c30127e831cb",
+    "bytes": 795371
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-four-centres.finalize.json",
+    "summaryReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-four-centres.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-four-centres.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3720,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 4
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "intake-warehouse",
+            "from": "intake",
+            "to": "warehouse",
+            "label": "bronze",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "right": {
+            "id": "lumen-router",
+            "from": "lumen",
+            "to": "router",
+            "label": "model call",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "point": [
+            1364,
+            296
+          ]
+        },
+        {
+          "left": {
+            "id": "warehouse-views",
+            "from": "warehouse",
+            "to": "views",
+            "label": "reads",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "right": {
+            "id": "lumen-router",
+            "from": "lumen",
+            "to": "router",
+            "label": "model call",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "point": [
+            1364,
+            356
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "warehouse-lumen",
+            "from": "warehouse",
+            "to": "lumen",
+            "label": "gold tables",
+            "collectionIndex": 7,
+            "artifactIndex": 8
+          },
+          "bends": 3,
+          "stretch": 1.209
+        },
+        {
+          "relationship": {
+            "id": "warehouse-views",
+            "from": "warehouse",
+            "to": "views",
+            "label": "reads",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "bends": 3,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "north-router",
+            "from": "north",
+            "to": "router",
+            "label": "model call",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "lumen-router",
+            "from": "lumen",
+            "to": "router",
+            "label": "model call",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "bends": 3,
+          "stretch": 1.065
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "intake → warehouse crosses lumen → router: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "warehouse → views crosses lumen → router: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "warehouse → lumen needs 3 bends: move node warehouse or lumen so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "warehouse → views needs 3 bends: move node warehouse or views so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "north → router needs 4 bends: move node north or router so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "lumen → router needs 3 bends: move node lumen or router so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

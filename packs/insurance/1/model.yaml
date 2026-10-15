@@ -1,0 +1,68 @@
+# Industry model insurance@1. Tables are the pack's logical feeds (feeds.yaml); properties and synonyms come only from column_synonyms.yaml
+# and glossary.yaml. Claim, Reserve, Reinsurer and Broker have no source columns in this pack yet, so they carry none: nothing is invented.
+# A suggestion, not the office's own definition.
+template: insurance@1
+version: 1
+objects:
+  - name: policy
+    label: Policy
+    table: policies
+    properties:
+      - {name: policy_id, label: Policy identifier, type: string, synonyms: []}
+      - {name: inception_date, label: Inception date, type: date, synonyms: [start_date]}
+      - {name: policy_status, label: Policy status, type: string, synonyms: [In-force, Lapse]}
+      - {name: currency_code, label: Currency, type: string, synonyms: []}
+      - {name: lbu_code, label: Local business unit, type: string, synonyms: [LBU]}
+    relations:
+      - {to: policyholder, label: held by}
+      - {to: product, label: of}
+      - {to: premium, label: pays}
+  - name: premium
+    label: Premium
+    table: policies
+    properties:
+      - {name: ape_amount, label: Annualised premium equivalent, type: number, synonyms: [APE, Annualised premium equivalent]}
+      - {name: premium_amount, label: Premium, type: number, synonyms: [premium]}
+    relations:
+      - {to: policy, label: paid on}
+  - name: product
+    label: Product
+    table: policies
+    properties:
+      - {name: product_category, label: Product category, type: string, synonyms: [Base product]}
+    relations: []
+  - name: policyholder
+    label: Policyholder
+    table: customers
+    properties:
+      - {name: customer_id, label: Customer identifier, type: string, synonyms: []}
+      - {name: customer_segment, label: Segment, type: string, synonyms: []}
+      - {name: customer_since_date, label: Customer since, type: date, synonyms: []}
+      - {name: lbu_code, label: Local business unit, type: string, synonyms: [LBU]}
+    relations: []
+  - name: claim
+    label: Claim
+    table: claims
+    properties: []
+    relations:
+      - {to: policy, label: made on}
+  - name: reserve
+    label: Reserve
+    table: reserves
+    properties: []
+    relations:
+      - {to: claim, label: set aside for}
+  - name: reinsurer
+    label: Reinsurer
+    table: reinsurers
+    properties: []
+    relations:
+      - {to: policy, label: reinsures}
+  - name: broker
+    label: Broker
+    table: agents
+    properties:
+      - {name: agent_id, label: Agent identifier, type: string, synonyms: []}
+      - {name: branch, label: Branch, type: string, synonyms: []}
+    relations:
+      - {to: policy, label: sells}

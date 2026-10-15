@@ -1,0 +1,202 @@
+# Input ledger rows for spec 07: time box and stage clock.
+- id: "07.time_box"
+  spec: "07"
+  journey: shared
+  stage: decide
+  screen: "start flow, Open (time box proposal)"
+  input: "Time box and stage budgets at opening"
+  person: organiser
+  mode: confirm
+  built: automatic
+  agent: North
+  source: "the catalogue default in working days; the organiser may shorten a stage"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: planning a schedule versus confirming a proposed one"
+  claim: "North proposes the time box and stage lengths from the type; the organiser confirms"
+- id: "07.clock"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "stage bar (stage clock, time box clock, Day 4 of 10)"
+  input: "Days left in the stage and in the box"
+  person: any
+  mode: automatic
+  source: "the server clock against the dates, in working days"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting days to a deadline"
+  claim: "Time left is worked out by the system in working days; nobody counts"
+- id: "07.clock_state"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "stage bar chips (on time, half, at risk, overdue)"
+  input: "Clock state with colour and word"
+  person: any
+  mode: automatic
+  source: "derived from the dates, never stored"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: judging whether a project is late"
+  claim: "Whether an intent is on time is worked out from its dates, never reported"
+- id: "07.stage_dues"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "stage bar (stage due dates)"
+  input: "Due date of each stage"
+  person: system
+  mode: automatic
+  source: "the stage budgets and the calendar"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: setting milestones by hand"
+  claim: "Each stage gets a due date from the catalogue; nobody sets milestones"
+- id: "07.north_card"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "North's time card (half time, near the end, time is up)"
+  input: "Status line and the three options: extend, close with what we have, cancel"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "steps done, who has not replied and the next unstarted step, from the record"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: noticing a slipping project and preparing the options for a steering meeting"
+  claim: "North says early when an intent will not make it and drafts the options"
+- id: "07.extend_reason"
+  spec: "07"
+  journey: shared
+  stage: decide
+  screen: "extend dialog (Reason, required)"
+  input: "Reason for extending"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "what is outstanding in the record, for example the glossary from Finance is not in"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a justification versus editing a drafted one"
+  claim: "North drafts the reason from what is outstanding; the person edits and sends"
+  built: manual
+- id: "07.extend_days"
+  spec: "07"
+  journey: shared
+  stage: decide
+  screen: "extend dialog (extra working days, which clock)"
+  input: "Extra working days and which clock"
+  person: organiser
+  mode: manual
+  source: "the organiser's choice from a short list"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: agreeing a new date"
+  claim: "An extension is a recorded choice with a reason, who and when"
+- id: "07.extend_approval"
+  spec: "07"
+  journey: shared
+  stage: decide
+  screen: "extend dialog (Ask Daniel to approve) and the approver's list"
+  input: "Approve or decline an extension that needs approval"
+  person: sponsor
+  mode: manual
+  source: "the sponsor or approver; North writes the request with the earlier and new reason"
+  minutes_without: 15
+  minutes_with: 2
+  basis: "estimate: an email exchange versus a request that carries both reasons"
+  claim: "The approver sees the earlier reason, the new reason and what is left, and decides in one place"
+- id: "07.pick_option"
+  spec: "07"
+  journey: shared
+  stage: decide
+  screen: "North's time card (Extend, Close with what we have, Cancel this intent)"
+  input: "Pick extend, close with what we have, or cancel"
+  person: organiser
+  mode: manual
+  source: "a named person; North drafted the three options"
+  minutes_without: 30
+  minutes_with: 2
+  basis: "estimate: a steering conversation"
+  claim: "A named person picks one of three drafted options; North never decides"
+- id: "07.escalate"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "North's time card (Who picks line)"
+  input: "Who is asked next if nobody picks"
+  person: sponsor
+  mode: derived
+  agent: North
+  source: "the picking rule and the date"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing an overdue decision"
+  claim: "North asks the next named person when the first does not pick"
+- id: "07.snooze"
+  spec: "07"
+  journey: shared
+  stage: run
+  screen: "North's time card (Remind me tomorrow)"
+  input: "Snooze the time card until tomorrow"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 1
+  minutes_with: 0.1
+  basis: "estimate: a tap"
+  claim: "The card can be put off for a day while the waiting line stays"
+- id: "07.overdue_panel"
+  spec: "07"
+  journey: admin
+  stage: run
+  screen: "Pulse, Overdue intents panel (at risk group, days overdue)"
+  input: "Overdue and at-risk intents"
+  person: company_admin
+  mode: automatic
+  source: "open intents past or near time_box.ends"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: scanning a tracker for late items"
+  claim: "Late intents are listed from the dates, for the organiser and the company admin"
+- id: "07.week_close"
+  spec: "07"
+  journey: checkin
+  stage: run
+  screen: "weekly check-in (week closes by the clock)"
+  input: "Close the week and open the next one"
+  person: system
+  mode: automatic
+  source: "the close day and the next working day"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: setting up each week's collection"
+  claim: "A check-in week closes and the next one opens by the clock"
+- id: "07.wall_freeze"
+  spec: "07"
+  journey: initiative
+  stage: think
+  screen: "wall (freezes at its window end)"
+  input: "Freeze the wall"
+  person: system
+  mode: automatic
+  source: "the wall window"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: calling time on brainstorm input"
+  claim: "The wall freezes by itself at its window end; the frozen wall is page one of the charter"
+- id: "07.counters"
+  spec: "07"
+  journey: admin
+  stage: prove
+  screen: "Pulse and overview (closed inside the time box, after an extension, extensions per intent, overdue now)"
+  input: "Closed in time, closed after an extension, mean extensions, overdue and at risk now"
+  person: company_admin
+  mode: automatic
+  source: "time_box, extended_by and closure times"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: compiling delivery performance"
+  claim: "How well the company keeps to its time boxes is counted from the records"

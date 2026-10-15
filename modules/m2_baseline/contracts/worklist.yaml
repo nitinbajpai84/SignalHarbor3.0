@@ -1,0 +1,56 @@
+# M2-P01 (A-042): what the work list adds to contracts/SHARED.md. Files and the shared shapes are SHARED.md's; this holds
+# the routes, the additive fields on a KPI, and the rules the package enforces. Other packages read through
+# modules/m2_baseline/store/baseline.py `read_baseline(plane, baseline_id)` and store/kpis.py `read_kpis(plane, baseline_id)`.
+
+baseline_file: intents/m2_baseline/<baseline id>/baseline.json   # {id, charter_outcome_id, state, created_at}
+# charter_outcome_id is null for a baseline started without a charter (module 1 not bought, or a company starting
+# from nothing): KPIs are then added by hand. One baseline per signed charter: a second start returns the first.
+
+kpi_additive_fields:    # beside the SHARED.md shape; readers coding against SHARED.md may ignore them
+  producer: prov                 # triage: who produces the data (M2-02). Shown from the owners' answers (the systems they named) while unknown here; a typed value wins.
+  gathered: prov                 # triage: how it is gathered. Shown from the owners' answers (how each system arrives, how often) while unknown here.
+  questions: "[{id, question, answer: prov}]"   # what only the business can answer; answer stays unknown until a person writes it
+  definition_proposal: "prov or null"           # Lens's later draft kept beside a person's stated definition
+kpi_id: the pack's KPI id when a suggestion was confirmed, else "kpi-<8 hex>"
+kpi_owner_prov: >-
+  owners.<role> is a prov of a name. mark stated, by = who nominated, at = when, from = "nominated, with an account" or
+  "nominated, no account yet". A declined or withdrawn nomination is unknown, from = "declined by <name>".
+owner_account_id: owners.<role>.account_id is the nominee's account id (null without an account); only on a nomination.
+may_see_accounts: governance.may_see_accounts {name casefolded: [account ids]} appears only for names that belonged to an account when named; never sent to the screen. may_see itself is unchanged (names).
+governance_default: {personal: not_sure, sensitive: false, may_see: []}   # not_sure is kept as given and treated as personal
+
+routes:   # all under /api/modules/m2_baseline; roles company_admin, sponsor, analyst
+  - GET  /baselines                                   # {charters: [{outcome_id, signed_at, problem_count, title, baseline_id|null}], baselines: [{...baseline, kpi_count, charter_title, charter_signed_at}]}
+  - POST /baselines                                   # {charter_outcome_id: id|null} -> the work list view (201 new, 200 existing, 404 unknown charter)
+  - GET  /baselines/{baseline_id}                     # the work list view
+  - POST /baselines/{baseline_id}/kpis                # {suggestion_id?, name?, problem_ids?}: a person confirms a suggestion or adds one by name
+  - DELETE /baselines/{baseline_id}/kpis/{kpi_id}
+  - PUT  /baselines/{baseline_id}/kpis/{kpi_id}/triage       # {definition?, producer?, gathered?} each {text, mark: stated|guessed|unknown}
+  - PUT  /baselines/{baseline_id}/kpis/{kpi_id}/questions/{question_id}   # {answer}
+  - PUT  /baselines/{baseline_id}/kpis/{kpi_id}/owners       # {business?, data?, process?} each {name, has_account}; empty name withdraws
+  - POST /baselines/{baseline_id}/kpis/{kpi_id}/owners/{role}/decline
+  - PUT  /baselines/{baseline_id}/kpis/{kpi_id}/governance   # {personal?, sensitive?, may_see?}
+  - POST /baselines/{baseline_id}/lens/draft          # {kpi_ids?}: Lens drafts definitions (pack, then the company's own documents)
+
+view:   # what the work list routes return
+  baseline: {id, charter_outcome_id, state, created_at}
+  charter: "{outcome_id, signed_at} or null"
+  problems: "[{id, title, priority, kpi_ids[], has_kpi}]"     # a problem with no KPI shows has_kpi false
+  kpis: "[kpi + {restricted: false, state, triage, missing_owners, treated_as_personal}] or, for a person not named, {id, name: A restricted measure, restricted: true, state}"   # never the real name (R4 defect 5)
+  suggestions: "[{id, name, problem_ids[], priority}]"        # Lens's suggestions from the pack's KPI tree; not KPIs until confirmed
+  suggestion_label: the pack's label ("What others in the industry usually track (a suggestion, ...)")
+  pack: {available, label}
+  owners_complete: count of KPIs with all three owners
+  lens_available: whether a model is set up for this company
+states: [not_started, drafted, questions_open, signed]   # signed once the baseline is signed (P05 sets baseline.state)
+
+rules:
+  - No KPI exists until a person confirms it (POST /kpis); suggestions are computed, never stored.
+  - Lens never invents a formula: a KPI the pack gives no formula for carries a question for the business.
+  - A signed baseline refuses every change with 409. A person's stated definition is never replaced; Lens's draft goes to definition_proposal.
+  - Governance is enforced on the server: once may_see is named on a personal (or not sure) or sensitive KPI, only those people and the company admin see what is in it; others see that it exists. Writes by anyone else are refused (403).
+  - Pre-read: Lens reads the passages of the company's uploaded documents (Company context; filed under the first agent, "north", by sh_platform/context_docs) that fit the KPI, as plain quoted text through the egress gateway, and marks the draft guessed with the document title as `from`.
+open_questions:
+  - The company admin always sees a restricted KPI (the organiser names who may see it). Say if the sponsor should be named like anyone else.
+  - DECIDED (fix round 1): a personal, not-sure or sensitive KPI with nobody named is seen by the company admin only; only the company admin or sponsor changes may_see.
+  - Documents are filed under the agent "north" in sh_platform/context_docs (AGENTS = ("north",)); Lens reads those. A "lens" slot there is a platform change.

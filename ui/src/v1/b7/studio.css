@@ -1,0 +1,81 @@
+/* DS1: the studio grid is 12 columns; on a phone every widget takes the full width, in reading order. */
+.b7-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(340px, auto); gap: 8px; align-items: stretch; }
+.b7-item { overflow: hidden; }
+.b7-item[data-dragging="true"] { opacity: 0.4; }
+.b7-grid[data-editable="true"] .b7-item { cursor: grab; }
+.b7-item-bar { position: absolute; top: 6px; right: 8px; display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+.b7-item:hover .b7-item-bar, .b7-item:focus-within .b7-item-bar, .b7-item[data-selected="true"] .b7-item-bar { opacity: 1; }
+.b7-mini { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--ds-line-2); background: var(--ds-surface); color: var(--ds-ink); cursor: pointer; }
+.b7-resize { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; cursor: nwse-resize; border-right: 3px solid var(--ds-teal-bright); border-bottom: 3px solid var(--ds-teal-bright); border-radius: 0 0 4px 0; opacity: .7; touch-action: none; }
+.b7-ghost { border: 2px dashed var(--ds-teal-bright); border-radius: 8px; pointer-events: none; background: color-mix(in srgb, var(--ds-teal-bright) 10%, transparent); }
+.b7-split { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.b7-slot { min-height: 64px; border: 1px dashed currentColor; background: transparent; border-radius: 6px; cursor: pointer; font: inherit; opacity: 0.7; }
+.b7-slot[aria-pressed="true"], .b7-slot:hover, .b7-slot:focus-visible { opacity: 1; border-style: solid; }
+/* ST2: the card grows with its row, then "Reads" and the controls sit below it, never over the next row or the row buttons. Tokens only. */
+.b7-item { position: relative; min-width: 0; display: flex; flex-direction: column; }
+.b7-item > .ds-card { flex: 1 1 auto; height: auto !important; background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-line-2); }
+.b7-item[data-selected="true"] > .ds-card { outline: 2px solid var(--ds-teal-bright); }
+.b7-slot { color: var(--ds-ink-soft); border-color: var(--ds-line-2); }
+.b7-slot[aria-pressed="true"], .b7-slot:hover, .b7-slot:focus-visible { color: var(--ds-ink); border-color: var(--ds-teal-bright); }
+.b7-canvas { padding: var(--ds-s3); border-radius: var(--ds-radius-lg); border: 1px solid var(--ds-line-2); background: var(--ds-surface-2); }
+.b7-rows { display: flex; gap: 8px; flex-wrap: wrap; margin: var(--ds-s3) 0 0; }
+.b7-panel { padding: var(--ds-s3); border-radius: var(--ds-radius-lg); border: 1px solid var(--ds-line-2); background: var(--ds-surface); color: var(--ds-ink); }
+.b7-panel textarea { background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-line-2); border-radius: var(--ds-radius); }
+@media (max-width: 760px) {
+  .b7-grid > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+  .b7-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* BC1: the Build rooms (ui/src/v1/b8). Tokens only. */
+.b8-rooms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ds-s3); margin: var(--ds-s3) 0; }
+.b8-tile { display: flex; flex-direction: column; gap: 6px; padding: var(--ds-s4); border-radius: var(--ds-radius-lg); border: 1px solid var(--ds-line-2); background: linear-gradient(160deg, var(--ds-surface-2), var(--ds-surface)); color: var(--ds-ink); text-decoration: none; transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.b8-tile:hover, .b8-tile:focus-visible { transform: translateY(-3px); border-color: var(--ds-teal-bright); box-shadow: 0 8px 22px var(--ds-scrim); }
+.b8-tile[aria-current="page"] { border-color: var(--ds-teal-bright); border-width: 2px; }
+.b8-mark { color: var(--ds-teal-bright); }
+.b8-pulse { stroke: var(--ds-amber); }
+.b8-tile:hover .b8-pulse { animation: b8-pulse 1.1s ease-in-out infinite alternate; }
+.b8-tile-name { font-size: 20px; font-weight: 700; }
+.b8-tile-line { color: var(--ds-ink-soft); font-size: 14px; line-height: 1.4; }
+.b8-tile-count { margin-top: auto; padding-top: 6px; font-weight: 600; color: var(--ds-teal-bright); }
+.b8-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin: var(--ds-s3) 0; position: relative; }
+.b8-stage { position: relative; padding: var(--ds-s3); border-radius: var(--ds-radius); border: 1px solid var(--ds-line-2); background: var(--ds-surface); min-width: 0; transition: transform .18s ease, border-color .18s ease; }
+.b8-stage:hover { transform: translateY(-2px); border-color: var(--ds-teal-bright); }
+.b8-stage:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -28px; width: 28px; height: 2px; background: repeating-linear-gradient(90deg, var(--ds-teal-bright) 0 6px, transparent 6px 10px); background-size: 20px 2px; animation: b8-run 1.2s linear infinite; }
+.b8-stage[data-state="failed"] { border-color: var(--ds-red); }
+.b8-stage[data-state="late"] { border-color: var(--ds-amber); }
+.b8-stage[data-state="running"]::before { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2px solid var(--ds-teal-bright); animation: b8-glow 1.2s ease-in-out infinite alternate; pointer-events: none; }
+.b8-stage h3 { margin: 0 0 2px; font-size: 18px; }
+.b8-stage ul { margin: 6px 0; padding-left: 16px; font-size: 13px; overflow-wrap: anywhere; }
+.b8-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: var(--ds-s4); align-items: start; }
+.b8-layer { margin: var(--ds-s3) 0; border-left: 4px solid var(--ds-teal-bright); padding-left: var(--ds-s3); }
+.b8-layer[data-layer="silver"] { border-color: var(--ds-ink-muted); }
+.b8-layer[data-layer="gold"] { border-color: var(--ds-amber); }
+.b8-chip { display: inline-block; margin: 2px 4px 2px 0; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ds-line-2); background: var(--ds-surface); color: var(--ds-ink); font: inherit; font-size: 13px; cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
+.b8-chip:hover, .b8-chip[aria-pressed="true"] { border-color: var(--ds-teal-bright); transform: translateY(-1px); }
+.b8-board { display: flex; gap: var(--ds-s3); justify-content: space-between; align-items: center; flex-wrap: wrap; padding: var(--ds-s3); margin: 8px 0; border-radius: var(--ds-radius); border: 1px solid var(--ds-line-2); background: var(--ds-surface); transition: border-color .15s ease; }
+.b8-board:hover { border-color: var(--ds-teal-bright); }
+@keyframes b8-pulse { from { opacity: .45; } to { opacity: 1; } }
+@keyframes b8-run { to { background-position: 20px 0; } }
+@keyframes b8-glow { from { opacity: .3; } to { opacity: 1; } }
+@media (max-width: 860px) {
+  .b8-rooms, .b8-flow, .b8-split { grid-template-columns: minmax(0, 1fr); }
+  .b8-flow { gap: 20px; }
+  .b8-stage:not(:last-child)::after { top: auto; bottom: -20px; right: 50%; width: 2px; height: 20px; background: repeating-linear-gradient(180deg, var(--ds-teal-bright) 0 6px, transparent 6px 10px); animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .b8-tile, .b8-stage, .b8-chip, .b8-board { transition: none; }
+  .b8-tile:hover, .b8-stage:hover, .b8-tile:focus-visible { transform: none; }
+  .b8-tile:hover .b8-pulse, .b8-stage[data-state="running"]::before, .b8-stage::after { animation: none !important; }
+}
+/* BC1 review: native inputs in the Build rooms take the theme (the time field was light-on-white in dark). */
+.b8-tools input:not([type="checkbox"]):not([type="radio"]), .b8-tools select { background: var(--ds-surface); color: var(--ds-ink); border: 1px solid var(--ds-line-2); border-radius: var(--ds-radius); padding: 4px 8px; color-scheme: dark; }
+:root[data-theme="light"] .b8-tools input, :root[data-theme="light"] .b8-tools select { color-scheme: light; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .b8-tools input, :root:not([data-theme="dark"]) .b8-tools select { color-scheme: light; } }
+.b8-tile:focus-visible { outline: 2px solid var(--ds-teal-bright); outline-offset: 2px; }
+
+/* STUDIO2 F1: chat left, canvas middle, inspector right; the draft actions in a bar above. Tokens only. */
+.b7-three { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+.b7-three[data-edit="true"] { grid-template-columns: minmax(260px, 340px) minmax(0, 1fr) minmax(260px, 320px); }
+.b7-right { display: grid; gap: 16px; }
+.b7-topbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+@media (max-width: 960px) { .b7-three[data-edit="true"] { grid-template-columns: minmax(0, 1fr); } }

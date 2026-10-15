@@ -1,0 +1,83 @@
+{
+  "id": "LUM-06",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"make it dots\" edits the last tile (mark becomes point).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": false,
+      "detail": "fewer than two tiles proposed"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "122 ms",
+      "value": 122
+    }
+  ],
+  "error": null,
+  "latency_ms": 122,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "mark": "point"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 67,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "make it dots"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 54,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

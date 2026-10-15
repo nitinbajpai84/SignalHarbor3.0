@@ -1,0 +1,6 @@
+# R1 the model router: every company role sees the Testing / Real use state; only the decision makers (the company administrator and the
+# sponsor) flip it, because Real use costs money (NA-4, 10 Oct); the working seats read the cost panel.
+routes:
+  GET /api/v1/router/mode: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/router/mode: {roles: [company_admin, sponsor]}
+  GET /api/v1/router/costs: {roles: [company_admin, sponsor, analyst]}

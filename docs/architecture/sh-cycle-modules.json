@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: Return-Cycle Modules in the Three Planes, 7 October 2026",
+    "subtitle": "Radar, Proving, Build chain and Consume lenses: routes, records and the single exit",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/sh-cycle-modules.html"
+  },
+  "components": [
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "React shell",
+      "sublabel": "radar, Build, Consume rooms",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Sign-in and gates",
+      "sublabel": "route_permissions.yaml",
+      "pos": [
+        325,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "default deny"
+    },
+    {
+      "id": "control",
+      "type": "backend",
+      "label": "Control plane",
+      "sublabel": "companies, centres, packs",
+      "pos": [
+        610,
+        70
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "no company data"
+    },
+    {
+      "id": "radar",
+      "type": "backend",
+      "label": "Radar and hypotheses",
+      "sublabel": "intents/radar.py, hypotheses.py",
+      "pos": [
+        40,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "module plane"
+    },
+    {
+      "id": "proving",
+      "type": "backend",
+      "label": "Proving",
+      "sublabel": "intents/proving.py",
+      "pos": [
+        325,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "module plane"
+    },
+    {
+      "id": "chain",
+      "type": "backend",
+      "label": "Build chain",
+      "sublabel": "build/chain.py, architecture.py",
+      "pos": [
+        610,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "module plane"
+    },
+    {
+      "id": "consume",
+      "type": "backend",
+      "label": "Consume views",
+      "sublabel": "consume/lenses.py, cards.py",
+      "pos": [
+        895,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "module plane"
+    },
+    {
+      "id": "runtime",
+      "type": "backend",
+      "label": "Agent runtime",
+      "sublabel": "North, Lens, Watcher",
+      "pos": [
+        1180,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "module plane"
+    },
+    {
+      "id": "egress",
+      "type": "security",
+      "label": "Egress gateway",
+      "sublabel": "the only way out",
+      "pos": [
+        1465,
+        250
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "four guards"
+    },
+    {
+      "id": "d_intents",
+      "type": "database",
+      "label": "Intents",
+      "sublabel": "opportunities, hypotheses, proving",
+      "pos": [
+        40,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "d_build",
+      "type": "database",
+      "label": "Build",
+      "sublabel": "changes, blueprint, architecture",
+      "pos": [
+        325,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "d_consume",
+      "type": "database",
+      "label": "Consume",
+      "sublabel": "cards, lenses, feeds",
+      "pos": [
+        610,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "d_wh",
+      "type": "database",
+      "label": "Warehouse and runs",
+      "sublabel": "gold tables, runs, alerts",
+      "pos": [
+        895,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "d_graph",
+      "type": "database",
+      "label": "Graph and context",
+      "sublabel": "map, documents, versions",
+      "pos": [
+        1180,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ]
+    },
+    {
+      "id": "model",
+      "type": "cloud",
+      "label": "Model provider",
+      "sublabel": "names tokenised",
+      "pos": [
+        1465,
+        430
+      ],
+      "size": [
+        175,
+        64
+      ],
+      "tag": "allowlisted"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Company data plane: data/<company>/, one per company; another company's plane fails closed",
+      "wraps": [
+        "d_intents",
+        "d_build",
+        "d_consume",
+        "d_wh",
+        "d_graph"
+      ],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "id": "e1",
+      "from": "ui",
+      "to": "auth",
+      "label": "every call",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "control",
+      "to": "auth",
+      "label": "centre switches"
+    },
+    {
+      "id": "e3",
+      "from": "auth",
+      "to": "proving",
+      "label": "role and company",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "proving",
+      "to": "radar",
+      "label": "learning returns",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "radar",
+      "to": "d_intents",
+      "label": "/api/intents/radar"
+    },
+    {
+      "id": "e6",
+      "from": "chain",
+      "to": "d_build",
+      "label": "/api/company/build/changes"
+    },
+    {
+      "id": "e7",
+      "from": "consume",
+      "to": "d_consume",
+      "label": "/api/company/consume/lenses"
+    },
+    {
+      "id": "e8",
+      "from": "chain",
+      "to": "proving",
+      "label": "release signed",
+      "variant": "dashed"
+    },
+    {
+      "id": "e9",
+      "from": "radar",
+      "to": "runtime",
+      "label": "hypothesis drafts",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "top"
+    },
+    {
+      "id": "e10",
+      "from": "runtime",
+      "to": "egress",
+      "label": "prompt out",
+      "variant": "security"
+    },
+    {
+      "id": "e11",
+      "from": "egress",
+      "to": "model",
+      "label": "tokenised",
+      "variant": "security"
+    },
+    {
+      "id": "e12",
+      "from": "consume",
+      "to": "d_wh",
+      "label": "reads gold"
+    },
+    {
+      "id": "e13",
+      "from": "runtime",
+      "to": "d_graph",
+      "label": "reads context"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Routes by module",
+      "items": [
+        "Radar: GET /api/intents/radar, POST /api/intents/radar/scan, GET /api/intents/hypotheses/{id}",
+        "Proving: /api/intents/{id}/proving, reports confirm, review",
+        "Build chain: /api/company/build/changes and /architecture; Consume: /api/company/consume/lenses and /cards/{table}"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "One exit",
+      "items": [
+        "Agents reach the model only through the egress gateway; names are tokenised and each call is logged",
+        "The control plane holds no company data; the super admin never reads /api/intents"
+      ]
+    }
+  ]
+}

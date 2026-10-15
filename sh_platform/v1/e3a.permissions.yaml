@@ -1,0 +1,12 @@
+# E3a The rules register. Seeing needs a working role or the approver (read only); proposing and signing need a working role, and the
+# owner/signer split is checked again in code.
+routes:
+  # A rule's owner may hold any role (a risk owner is often a participant): they may propose a change to their own rule; code checks ownership.
+  GET /api/v1/rules: {roles: [company_admin, sponsor, analyst, approver]}
+  GET /api/v1/rules/{code}/history: {roles: [company_admin, sponsor, analyst, approver]}
+  POST /api/v1/rules/{code}: {roles: [company_admin, sponsor, analyst, approver, owner, participant]}
+  POST /api/v1/rules/versions/{vid}/approve: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/rules/import: {roles: [company_admin, sponsor, analyst]}
+  # Settings > identifiers and Settings > instruments (handlers in e2c_routes.py): the instrument master the limit rules read.
+  GET /api/v1/instruments: {roles: [company_admin, analyst]}
+  POST /api/v1/instruments/{instrument_id}/asset-class: {roles: [company_admin, analyst]}

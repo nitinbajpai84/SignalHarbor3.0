@@ -1,0 +1,12 @@
+# T2 The ticket centre. Every company role may use it; code decides which tickets a person sees (raiser, assignees past and present, project team, company admin) and who may change one.
+routes:
+  GET /api/v1/tickets: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/tickets/people: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/tickets/{tid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets/{tid}/delegate: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets/{tid}/comment: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets/{tid}/state: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets/{tid}/link: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/tickets/{tid}/work: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/tickets/{tid}/log.csv: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

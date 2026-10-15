@@ -1,0 +1,34 @@
+/* Build chain screens (spec 59). Design tokens only; the diagram hides under 720 px. */
+.bc-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--ds-s1); }
+.bc-step { border: 1px solid var(--ds-line); border-radius: var(--ds-radius); padding: var(--ds-s2); background: var(--ds-surface); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bc-step--now { border-color: var(--ds-teal-bright); }
+.bc-step a, .bc-step button { min-height: 44px; display: inline-flex; align-items: center; font-size: 14px; }
+.bc-step__name { font-size: 14px; color: var(--ds-ink-muted); }
+.bc-step__who { font-size: 14px; overflow-wrap: anywhere; }
+.bc-note { font-size: 14px; color: var(--ds-ink-muted); margin: 0; }
+.bc-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bc-row { padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s2); }
+.bc-cols { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: var(--ds-s3); align-items: start; }
+.bc-sec { padding: var(--ds-s3); margin-bottom: var(--ds-s2); }
+.bc-sec > summary { font-size: 16px; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.bc-lines { margin: 0; padding-left: var(--ds-s4); display: flex; flex-direction: column; gap: var(--ds-s1); }
+.bc-lines li { font-size: 14px; }
+.bc-diagram { overflow: auto; padding: var(--ds-s2); }
+.bc-diagram svg { width: 100%; height: auto; min-width: 560px; }
+.bc-only-wide { display: block; }
+.bc-only-phone { display: none; }
+.bc-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-s2); font-size: 14px; margin: 0 0 var(--ds-s2); }
+.bc-strip a { min-height: 44px; display: inline-flex; align-items: center; }
+.bc-field { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.bc-field select, .bc-field textarea, .bc-field input { min-height: 44px; font-size: 14px; }
+.bc-actions { display: flex; flex-wrap: wrap; gap: var(--ds-s1); }
+.bc-actions .ds-btn { min-height: 44px; }
+.bc-red { color: var(--ds-red); }
+@media (max-width: 720px) {
+  .bc-steps { grid-template-columns: 1fr; }
+  .bc-step:not(.bc-step--now) { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .bc-cols { grid-template-columns: 1fr; }
+  .bc-only-wide { display: none; }
+  .bc-only-phone { display: block; }
+  .bc-sticky { position: sticky; bottom: 0; z-index: 2; }
+}

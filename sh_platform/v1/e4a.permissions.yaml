@@ -1,0 +1,19 @@
+# E4a Cases for the Action Desk. Every company role may read and ask; code decides which cases a person sees (E1d, owner, maker, admin) and who may press each button (maker never checks).
+# A participant asks and comments but never acts on a case (A11, TD-01): no take, assign, submit, approve, send_back, resolve or dismiss.
+# ask_finance stays open to a participant (Wave 2 decision): asking Finance to look is a request, not an act; it changes nothing on the case.
+routes:
+  GET /api/v1/cases: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/cases: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/cases/{cid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/cases/{cid}/take: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/assign: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/submit: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/approve: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/send_back: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/resolve: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/dismiss: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/v1/cases/{cid}/ask_finance: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/cases/{cid}/note: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/cases/{cid}/explain: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/cases/{cid}/tally: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/cases/{cid}/ask: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

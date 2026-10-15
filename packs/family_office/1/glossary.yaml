@@ -1,0 +1,78 @@
+# Template family_office@1 glossary. Every term cites the synthetic pack file it came from
+# (Family Office Data/). Not a contract; gates nothing; no targets or thresholds.
+template: family_office@1
+terms:
+  - term: Funding headroom
+    definition: Cash left in a month after known obligations, scenario-only calls, proposed funding and the reserve are taken from opening cash plus approved inflows.
+    source: "Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K01"
+  - term: Minimum reserve
+    definition: An additional cash buffer kept on top of known obligations. It is a floor to stay above, not a repeated cash outflow and not a target.
+    source: "KPI_Catalog.json K01; interview.jsonl T06-MD"
+  - term: Known obligation
+    definition: A current, unpaid, approved payment due in a month, counted once after any amended notice has replaced the original.
+    source: "KPI_Catalog.json K04"
+  - term: Unfunded commitment
+    definition: The part of a fund commitment not yet called. An obligation exposure, never part of asset value.
+    source: "KPI_Catalog.json K05"
+  - term: Capital call
+    definition: A fund manager's notice asking for part of a commitment to be paid by a due date.
+    source: "Family_Office_Test_Data.xlsx sheet commitment_events (event_type capital_call)"
+  - term: Recallable distribution
+    definition: Cash returned by a fund that the manager may call again, so it raises the unfunded commitment.
+    source: "Family_Office_Test_Data.xlsx sheet commitment_events (event_type recallable_distribution)"
+  - term: Stress funding requirement
+    definition: Extra scenario-only cash calls beyond known obligations. A model estimate, never a committed payment.
+    source: "KPI_Catalog.json K06"
+  - term: Evidence coverage
+    definition: The share of reported asset value that is supported by approved source evidence. It measures support, not valuation accuracy.
+    source: "KPI_Catalog.json K02"
+  - term: Stale valuation
+    definition: A carrying value whose valuation date is older than the approved age for its asset class.
+    source: "KPI_Catalog.json K12"
+  - term: Superseded notice
+    definition: A notice replaced by a later version. It must not remain an active obligation.
+    source: "Agent_Specifications.md, Data Engineer acceptance checks"
+  - term: Consolidated view
+    definition: The holding company and the investment subsidiary reported together in SGD, with internal transfers eliminated and cash counted once.
+    source: "KPI_Catalog.json scope; interview.jsonl T03-MD"
+  - term: Internal transfer
+    definition: A movement between the family office's own entities. It is not an investment return.
+    source: "interview.jsonl T03-MD"
+  - term: Look-through exposure
+    definition: Exposure to what a fund holds underneath, shown separately with its coverage and never added to the asset total.
+    source: "KPI_Catalog.json K09"
+  - term: Strategic holding
+    definition: A holding the family cannot simply sell. Being strategic does not by itself exempt it from a limit.
+    source: "KPI_Catalog.json K08 caveat; interview.jsonl T13-MD, T14-MD"
+  - term: Policy exception
+    definition: A detected breach of a mandate rule that has no valid approved exception.
+    source: "KPI_Catalog.json K08"
+  - term: Asset-value change bridge
+    definition: The change in asset value over a period split into external flows, local price change and currency effect, with the residual shown.
+    source: "KPI_Catalog.json K13"
+  - term: Meeting pack
+    definition: The investment meeting papers. Its preparation effort is the logged hours from collecting inputs to the approved pack.
+    source: "KPI_Catalog.json K03"
+  - term: Reporting currency
+    definition: Singapore dollars. Reporting in SGD does not remove currency risk.
+    source: "KPI_Catalog.json scope and K11 caveat"
+  - term: Portfolio (by asset class)
+    definition: The holdings that share one asset class as the workbook records it, such as public equity or private equity. A grouping for reporting only; it carries no rule and no target.
+    source: "Family_Office_Test_Data.xlsx sheet investments (asset_class)"
+  # Added from the illustrative demo story (Signal Harbor). Suggestions, pending practitioner review.
+  - term: Benchmark
+    status: proposal
+    definition: An agreed index or reference return that a fund or manager is measured against. It should be chosen before the result is known and match the fund's asset class, currency and period.
+    source: "illustrative demo story (Signal Harbor), pending practitioner review"
+  - term: Excess return
+    status: proposal
+    definition: The return of a fund or manager minus the return of its benchmark over the same period, net of fees.
+    source: "illustrative demo story (Signal Harbor), pending practitioner review"
+  - term: Alpha
+    status: proposal
+    definition: In this office, excess return over the agreed benchmark, net of fees. Positive means ahead of the benchmark, negative means behind. Not a forecast.
+    source: "illustrative demo story (Signal Harbor), pending practitioner review"
+  - term: Tracking error
+    status: proposal
+    definition: How much the difference between a fund's return and its benchmark's return varies over time. A small figure means the fund follows its benchmark closely.
+    source: "illustrative demo story (Signal Harbor), pending practitioner review"

@@ -1,0 +1,330 @@
+- id: 57.tabs
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (tabs)
+  input: Which cards touch my work, my area or my lens
+  person: ops manager
+  mode: automatic
+  agent: null
+  source: graph owned_by edges, profile areas and hypothesis lens
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: sorting a shared list by hand'
+  claim: The radar sorts itself into my line of work, my area and each lens with no filtering by hand
+  built: missing
+- id: 57.lenscount
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (lens column heading)
+  input: Open opportunities per lens
+  person: ops manager
+  mode: automatic
+  agent: null
+  source: intents/hypotheses latest lens joined to opportunity state
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: counting a spreadsheet of ideas'
+  claim: Lens counts come from the records
+  built: missing
+- id: 57.card
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (opportunity card)
+  input: Belief, measure, baseline, target, uplift, confidence and evidence mix on a card
+  person: ops manager
+  mode: derived
+  agent: North
+  source: hypothesis version and evidence record kinds
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: writing a one-page case for an idea'
+  claim: Every card arrives with its case already written and traced
+  built: missing
+- id: 57.theme
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (theme chip)
+  input: A theme and the count of voices behind it
+  person: ops manager
+  mode: derived
+  agent: Lens
+  source: wall cards, check-in items, ideas and backlog text
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: reading notes across four places and tallying who said what'
+  claim: Lens groups the same wish from many places and counts distinct voices
+  built: missing
+- id: 57.reject
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (Rejected by North)
+  input: A pattern rejected with the record that broke it
+  person: ops manager
+  mode: derived
+  agent: North
+  source: counter-evidence check over the last counter_periods periods
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: someone checks the idea against earlier periods before a meeting'
+  claim: North checks every idea against earlier periods and shows why it failed
+  built: missing
+- id: 57.scan
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent?view=radar (How the radar works)
+  input: Last scan time and items read
+  person: company admin
+  mode: automatic
+  agent: null
+  source: intents/radar/scans.jsonl
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who last looked'
+  claim: The radar says when it last looked and what it read
+  built: missing
+- id: 57.hypo
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Hypothesis region
+  input: 'The hypothesis: belief, baseline, target, uplift, confidence'
+  person: ops manager
+  mode: confirm
+  agent: North
+  source: traced feed value for the baseline; the person sets the target
+  minutes_without: 90
+  minutes_with: 3
+  basis: 'estimate: drafting a hypothesis in a document and finding the baseline figure'
+  claim: North writes the hypothesis from traced figures; the person only sets the target
+  built: missing
+- id: 57.lens
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Lens select
+  input: Which lens the opportunity sits in
+  person: ops manager
+  mode: confirm
+  agent: North
+  source: the measure and its definition
+  minutes_without: 3
+  minutes_with: 0.5
+  basis: 'estimate: deciding the category in a meeting'
+  claim: North picks the lens; one tap agrees or changes it
+  built: missing
+- id: 57.target
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Target fields
+  input: Target value and date
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the person; North never sets a target
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: deciding a target is a judgement only a person makes'
+  claim: The target is always a person's choice, never a guess
+  built: missing
+- id: 57.review
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Review date
+  input: Review date
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: choosing a date'
+  claim: The review date is set by a person before the idea is picked up
+  built: missing
+- id: 57.uplift
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Expected uplift
+  input: Expected uplift with its basis word
+  person: ops manager
+  mode: derived
+  agent: North
+  source: gap to target, a stated figure, a pack figure or an earlier outcome
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: estimating the benefit in a spreadsheet'
+  claim: Uplift is worked out from the gap and says where the number came from
+  built: missing
+- id: 57.evidence
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Evidence by kind
+  input: Evidence lines grouped data, documents, voices
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: documents on readable shelves, voices since the last scan, run rows
+  minutes_without: 90
+  minutes_with: 1
+  basis: 'estimate: collecting proof from files and chat'
+  claim: Lens attaches the documents and voices that bear on an idea
+  built: missing
+- id: 57.evadd
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Evidence by kind (add or dispute)
+  input: Added or disputed evidence line
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: writing a note with its source'
+  claim: People add or dispute evidence by hand
+  built: missing
+- id: 57.counter
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Counter-evidence check
+  input: Counter-evidence check verdict, Holds or Broken
+  person: ops manager
+  mode: derived
+  agent: North
+  source: periods, run events, corrected statements, open intents on the same measure
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: a colleague asks whether this was a one-off'
+  claim: North checks for one-offs, other causes and a duplicate Decision
+  built: missing
+- id: 57.voices
+  spec: '57'
+  journey: shared
+  stage: think
+  screen: drawer, Voices region
+  input: Voices behind a theme by source
+  person: ops manager
+  mode: automatic
+  agent: null
+  source: theme.voices; anonymous counted never named
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: tallying who raised it'
+  claim: Voices are counted by source and anonymous ones are never named
+  built: missing
+- id: 57.think
+  spec: '57'
+  journey: shared
+  stage: decide
+  screen: drawer, Think it through first
+  input: Think it through first, opening a Brainstorm
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: setting up a meeting'
+  claim: One tap opens a Brainstorm pre-filled from the opportunity
+  built: missing
+- id: 57.bringback
+  spec: '57'
+  journey: shared
+  stage: decide
+  screen: drawer, Bring back
+  input: Bring back a rejected opportunity with a reason
+  person: ops manager
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 5
+  minutes_with: 5
+  basis: 'estimate: arguing the case again'
+  claim: A rejection can be challenged with a reason and re-checked
+  built: missing
+- id: 57.thresholds
+  spec: '57'
+  journey: admin
+  stage: decide
+  screen: /centre/intent/admin?tab=defaults (Radar thresholds)
+  input: 'Radar thresholds: late weekday, drift periods, check-in items, window, theme voices, counter periods, scan'
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 15
+  minutes_with: 15
+  basis: 'estimate: setting policy'
+  claim: Thresholds are company policy set once by the admin
+  built: missing
+- id: 57.tile
+  spec: '57'
+  journey: consume
+  stage: notice
+  screen: /centre/consume/radar (room tile)
+  input: Count of open opportunities the viewer sees
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: opportunity states filtered by 56 rules
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking what is on the list'
+  claim: A count tile shows what the viewer may see
+  built: missing
+- id: 57.declink
+  spec: '57'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/backlog?opportunity=<id> (linked Decision)
+  input: Whether a pattern is already the subject of an open Initiative or Decision
+  person: decider
+  mode: confirm
+  agent: North
+  source: open Initiatives' hypothesis measures and open Decision questions; the Decision link waits for the decider (C11)
+  minutes_without: 20
+  minutes_with: 1
+  basis: 'estimate: checking open work before raising a new item'
+  claim: North says when something already covers a pattern instead of raising a duplicate
+  built: backend
+- id: 57.carry
+  spec: '57'
+  journey: shared
+  stage: decide
+  screen: /centre/intent/new?type=initiative|brainstorm&from=<opportunity id>
+  input: Start answers filled from the opportunity's hypothesis (goal or idea from the belief, context from the evidence, the measure and target, areas, decide-by from the review date)
+  person: ops manager
+  mode: confirm
+  agent: North
+  source: the hypothesis version the opportunity carries; each answer marked Guessed by North with the opportunity as source; the intent records hypothesis_ref
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: retyping what the radar already knows into the start questions'
+  claim: Picking up or thinking through an opportunity skips the chooser and opens its start already filled in
+  built: full
+- id: 57.success
+  spec: '57'
+  journey: shared
+  stage: decide
+  screen: /centre/intent/<id>/charter (page 4, success measures)
+  input: Target and review date of the Initiative's success measure
+  person: organiser
+  mode: confirm
+  agent: null
+  source: the hypothesis the Initiative carries (measure, baseline, target, review date); an edit writes a new hypothesis version; signature freezes one
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: agreeing what success means when the charter is drawn up'
+  claim: The charter's success measures are the noticed hypothesis, marked From the hypothesis
+  built: backend

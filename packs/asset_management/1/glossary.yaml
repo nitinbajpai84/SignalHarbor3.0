@@ -1,0 +1,747 @@
+# Template asset_management@1 glossary (design section 3.1). Terms only -- no values/targets.
+#
+# V3-13: grown from 5 to 100+ terms, at parity with insurance@1's glossary. The first 5 entries
+# are UNCHANGED (same term, same definition) -- new entries use the fuller schema (term,
+# definition, synonyms, do_not_confuse_with, source). Every new entry carries a source; none
+# contains a target, a threshold or an industry figure (CLAUDE.md rule 4). These are standard
+# industry definitions written by a builder agent as PACK-DEFAULT content -- background
+# knowledge, never a business rule. No agent is a practitioner; this file is unreviewed pack
+# content pending human review (see packages/V3-13/report.md, Open Questions).
+template: asset_management@1
+terms:
+  - term: AUM
+    definition: Assets under management -- total market value of client positions at period end.
+  - term: Net flows
+    definition: Client subscriptions minus redemptions in the period, excluding market movement.
+  - term: Fee yield
+    definition: Fee revenue divided by average AUM for the period.
+  - term: NAV
+    definition: Net asset value -- per-unit value of a portfolio/instrument.
+  - term: Benchmark
+    definition: The reference index a portfolio's performance is measured against.
+
+  # -- Assets and flows --------------------------------------------------------------------------
+  - term: Gross subscriptions
+    definition: Total money clients put into funds and mandates in a period, before any redemptions are taken off.
+    synonyms: [Gross sales, Gross inflows, Subscriptions]
+    do_not_confuse_with: [Net flows]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:gross_subscriptions"
+  - term: Redemptions
+    definition: Total money clients take out of funds and mandates in a period.
+    synonyms: [Gross outflows, Withdrawals]
+    do_not_confuse_with: [Net flows, Distribution]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:redemptions"
+  - term: Inflow
+    definition: Money entering a fund or mandate from a client.
+    synonyms: [Subscription]
+    do_not_confuse_with: [Market movement]
+    source: "Standard asset management industry terminology"
+  - term: Outflow
+    definition: Money leaving a fund or mandate to a client.
+    synonyms: [Redemption]
+    do_not_confuse_with: [Market movement, Distribution]
+    source: "Standard asset management industry terminology"
+  - term: Gross flows
+    definition: Subscriptions and redemptions each reported on their own, rather than netted against each other.
+    synonyms: []
+    do_not_confuse_with: [Net flows]
+    source: "Standard asset management industry terminology"
+  - term: Net new money
+    definition: Another name for net flows -- new client money in, less client money out, with market movement excluded.
+    synonyms: [NNM, Net new assets, Net sales]
+    do_not_confuse_with: [AUM growth]
+    source: "Standard asset management industry terminology"
+  - term: Market movement
+    definition: The change in AUM over a period that comes from price and currency changes rather than from client flows.
+    synonyms: [Market effect, Market appreciation]
+    do_not_confuse_with: [Net flows]
+    source: "Standard asset management industry terminology; kpi_tree.yaml identity closing AUM = opening AUM + net flows + market movement"
+  - term: Organic growth rate
+    definition: Net flows for a period divided by opening AUM -- growth earned from clients, with market movement left out.
+    synonyms: [Organic growth]
+    do_not_confuse_with: [AUM growth]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:organic_growth_rate"
+  - term: AUM growth
+    definition: The change in AUM over a period from all causes -- net flows plus market movement.
+    synonyms: []
+    do_not_confuse_with: [Organic growth rate, Net new money]
+    source: "Standard asset management industry terminology"
+  - term: Redemption rate
+    definition: Redemptions in a period divided by AUM (opening or average, by house convention).
+    synonyms: [Outflow rate]
+    do_not_confuse_with: [Client attrition]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:redemption_rate"
+  - term: Opening AUM
+    definition: AUM at the start of a period, used as the base for growth and redemption rates.
+    synonyms: [Beginning AUM]
+    do_not_confuse_with: [Average AUM]
+    source: "Standard asset management industry terminology"
+  - term: Average AUM
+    definition: The average of AUM across a period, used as the base for fee yield because fees accrue on assets held through the period.
+    synonyms: []
+    do_not_confuse_with: [Opening AUM, AUM]
+    source: "Standard asset management industry terminology"
+  - term: AUA
+    definition: Assets under administration or advice -- assets a firm services or advises on without managing the investment decisions.
+    synonyms: [Assets under administration, Assets under advice]
+    do_not_confuse_with: [AUM]
+    source: "Standard asset management industry terminology"
+  - term: Switch
+    definition: A client moving money from one fund or share class to another with the same manager; whether it counts as a flow is a house rule.
+    synonyms: [Conversion, Exchange]
+    do_not_confuse_with: [Redemptions, Gross subscriptions]
+    source: "Standard asset management industry terminology"
+  - term: Distribution
+    definition: Income a fund pays out to its holders (the other meaning -- selling funds to clients -- is covered under Distributor).
+    synonyms: [Dividend, Income distribution]
+    do_not_confuse_with: [Distributor, Redemptions]
+    source: "Standard asset management industry terminology"
+  - term: Reinvested distribution
+    definition: A fund distribution used to buy more units of the same fund instead of being paid out in cash.
+    synonyms: [Dividend reinvestment]
+    do_not_confuse_with: [Gross subscriptions]
+    source: "Standard asset management industry terminology"
+  - term: Seed capital
+    definition: The manager's own or a sponsor's money placed in a new fund to start it before clients invest.
+    synonyms: [Seed money]
+    do_not_confuse_with: [Gross subscriptions]
+    source: "Standard asset management industry terminology"
+
+  # -- Products and vehicles -----------------------------------------------------------------------
+  - term: Fund
+    definition: A pooled investment vehicle in which many clients hold units or shares in one portfolio.
+    synonyms: [Collective investment scheme, Pooled fund]
+    do_not_confuse_with: [Mandate]
+    source: "Standard asset management industry terminology"
+  - term: Mutual fund
+    definition: An open-ended fund offered to the public, with units issued and redeemed at net asset value.
+    synonyms: []
+    do_not_confuse_with: [ETF, Mandate]
+    source: "Standard asset management industry terminology; contracts/sources/asset_management/awm_portfolios.source.yaml portfolio_type value mutual_fund"
+  - term: Unit trust
+    definition: A fund set up under a trust deed whose holders own units.
+    synonyms: []
+    do_not_confuse_with: [Mandate]
+    source: "Standard asset management industry terminology"
+  - term: UCITS
+    definition: The European Union's regulated retail fund framework; a UCITS fund can be sold across member states.
+    synonyms: []
+    do_not_confuse_with: [Alternative investment fund]
+    source: "Standard asset management industry terminology (European Union UCITS Directive)"
+  - term: ETF
+    definition: Exchange-traded fund -- a fund whose units trade on a stock exchange through the day.
+    synonyms: [Exchange-traded fund]
+    do_not_confuse_with: [Mutual fund]
+    source: "Standard asset management industry terminology"
+  - term: Mandate
+    definition: An agreement under which a manager runs a portfolio for one client to that client's own guidelines.
+    synonyms: [Segregated mandate, Separate account]
+    do_not_confuse_with: [Fund]
+    source: "Standard asset management industry terminology; contracts/sources/asset_management/awm_portfolios.source.yaml portfolio_type value mandate"
+  - term: Segregated mandate
+    definition: A mandate whose assets are held separately for one client rather than pooled with other clients' money.
+    synonyms: [Segregated account, Separately managed account]
+    do_not_confuse_with: [Pooled fund]
+    source: "Standard asset management industry terminology"
+  - term: Pooled fund
+    definition: A fund in which several clients' money is combined in one portfolio.
+    synonyms: [Commingled fund]
+    do_not_confuse_with: [Segregated mandate]
+    source: "Standard asset management industry terminology"
+  - term: Pension mandate
+    definition: A mandate run for a pension scheme.
+    synonyms: []
+    do_not_confuse_with: [Mutual fund]
+    source: "contracts/sources/asset_management/awm_portfolios.source.yaml portfolio_type value pension"
+  - term: Fund of funds
+    definition: A fund that invests in other funds; if those are the same manager's funds, the assets can be counted twice in AUM.
+    synonyms: []
+    do_not_confuse_with: [Feeder fund]
+    source: "Standard asset management industry terminology"
+  - term: Feeder fund
+    definition: A fund that invests almost all of its assets in one other fund, the master fund.
+    synonyms: []
+    do_not_confuse_with: [Fund of funds]
+    source: "Standard asset management industry terminology"
+  - term: Umbrella fund
+    definition: A legal structure holding several sub-funds, each with its own portfolio and investment policy.
+    synonyms: []
+    do_not_confuse_with: [Sub-fund]
+    source: "Standard asset management industry terminology"
+  - term: Sub-fund
+    definition: One portfolio inside an umbrella fund, with its own investment policy and its own share classes.
+    synonyms: [Compartment]
+    do_not_confuse_with: [Umbrella fund, Share class]
+    source: "Standard asset management industry terminology"
+  - term: Money market fund
+    definition: A fund investing in short-dated, high-quality debt, used by clients as a cash holding.
+    synonyms: []
+    do_not_confuse_with: [Bond fund]
+    source: "Standard asset management industry terminology"
+  - term: Alternative investment fund
+    definition: A fund investing outside traditional listed shares and bonds -- for example private equity, real estate or hedge strategies.
+    synonyms: [AIF, Alternatives]
+    do_not_confuse_with: [UCITS]
+    source: "Standard asset management industry terminology"
+  - term: Open-ended fund
+    definition: A fund that issues new units when clients subscribe and cancels units when they redeem.
+    synonyms: []
+    do_not_confuse_with: [Closed-ended fund]
+    source: "Standard asset management industry terminology"
+  - term: Closed-ended fund
+    definition: A fund with a fixed number of units; investors leave by selling to another investor, not by redeeming.
+    synonyms: []
+    do_not_confuse_with: [Open-ended fund]
+    source: "Standard asset management industry terminology"
+  - term: Strategy
+    definition: An investment approach (for example a regional equity or a bond approach) that may be offered through several funds and mandates.
+    synonyms: [Investment strategy, Capability]
+    do_not_confuse_with: [Fund]
+    source: "Standard asset management industry terminology"
+  - term: Share class
+    definition: A version of a fund with its own fees, currency, minimum investment or income treatment; all share classes share the same portfolio.
+    synonyms: [Unit class]
+    do_not_confuse_with: [Sub-fund]
+    source: "Standard asset management industry terminology"
+  - term: Accumulation share class
+    definition: A share class that keeps income inside the fund, so it shows in the unit price rather than being paid out.
+    synonyms: [Acc class]
+    do_not_confuse_with: [Distribution share class]
+    source: "Standard asset management industry terminology"
+  - term: Distribution share class
+    definition: A share class that pays income out to holders.
+    synonyms: [Income share class, Dist class]
+    do_not_confuse_with: [Accumulation share class]
+    source: "Standard asset management industry terminology"
+  - term: Hedged share class
+    definition: A share class that hedges the currency difference between the class currency and the fund's base currency.
+    synonyms: []
+    do_not_confuse_with: [Base currency]
+    source: "Standard asset management industry terminology"
+  - term: Institutional share class
+    definition: A share class for large investors, usually with a higher minimum investment and a lower fee rate than retail classes.
+    synonyms: []
+    do_not_confuse_with: [Retail share class]
+    source: "Standard asset management industry terminology"
+  - term: Retail share class
+    definition: A share class for individual investors, usually sold through distributors and priced to include their payment.
+    synonyms: []
+    do_not_confuse_with: [Institutional share class, Clean share class]
+    source: "Standard asset management industry terminology"
+  - term: Clean share class
+    definition: A share class whose fee includes no payment to a distributor; the client pays the distributor or adviser separately.
+    synonyms: [Unbundled share class]
+    do_not_confuse_with: [Retail share class]
+    source: "Standard asset management industry terminology"
+  - term: Share-class mix
+    definition: How AUM is spread across share class groups; it moves the blended fee yield because the classes carry different fee rates.
+    synonyms: []
+    do_not_confuse_with: [Asset allocation]
+    source: "kpi_tree.yaml kpi:share_class_mix"
+
+  # -- Fees and revenue ----------------------------------------------------------------------------
+  - term: Management fee
+    definition: The recurring fee a manager charges, as a rate applied to the assets it manages.
+    synonyms: [Annual management charge, AMC]
+    do_not_confuse_with: [TER, Performance fee]
+    source: "Standard asset management industry terminology"
+  - term: Performance fee
+    definition: A fee earned only when a portfolio's return beats an agreed benchmark or level.
+    synonyms: [Incentive fee]
+    do_not_confuse_with: [Management fee]
+    source: "Standard asset management industry terminology"
+  - term: TER
+    definition: Total expense ratio -- a fund's total yearly running costs as a share of its average net assets, covering the management fee and other fund expenses.
+    synonyms: [Total expense ratio, Expense ratio]
+    do_not_confuse_with: [Management fee, Fee yield]
+    source: "Standard asset management industry terminology"
+  - term: OCF
+    definition: Ongoing charges figure -- the European disclosure measure of a fund's yearly running costs, close in meaning to TER.
+    synonyms: [Ongoing charges figure, Ongoing charges]
+    do_not_confuse_with: [Management fee]
+    source: "Standard asset management industry terminology (European fund disclosure usage)"
+  - term: Entry charge
+    definition: A one-off charge taken when a client subscribes, usually kept by the distributor.
+    synonyms: [Front-end load, Sales charge, Subscription fee]
+    do_not_confuse_with: [Management fee, Exit charge]
+    source: "Standard asset management industry terminology"
+  - term: Exit charge
+    definition: A one-off charge taken when a client redeems.
+    synonyms: [Back-end load, Redemption fee]
+    do_not_confuse_with: [Entry charge, Swing pricing]
+    source: "Standard asset management industry terminology"
+  - term: Trailer fee
+    definition: A recurring payment from a manager to a distributor for as long as the distributor's clients stay invested, paid out of the management fee.
+    synonyms: [Trail commission]
+    do_not_confuse_with: [Entry charge]
+    source: "Standard asset management industry terminology"
+  - term: Rebate
+    definition: Part of the management fee returned to a client or passed to a distributor under an agreement.
+    synonyms: [Fee rebate]
+    do_not_confuse_with: [Fee waiver]
+    source: "Standard asset management industry terminology"
+  - term: Retrocession
+    definition: A share of a fund's fees paid by the manager to a distributor; the term used mainly in Europe for trailer fees.
+    synonyms: []
+    do_not_confuse_with: [Entry charge]
+    source: "Standard asset management industry terminology"
+  - term: Fee waiver
+    definition: A manager choosing not to charge some or all of a fee, often to keep a fund's costs competitive.
+    synonyms: []
+    do_not_confuse_with: [Rebate]
+    source: "Standard asset management industry terminology"
+  - term: Fee revenue
+    definition: The fees a manager earns in a period -- management fees, performance fees and any charges it keeps.
+    synonyms: [Fee income, Gross revenue]
+    do_not_confuse_with: [Net revenue]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:fee_revenue"
+  - term: Net revenue
+    definition: Fee revenue after payments to distributors are taken off.
+    synonyms: [Net fee income]
+    do_not_confuse_with: [Fee revenue]
+    source: "Standard asset management industry terminology"
+  - term: Revenue margin
+    definition: Revenue divided by average AUM; another name for fee yield, sometimes stated after distributor payments.
+    synonyms: [Fee margin]
+    do_not_confuse_with: [Operating margin]
+    source: "Standard asset management industry terminology"
+  - term: Basis point
+    definition: One hundredth of one percent -- the unit fee rates and fee yields are usually quoted in.
+    synonyms: [bp, bps]
+    do_not_confuse_with: []
+    source: "Standard financial industry terminology"
+  - term: Fee compression
+    definition: The fall in fee rates over time as clients move to cheaper products and negotiate lower fees.
+    synonyms: [Fee pressure]
+    do_not_confuse_with: [Fee waiver]
+    source: "Standard asset management industry terminology"
+  - term: High-water mark
+    definition: The highest net asset value per unit at a prior performance-fee crystallisation date; a performance fee is charged only on gains above it.
+    synonyms: []
+    do_not_confuse_with: [Hurdle rate]
+    source: "Standard asset management industry terminology"
+  - term: Hurdle rate
+    definition: The return a portfolio must beat before a performance fee is earned.
+    synonyms: []
+    do_not_confuse_with: [High-water mark, Benchmark]
+    source: "Standard asset management industry terminology"
+  - term: Swing pricing
+    definition: Adjusting a fund's dealing price when flows are large, so the clients trading bear the dealing costs rather than the clients who stay.
+    synonyms: []
+    do_not_confuse_with: [Exit charge, Dilution levy]
+    source: "Standard asset management industry terminology"
+  - term: Dilution levy
+    definition: A charge added to a large subscription or redemption to protect remaining holders from its dealing costs.
+    synonyms: []
+    do_not_confuse_with: [Swing pricing, Exit charge]
+    source: "Standard asset management industry terminology"
+
+  # -- Performance ---------------------------------------------------------------------------------
+  - term: Portfolio return
+    definition: The percentage change in a portfolio's value over a period, adjusted for flows.
+    synonyms: [Fund return]
+    do_not_confuse_with: [Benchmark return]
+    source: "Standard asset management industry terminology"
+  - term: Benchmark return
+    definition: The return of a portfolio's benchmark over the same period.
+    synonyms: [Index return]
+    do_not_confuse_with: [Portfolio return]
+    source: "Standard asset management industry terminology"
+  - term: Excess return
+    definition: Portfolio return minus benchmark return for the same period.
+    synonyms: [Relative return, Active return, Performance vs benchmark]
+    do_not_confuse_with: [Alpha, Absolute return]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:performance_vs_benchmark"
+  - term: Absolute return
+    definition: A portfolio's return on its own, without comparison to a benchmark.
+    synonyms: []
+    do_not_confuse_with: [Excess return]
+    source: "Standard asset management industry terminology"
+  - term: Alpha
+    definition: Return a manager adds beyond what the portfolio's market exposure explains.
+    synonyms: []
+    do_not_confuse_with: [Excess return, Beta]
+    source: "Standard investment industry terminology"
+  - term: Beta
+    definition: How strongly a portfolio moves with its market or benchmark.
+    synonyms: []
+    do_not_confuse_with: [Alpha]
+    source: "Standard investment industry terminology"
+  - term: Tracking error
+    definition: How much a portfolio's returns vary around its benchmark's returns over time.
+    synonyms: [Active risk]
+    do_not_confuse_with: [Excess return, Volatility]
+    source: "Standard investment industry terminology"
+  - term: Information ratio
+    definition: Excess return divided by tracking error -- excess return earned per unit of risk taken against the benchmark.
+    synonyms: []
+    do_not_confuse_with: [Sharpe ratio]
+    source: "Standard investment industry terminology"
+  - term: Sharpe ratio
+    definition: Return above the risk-free rate divided by volatility -- return earned per unit of total risk.
+    synonyms: []
+    do_not_confuse_with: [Information ratio]
+    source: "Standard investment industry terminology"
+  - term: Volatility
+    definition: How much a portfolio's returns vary over time, usually measured as standard deviation.
+    synonyms: [Standard deviation of returns]
+    do_not_confuse_with: [Tracking error]
+    source: "Standard investment industry terminology"
+  - term: Drawdown
+    definition: The fall in a portfolio's value from a peak to the following low.
+    synonyms: [Peak-to-trough decline]
+    do_not_confuse_with: [Volatility]
+    source: "Standard investment industry terminology"
+  - term: Gross-of-fees return
+    definition: A portfolio's return before the manager's fees are taken off.
+    synonyms: [Gross return]
+    do_not_confuse_with: [Net-of-fees return]
+    source: "Standard asset management industry terminology (performance presentation usage)"
+  - term: Net-of-fees return
+    definition: A portfolio's return after the manager's fees are taken off -- what the client keeps.
+    synonyms: [Net return]
+    do_not_confuse_with: [Gross-of-fees return]
+    source: "Standard asset management industry terminology (performance presentation usage)"
+  - term: Time-weighted return
+    definition: A return that removes the effect of client flows, so it measures the manager's decisions rather than the timing of money in and out.
+    synonyms: [TWR]
+    do_not_confuse_with: [Money-weighted return]
+    source: "Standard investment industry terminology (performance presentation usage)"
+  - term: Money-weighted return
+    definition: A return that includes the effect of the size and timing of client flows -- what a particular client earned.
+    synonyms: [MWR, Internal rate of return]
+    do_not_confuse_with: [Time-weighted return]
+    source: "Standard investment industry terminology (performance presentation usage)"
+  - term: Peer group
+    definition: The set of comparable funds a fund's performance is ranked against.
+    synonyms: [Sector, Category]
+    do_not_confuse_with: [Benchmark]
+    source: "Standard asset management industry terminology"
+  - term: Quartile ranking
+    definition: A fund's position in its peer group, by quarter of the group, for a given period.
+    synonyms: [Peer ranking]
+    do_not_confuse_with: [Excess return]
+    source: "Standard asset management industry terminology"
+  - term: Fund rating
+    definition: A grade given to a fund by an independent research or ratings firm; distributors often use it to choose which funds to offer.
+    synonyms: []
+    do_not_confuse_with: [Quartile ranking]
+    source: "Standard asset management industry terminology"
+  - term: Active management
+    definition: Running a portfolio with the aim of beating its benchmark through the manager's own choices.
+    synonyms: []
+    do_not_confuse_with: [Passive management]
+    source: "Standard asset management industry terminology"
+  - term: Passive management
+    definition: Running a portfolio to follow an index as closely as possible rather than beat it.
+    synonyms: [Index tracking, Indexing]
+    do_not_confuse_with: [Active management]
+    source: "Standard asset management industry terminology"
+  - term: Performance attribution
+    definition: Breaking a portfolio's excess return down into its causes, such as asset allocation and security selection.
+    synonyms: [Attribution analysis]
+    do_not_confuse_with: [Marketing attribution]
+    source: "Standard investment industry terminology"
+  - term: Track record
+    definition: A fund's or strategy's performance history; many investors and consultants need a minimum length before they will invest.
+    synonyms: []
+    do_not_confuse_with: [Tracking error]
+    source: "Standard asset management industry terminology"
+
+  # -- Clients and distribution ----------------------------------------------------------------------
+  - term: Client
+    definition: The person or organisation whose money is managed; the level a client is counted at (account, legal entity, group) is a house rule.
+    synonyms: [Investor, Unitholder, Shareholder]
+    do_not_confuse_with: [Distributor]
+    source: "Standard asset management industry terminology"
+  - term: Institutional client
+    definition: An organisation investing on its own account or for its members -- for example a pension scheme, insurer, sovereign fund or endowment.
+    synonyms: [Institutional investor]
+    do_not_confuse_with: [Retail client, Intermediary client]
+    source: "Standard asset management industry terminology"
+  - term: Retail client
+    definition: An individual investing their own money, usually through a distributor.
+    synonyms: [Retail investor]
+    do_not_confuse_with: [Institutional client]
+    source: "Standard asset management industry terminology"
+  - term: Intermediary client
+    definition: A client type for money that reaches the manager through a distributor, where the account holder is the intermediary and the end investors are its own clients; the firm selling the funds is described under Distributor.
+    synonyms: []
+    do_not_confuse_with: [Institutional client, Retail client, Distributor]
+    source: "Standard asset management industry terminology"
+  - term: Distributor
+    definition: A firm that sells a manager's funds to its own clients -- a bank, platform, adviser, insurer or broker.
+    synonyms: [Intermediary, Selling agent]
+    do_not_confuse_with: [Distribution, Client]
+    source: "Standard asset management industry terminology"
+  - term: Platform
+    definition: A service through which advisers and investors buy and hold funds from many managers in one place.
+    synonyms: [Fund platform, Fund supermarket]
+    do_not_confuse_with: [Transfer agent]
+    source: "Standard asset management industry terminology"
+  - term: Private bank
+    definition: A bank serving wealthy individuals, which chooses funds for them and acts as a distributor.
+    synonyms: []
+    do_not_confuse_with: [Custodian]
+    source: "Standard asset management industry terminology"
+  - term: Financial adviser
+    definition: A person or firm advising clients on which funds to hold, and often placing the orders.
+    synonyms: [IFA, Independent financial adviser]
+    do_not_confuse_with: [Investment consultant]
+    source: "Standard asset management industry terminology"
+  - term: Investment consultant
+    definition: A firm advising institutional clients on which managers to appoint and keep.
+    synonyms: [Consultant]
+    do_not_confuse_with: [Financial adviser]
+    source: "Standard asset management industry terminology"
+  - term: Direct channel
+    definition: Clients who invest with the manager themselves, with no distributor in between.
+    synonyms: []
+    do_not_confuse_with: [Intermediary channel]
+    source: "Standard asset management industry terminology"
+  - term: Intermediary channel
+    definition: Clients who invest through a distributor rather than directly with the manager.
+    synonyms: [Third-party distribution]
+    do_not_confuse_with: [Direct channel]
+    source: "Standard asset management industry terminology"
+  - term: Omnibus account
+    definition: One account in a distributor's name holding the pooled investments of many of its clients, so the manager cannot see the end clients.
+    synonyms: []
+    do_not_confuse_with: [Nominee account]
+    source: "Standard asset management industry terminology"
+  - term: Nominee account
+    definition: An account held in the name of a nominee company on behalf of the real owner.
+    synonyms: []
+    do_not_confuse_with: [Omnibus account]
+    source: "Standard asset management industry terminology"
+  - term: Distribution agreement
+    definition: The contract between a manager and a distributor setting which funds may be sold and what the distributor is paid.
+    synonyms: [Selling agreement]
+    do_not_confuse_with: [Mandate]
+    source: "Standard asset management industry terminology"
+  - term: Distribution cost
+    definition: What a manager pays or gives up to distributors -- trailer fees, rebates and retrocessions.
+    synonyms: []
+    do_not_confuse_with: [Distribution, Entry charge]
+    source: "kpi_tree.yaml kpi:distribution_cost"
+  - term: RFP
+    definition: Request for proposal -- the formal document an institution sends managers when it is choosing one for a mandate.
+    synonyms: [Request for proposal]
+    do_not_confuse_with: [Pipeline]
+    source: "Standard asset management industry terminology"
+  - term: Pipeline
+    definition: Mandates and large investments being pursued or already won but not yet funded.
+    synonyms: [Sales pipeline]
+    do_not_confuse_with: [Net flows]
+    source: "Standard asset management industry terminology"
+  - term: Mandate win
+    definition: A client choosing the manager for a new mandate; when it is counted (awarded, signed, funded) is a house rule.
+    synonyms: []
+    do_not_confuse_with: [Gross subscriptions]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:mandate_wins_losses"
+  - term: Mandate loss
+    definition: A client ending a mandate and moving the assets away.
+    synonyms: [Mandate termination]
+    do_not_confuse_with: [Redemptions]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:mandate_wins_losses"
+  - term: Client retention
+    definition: The share of clients at the start of a period who are still clients at the end.
+    synonyms: [Retention rate]
+    do_not_confuse_with: [Redemption rate]
+    source: "kpi_tree.yaml kpi:client_retention"
+  - term: Client attrition
+    definition: Clients leaving altogether in a period -- the opposite of retention.
+    synonyms: [Client churn]
+    do_not_confuse_with: [Redemption rate]
+    source: "Standard asset management industry terminology"
+  - term: Client concentration
+    definition: The share of AUM held by the largest clients; a high share means losing one client moves the whole firm or fund.
+    synonyms: []
+    do_not_confuse_with: [Portfolio concentration]
+    source: "kpi_tree.yaml kpi:client_concentration"
+  - term: Cross-sell
+    definition: An existing client investing in a further fund or strategy from the same manager.
+    synonyms: []
+    do_not_confuse_with: [Switch]
+    source: "Standard asset management industry terminology"
+  - term: Relationship manager
+    definition: The person at the manager responsible for a client or distributor relationship.
+    synonyms: [Client director, Account manager]
+    do_not_confuse_with: [Portfolio manager]
+    source: "Standard asset management industry terminology"
+  - term: Onboarding
+    definition: The steps from a new client agreeing to invest to their account being open and able to deal.
+    synonyms: [Client onboarding, Account opening]
+    do_not_confuse_with: [KYC]
+    source: "Standard asset management industry terminology; kpi_tree.yaml kpi:onboarding_time"
+  - term: KYC
+    definition: Know your customer -- the identity and background checks a firm must complete on a client.
+    synonyms: [Know your customer, Customer due diligence]
+    do_not_confuse_with: [Onboarding, Suitability]
+    source: "Standard financial industry terminology"
+  - term: AML
+    definition: Anti-money-laundering -- the rules and checks meant to stop the proceeds of crime being invested.
+    synonyms: [Anti-money laundering]
+    do_not_confuse_with: [KYC]
+    source: "Standard financial industry terminology"
+  - term: Suitability
+    definition: The check that a product fits a client's needs, knowledge and appetite for risk.
+    synonyms: []
+    do_not_confuse_with: [KYC]
+    source: "Standard financial industry terminology"
+
+  # -- Operations ------------------------------------------------------------------------------------
+  - term: Transfer agent
+    definition: The firm that keeps a fund's register of holders and processes subscriptions and redemptions.
+    synonyms: [TA, Registrar]
+    do_not_confuse_with: [Custodian, Fund administrator]
+    source: "Standard asset management industry terminology"
+  - term: Fund administrator
+    definition: The firm that keeps a fund's books and calculates its net asset value.
+    synonyms: []
+    do_not_confuse_with: [Transfer agent, Custodian]
+    source: "Standard asset management industry terminology"
+  - term: Custodian
+    definition: The bank that holds a fund's assets in safekeeping and settles its trades.
+    synonyms: [Depositary]
+    do_not_confuse_with: [Transfer agent, Fund administrator]
+    source: "Standard asset management industry terminology"
+  - term: Fund accounting
+    definition: Keeping a fund's books -- valuing positions, accruing fees and income, and striking the unit price.
+    synonyms: []
+    do_not_confuse_with: [Transfer agent]
+    source: "Standard asset management industry terminology"
+  - term: Register
+    definition: The record of who holds how many units of a fund.
+    synonyms: [Unitholder register, Share register]
+    do_not_confuse_with: [Position]
+    source: "Standard asset management industry terminology"
+  - term: Dealing day
+    definition: A day on which a fund accepts subscriptions and redemptions.
+    synonyms: []
+    do_not_confuse_with: [Settlement date]
+    source: "Standard asset management industry terminology"
+  - term: Cut-off time
+    definition: The time by which an order must arrive to be dealt at that dealing day's price.
+    synonyms: [Dealing cut-off]
+    do_not_confuse_with: [Valuation point]
+    source: "Standard asset management industry terminology"
+  - term: Valuation point
+    definition: The time at which a fund's assets are valued to strike its price.
+    synonyms: []
+    do_not_confuse_with: [Cut-off time]
+    source: "Standard asset management industry terminology"
+  - term: Trade date
+    definition: The date an order is dealt.
+    synonyms: [Deal date]
+    do_not_confuse_with: [Settlement date]
+    source: "Standard financial industry terminology"
+  - term: Settlement date
+    definition: The date money and units actually change hands for an order.
+    synonyms: [Value date]
+    do_not_confuse_with: [Trade date]
+    source: "Standard financial industry terminology"
+  - term: Unit
+    definition: One share of ownership in a fund.
+    synonyms: [Share]
+    do_not_confuse_with: [Share class]
+    source: "Standard asset management industry terminology"
+  - term: Units outstanding
+    definition: The number of units of a fund or share class in issue; multiplied by the unit price it gives the fund's net assets.
+    synonyms: [Shares in issue]
+    do_not_confuse_with: [Quantity]
+    source: "Standard asset management industry terminology"
+
+  # -- Portfolio and holdings ------------------------------------------------------------------------
+  - term: Portfolio
+    definition: The set of positions managed together as one fund or mandate.
+    synonyms: []
+    do_not_confuse_with: [Position]
+    source: "contracts/sources/asset_management/awm_portfolios.source.yaml"
+  - term: Instrument
+    definition: A security or other asset a portfolio can hold -- a share, a bond, cash.
+    synonyms: [Security]
+    do_not_confuse_with: [Position]
+    source: "contracts/sources/asset_management/awm_instruments.source.yaml"
+  - term: Position
+    definition: A portfolio's holding of one instrument on one date.
+    synonyms: [Holding]
+    do_not_confuse_with: [Instrument, Register]
+    source: "contracts/sources/asset_management/awm_positions.source.yaml"
+  - term: Market value
+    definition: What a position is worth at current prices, in the portfolio's base currency.
+    synonyms: []
+    do_not_confuse_with: [Quantity]
+    source: "contracts/sources/asset_management/awm_positions.source.yaml schema market_value"
+  - term: Quantity
+    definition: The number of units of an instrument held in a position.
+    synonyms: [Units held]
+    do_not_confuse_with: [Market value, Units outstanding]
+    source: "contracts/sources/asset_management/awm_positions.source.yaml schema quantity"
+  - term: Base currency
+    definition: The currency a portfolio is valued and reported in.
+    synonyms: [Reporting currency]
+    do_not_confuse_with: [Hedged share class]
+    source: "contracts/sources/asset_management/awm_portfolios.source.yaml schema base_currency"
+  - term: Asset class
+    definition: A broad group of similar investments -- for example equities, bonds or cash.
+    synonyms: []
+    do_not_confuse_with: [Share class]
+    source: "Standard investment industry terminology; contracts/sources/asset_management/awm_instruments.source.yaml instrument_type"
+  - term: Asset allocation
+    definition: How a portfolio is divided across asset classes, regions or sectors.
+    synonyms: []
+    do_not_confuse_with: [Share-class mix]
+    source: "Standard investment industry terminology"
+  - term: ISIN
+    definition: International Securities Identification Number -- the standard code identifying a security or a fund share class.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "Standard financial industry terminology; contracts/sources/asset_management/awm_instruments.source.yaml instrument_code description"
+  - term: Investment guidelines
+    definition: The limits a mandate or fund sets on what the manager may hold.
+    synonyms: [Investment restrictions]
+    do_not_confuse_with: [Benchmark]
+    source: "Standard asset management industry terminology"
+  - term: Portfolio concentration
+    definition: How much of a portfolio sits in its largest positions.
+    synonyms: []
+    do_not_confuse_with: [Client concentration]
+    source: "Standard investment industry terminology"
+  - term: Liquidity
+    definition: How quickly a portfolio's holdings can be sold without moving their price; it limits how fast redemptions can be met.
+    synonyms: []
+    do_not_confuse_with: [Cash]
+    source: "Standard investment industry terminology"
+  - term: Portfolio manager
+    definition: The person who makes a portfolio's investment decisions.
+    synonyms: [Fund manager]
+    do_not_confuse_with: [Relationship manager]
+    source: "Standard asset management industry terminology"
+
+  # -- Firm economics ----------------------------------------------------------------------------------
+  - term: Cost-to-income ratio
+    definition: Operating cost divided by income for a period -- how much of each unit of income is spent running the firm.
+    synonyms: [Cost-income ratio, CIR]
+    do_not_confuse_with: [TER, Operating margin]
+    source: "Standard financial-services terminology; kpi_tree.yaml kpi:cost_to_income"
+  - term: Operating margin
+    definition: Operating profit divided by income for a period.
+    synonyms: []
+    do_not_confuse_with: [Revenue margin, Cost-to-income ratio]
+    source: "Standard financial-services terminology"
+  - term: Operating cost
+    definition: The cost of running the firm -- people, systems, premises and services bought in.
+    synonyms: [Operating expenses]
+    do_not_confuse_with: [TER, Distribution cost]
+    source: "Standard financial-services terminology"
+  - term: Operating leverage
+    definition: The effect of a largely fixed cost base -- profit moves more than income when markets and AUM rise or fall.
+    synonyms: []
+    do_not_confuse_with: [Leverage]
+    source: "Standard financial-services terminology"
+  - term: Break-even AUM
+    definition: The AUM at which a fund's fee revenue covers the cost of running it.
+    synonyms: []
+    do_not_confuse_with: [Seed capital]
+    source: "Standard asset management industry terminology"

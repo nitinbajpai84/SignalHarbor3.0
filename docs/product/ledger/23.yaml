@@ -1,0 +1,448 @@
+- id: 23.a.open_wall
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Open the wall, start the briefing, open the private rooms
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision at each step, each behind Are you sure
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: three presses'
+  claim: The organiser decides when the wall opens; North never opens it
+- id: 23.a.purpose
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Purpose line shown on the wall
+  person: organiser
+  mode: derived
+  agent: North
+  source: the goal line from the start questions
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: carried over from the start'
+  claim: The wall shows the purpose already given at the start; nothing is re-typed
+- id: 23.a.title
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Intent title and topic chip
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the intent record
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: carried over'
+  claim: Title and topic come from the intent record
+- id: 23.a.clock
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'Clock chip: days left, overdue, close time'
+  person: participant
+  mode: automatic
+  agent: null
+  source: the stage clock and the time box
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: computed'
+  claim: The wall always shows how long is left, computed from the stage clock
+- id: 23.a.people_line
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'People line: initials and N of M people joined'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: invited people and joined seats
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: Who has joined is counted by the system, not chased by email
+- id: 23.a.card_count
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Card count and live mark
+  person: organiser
+  mode: automatic
+  agent: null
+  source: board counts
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: Cards on the wall are counted live per lane
+- id: 23.a.frozen_mark
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Frozen on date and time
+  person: participant
+  mode: automatic
+  agent: null
+  source: the freeze time on the stage
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: stamped by the system'
+  claim: The freeze is stamped by the system
+- id: 23.a.time_card
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'North time card: 4 of 6 people have not added a card, with extend, close now or cancel'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the board counts and people
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a nudge with counts and options against checking who has contributed'
+  claim: North drafts the nudge with the counts and the options; the organiser presses one
+- id: 23.a.invite_link
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'Join link: copy, new link, revoke'
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: one copy'
+  claim: The join link is made by the system; the organiser copies and sends it
+- id: 23.a.join_email
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Draft of the join-link message
+  person: organiser
+  mode: confirm
+  agent: Nira
+  source: the intent title, purpose and clock
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a drafted message against writing an email'
+  claim: Nira drafts the invitation message; the organiser copies and sends it
+- id: 23.a.show_mine
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Show only mine (filter)
+  person: participant
+  mode: manual
+  agent: null
+  source: the viewer
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A filter is one tap
+- id: 23.a.projector
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Projector view
+  person: organiser
+  mode: manual
+  agent: null
+  source: the viewer
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: one tap against preparing a slide of lane names'
+  claim: The projector view is one tap and needs no slide
+- id: 23.a.lanes
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Four lanes with counts
+  person: participant
+  mode: automatic
+  agent: null
+  source: cards by lane
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: grouped by the system'
+  claim: The four lanes are filled and counted by the system
+- id: 23.a.card_edit
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Edit own card while rooms are open
+  person: participant
+  mode: manual
+  agent: null
+  source: the author
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: a few lines'
+  claim: An author edits only their own card
+- id: 23.a.card_lane
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: The lane a card sits in
+  person: participant
+  mode: derived
+  agent: North
+  source: the answers given to North
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: placed by North from the answers'
+  claim: The lane of a card is placed from what the person said, never from a form field
+- id: 23.a.suggestion_pickup
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Pick up a suggestion card (up to three per lane)
+  person: participant
+  mode: confirm
+  agent: North
+  source: pack knowledge and the company's documents
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a card ready to pick up against thinking of it'
+  claim: North suggests up to three cards per lane from the company's own papers; the person picks one up
+- id: 23.a.seal
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Seal it
+  person: participant
+  mode: manual
+  agent: null
+  source: the author
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tick'
+  claim: Only the author seals a card; the wall shows a silhouette
+- id: 23.a.anonymous
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Anonymous
+  person: participant
+  mode: manual
+  agent: null
+  source: the author
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tick'
+  claim: Only the author makes a card anonymous
+- id: 23.a.put_on_wall
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Put it on the wall now
+  person: participant
+  mode: manual
+  agent: null
+  source: the author
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: A card goes up only when its author presses
+- id: 23.a.freeze
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Close the wall (freeze)
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one press behind Are you sure'
+  claim: Freezing the wall is the organiser's decision; the system then writes the snapshot
+- id: 23.a.close_rooms
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Close the rooms and bring everyone to the wall
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Rooms close by the organiser or when the window ends
+- id: 23.a.snapshot
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Wall snapshot and untouched suggestions dropped
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the frozen board
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: done by the system'
+  claim: The frozen wall is snapshotted by the system and becomes page one of the charter
+- id: 23.a.outcome_wall
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'Wall outcome counts: total, per lane, sealed, anonymous, people contributed'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the frozen board
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: The counts at freeze are written by the system
+- id: 23.a.q4_fill
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: Quarter 4 filled from files and marked guessed
+  person: participant
+  mode: derived
+  agent: Lens
+  source: the company's files
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a draft with the file named against hunting for the answer'
+  claim: Lens fills the last quarter from the company's files and names the file; the author confirms
+- id: 23.a.pulse_lines
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/wall (the wall)
+  input: 'Pulse lines: invitation, closing reminder, frozen notice'
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the stage clock and people
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: written by Nira'
+  claim: Nira tells each person what is waiting; no reminder email is written by hand
+- id: 23.b.arrival
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: 'Arrival band: title, organiser, purpose, clock'
+  person: participant
+  mode: derived
+  agent: null
+  source: the intent record
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: carried over'
+  claim: The arriving person sees why they are here without a briefing email
+- id: 23.b.join
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: 'Take my seat: sign in or join as a guest with name and role'
+  person: participant
+  mode: manual
+  agent: null
+  source: the arriving person
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: a few seconds'
+  claim: The only things a guest types are name and role
+- id: 23.b.q1
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: First question from North, drafted from the interview
+  person: participant
+  mode: confirm
+  agent: North
+  source: the person's earlier interview and the documents
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: question drafted from the interview against a blank form'
+  claim: North asks the first question from what the person has already said
+- id: 23.b.q_answers
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: Answers to North's four quarter questions (at least two)
+  person: participant
+  mode: manual
+  agent: North
+  source: the person's own knowledge
+  minutes_without: 15
+  minutes_with: 5
+  basis: 'estimate: a conversation with North against a written survey'
+  claim: The person talks; North turns the words into the four quarters. This is the knowledge only the person has
+- id: 23.b.card_from_interview
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: Cards drafted from an earlier interview, confirmed, changed or discarded
+  person: participant
+  mode: confirm
+  agent: North
+  source: the earlier interview
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: cards drafted against writing them'
+  claim: North drafts cards from interviews; the person confirms, changes or discards
+- id: 23.b.finish
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: I am done
+  person: participant
+  mode: manual
+  agent: null
+  source: the author
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: The person says when they have finished
+- id: 23.b.role_note
+  spec: '23'
+  journey: initiative
+  stage: think
+  screen: sessions/:sessionId/room (private room)
+  input: 'Role note: you add cards, or you read the wall'
+  person: participant
+  mode: automatic
+  agent: null
+  source: the invitation role
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: fixed by role'
+  claim: The role note follows the invitation

@@ -1,0 +1,117 @@
+# Template family_office@1 measures K20 to K27 for the illustrative Ardmore demo cycle (kpi_tree style).
+# Definitions in business words plus a technical definition. No values here; values live in demo_cycle/gold.
+template: family_office@1
+status: proposal
+kpis:
+- id: K20
+  status: proposal
+  name: Idle cash above policy
+  keywords: [idle, cash, sweep, policy, floor, balance]
+  tier: driver
+  unit: SGD
+  definition: The cash sitting in bank accounts beyond what the office has agreed to keep on hand, counted at each month end. It is money that could be earning a return in a money market fund.
+  formula: 'Per entity: max(0, month-end bank balance in SGD, summed over the entity accounts at the approved FX basis, minus the policy cash floor of 2,000,000 SGD per entity). Sum across entities. The monthly value is the month-end figure; the daily table gives the same per calendar day.'
+  owner_role: Treasury
+  grain: entity x month (daily on request)
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K21
+  status: proposal
+  name: Interest earned on cash
+  keywords: [interest, yield, cash, money, market, sweep]
+  tier: driver
+  unit: SGD per month
+  definition: The interest and money market income the office actually received in the month on its bank accounts and cash-like funds.
+  formula: Sum over the month of interest credited to bank accounts B01 to B08 plus distributions credited from money market funds H037 to H040, each converted to SGD at the approved FX basis.
+  owner_role: Treasury
+  grain: account x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K22
+  status: proposal
+  name: Custody fees
+  keywords: [custody, fee, tier, basis, points, invoice]
+  tier: driver
+  unit: basis points of assets under custody, annualised
+  definition: What each custodian charges to hold the assets, expressed as a yearly percentage of the assets it holds, in hundredths of a percent.
+  formula: Fees accrued in the month for a custodian / average month assets under custody in SGD, times 12, times 10,000. The overall figure is the sum of fees over the sum of average assets across custodians C1 to C3.
+  owner_role: Operations
+  grain: custodian x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K23
+  status: proposal
+  name: Family report opens
+  keywords: [family, report, opens, portal, readers, engagement]
+  tier: diagnostic
+  unit: count per month
+  definition: How many times a family member opened the monthly family report in the portal during the month.
+  formula: Count of portal events of type report_open by family readers FR01 to FR04 within the calendar month; one open per reader per session.
+  owner_role: Reporting
+  grain: reader x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K24
+  status: proposal
+  name: Report questions to the office
+  keywords: [questions, family, report, enquiries, holding]
+  tier: diagnostic
+  unit: count per month
+  definition: How many questions family members sent to the office about the report in the month. A rise means the report is not answering what readers want to know.
+  formula: Count of rows in the report questions log with received date in the month, any channel (email, call, message), excluding repeats of the same question from the same reader on the same day.
+  owner_role: Reporting
+  grain: reader x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K25
+  status: proposal
+  name: Late administrator statements
+  keywords: [statement, late, administrator, arrival, nav, file]
+  tier: driver
+  unit: count per month
+  definition: How many fund administrator statements arrived after the date the office expects them in the month.
+  formula: Count of administrator statements for the statement month where the actual arrival date is later than the expected arrival date (working day 8 after month end unless the agreement says otherwise).
+  owner_role: Operations
+  grain: administrator x fund x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K26
+  status: proposal
+  name: Hedging cost
+  keywords: [hedging, forward, cost, fx, premium, points]
+  tier: driver
+  unit: SGD per month
+  definition: "What the office paid in the month to protect itself against currency moves: forward points and fees on currency hedges."
+  formula: Sum over the month of forward points cost plus dealing fees on FX forwards in the forwards register, converted to SGD. Zero when there are no live forwards.
+  owner_role: Treasury
+  grain: currency x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review
+- id: K27
+  status: proposal
+  name: Unhedged FX loss
+  keywords: [fx, loss, unhedged, currency, usd, translation]
+  tier: diagnostic
+  unit: SGD per month
+  definition: The loss in SGD terms in the month on currency exposure that was not hedged, when a foreign currency weakened against the Singapore dollar. A gain is shown as a negative loss.
+  formula: 'For each foreign currency: month-start unhedged exposure in native units (K11) times (month-start SGD per unit minus month-end SGD per unit), summed across USD, EUR and HKD; positive means a loss.'
+  owner_role: Risk
+  grain: currency x month
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative Ardmore demo cycle, pending practitioner review

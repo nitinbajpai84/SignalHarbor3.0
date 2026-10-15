@@ -1,0 +1,465 @@
+# Template insurance@1 problem templates (V3-03 brief item 1). 17 problem templates by role,
+# carried over verbatim in substance from the orchestrator's seed draft (scratchpad
+# starter_intents.draft.yaml, per the brief's instruction to copy it into the repo and not
+# reference the temp path anywhere). Every typical_actions item is labelled "Industry practice
+# (suggestion)" per ND-35 -- it is never a business rule, and target is always null (CLAUDE.md
+# rule 4). Nothing in this file is approved; it is pack content pending practitioner review (see
+# packages/V3-03/report.md, Open Questions).
+#
+# lines_of_business/products/channels are left as [] on every entry: the seed draft did not tag
+# these dimensions, and this builder has no sourced mapping from a specific problem to a specific
+# product/channel taxonomy (assigning one would be inventing a business rule). Candidate
+# taxonomies that do exist in the sources (product_category: Investment-linked/Retirement/
+# Savings/Protection/Health, kpis.json K14; lead/channel sources: agency/agent_owned/cep_handoff/
+# email_marketing, kpis.json K05; CEP channels: Email/SMS/WhatsApp, kpis.json K16) are listed in
+# the report for the practitioner to apply.
+template: insurance@1
+status: draft - not adopted; for practitioner review
+note: >-
+  Suggestions only. No targets or thresholds (CLAUDE.md rule 4). kpi_ids refer to
+  docs/signal-harbor/cmo-proof/kpis.json ids (K01..K18), every one verified present there.
+problems:
+  - id: T-CMO-01
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are we on track for the new-business plan, and where is the gap?
+    decision: Where to move budget and agent effort this month.
+    kpi_ids: [K01, K03, K04]
+    signals: []
+    breakdowns: [business unit, product, month]
+    needs: [policies]
+    belief_to_test: The gap is in one business unit or product, not across the board.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Shift campaign budget toward the business unit with the largest gap
+        - Run a short agent incentive on the product that is behind
+    customer_decides:
+      - The plan figure for each business unit and product
+    suggested:
+      moscow: must
+      owner_role: CMO
+      phase: wave 1
+      cadence: Monthly, with a weekly flash
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-CMO-02
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which campaigns and journeys earn their budget?
+    decision: Which campaigns to renew, scale or stop.
+    kpi_ids: [K10, K11, K12, K13, K15]
+    signals: []
+    breakdowns: [campaign, lead source, journey]
+    needs: [leads, campaigns, marketing spend]
+    belief_to_test: Digital campaigns bring cheaper leads but weaker policies.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Stop the bottom campaigns by cost per policy and move their spend to the top ones
+        - Keep a small test budget for new campaigns so the comparison stays fair
+    customer_decides:
+      - Which spend file is the official one (Finance or Marketing)
+      - "The attribution rule: first touch or last touch, and over how many days"
+    suggested:
+      moscow: should
+      owner_role: CMO
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-CMO-03
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is our product mix drifting away from protection?
+    decision: Whether to push protection and health over savings products.
+    kpi_ids: [K14, K02, K01]
+    signals: []
+    breakdowns: [business unit, product group, month]
+    needs: [policies]
+    belief_to_test: A savings-heavy month can grow APE while value falls.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Bundle a health rider into the savings campaign
+        - Weight agent incentives toward protection products
+    customer_decides:
+      - Which products count as protection, health or savings
+      - Margin bands for the value estimate, agreed with Actuarial
+    suggested:
+      moscow: should
+      owner_role: CMO
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-CMO-04
+    roles: [cmo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is the top of the funnel big enough for the plan?
+    decision: How many more leads to buy, and from which source.
+    kpi_ids: [K05, K06, K08]
+    signals: []
+    breakdowns: [lead source, business unit, month]
+    needs: [leads, policies]
+    belief_to_test: We count the same person more than once across lead sources.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Stop paying twice for duplicate leads from overlapping sources
+        - Move budget to the source with the best conversion rate, not the most leads
+    customer_decides:
+      - How close two leads must be, in days, to count as the same person
+    suggested:
+      moscow: must
+      owner_role: CMO
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIST-01
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which agents and branches are losing policies early?
+    decision: Where to coach, and whether the incentive plan rewards low-quality sales.
+    kpi_ids: [K18]
+    signals: []
+    breakdowns: [agent, branch, product, agent tenure band]
+    needs: [policies, agents]
+    belief_to_test: New agents cause most early terminations.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Call new customers within 30 days of the policy starting
+        - Hold back part of first-year commission, or pay a bonus for policies still in force
+    customer_decides:
+      - Which status codes count as ending early (lapse, surrender, free-look cancel)
+      - How long after inception counts as early
+    suggested:
+      moscow: must
+      owner_role: Head of distribution
+      phase: wave 1
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIST-02
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are leads followed up fast enough?
+    decision: Whether to set a follow-up time limit and send leads to agents automatically.
+    kpi_ids: [K17, K07, K08]
+    signals: []
+    breakdowns: [branch, lead source, agent]
+    needs: [leads, agents]
+    belief_to_test: Slow follow-up is costing us conversions.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Send each lead to the next available agent after a set wait
+        - Put the follow-up time on each branch's weekly scorecard
+    customer_decides:
+      - The follow-up time limit itself (none exists yet)
+    suggested:
+      moscow: must
+      owner_role: Head of distribution
+      phase: wave 1
+      cadence: Weekly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIST-03
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are leads reaching agents, and are agents accepting them?
+    decision: Whether the lead-sharing rules or agent capacity are the problem.
+    kpi_ids: [K07, K05]
+    signals: []
+    breakdowns: [branch, lead source]
+    needs: [leads, agents]
+    belief_to_test: Branches turn leads down because the quality is poor.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Ask for a reason whenever an agent declines a lead
+        - Rebalance leads toward branches with spare capacity
+    customer_decides:
+      - "What counts as accepted: first contact or explicit acceptance"
+    suggested:
+      moscow: should
+      owner_role: Head of distribution
+      phase: wave 1
+      cadence: Weekly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIST-04
+    roles: [distribution]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Are our new agents producing?
+    decision: Onboarding, mentoring and early-tenure incentives.
+    kpi_ids: [K03, K04, K18]
+    signals: []
+    breakdowns: [agent tenure band, branch]
+    needs: [policies, agents]
+    belief_to_test: Agents who survive their first year pay back the recruitment cost.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Pair each new agent with a top producer for their first 90 days
+        - Set a first-case milestone at 30, 60 and 90 days
+    customer_decides:
+      - "The tenure bands to use (for example 0-6, 6-12 and 12+ months)"
+    suggested:
+      moscow: should
+      owner_role: Head of distribution
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-RET-01
+    roles: [retention]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Who is likely to lapse next, and can we keep them?
+    decision: Who the lapse-prevention journey targets, and when.
+    kpi_ids: [K18]
+    signals: [continuity risk bands]
+    breakdowns: [risk band, product, branch]
+    needs: [policies, payments or status history]
+    belief_to_test: Most lapses happen at the first missed payment.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Contact customers in the high-risk band before their next premium falls due
+        - Offer to lower the premium or change payment frequency instead of letting the policy lapse
+    customer_decides:
+      - Which risk band triggers contact
+      - Contact and consent rules for each channel
+    suggested:
+      moscow: must
+      owner_role: Head of customer and retention
+      phase: wave 1
+      cadence: Weekly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-RET-02
+    roles: [retention]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Which customers are overlooked opportunities?
+    decision: Who gets the next rider or top-up offer.
+    kpi_ids: [K04]
+    signals: [hidden gems]
+    breakdowns: [customer segment, product held]
+    needs: [policies, customers]
+    belief_to_test: Our best cross-sell prospects are customers we already have, not new leads.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Offer a health rider to protection-only customers with a good payment record
+    customer_decides:
+      - Which customers must never be contacted (opt-outs, complaints)
+    suggested:
+      moscow: could
+      owner_role: Head of customer and retention
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIG-01
+    roles: [digital]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Why don't our leads buy?
+    decision: What to fix in scripts, pricing messages and follow-up.
+    kpi_ids: [K08]
+    signals: [friction]
+    breakdowns: [lead source, product]
+    needs: [leads with notes]
+    belief_to_test: Price is the main reason leads walk away.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Rewrite the first-call script around the most common objection
+        - Add a lower-premium option to the most-quoted plan
+    customer_decides:
+      - How many lead notes a month North may read (the AI allowance)
+    suggested:
+      moscow: should
+      owner_role: Head of digital and CEP
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIG-02
+    roles: [digital]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Why do our customers buy?
+    decision: Messaging and targeting for the next campaign.
+    kpi_ids: [K01]
+    signals: [pull]
+    breakdowns: [product, customer segment]
+    needs: [policies, purchase notes]
+    belief_to_test: Life events, not prices, drive most purchases.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Time campaigns around life events such as a new child or a new home
+    customer_decides:
+      - Which notes may be read (consent and privacy)
+    suggested:
+      moscow: could
+      owner_role: Head of digital and CEP
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-DIG-03
+    roles: [digital]
+    lines_of_business: []
+    products: []
+    channels: [Email, SMS, WhatsApp]
+    question: How much new business do our CEP journeys drive, and which channels engage?
+    decision: Which journeys to scale, fix or retire, and the channel budget.
+    kpi_ids: [K09, K15, K16]
+    signals: []
+    breakdowns: [journey, channel, customer tenure]
+    needs: [CEP sends, policies]
+    belief_to_test: Email journeys are doing more than we give them credit for.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Retire the journeys with the lowest APE per journey
+        - Move sends to the channel with the best click rate for each segment
+    customer_decides:
+      - The attribution window and rule (this is still an open question)
+    suggested:
+      moscow: should
+      owner_role: Head of digital and CEP
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json; channels per kpis.json K16 cep_by_channel"
+  - id: T-FIN-01
+    roles: [finance]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: What is the real return on marketing spend?
+    decision: Next year's marketing budget, and the case to put to the board.
+    kpi_ids: [K13, K11, K12, K02]
+    signals: []
+    breakdowns: [campaign, quarter]
+    needs: [marketing spend, leads, policies]
+    belief_to_test: Marketing spend is a cost; it doesn't earn a return.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Fund the next quarter only for campaigns whose return is at or above the agreed floor
+    customer_decides:
+      - Measure return on NBP (value) or on APE (volume)
+      - The return floor
+    suggested:
+      moscow: should
+      owner_role: CFO
+      phase: wave 2
+      cadence: Quarterly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-FIN-02
+    roles: [finance]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is our growth adding value, or only volume?
+    decision: Pricing and product-mix guidance.
+    kpi_ids: [K02, K04, K14]
+    signals: []
+    breakdowns: [product group, business unit]
+    needs: [policies]
+    belief_to_test: Our APE growth comes from low-margin savings business.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Report value growth alongside APE growth every month
+    customer_decides:
+      - Margin bands by product, agreed with Actuarial
+    suggested:
+      moscow: could
+      owner_role: CFO
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"
+  - id: T-BANCA-01
+    roles: [bancassurance]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: Is each bank partner pulling its weight?
+    decision: Partner targets, training and joint campaigns.
+    kpi_ids: [K01, K08, K18]
+    signals: []
+    breakdowns: [partner, branch, product]
+    needs: [policies, leads, partner list]
+    belief_to_test: The partners that sell the most also lose the most policies early.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Retrain partner branches with high early termination
+        - Run joint campaigns with the partner that converts best
+    customer_decides:
+      - Partner targets
+      - Which field identifies the partner
+    suggested:
+      moscow: could
+      owner_role: Head of bancassurance
+      phase: wave 2
+      cadence: Monthly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json. Note: no bancassurance-specific source table exists in kpis.json's current drops (research note section 5.1: bancassurance feeds lms_leads as a non-CEP source, no dedicated table); 'partner' breakdown and 'partner list' need are flagged in Open Questions."
+  - id: T-CEO-01
+    roles: [ceo]
+    lines_of_business: []
+    products: []
+    channels: []
+    question: "One page for the board: plan, value, retention, return"
+    decision: Board narrative and the priorities for next quarter.
+    kpi_ids: [K01, K02, K18, K13]
+    signals: []
+    breakdowns: [quarter, business unit]
+    needs: [whatever the templates above already use]
+    belief_to_test: We are growing, and that growth is healthy.
+    typical_actions:
+      label: "Industry practice (suggestion)"
+      items:
+        - Start each quarterly review with the belief check for this template
+    customer_decides:
+      - Which 4 numbers go to the board
+      - Who signs them off before they are sent
+    suggested:
+      moscow: could
+      owner_role: CEO
+      phase: wave 3
+      cadence: Quarterly
+    target: null
+    source: "Seed: orchestrator's starter_intents draft (V3-03 brief); kpi_ids verified against docs/signal-harbor/cmo-proof/kpis.json"

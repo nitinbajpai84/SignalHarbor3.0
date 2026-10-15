@@ -1,0 +1,235 @@
+{
+  "id": "MX-SPA-SPONSOR",
+  "agent": "span",
+  "role": "sponsor",
+  "desc": "A1 sponsor asks Span which gold table holds cash by entity and what feeds it.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> model -> tool -> model -> guard; tools describe_table"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "3 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "8625 ms",
+      "value": 8625
+    },
+    {
+      "name": "cost",
+      "passed": true,
+      "detail": "3 calls, 8032 tokens, $0.0027",
+      "value": 8032
+    }
+  ],
+  "error": null,
+  "latency_ms": 8625,
+  "cost": {
+    "calls": 3,
+    "tokens": 8032,
+    "usd": 0.0027,
+    "estimated": false
+  },
+  "trace_id": "tr-span-c2bf28ad-137af4e5",
+  "forgotten": [
+    "sponsor: summary s-bd9191a8",
+    "sponsor: summary s-da695ab8"
+  ],
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity, and which bronze tables feed it?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The `gold_investment_report_cash_daily` table holds cash by entity, providing a daily view for the administrator. It is fed by the bronze tables `instruments`, `legal_entities`, `portfolios`, and `position_snapshots`.",
+        "rules_only": false,
+        "trace_id": "tr-span-c2bf28ad-137af4e5"
+      },
+      "ms": 8625,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 10682,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:26:56+0800",
+      "trace_id": "tr-span-c2bf28ad-137af4e5"
+    },
+    {
+      "bytes": 10011,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:26:53+0800",
+      "trace_id": "tr-span-c2bf28ad-137af4e5"
+    },
+    {
+      "bytes": 9795,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:26:50+0800",
+      "trace_id": "tr-span-c2bf28ad-137af4e5"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-c2bf28ad-137af4e5",
+      "status": 200,
+      "runs": [
+        {
+          "id": "b3e1f811197c4f158879aaea177643de",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:26:58+00:00",
+          "elapsed_ms": 8218,
+          "steps": 6,
+          "tool_calls": 1,
+          "cost_usd": 0.0027,
+          "trace_id": "tr-span-c2bf28ad-137af4e5",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-c2bf28ad-137af4e5",
+          "at": "2026-10-10T02:26:58+00:00",
+          "run_id": "b3e1f811197c4f158879aaea177643de",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 8218,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 2938,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2549,
+              "tokens_out": 58,
+              "cost_usd": 0.00091,
+              "nudged": "tool_required"
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 2811,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2590,
+              "tokens_out": 23,
+              "cost_usd": 0.000834
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "describe_table",
+              "arg_keys": [
+                "table"
+              ],
+              "result_chars": 398,
+              "refused": false,
+              "reason": null,
+              "ms": 296
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 2172,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2761,
+              "tokens_out": 51,
+              "cost_usd": 0.000956
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.0027,
+        "tokens": 8032
+      }
+    }
+  ]
+}

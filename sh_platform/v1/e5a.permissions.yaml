@@ -1,0 +1,5 @@
+# E5a Role Pulse. Every company role may read and act on its own cards; code checks the card belongs to the signed-in person.
+routes:
+  GET /api/v1/pulse2/items: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/pulse2/items/{item_id}/acknowledge: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/pulse2/items/{item_id}/dismiss: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

@@ -1,0 +1,771 @@
+// Signal Harbor v2.0 · Family office canonical data model
+// Paste into https://dbdiagram.io to see the diagram.
+// Generic for any family or investment office. Items marked [Ardmore] are configurations or extensions
+// for the Ardmore pilot; everything else is the general model. All examples are illustrative.
+//
+// Three rules shape every table:
+// 1. Nothing is overwritten. A changed fact is a new row that supersedes the old one.
+// 2. Every fact carries effective_at (when it is true in the world), received_at (when we learnt it),
+//    processed_at (when we stored it) and the source it came from. This answers "what did we know when".
+// 3. Figures come from source records and tested calculations, never from a model.
+
+Project signal_harbor_v2 {
+  database_type: 'PostgreSQL'
+  Note: 'Canonical model. Runs on DuckDB locally and on PostgreSQL, or the client warehouse, at the client.'
+}
+
+// ============================================================================================
+// 1. Parties, legal structure and access
+// ============================================================================================
+
+Enum party_kind {
+  person
+  organisation
+}
+Enum entity_kind {
+  family_holding
+  trust
+  foundation
+  company
+  spv
+  partnership
+  individual_account
+  other
+}
+
+Table party {
+  party_id varchar [pk]
+  kind party_kind
+  display_name varchar [note: 'Tokenised before any model call']
+  country varchar
+  created_at timestamp
+  Note: 'Any person or organisation: family members, managers, banks, administrators, counterparties.'
+}
+
+Table party_role {
+  party_id varchar [ref: > party.party_id]
+  role varchar [note: 'family_member, beneficiary, trustee, manager, gp, custodian, administrator, bank, counterparty, auditor']
+  valid_from date
+  valid_to date
+  indexes { (party_id, role, valid_from) [pk] }
+}
+
+Table entity {
+  entity_id varchar [pk]
+  name varchar
+  kind entity_kind
+  domicile varchar
+  base_currency char(3) [ref: > currency.code]
+  tax_id_ref varchar [note: 'Pointer only; the number itself stays restricted']
+  sensitivity varchar [note: 'open, internal, restricted']
+  valid_from date
+  valid_to date
+  Note: 'A legal entity the office reports on: holding company, trust, foundation, SPV.'
+}
+
+Table entity_ownership {
+  parent_entity_id varchar [ref: > entity.entity_id]
+  child_entity_id varchar [ref: > entity.entity_id]
+  ownership_pct decimal(9,6)
+  effective_from date
+  effective_to date
+  source_event_id varchar [ref: > evidence_event.event_id]
+  indexes { (parent_entity_id, child_entity_id, effective_from) [pk] }
+  Note: 'Effective-dated ownership tree, so look-through and consolidation can be rebuilt for any date.'
+}
+
+Table portfolio {
+  portfolio_id varchar [pk]
+  name varchar
+  owner_entity_id varchar [ref: > entity.entity_id]
+  strategy varchar [note: 'e.g. liquid, private markets, real assets, cash']
+  reporting_currency char(3) [ref: > currency.code]
+  valid_from date
+  valid_to date
+}
+
+Table account {
+  account_id varchar [pk]
+  entity_id varchar [ref: > entity.entity_id]
+  portfolio_id varchar [ref: > portfolio.portfolio_id]
+  provider_party_id varchar [ref: > party.party_id, note: 'bank, custodian or broker']
+  account_kind varchar [note: 'custody, bank, brokerage, fund_holding, loan']
+  account_ref_masked varchar [note: 'Last digits only']
+  currency char(3) [ref: > currency.code]
+  opened_on date
+  closed_on date
+}
+
+Table app_user {
+  user_id varchar [pk]
+  party_id varchar [ref: > party.party_id]
+  email varchar
+  role varchar [note: 'cio, operations, finance, risk, rule_owner, data_engineer, company_admin']
+  active boolean
+}
+
+Table entitlement {
+  user_id varchar [ref: > app_user.user_id]
+  scope_kind varchar [note: 'entity, portfolio, document_class, project']
+  scope_id varchar
+  level varchar [note: 'full, read, preview, none']
+  valid_from timestamp
+  valid_to timestamp
+  granted_by varchar [ref: > app_user.user_id]
+  indexes { (user_id, scope_kind, scope_id, valid_from) [pk] }
+  Note: 'Checked before every query, search and tool call. Search filters by this before retrieval.'
+}
+
+// ============================================================================================
+// 2. Reference data: currencies, calendars, instruments and the identifier crosswalk
+// ============================================================================================
+
+Table currency {
+  code char(3) [pk]
+  name varchar
+  decimals int
+}
+
+Table calendar_day {
+  calendar varchar [note: 'e.g. SG, US, HK']
+  day date
+  is_business_day boolean
+  indexes { (calendar, day) [pk] }
+}
+
+Enum instrument_kind {
+  equity
+  bond
+  fund_share_class
+  private_fund
+  cash
+  deposit
+  derivative
+  real_asset
+  loan
+  other
+}
+
+Table instrument {
+  instrument_id varchar [pk]
+  kind instrument_kind
+  name varchar
+  currency char(3) [ref: > currency.code]
+  issuer_party_id varchar [ref: > party.party_id]
+  manager_party_id varchar [ref: > party.party_id, note: 'for funds']
+  liquidity varchar [note: 'daily, monthly, quarterly, locked, illiquid']
+  valid_from date
+  valid_to date
+  Note: 'One row per thing the office can hold. Source systems name it differently; see instrument_identifier.'
+}
+
+Table instrument_identifier {
+  instrument_id varchar [ref: > instrument.instrument_id]
+  scheme varchar [note: 'isin, cusip, sedol, figi, ticker, internal, administrator_id, oms_id, manager_name_alias']
+  value varchar
+  valid_from date
+  valid_to date
+  confirmed_by varchar [ref: > app_user.user_id]
+  indexes { (scheme, value, valid_from) [pk] }
+  Note: 'The crosswalk. A new alias proposed by the intake agent is not used until a person confirms it.'
+}
+
+Table classification {
+  instrument_id varchar [ref: > instrument.instrument_id]
+  scheme varchar [note: 'asset_class, region, sector, strategy, saa_bucket']
+  value varchar
+  valid_from date
+  valid_to date
+  indexes { (instrument_id, scheme, valid_from) [pk] }
+}
+
+Table fund_terms {
+  instrument_id varchar [pk, ref: - instrument.instrument_id]
+  vintage_year int
+  fund_size decimal(20,2)
+  management_fee_pct decimal(9,6)
+  carry_pct decimal(9,6)
+  hurdle_pct decimal(9,6)
+  valuation_frequency varchar [note: 'monthly, quarterly']
+  administrator_party_id varchar [ref: > party.party_id]
+  Note: 'Private fund and fund-of-fund terms.'
+}
+
+Table derivative_terms {
+  instrument_id varchar [pk, ref: - instrument.instrument_id]
+  underlying_instrument_id varchar [ref: > instrument.instrument_id]
+  contract_type varchar [note: 'forward, swap, option, future']
+  notional decimal(20,2)
+  notional_currency char(3) [ref: > currency.code]
+  trade_date date
+  maturity_date date
+  counterparty_party_id varchar [ref: > party.party_id]
+  Note: 'Terms only. Pricing models and Greeks stay in the risk system; we read their outputs.'
+}
+
+// ============================================================================================
+// 3. Evidence and versioning: the core of v2.0
+// ============================================================================================
+
+Table source_system {
+  source_id varchar [pk]
+  name varchar [note: 'e.g. administrator export, OMS export, manager email, market data, spreadsheet']
+  kind varchar [note: 'system_export, api, mailbox, spreadsheet, document_share']
+  owner_user_id varchar [ref: > app_user.user_id]
+  licence_class varchar [note: 'internal, vendor_licensed, public']
+  permitted_use varchar [note: 'e.g. may_index, may_send_to_model, display_only']
+  freshness_rule varchar [note: 'e.g. daily by 08:00, monthly within 10 business days']
+}
+
+Table source_file {
+  file_id varchar [pk]
+  source_id varchar [ref: > source_system.source_id]
+  file_name varchar
+  sha256 char(64) [note: 'Proves the original never changed']
+  storage_uri varchar [note: 'Object store path of the untouched original']
+  sender varchar
+  received_at timestamp
+  sensitivity varchar
+  pii_found boolean
+  Note: 'Every file that ever arrived, kept as received.'
+}
+
+Table load_batch {
+  batch_id varchar [pk]
+  source_id varchar [ref: > source_system.source_id]
+  file_id varchar [ref: > source_file.file_id]
+  started_at timestamp
+  finished_at timestamp
+  row_count int
+  status varchar [note: 'loaded, failed, quarantined']
+  Note: 'One run of ingestion. Raw rows keep their batch, so any figure traces to the file it came from.'
+}
+
+Table document {
+  document_id varchar [pk]
+  file_id varchar [ref: > source_file.file_id]
+  doc_type varchar [note: 'statement, capital_call, distribution_notice, nav_report, policy, sop, email, memo, workbook']
+  manager_party_id varchar [ref: > party.party_id]
+  instrument_id varchar [ref: > instrument.instrument_id]
+  period_end date
+  version_label varchar [note: 'original, amended, final']
+  supersedes_document_id varchar [ref: > document.document_id]
+  pages int
+}
+
+Table passage {
+  passage_id varchar [pk]
+  document_id varchar [ref: > document.document_id]
+  page int
+  line_from int
+  line_to int
+  text text
+  embedding vector [note: 'pgvector at the client; local vector table on the laptop']
+  embed_model varchar
+  Note: 'The RAG unit: 800 to 1,200 characters with page and line, searched by words and meaning.'
+}
+
+Table extraction {
+  extraction_id varchar [pk]
+  document_id varchar [ref: > document.document_id]
+  field varchar [note: 'e.g. nav, units, valuation_date, call_amount, due_date']
+  value_text varchar
+  value_number decimal(24,6)
+  page int
+  line int
+  confidence varchar [note: 'high, medium, low']
+  extracted_by varchar [note: 'agent and model version']
+  verified_by varchar [ref: > app_user.user_id]
+  verified_at timestamp
+  Note: 'What the intake agent read. Low confidence or material values wait for a person.'
+}
+
+Enum evidence_status {
+  estimated
+  indicative
+  official
+  final
+  revised
+  stale
+  withdrawn
+}
+
+Table evidence_event {
+  event_id varchar [pk]
+  kind varchar [note: 'valuation, position, cash_flow, capital_call, distribution, price, fx_rate, nav, commitment, corporate_action']
+  subject_type varchar [note: 'instrument, account, entity, portfolio']
+  subject_id varchar
+  value_number decimal(24,6)
+  currency char(3) [ref: > currency.code]
+  effective_at timestamp [note: 'When it is true in the world, e.g. valuation date']
+  received_at timestamp [note: 'When the office learnt it']
+  processed_at timestamp [note: 'When we stored it']
+  status evidence_status
+  supersedes_event_id varchar [ref: > evidence_event.event_id]
+  source_batch_id varchar [ref: > load_batch.batch_id]
+  extraction_id varchar [ref: > extraction.extraction_id]
+  reviewed_by varchar [ref: > app_user.user_id]
+  Note: 'Append-only. "As known at T" = the latest event per subject with processed_at <= T and not superseded by then.'
+}
+
+// ============================================================================================
+// 4. Investment activity
+// ============================================================================================
+
+Table commitment {
+  commitment_id varchar [pk]
+  entity_id varchar [ref: > entity.entity_id]
+  instrument_id varchar [ref: > instrument.instrument_id]
+  amount decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  committed_on date
+  source_event_id varchar [ref: > evidence_event.event_id]
+}
+
+Table capital_flow {
+  flow_id varchar [pk]
+  commitment_id varchar [ref: > commitment.commitment_id]
+  kind varchar [note: 'capital_call, distribution, recallable_distribution, fee, expense']
+  notice_date date
+  due_date date
+  amount decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  status varchar [note: 'forecast, noticed, paid, received']
+  source_event_id varchar [ref: > evidence_event.event_id]
+  Note: 'Feeds the liquidity and commitment radar.'
+}
+
+Table transaction {
+  txn_id varchar [pk]
+  account_id varchar [ref: > account.account_id]
+  instrument_id varchar [ref: > instrument.instrument_id]
+  kind varchar [note: 'buy, sell, subscription, redemption, income, fee, transfer, fx, cash']
+  trade_date date
+  settle_date date
+  effective_at timestamp
+  quantity decimal(24,8)
+  price decimal(24,8)
+  amount decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  booking_status varchar [note: 'booked, amended, cancelled, backdated']
+  source_event_id varchar [ref: > evidence_event.event_id]
+  Note: 'A backdated or amended trade is a new row that supersedes, never an edit.'
+}
+
+Table corporate_action {
+  action_id varchar [pk]
+  instrument_id varchar [ref: > instrument.instrument_id]
+  kind varchar [note: 'split, dividend, merger, spin_off, name_change']
+  ex_date date
+  details varchar
+  source_event_id varchar [ref: > evidence_event.event_id]
+}
+
+// ============================================================================================
+// 5. Holdings, prices and valuations
+// ============================================================================================
+
+Table position {
+  account_id varchar [ref: > account.account_id]
+  instrument_id varchar [ref: > instrument.instrument_id]
+  as_of date
+  quantity decimal(24,8)
+  cost_basis decimal(20,2)
+  source_event_id varchar [ref: > evidence_event.event_id]
+  indexes { (account_id, instrument_id, as_of, source_event_id) [pk] }
+}
+
+Table price {
+  instrument_id varchar [ref: > instrument.instrument_id]
+  price_date date
+  observed_at timestamp
+  price decimal(24,8)
+  currency char(3) [ref: > currency.code]
+  source_id varchar [ref: > source_system.source_id]
+  price_type varchar [note: 'close, bid, mid, nav, manual']
+  indexes { (instrument_id, price_date, source_id, observed_at) [pk] }
+}
+
+Table fx_rate {
+  from_ccy char(3) [ref: > currency.code]
+  to_ccy char(3) [ref: > currency.code]
+  rate_date date
+  fixing varchar [note: 'e.g. WMR 4pm London; the fixing is a signed rule']
+  rate decimal(18,10)
+  source_id varchar [ref: > source_system.source_id]
+  indexes { (from_ccy, to_ccy, rate_date, fixing) [pk] }
+}
+
+Table valuation {
+  instrument_id varchar [ref: > instrument.instrument_id]
+  entity_id varchar [ref: > entity.entity_id]
+  valuation_date date
+  value decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  status evidence_status
+  method varchar [note: 'market, manager_nav, administrator_nav, model, cost, proxy']
+  source_event_id varchar [ref: > evidence_event.event_id]
+  indexes { (instrument_id, entity_id, valuation_date, source_event_id) [pk] }
+  Note: 'Estimated and official values live side by side, each with its status.'
+}
+
+Table administrator_nav {
+  nav_id varchar [pk]
+  entity_id varchar [ref: > entity.entity_id]
+  portfolio_id varchar [ref: > portfolio.portfolio_id]
+  period_end date
+  nav decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  approval_status varchar [note: 'draft, approved, restated']
+  approved_at timestamp
+  source_event_id varchar [ref: > evidence_event.event_id]
+  Note: 'The official accounting view. The product reads it and never changes it.'
+}
+
+// ============================================================================================
+// 6. Accounting view (optional; many family offices keep a separate ledger)
+// ============================================================================================
+
+Table gl_account {
+  gl_account_id varchar [pk]
+  entity_id varchar [ref: > entity.entity_id]
+  code varchar
+  name varchar
+  kind varchar [note: 'asset, liability, equity, income, expense']
+}
+
+Table journal_line {
+  line_id varchar [pk]
+  gl_account_id varchar [ref: > gl_account.gl_account_id]
+  posting_date date
+  amount decimal(20,2)
+  currency char(3) [ref: > currency.code]
+  reference varchar
+  source_event_id varchar [ref: > evidence_event.event_id]
+}
+
+// ============================================================================================
+// 7. Rules, calculations, benchmarks and policy limits
+// ============================================================================================
+
+Table rule {
+  rule_id varchar [pk]
+  kind varchar [note: 'tolerance, materiality, formula, source_of_truth, fx_fixing, due_date, estimate_use']
+  name varchar
+  owner_user_id varchar [ref: > app_user.user_id]
+}
+
+Table rule_version {
+  rule_id varchar [ref: > rule.rule_id]
+  version int
+  definition text [note: 'Plain words plus the machine form']
+  effective_from date
+  effective_to date
+  signed_by varchar [ref: > app_user.user_id]
+  signed_at timestamp
+  state varchar [note: 'draft, signed, retired']
+  indexes { (rule_id, version) [pk] }
+  Note: 'A rule takes effect only once signed. Past reports keep the version they used.'
+}
+
+Table calculation_version {
+  calc_id varchar [pk]
+  name varchar [note: 'e.g. twr_monthly, benchmark_blend, cash_recon']
+  code_hash varchar
+  rule_versions varchar [note: 'rule_id:version list used']
+  released_at timestamp
+  released_by varchar [ref: > app_user.user_id]
+}
+
+Table benchmark {
+  benchmark_id varchar [pk]
+  name varchar
+  currency char(3) [ref: > currency.code]
+  owner_user_id varchar [ref: > app_user.user_id]
+  methodology_rule_id varchar [ref: > rule.rule_id]
+}
+
+Table benchmark_component {
+  benchmark_id varchar [ref: > benchmark.benchmark_id]
+  index_instrument_id varchar [ref: > instrument.instrument_id]
+  weight decimal(9,6)
+  spread_bps decimal(9,2) [note: 'premium over an index, e.g. index + 300 bps']
+  valid_from date
+  valid_to date
+  indexes { (benchmark_id, index_instrument_id, valid_from) [pk] }
+}
+
+Table allocation_limit {
+  limit_id varchar [pk]
+  portfolio_id varchar [ref: > portfolio.portfolio_id]
+  dimension varchar [note: 'asset_class, region, manager, liquidity, single_name']
+  bucket varchar
+  target_pct decimal(9,4)
+  min_pct decimal(9,4)
+  max_pct decimal(9,4)
+  rule_id varchar [ref: > rule.rule_id]
+  effective_from date
+  effective_to date
+}
+
+Table performance_result {
+  portfolio_id varchar [ref: > portfolio.portfolio_id]
+  period_start date
+  period_end date
+  currency char(3) [ref: > currency.code]
+  method varchar [note: 'twr, mwr, irr, tvpi, dpi']
+  value decimal(18,8)
+  calc_id varchar [ref: > calculation_version.calc_id]
+  as_known_at timestamp
+  indexes { (portfolio_id, period_end, currency, method, calc_id, as_known_at) [pk] }
+}
+
+// ============================================================================================
+// 8. Reports and their versions
+// ============================================================================================
+
+Table report_definition {
+  report_id varchar [pk]
+  name varchar
+  audience varchar [note: 'cio, family, investment_committee, finance']
+  contract_id varchar [ref: > decision_contract.contract_id]
+  reporting_currencies varchar [note: 'e.g. USD,SGD']
+}
+
+Table report_version {
+  report_version_id varchar [pk]
+  report_id varchar [ref: > report_definition.report_id]
+  period_end date
+  cutoff_at timestamp [note: 'Evidence processed after this is not in the report']
+  issued_at timestamp
+  status varchar [note: 'draft, ready_for_review, approved, issued, superseded']
+  calc_id varchar [ref: > calculation_version.calc_id]
+  approved_by varchar [ref: > app_user.user_id]
+  supersedes_version_id varchar [ref: > report_version.report_version_id]
+}
+
+Table report_line {
+  report_version_id varchar [ref: > report_version.report_version_id]
+  line_key varchar [note: 'e.g. fund_a_value, total_nav, ytd_return_usd']
+  value decimal(24,6)
+  currency char(3) [ref: > currency.code]
+  status evidence_status
+  evidence_event_ids varchar [note: 'The events this figure used']
+  indexes { (report_version_id, line_key, currency) [pk] }
+}
+
+// ============================================================================================
+// 9. Decision contracts, findings, cases and the Pulse
+// ============================================================================================
+
+Table decision_contract {
+  contract_id varchar [pk]
+  question text
+  audience varchar
+  estimate_or_official varchar
+  sources varchar
+  acceptance_tests text
+  open_choices text
+  owner_user_id varchar [ref: > app_user.user_id]
+  signed_version int
+  signed_at timestamp
+}
+
+Table finding {
+  finding_id varchar [pk]
+  kind varchar [note: 'revision, break, missing_document, limit_breach, stale_data']
+  subject_type varchar
+  subject_id varchar
+  effect_amount decimal(20,2)
+  effect_currency char(3) [ref: > currency.code]
+  calc_id varchar [ref: > calculation_version.calc_id]
+  evidence_event_ids varchar
+  materiality varchar [note: 'low, medium, high, from the signed materiality rule']
+  created_at timestamp
+}
+
+Table work_case {
+  case_id varchar [pk, note: 'CASE-0107 style number']
+  finding_id varchar [ref: > finding.finding_id]
+  state varchar [note: 'open, in_progress, waiting_check, resolved, dismissed']
+  maker_user_id varchar [ref: > app_user.user_id]
+  checker_user_id varchar [ref: > app_user.user_id, note: 'Never the same person as the maker']
+  due_at timestamp
+  explanation text [note: 'Proposed by the investigation agent; confirmed by the maker']
+}
+
+Table case_event {
+  case_id varchar [ref: > work_case.case_id]
+  at timestamp
+  by_actor varchar [note: 'user id or agent name']
+  action varchar [note: 'opened, assigned, delegated, commented, submitted, approved, sent_back, resolved, dismissed, reopened']
+  note text
+  indexes { (case_id, at) [pk] }
+  Note: 'Append-only audit trail.'
+}
+
+Table report_impact {
+  finding_id varchar [ref: > finding.finding_id]
+  report_version_id varchar [ref: > report_version.report_version_id]
+  line_key varchar
+  draft_value decimal(24,6)
+  indexes { (finding_id, report_version_id, line_key) [pk] }
+  Note: 'Which issued reports a finding touches, and the draft revised figure.'
+}
+
+Table pulse_card {
+  card_id varchar [pk]
+  user_id varchar [ref: > app_user.user_id]
+  finding_id varchar [ref: > finding.finding_id]
+  case_id varchar [ref: > work_case.case_id]
+  bucket varchar [note: 'needs_me, worth_a_look']
+  shown_on date
+  acted varchar [note: 'opened, acted, dismissed, ignored']
+}
+
+// ============================================================================================
+// 10. Spreadsheet intake: how Excel becomes canonical data
+// ============================================================================================
+
+Table workbook_sheet {
+  sheet_id varchar [pk]
+  file_id varchar [ref: > source_file.file_id]
+  sheet_name varchar
+  header_row int
+  data_range varchar
+  sheet_purpose varchar [note: 'positions, valuations, cash, benchmark, mapping, notes; proposed by the agent']
+  owner_user_id varchar [ref: > app_user.user_id]
+  status varchar [note: 'profiled, mapped, validated, loaded, in_progress_in_workbook']
+}
+
+Table column_mapping {
+  sheet_id varchar [ref: > workbook_sheet.sheet_id]
+  source_column varchar
+  target_table varchar
+  target_field varchar
+  transform varchar [note: 'e.g. parse date dd/mm/yyyy, units in thousands']
+  proposed_by varchar [note: 'agent']
+  confirmed_by varchar [ref: > app_user.user_id]
+  indexes { (sheet_id, source_column) [pk] }
+}
+
+Table control_total {
+  sheet_id varchar [ref: > workbook_sheet.sheet_id]
+  measure varchar [note: 'e.g. total NAV, row count, sum of cash']
+  expected_value decimal(24,6) [note: 'Read from the workbook itself']
+  loaded_value decimal(24,6) [note: 'Computed after load']
+  passed boolean
+  indexes { (sheet_id, measure) [pk] }
+  Note: 'A sheet is accepted only when what we loaded adds up to what the workbook says.'
+}
+
+// ============================================================================================
+// [Ardmore] extensions and configurations for the pilot
+// ============================================================================================
+
+Table wh_source_config {
+  source_id varchar [pk, ref: - source_system.source_id]
+  system_name varchar [note: '[Ardmore] LGH (trades, positions), SS&C (administrator NAV, accounting), SAP B1 (ledger), Bloomberg* (prices, indices), Burgiss* (private markets), manager email and portals, the benchmark workbook']
+  export_format varchar
+  delivery varchar [note: 'SFTP, API, mailbox, manual upload']
+  Note: '[Ardmore] Sources are configuration rows, never hard-coded tables. * subject to licence and permitted use.'
+}
+
+Table wh_dual_currency_policy {
+  report_id varchar [pk, ref: - report_definition.report_id]
+  primary_ccy char(3) [note: '[Ardmore] USD']
+  secondary_ccy char(3) [note: '[Ardmore] SGD']
+  fx_rule_id varchar [ref: > rule.rule_id]
+  Note: '[Ardmore] Dual-currency P&L and performance was a deal-breaking requirement in their past vendor evaluation.'
+}
+
+Table wh_benchmark_sheet_status {
+  benchmark_id varchar [ref: > benchmark.benchmark_id]
+  workbook_sheet_id varchar [ref: > workbook_sheet.sheet_id]
+  sheet_review_status varchar [note: '[Ardmore] e.g. Approved or In Progress, as marked in the benchmark specification workbook']
+  open_question text [note: 'e.g. replacement for a discontinued reference rate']
+  indexes { (benchmark_id, workbook_sheet_id) [pk] }
+  Note: '[Ardmore] Sheets still In Progress raise a question to the rule owner; they are never certified automatically.'
+}
+
+// ============================================================================================
+// Groups for the diagram
+// ============================================================================================
+
+TableGroup parties_and_access {
+  party
+  party_role
+  entity
+  entity_ownership
+  portfolio
+  account
+  app_user
+  entitlement
+}
+TableGroup reference_data {
+  currency
+  calendar_day
+  instrument
+  instrument_identifier
+  classification
+  fund_terms
+  derivative_terms
+}
+TableGroup evidence_and_versioning {
+  source_system
+  source_file
+  load_batch
+  document
+  passage
+  extraction
+  evidence_event
+}
+TableGroup investment_activity {
+  commitment
+  capital_flow
+  transaction
+  corporate_action
+}
+TableGroup holdings_and_valuation {
+  position
+  price
+  fx_rate
+  valuation
+  administrator_nav
+}
+TableGroup accounting {
+  gl_account
+  journal_line
+}
+TableGroup rules_and_performance {
+  rule
+  rule_version
+  calculation_version
+  benchmark
+  benchmark_component
+  allocation_limit
+  performance_result
+}
+TableGroup reports {
+  report_definition
+  report_version
+  report_line
+}
+TableGroup workflow {
+  decision_contract
+  finding
+  work_case
+  case_event
+  report_impact
+  pulse_card
+}
+TableGroup spreadsheet_intake {
+  workbook_sheet
+  column_mapping
+  control_total
+}
+TableGroup ardmore_extensions {
+  wh_source_config
+  wh_dual_currency_policy
+  wh_benchmark_sheet_status
+}

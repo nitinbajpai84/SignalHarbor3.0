@@ -1,0 +1,141 @@
+{
+  "id": "TAL-09",
+  "agent": "tally",
+  "role": "approver",
+  "desc": "P22 Finance case - fund the Cedarpoint Ventures III capital call, 450,000 due 20 Oct.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 3115,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 2,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:capital call|type=capital_call}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "450000"
+    ],
+    "words_any": [
+      [
+        "20 Oct",
+        "2026-10-20"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "POST",
+      "path": "/api/v1/cases/b95a9281-b5fa-44c7-9ccc-088d21185a3c/ask",
+      "request": {
+        "question": "How much has to be funded and by when?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "b95a9281-b5fa-44c7-9ccc-088d21185a3c",
+        "kind": "capital_call",
+        "summary": "Cedarpoint Ventures III has called 450,000 USD, due 20 Oct 2026. It is due in 11 days.",
+        "findings": [
+          {
+            "key": "notice",
+            "text": "Call of 450,000 USD, status confirmed, due 20 Oct 2026 (11 days away).",
+            "figure": "450,000 USD",
+            "chips": [
+              {
+                "label": "Cash movement",
+                "kind": "cash",
+                "id": "c483a562-a61d-4fdc-9cb5-e29047fe4e3e"
+              },
+              {
+                "label": "Cedarpoint Ventures III capital call notice 02 Oct 2026",
+                "kind": "document",
+                "id": "79c92bdf-cf90-47c9-a40f-5c3f72117301"
+              }
+            ]
+          },
+          {
+            "key": "commitment",
+            "text": "Commitment 6,000,000 USD: 4,050,000 USD called so far, 1,950,000 USD still uncalled.",
+            "figure": "1,950,000 USD",
+            "chips": []
+          },
+          {
+            "key": "cash",
+            "text": "Entity B holds 880,400 USD in cash (as of 8 Oct 2026); after this call of 450,000 USD it would hold 430,400 USD. If the Saltmarsh Infrastructure Fund II call of 600,000 USD due 30 Oct 2026 is confirmed too, it would hold -169,600 USD.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Finance",
+            "text": "Arrange the payment of 450,000 USD to Cedarpoint Ventures III by 20 Oct 2026."
+          },
+          {
+            "who": "Operations",
+            "text": "Confirm the notice against the commitment and the fund's bank details before paying."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "Cedarpoint Ventures III capital call notice 02 Oct 2026"
+        ],
+        "worded_by": "rules",
+        "question": "How much has to be funded and by when?",
+        "answer": "I cannot tell that from the records of this case. What they show: Cedarpoint Ventures III has called 450,000 USD, due 20 Oct 2026. It is due in 11 days.",
+        "answer_worded_by": "rules",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 3073,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 11715,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:32:54+0800"
+    },
+    {
+      "bytes": 11531,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:32:52+0800"
+    }
+  ]
+}

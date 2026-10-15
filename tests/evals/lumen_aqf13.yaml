@@ -1,0 +1,102 @@
+# L-aqf13: Lumen dashboards, cycle 1 second round. One item per fix (LQ-2, LQ-3, LQ-8, LQ-9, LQ-10, lumen-memory-c1-02/-05/-07, EVT-T6,
+# EVT-T8, EVT-T14, LT2-1..4, RC2-3). Live items run in Testing mode only (python tools/run_evals.py --agents lumen_aqf13).
+# Seeded dashboard {did} (dash-0ad2b1c7): t-000001 Net worth by entity, t-000002 Cash by entity, t-000003 Holdings by status. Studio {sdid}.
+- id: LA13-LQ2
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: LQ-2 (A3) after 'what does net worth include?', 'where does this figure come from?' explains net worth, not Holdings by status.
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - {say: "what does net worth include?"}
+    - say: "where does this figure come from?"
+      expect: {contains: ["net worth"], absent: ["holdings by status"]}
+  expected: {status: 200}
+  scorers: [turn_expect, loop_trace]
+
+- id: LA13-LQ3
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: LQ-3 / EVT-T6 / LQ-8 (A3, A16) why net worth moved in September - Aug to Sep 2026, +3,367,000, causes named, never 2023, never 1 Sep.
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "why did net worth move in September?"
+      expect: {contains: ["3,367,000", "price"], absent: ["2023", "1 sep 2026", "not in the data", "cause is not"]}
+  expected: {status: 200}
+  scorers: [turn_expect, loop_trace, groundedness]
+
+- id: LA13-LQ9
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: LQ-9 (A6, A14) the Why button on Net worth by entity is worded by the loop with context, and has a trace.
+  route: {method: GET, path: "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/why"}
+  expected: {status: 200, words_any: [["3,367,000", "3367000"]], forbidden: ["no model is used", "cause is not in the data"]}
+  scorers: [words, trace_complete]
+
+- id: LA13-LQ10
+  agent: lumen
+  role: participant
+  live: true
+  desc: LQ-10 (A16) a dashboard not shared with the person names who can share it.
+  route: {method: GET, path: "/api/v1/consume/p/{pid}/dashboards/{did}"}
+  expected: {status: 403, words_any: [["can share it"]]}
+  scorers: [words]
+
+- id: LA13-MEM-C1-02
+  agent: lumen
+  role: approver
+  live: true
+  desc: lumen-memory-c1-02 / -07, EVT-T14 (A5, A14) a decision on the dashboard is talk, kept, with a trace; never the studio pointer.
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "OK, decision: we drop the benchmark comparison page until the council agrees a new benchmark."
+      expect: {absent: ["dashboard studio", "no benchmark is defined"], contains: ["trace_id"]}
+    - say: "What did we just decide?"
+      expect: {contains: ["benchmark comparison"]}
+  expected: {status: 200}
+  scorers: [turn_expect, trace_complete]
+
+- id: LA13-EVT-T8
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: EVT-T8 (A16) Entity B cash at the administrator on 8 Oct 2026 is 880,400; never 'only month-end figures'.
+  route: {method: POST, path: "/api/v1/consume/p/{pid}/dashboards/{did}/ask"}
+  turns:
+    - say: "What was Entity B's cash at the administrator on 8 October 2026?"
+      expect: {contains: ["880,400"], absent: ["month-end", "no administrator"]}
+  expected: {status: 200}
+  scorers: [turn_expect, groundedness]
+
+- id: LA13-LT2
+  agent: lumen
+  role: analyst
+  live: true
+  desc: LT2-1..3, lumen-memory-c1-05 (A15, A5) one tile per ask, warning said once; an edit says only what was asked; blue dropped at the split is said there.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/studio/{sdid}/ask"}
+  turns:
+    - say: "Show me net worth by month"
+      expect: {contains: ["i have proposed one tile"], absent: ["(sgd) and", "2 tiles"]}
+    - {say: "in blue"}
+    - say: "in SGD"
+      expect: {absent: ["already by month"]}
+    - say: "by entity"
+      expect: {contains: ["no longer used"]}
+    - say: "last 12 months"
+      expect: {absent: ["blue is used for a single series"]}
+  expected: {status: 200}
+  scorers: [turn_expect]
+
+- id: LA13-RC2-3
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: RC2-3 (A3, A15) portfolio return last month against the benchmark - percentages, never raw fractions or an apology.
+  route: {method: POST, path: "/api/v1/consume/chat"}
+  turns:
+    - say: "What was the portfolio return last month against the benchmark?"
+      expect: {contains: ["%"], absent: ["0.01.", "can't find any gold tables", "my apologies"]}
+  expected: {status: 200}
+  scorers: [turn_expect]

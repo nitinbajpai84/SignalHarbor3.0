@@ -1,0 +1,534 @@
+- id: 44.run.start
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Lens strip)
+  input: Start of the unattended drafting run when Define opens
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the stage trigger and the clusters mapped to measures
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: briefing an analyst to start writing definitions'
+  claim: North starts Lens when Define opens; nobody presses anything
+- id: 44.strip.status
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Lens status line)
+  input: Lens has drafted 41 of 52 items for 6 measures
+  person: organiser
+  mode: automatic
+  agent: Lens
+  source: define.lens.cells by state
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who has written what'
+  claim: Progress of every draft is counted without asking
+- id: 44.strip.progress
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Drafting progress)
+  input: Drafting 3 of 9 for a measure
+  person: organiser
+  mode: automatic
+  agent: null
+  source: define.lens.run.order and cells
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Drafting progress is shown while a run is on
+- id: 44.strip.reads
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Lens source line)
+  input: 'Read: n documents, n interviews, the profile, the pack'
+  person: participant
+  mode: automatic
+  agent: null
+  source: define.lens.reads
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: asking what the draft was based on'
+  claim: Everyone can see what Lens read
+- id: 44.strip.questions
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Questions chip)
+  input: Questions open for you and waiting
+  person: participant
+  mode: automatic
+  agent: null
+  source: define.lens.questions by state and person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counting open items by hand'
+  claim: The questions chip counts what is asked of you and what is queued
+- id: 44.kind.mapping
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 1)
+  input: Cluster to measure mapping
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the cluster cards and the measure list
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: matching ideas to measures in a spreadsheet'
+  claim: Lens maps every cluster to measures by code with no model; a person only corrects
+  built: automatic
+- id: 44.kind.business
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 2)
+  input: Business definition per measure
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the profile, shelf documents, interviews, then the pack as a suggestion
+  minutes_without: 40
+  minutes_with: 0
+  basis: 'estimate: writing a definition for each measure'
+  claim: Lens drafts the business definition from what the company has already written
+- id: 44.kind.technical
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 3)
+  input: 'Technical definition: source, fields, calculation, period, currency'
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: catalogue metadata and documents; a missing formula becomes a question
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: working out the calculation from documents'
+  claim: Lens drafts the technical definition and never invents a formula
+- id: 44.kind.catalogue
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 4)
+  input: Catalogue entry rows
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: rows the technical notes name where a passage says the name
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: finding the tables and columns'
+  claim: Lens lists catalogue rows only where a document names them
+- id: 44.kind.owners
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 5)
+  input: Business owner, data owner and source owner
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the roles in the profile, systems list and interviews
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: working out who owns each measure'
+  claim: Lens proposes the three owners per measure from the profile and interviews
+- id: 44.kind.governed
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 6)
+  input: Governed state, six fields
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: classification policy, access list, deadlines and pack dependencies
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: asking governance for each measure'
+  claim: Lens drafts the governed state with the definitions and nobody is asked for it
+  built: missing
+- id: 44.kind.process
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 7)
+  input: Process steps per cluster
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: cards, interviews and documents
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: drawing the process from interviews'
+  claim: Lens drafts the process steps from what people said
+- id: 44.kind.sources
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 8)
+  input: Data sources for the measure
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the systems list, documents and interviews
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: listing the systems by hand'
+  claim: Lens drafts the sources a measure comes from
+- id: 44.kind.ambiguities
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (cell 9)
+  input: Ambiguities with the meanings found
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: passages and interview answers using the same term differently
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: spotting words that mean different things to different teams'
+  claim: Lens finds terms with more than one meaning and lists each with its source
+- id: 44.cell.value
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (draft cell)
+  input: Lens draft value with source and Guessed mark
+  person: participant
+  mode: automatic
+  agent: Lens
+  source: the draft and its source line
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Every draft is marked guessed with its source until a person confirms
+- id: 44.cell.edit
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (draft cell, edit)
+  input: A person's own wording
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner's own knowledge
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: rewriting a definition'
+  claim: A person's wording is kept as stated and Lens's draft is kept beside it
+- id: 44.cell.confirm
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Confirm)
+  input: Confirm a draft cell
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner of that item after reading the draft and its source
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing and agreeing a definition'
+  claim: Confirming is one tap on a drafted cell; only the owner or governance lead can
+- id: 44.cell.sendback
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Send back with a note)
+  input: A note saying what to change
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person sending back
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: emailing back a correction'
+  claim: A correction is one sentence and Lens redrafts once
+- id: 44.cell.redraft
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Redraft proposal)
+  input: Second draft beside the first
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the note and the first draft
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: rewriting after feedback'
+  claim: Lens redrafts once from the note and shows both drafts
+- id: 44.cell.redraft_pick
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Use this one, Keep the first)
+  input: Pick the first or second draft
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person who sent it back
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: choosing between versions'
+  claim: The sender picks between the two drafts in one tap
+- id: 44.cell.escalate
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Escalated chip)
+  input: Second send back passes to governance
+  person: analyst
+  mode: automatic
+  agent: null
+  source: the send back count
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: forwarding an unresolved argument'
+  claim: A twice sent back cell goes to the governance lead by rule
+- id: 44.cell.drafting_state
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Lens is drafting)
+  input: Drafting state with slow and failure lines
+  person: participant
+  mode: automatic
+  agent: Lens
+  source: the claim on the cell
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The page says when Lens is working and is never blocked
+- id: 44.cell.retry
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Try again)
+  input: Retry a failed draft
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser, analyst or owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: asking again'
+  claim: One press retries a failed cell and the pack suggestion is shown beside it
+- id: 44.cell.nomodel
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (No model line)
+  input: Pack suggestions shown when no model is set up
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the company settings and the pack
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The product says plainly when drafts are only pack suggestions
+- id: 44.q.raise
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Questions list)
+  input: At most three questions per person
+  person: owner
+  mode: derived
+  agent: Lens
+  source: unresolved cells and conflicting meanings, ranked
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: a list of questions in an email chain'
+  claim: Lens asks only what it must, never more than three per person
+- id: 44.q.card
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Question card)
+  input: The question, why you are asked and the meanings found
+  person: owner
+  mode: derived
+  agent: Lens
+  source: the passages and interviews found
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: researching what the documents say first'
+  claim: Each question arrives with the meanings already found and their sources
+- id: 44.q.pick
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (pick a meaning)
+  input: Pick a meaning
+  person: owner
+  mode: manual
+  agent: null
+  source: the addressed person among the meanings shown
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a definition meeting'
+  claim: Answering is one tap when the right meaning is among those found
+- id: 44.q.write
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (write my own)
+  input: Say it in your words
+  person: owner
+  mode: manual
+  agent: null
+  source: the addressed person
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: writing a definition from scratch'
+  claim: When none fits the person says it in their own words
+- id: 44.q.notmine
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Not mine, it is ...)
+  input: Reassign a question to another person
+  person: owner
+  mode: manual
+  agent: null
+  source: the addressed person naming someone
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: forwarding an email and waiting'
+  claim: Reassigning is one pick and the new person's cap applies
+- id: 44.q.accept_ambiguous
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Accept both meanings)
+  input: Accept as ambiguous, a known risk
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: a governance meeting'
+  claim: Only the governance lead can accept two meanings, recorded as a known risk
+- id: 44.q.waiting
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (Waiting count)
+  input: n more questions waiting for a person
+  person: organiser
+  mode: automatic
+  agent: null
+  source: queued questions over the cap
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Questions over the cap are counted and queued
+- id: 44.esc.item
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?view=escalated (Escalated item)
+  input: Both drafts and both notes side by side
+  person: governance lead
+  mode: derived
+  agent: Lens
+  source: the first draft, the redraft and the notes
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: collecting the thread for the decision'
+  claim: The governance lead decides with everything laid out
+- id: 44.esc.choose
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?view=escalated (Use the first, Use the redraft)
+  input: Choose a wording
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a meeting to settle wording'
+  claim: Settling a disagreement is one tap
+- id: 44.esc.write
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?view=escalated (Write it myself)
+  input: Own wording
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: writing the wording'
+  claim: The governance lead may write the wording herself
+- id: 44.esc.unknown
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define?view=escalated (We do not know yet)
+  input: Mark unknown with a known risk
+  person: governance lead
+  mode: manual
+  agent: null
+  source: the governance lead
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: noting a gap'
+  claim: Not knowing is recorded as a known risk instead of left blank
+- id: 44.pulse.drafts
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: Pulse pages of the analyst and addressed people
+  input: Lens finished and Lens has n questions lines
+  person: analyst
+  mode: automatic
+  agent: Nira
+  source: the run result and the question counts
+  minutes_without: 8
+  minutes_with: 0
+  basis: 'estimate: emailing each person'
+  claim: People are told when drafts are ready and what is asked of them
+- id: 44.pulse.escalated
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: Pulse page of the governance lead
+  input: Lens needs you to decide
+  person: governance lead
+  mode: automatic
+  agent: Nira
+  source: escalated cells
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a chase email'
+  claim: The governance lead is told when something is escalated
+- id: 44.close.guessed
+  spec: '44'
+  journey: initiative
+  stage: think
+  screen: /centre/intent/<id>/define (close dialog)
+  input: Count of cells still guessed
+  person: organiser
+  mode: automatic
+  agent: North
+  source: define.lens.cells by state
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking every definition for sign-off status'
+  claim: At close the system lists every cell still guessed and the charter prints Draft by Lens

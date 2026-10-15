@@ -1,0 +1,63 @@
+{
+  "id": "LUM-05",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Asked for cash by entity, the tile rows hold Entity B administrator 880,400 and trading export 868,000.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 880400, 868000"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 25,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "880400",
+      "868000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity per day"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 25,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

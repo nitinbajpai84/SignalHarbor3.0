@@ -1,0 +1,4 @@
+# C2 Offer card. The "have" handler also refuses anyone but the decision maker (company_admin, sponsor).
+routes:
+  GET /api/v1/consume/offers: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/offers/{offer_id}/have: {roles: [company_admin, sponsor]}

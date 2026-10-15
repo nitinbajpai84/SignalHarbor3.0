@@ -1,0 +1,1422 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signal Harbor in detail: every component",
+  "subtitle": "Local = one process, files, memory. Production = web + worker, Postgres, Redis. * and planned = not built yet.",
+  "output": "docs/architecture/sh-detailed-architecture.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://local.invalid/signal-harbor/repo-1.0.git",
+   "link_mode": "local-only",
+   "revision": "d1063ddf7add895e816c1b72dc623b898fa5445e"
+  },
+  "legend": {
+   "mode": "all",
+   "entries": {
+    "frontend": {
+     "label": "Browser UI"
+    },
+    "backend": {
+     "label": "Runs today"
+    },
+    "database": {
+     "label": "Data store"
+    },
+    "cloud": {
+     "label": "Production only, planned"
+    },
+    "security": {
+     "label": "Guard"
+    },
+    "messagebus": {
+     "label": "Queue or events, planned"
+    },
+    "external": {
+     "label": "Outside the platform"
+    }
+   }
+  },
+  "views": [
+   {
+    "id": "trace_answer",
+    "label": "Path 1: an agent answer",
+    "focus": [
+     "browser",
+     "gate",
+     "signin",
+     "fastpath",
+     "agents",
+     "loop",
+     "memory",
+     "router",
+     "egress",
+     "providers",
+     "obs"
+    ],
+    "note": "Question, gate, fast path, loop and memory, router, egress, model, guard, answer, logs."
+   },
+   {
+    "id": "trace_figure",
+    "label": "Path 2: a figure, file to dashboard",
+    "focus": [
+     "sources",
+     "connectors",
+     "objstore",
+     "duckdb",
+     "scheduler",
+     "worker",
+     "knowledge",
+     "agents",
+     "delivery",
+     "browser"
+    ],
+    "note": "File, landing, bronze to gold build, map, Lumen tile, approval, Consume or message."
+   }
+  ]
+ },
+ "components": [
+  {
+   "id": "browser",
+   "type": "frontend",
+   "label": "Browser app",
+   "sublabel": "React 19, SSE, TanStack*",
+   "tag": "both modes",
+   "pos": [
+    500,
+    60
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "ui/src/shell/CentreShell.tsx",
+     "line": 20,
+     "end_line": 103,
+     "label": "centre shell"
+    },
+    {
+     "path": "ui/src/live/useLive.ts",
+     "line": 27,
+     "end_line": 67,
+     "label": "live updates (SSE)"
+    },
+    {
+     "path": "ui/src/api/client.ts",
+     "line": 67,
+     "end_line": 70,
+     "label": "CSRF token"
+    }
+   ]
+  },
+  {
+   "id": "railway",
+   "type": "cloud",
+   "label": "Railway deployment",
+   "sublabel": "web, volume; worker* PG* Redis*",
+   "tag": "prod only",
+   "pos": [
+    730,
+    60
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 29,
+     "label": "image and start command"
+    },
+    {
+     "path": "railway.json",
+     "line": 1,
+     "end_line": 9,
+     "label": "health check, restart"
+    }
+   ]
+  },
+  {
+   "id": "fastpath",
+   "type": "backend",
+   "label": "Fast path, answer cache",
+   "sublabel": "5 routes, in-memory cache",
+   "tag": "in build, both modes",
+   "pos": [
+    270,
+    230
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/chat_fastpath.py",
+     "line": 180,
+     "end_line": 200,
+     "label": "classify"
+    },
+    {
+     "path": "sh_platform/v1/chat_fastpath.py",
+     "line": 246,
+     "end_line": 271,
+     "label": "cache key and cache"
+    },
+    {
+     "path": "sh_platform/v1/chat_fastpath.py",
+     "line": 349,
+     "end_line": 387,
+     "label": "SSE middleware"
+    }
+   ]
+  },
+  {
+   "id": "gate",
+   "type": "security",
+   "label": "API and policy gate",
+   "sublabel": "FastAPI, default deny, CSRF",
+   "tag": "both modes",
+   "pos": [
+    500,
+    230
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 194,
+     "label": "AuthMiddleware"
+    },
+    {
+     "path": "sh_platform/app.py",
+     "line": 80,
+     "end_line": 179,
+     "label": "create_app"
+    },
+    {
+     "path": "sh_platform/demo_limits.py",
+     "line": 67,
+     "end_line": 95,
+     "label": "demo limits"
+    }
+   ]
+  },
+  {
+   "id": "signin",
+   "type": "security",
+   "label": "Sign-in and roles",
+   "sublabel": "7 roles, 5 seats, access",
+   "tag": "both modes",
+   "pos": [
+    730,
+    230
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/sessions.py",
+     "line": 1,
+     "end_line": 109,
+     "label": "sessions, lockout"
+    },
+    {
+     "path": "sh_platform/v1/seats.py",
+     "line": 14,
+     "end_line": 54,
+     "label": "seats from roles"
+    },
+    {
+     "path": "sh_platform/route_permissions.yaml",
+     "line": 12,
+     "end_line": 19,
+     "label": "role table"
+    }
+   ]
+  },
+  {
+   "id": "sources",
+   "type": "external",
+   "label": "Source files",
+   "sublabel": "upload; 3 planned",
+   "tag": "upload now",
+   "pos": [
+    40,
+    400
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/e0c_routes.py",
+     "line": 83,
+     "end_line": 95,
+     "label": "upload route"
+    }
+   ]
+  },
+  {
+   "id": "agents",
+   "type": "backend",
+   "label": "The agents",
+   "sublabel": "North, Span, Lumen, Tally",
+   "tag": "both modes",
+   "pos": [
+    270,
+    400
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/i2_north.py",
+     "line": 504,
+     "end_line": 520,
+     "label": "North turn"
+    },
+    {
+     "path": "sh_platform/v1/cx_lumen.py",
+     "line": 592,
+     "end_line": 612,
+     "label": "Lumen loop"
+    },
+    {
+     "path": "sh_platform/v1/n1_tally.py",
+     "line": 1679,
+     "end_line": 1700,
+     "label": "Tally explain"
+    }
+   ]
+  },
+  {
+   "id": "loop",
+   "type": "backend",
+   "label": "Agent loop and tools",
+   "sublabel": "read tools, propose only",
+   "tag": "both modes",
+   "pos": [
+    500,
+    400
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/agents/loop.py",
+     "line": 102,
+     "end_line": 148,
+     "label": "run_agent"
+    },
+    {
+     "path": "sh_platform/agents/registry.py",
+     "line": 1,
+     "end_line": 138,
+     "label": "tool registry"
+    },
+    {
+     "path": "sh_platform/agents/guard.py",
+     "line": 149,
+     "end_line": 193,
+     "label": "number guard"
+    }
+   ]
+  },
+  {
+   "id": "memory",
+   "type": "backend",
+   "label": "Memory, context map",
+   "sublabel": "short, long, graph, docs",
+   "tag": "both modes",
+   "pos": [
+    960,
+    400
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/mem_agent.py",
+     "line": 1,
+     "end_line": 30,
+     "label": "short and long term"
+    },
+    {
+     "path": "sh_platform/memory/__init__.py",
+     "line": 61,
+     "end_line": 123,
+     "label": "remember, for_prompt"
+    },
+    {
+     "path": "sh_platform/context_docs/retrieval.py",
+     "line": 94,
+     "end_line": 159,
+     "label": "passages"
+    }
+   ]
+  },
+  {
+   "id": "connectors",
+   "type": "backend",
+   "label": "Connectors",
+   "sublabel": "upload now; 3 planned",
+   "tag": "upload now",
+   "pos": [
+    40,
+    570
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/e0c_routes.py",
+     "line": 83,
+     "end_line": 95,
+     "label": "upload"
+    },
+    {
+     "path": "sh_platform/v1/e0c_landing.py",
+     "line": 1,
+     "end_line": 20,
+     "label": "inbox scan"
+    }
+   ]
+  },
+  {
+   "id": "scheduler",
+   "type": "backend",
+   "label": "Scheduler, runner",
+   "sublabel": "sandbox, live, schedule",
+   "tag": "both modes",
+   "pos": [
+    270,
+    570
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/b6_schedule.py",
+     "line": 100,
+     "end_line": 117,
+     "label": "scheduler thread"
+    },
+    {
+     "path": "sh_platform/v1/b6_run.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "runner"
+    },
+    {
+     "path": "sh_platform/app.py",
+     "line": 185,
+     "end_line": 200,
+     "label": "started with app"
+    }
+   ]
+  },
+  {
+   "id": "router",
+   "type": "backend",
+   "label": "Router, model tiers",
+   "sublabel": "Testing, Real; breaker",
+   "tag": "both modes",
+   "pos": [
+    500,
+    570
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "tiers, modes"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 81,
+     "end_line": 110,
+     "label": "pick_tier"
+    },
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 359,
+     "end_line": 385,
+     "label": "outage breaker"
+    }
+   ]
+  },
+  {
+   "id": "egress",
+   "type": "security",
+   "label": "Egress gateway",
+   "sublabel": "allowlist, vault, rows",
+   "tag": "both modes",
+   "pos": [
+    730,
+    570
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 1,
+     "end_line": 40,
+     "label": "the only exit"
+    },
+    {
+     "path": "sh_platform/egress/vault.py",
+     "line": 1,
+     "end_line": 30,
+     "label": "name vault"
+    },
+    {
+     "path": "sh_platform/egress/rows.py",
+     "line": 1,
+     "end_line": 30,
+     "label": "raw-row block"
+    }
+   ]
+  },
+  {
+   "id": "worker",
+   "type": "messagebus",
+   "label": "Job queue and worker",
+   "sublabel": "Redis queue, worker",
+   "tag": "planned, prod only",
+   "pos": [
+    270,
+    740
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/b6_schedule.py",
+     "line": 100,
+     "end_line": 117,
+     "label": "thread today"
+    }
+   ]
+  },
+  {
+   "id": "outbox",
+   "type": "messagebus",
+   "label": "Outbox events",
+   "sublabel": "transactional outbox",
+   "tag": "planned, prod only",
+   "pos": [
+    500,
+    740
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/d1_delivery.py",
+     "line": 155,
+     "end_line": 170,
+     "label": "outbox file today"
+    }
+   ]
+  },
+  {
+   "id": "delivery",
+   "type": "backend",
+   "label": "Delivery channels",
+   "sublabel": "Consume, Note, Slack, mail",
+   "tag": "both modes",
+   "pos": [
+    730,
+    740
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/d1_delivery.py",
+     "line": 1,
+     "end_line": 40,
+     "label": "channels"
+    },
+    {
+     "path": "sh_platform/v1/d1_delivery.py",
+     "line": 414,
+     "end_line": 440,
+     "label": "live sends"
+    }
+   ]
+  },
+  {
+   "id": "providers",
+   "type": "external",
+   "label": "Model providers",
+   "sublabel": "OpenRouter, Gemini, speech",
+   "tag": "outside",
+   "pos": [
+    960,
+    570
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 33,
+     "end_line": 60,
+     "label": "provider choice"
+    }
+   ]
+  },
+  {
+   "id": "channels",
+   "type": "external",
+   "label": "Slack, Teams, email",
+   "sublabel": "webhooks, alerts",
+   "tag": "outside",
+   "pos": [
+    960,
+    740
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 481,
+     "end_line": 546,
+     "label": "send_email, send_webhook"
+    }
+   ]
+  },
+  {
+   "id": "objstore",
+   "type": "database",
+   "label": "Original files",
+   "sublabel": "landing folder",
+   "tag": "folder now",
+   "pos": [
+    40,
+    910
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/e0c_landing.py",
+     "line": 1,
+     "end_line": 20,
+     "label": "landing layout"
+    }
+   ]
+  },
+  {
+   "id": "duckdb",
+   "type": "database",
+   "label": "DuckDB warehouse",
+   "sublabel": "bronze, silver, gold",
+   "tag": "both modes",
+   "pos": [
+    270,
+    910
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 1,
+     "end_line": 25,
+     "label": "one DuckDB per company"
+    },
+    {
+     "path": "sh_platform/v1/e0a_catalogue.py",
+     "line": 633,
+     "end_line": 700,
+     "label": "layers"
+    }
+   ]
+  },
+  {
+   "id": "json",
+   "type": "database",
+   "label": "JSON state files",
+   "sublabel": "atomic write, file locks",
+   "tag": "local; prod: Postgres",
+   "pos": [
+    730,
+    910
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jsonfile.py",
+     "line": 19,
+     "end_line": 61,
+     "label": "lock, read, atomic write"
+    },
+    {
+     "path": "sh_platform/plane.py",
+     "line": 93,
+     "end_line": 139,
+     "label": "company plane"
+    }
+   ]
+  },
+  {
+   "id": "postgres",
+   "type": "cloud",
+   "label": "Postgres app state",
+   "sublabel": "versions, outbox",
+   "tag": "planned, prod only",
+   "pos": [
+    500,
+    910
+   ],
+   "size": [
+    160,
+    72
+   ]
+  },
+  {
+   "id": "docindex",
+   "type": "database",
+   "label": "Document index",
+   "sublabel": "SQLite FTS5, embeddings",
+   "tag": "both modes",
+   "pos": [
+    960,
+    910
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/doc_index.py",
+     "line": 1,
+     "end_line": 20,
+     "label": "passages and FTS5"
+    },
+    {
+     "path": "sh_platform/v1/doc_embed.py",
+     "line": 1,
+     "end_line": 12,
+     "label": "local embeddings"
+    }
+   ]
+  },
+  {
+   "id": "knowledge",
+   "type": "database",
+   "label": "Knowledge map",
+   "sublabel": "one graph per company",
+   "tag": "both modes",
+   "pos": [
+    270,
+    1080
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/graph/knowledge_map.py",
+     "line": 1,
+     "end_line": 20,
+     "label": "nodes and edges"
+    },
+    {
+     "path": "sh_platform/graph/build.py",
+     "line": 115,
+     "end_line": 140,
+     "label": "rebuild"
+    }
+   ]
+  },
+  {
+   "id": "obs",
+   "type": "database",
+   "label": "Observability",
+   "sublabel": "runs, cost, egress log",
+   "tag": "both modes",
+   "pos": [
+    730,
+    1080
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/agents/runs.py",
+     "line": 1,
+     "end_line": 36,
+     "label": "run registry"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 43,
+     "end_line": 43,
+     "label": "cost log"
+    },
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 41,
+     "end_line": 41,
+     "label": "egress log"
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "BROWSER UI (user device)",
+   "wraps": [
+    "browser"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "API LAYER (web process)",
+   "wraps": [
+    "fastpath",
+    "gate",
+    "signin"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "AGENTS (in the web process)",
+   "wraps": [
+    "agents",
+    "loop",
+    "memory"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "PLATFORM SERVICES",
+   "wraps": [
+    "connectors",
+    "scheduler",
+    "router",
+    "egress",
+    "worker",
+    "outbox",
+    "delivery"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "DATA PLANE (per company)",
+   "wraps": [
+    "objstore",
+    "duckdb",
+    "postgres",
+    "json",
+    "docindex",
+    "knowledge",
+    "obs"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "OUTSIDE: inputs",
+   "wraps": [
+    "sources"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "OUTSIDE: model and message services",
+   "wraps": [
+    "providers",
+    "channels"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "DEPLOYMENT: Railway",
+   "wraps": [
+    "railway"
+   ],
+   "pad": 18
+  }
+ ],
+ "connections": [
+  {
+   "id": "c_browser_gate",
+   "from": "browser",
+   "to": "gate",
+   "label": "HTTPS, SSE",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_gate_signin",
+   "from": "gate",
+   "to": "signin",
+   "label": "roles"
+  },
+  {
+   "id": "c_gate_fast",
+   "from": "gate",
+   "to": "fastpath",
+   "label": "chat",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "c_fast_agents",
+   "from": "fastpath",
+   "to": "agents",
+   "label": "not answered",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_agents_loop",
+   "from": "agents",
+   "to": "loop",
+   "label": "run"
+  },
+  {
+   "id": "c_loop_mem",
+   "from": "loop",
+   "to": "memory",
+   "label": "recall"
+  },
+  {
+   "id": "c_loop_router",
+   "from": "loop",
+   "to": "router",
+   "label": "model call",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_router_egress",
+   "from": "router",
+   "to": "egress",
+   "label": "prompt",
+   "variant": "security"
+  },
+  {
+   "id": "c_egress_prov",
+   "from": "egress",
+   "to": "providers",
+   "label": "masked",
+   "variant": "security"
+  },
+  {
+   "id": "c_egress_chan",
+   "from": "egress",
+   "to": "channels",
+   "label": "sends",
+   "variant": "security",
+   "fromSide": "right",
+   "toSide": "left"
+  },
+  {
+   "id": "c_deliv_egress",
+   "from": "delivery",
+   "to": "egress",
+   "label": "send",
+   "variant": "security",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "c_src_conn",
+   "from": "sources",
+   "to": "connectors",
+   "label": "drop"
+  },
+  {
+   "id": "c_conn_obj",
+   "from": "connectors",
+   "to": "objstore",
+   "label": "keep"
+  },
+  {
+   "id": "c_obj_duck",
+   "from": "objstore",
+   "to": "duckdb",
+   "label": "load"
+  },
+  {
+   "id": "c_sched_worker",
+   "from": "scheduler",
+   "to": "worker",
+   "label": "enqueue",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_worker_duck",
+   "from": "worker",
+   "to": "duckdb",
+   "label": "build SQL"
+  },
+  {
+   "id": "c_outbox_pg",
+   "from": "outbox",
+   "to": "postgres",
+   "label": "one txn",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_deliv_json",
+   "from": "delivery",
+   "to": "json",
+   "label": "outbox file",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_json_obs",
+   "from": "json",
+   "to": "obs",
+   "label": "log lines"
+  },
+  {
+   "id": "c_duck_know",
+   "from": "duckdb",
+   "to": "knowledge",
+   "label": "marts"
+  },
+  {
+   "id": "c_mem_docs",
+   "from": "memory",
+   "to": "docindex",
+   "label": "passages",
+   "variant": "default",
+   "fromSide": "right",
+   "toSide": "right",
+   "via": [
+    [
+     1160,
+     436
+    ],
+    [
+     1160,
+     946
+    ]
+   ]
+  },
+  {
+   "id": "c_rail_browser",
+   "from": "railway",
+   "to": "browser",
+   "label": "serves UI",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "right"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "BROWSER UI | Browser app | LOCAL + PRODUCTION (TanStack Query planned)",
+   "items": [
+    "What it does: The one React single-page app. CentreShell shows the centres a role may open (Action, Build, Consume, Map; Intent is a conversation; Settings for admins and analysts). It sends the CSRF token on every write, redirects to sign-in when the server says the session ended, and shows live updates and streamed chat replies as they arrive.",
+    "Technology: React 19 and TypeScript, built with Vite into ui/dist. Reads go through apiGet and apiSend in ui/src/api/client.ts. Server-sent events are read by createEventReader (ui/src/live/sse.ts) inside useLive. TanStack Query is PLANNED: it is not in ui/package.json today, so there is no client cache or request de-duplication yet.",
+    "Data it holds: No company data of its own. It holds the session cookie, the CSRF token the server issues, and screen state. Every figure on screen is fetched.",
+    "Talks to others: Synchronous: JSON over HTTPS to the API. Event stream: useLive keeps a server-sent-event connection open for live updates; a chat POST sent with Accept: text/event-stream gets start and delta events.",
+    "Scales by: A static bundle: it scales with the number of browsers, at no server cost. Once TanStack Query lands, repeated reads are cached and shared between screens, which cuts load on the web service.",
+    "If it fails: useLive reports connecting, live, offline (retries every 2 seconds) or refused (the seat or link stopped working, no retry). A 401 session_expired sends the person to /login. A failed request shows the plain message the server returned.",
+    "Local vs production: The same bundle in both. Local: Vite dev server or ui/dist served by uvicorn. Production: the Dockerfile builds ui/dist into the image and the web service serves it.",
+    "Main file: ui/src/shell/CentreShell.tsx"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "API LAYER | API and policy gate | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: Every request passes one pure-ASGI middleware before any handler. A route that is not declared in route_permissions.yaml is refused (default deny), so a new route is closed until someone classifies it. It checks the signed session, the CSRF token on every unsafe method (constant-time compare), the role, and rejects a cross-origin WebSocket handshake. Guests with a session token act as a participant of one session only. Demo guards: chat turns per account per hour (429), a super-admin area that is closed in production unless switched on, and a daily model spend cap per company.",
+    "Technology: FastAPI and Starlette. The permission table is the kernel YAML plus one small YAML per card, merged by module_loader. ChatStreamMiddleware sits outermost and turns a chat reply into events for clients that ask. GET /api/health is the Railway health check.",
+    "Data it holds: In memory only: the route table (loaded at start), the turn limiter counters, and per-request state (account, company, roles). The spend cap reads the company cost log.",
+    "Talks to others: Synchronous request and response. Handlers call the services in the same process. Refusals carry the header x-refused-by: access so a guard refusal can be told from a handler error.",
+    "Scales by: Add web instances. Today sessions and the turn limiter are in process memory, so more than one instance needs a shared store (Redis, planned) or sticky routing.",
+    "If it fails: Unlisted route: 403. Expired session: 401 with a login URL. Bad CSRF: 403. Too many chat turns: 429. A crash is restarted by Railway (restart on failure, up to 5 tries).",
+    "Local vs production: SH_MODE=prod switches the demo guards on (30 chat turns an hour, 2 US dollars a day, super admin closed); in local development they are off.",
+    "Main file: sh_platform/auth/__init__.py"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "API LAYER | Sign-in and roles | LOCAL + PRODUCTION (shared session store planned)",
+   "items": [
+    "What it does: Accounts belong to one company (except the super admin) and carry roles. The permission table names seven roles: six company roles (company_admin, sponsor, analyst, approver, participant, owner) plus super_admin, who has no company and never reads company data. Seats (decision maker, architect, data engineer, ops manager, consumer) are derived from roles, with no extra roles. Project access (who may see which project) is set per project in g1_access.",
+    "Technology: HMAC-signed cookie sh_session plus a server-side session table. Idle timeout 30 minutes, absolute timeout 8 hours. Login lockout after 5 failures for 60 seconds. The account is re-read on every request, so a disabled account or changed role takes effect at once.",
+    "Data it holds: Accounts (name, company, roles, disabled flag, password hash that is never listed), sessions in memory, failure counters in memory, project access lists in the company plane.",
+    "Talks to others: Synchronous: the gate calls it on every request; seat checks run inside handlers via require_seat.",
+    "Scales by: Accounts are small files read once per request, which is cheap at demo scale. The in-memory session table and lockout do not span instances; a Redis session store is the planned fix.",
+    "If it fails: A disabled or changed account ends its session on the next request. A restart empties the session table, so everyone signs in again. Five bad passwords lock that login for a minute.",
+    "Local vs production: Same code. Production adds seeded demo accounts on an empty volume only; their passwords go to /data/_control/seed_credentials.txt, never to the log.",
+    "Main file: sh_platform/auth/sessions.py"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "API LAYER | Fast path and answer cache | IN BUILD | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: Chooses the cheapest safe route for each chat message: fixed (greetings, thanks, help: a written reply, no model), cache (same question, same data version, same access scope), figure (the recorded facts already hold the number, the program states it), fast (short lookup on the router's fast tier) or strong (anything long, analytic, a change or with files). Rules decide first. An optional Jev classifier only breaks ties and can only answer fast or strong.",
+    "Technology: Pure Python rules in chat_fastpath.py. The answer cache is an ordered in-memory dictionary of at most 400 entries with a 15 minute life. The key holds agent, company, module, access scope, the normalised question and the system prompt.",
+    "Data it holds: Cached reply text and its time, in process memory. Nothing is written to disk. A cached reply was already checked by the number guard when it was made.",
+    "Talks to others: Synchronous, inside the chat request: begin() before the loop and store() after it. The guard, the egress gateway and the entitlement check still run.",
+    "Scales by: Cache hits cost nothing and cut model spend. The cache is per process: a second web instance warms its own. A shared cache is a Redis job (planned).",
+    "If it fails: A miss just falls through to the model route. A restart empties the cache. A wrong route can only choose fast or strong, never fixed, cache or figure, because those stay code.",
+    "Local vs production: Same in both. The Jev tie-break is off unless SH_JEV_API_KEY is set, and is not yet wired live through the egress gateway.",
+    "Main file: sh_platform/v1/chat_fastpath.py"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "AGENTS | The agents: North, Span, Lumen, Tally | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: North (Intent): one decision maker talks, North drafts the statement of work and the process map, asks one question per unmet need, and never signs. Span (Build): designs the mapping and the pipeline plan and explains it. Lumen (Consume): proposes dashboard tiles and briefs from the gold tables. Tally (Action): explains one case (cash break, trade break, limit breach, revision, capital call), with every sum worked out by the program. All four share one loop and one skill folder each (playbook, questions, traps, examples).",
+    "Technology: Python in sh_platform/v1 (i2_north, b6_span, cx_lumen, n1_tally) calling agents/loop.run_agent. The model only words the answer or proposes; the program does all arithmetic and writes all SQL.",
+    "Data it holds: Per agent records in the company plane: North's thread.json and sow.json per intent, Span's plan versions, Lumen's proposed tiles, Tally's explanation events. A person confirms before anything counts.",
+    "Talks to others: Synchronous inside the HTTP request: the handler calls the agent, the agent calls run_agent. Proposals are collected and filed after the run. Chat replies can stream as events.",
+    "Scales by: Each turn is light on CPU and waits on the model, so many run at once on threads of the web process. Long work (a big pipeline run) is better on the planned worker.",
+    "If it fails: With no model or an unreachable one, a rules-only path answers in fixed wording and says so (North shows as North (rules only); Tally prefixes Rules-only reply). A figure the guard cannot trace is replaced.",
+    "Local vs production: Same code. Local uses whichever model key exists (Gemini first); production sets SH_MODEL_PROVIDER=openrouter.",
+    "Main file: sh_platform/v1/i2_north.py"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "AGENTS | Agent loop and tools | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: run_agent is a bounded loop (6 steps, 8 tool calls a step, 20 a run). Only registered read-only tools run, and the registry checks the gate on listing and on every call. A propose tool only checks and returns a draft; nothing is written inside the loop. Number grounding: every figure in the answer must equal a recorded fact from this run's tools, else it is replaced. Injection guard: outside material (documents, case notes) is marked OUTSIDE MATERIAL, data only, never an instruction and never the source of a figure. A data question must call a tool before answering; a reply that claims a draft with no propose call is sent back.",
+    "Technology: agents/loop.py, registry.py, guard.py, groups.py. Shared tools: search_documents, recall_memory, get_definition, explain_figure_source, list_tables, describe_layers, describe_table, whoami_and_access, plus tools per agent. A result may hold only aggregates with group_size of 5 or more; raw rows and numbers inside lists are hidden. Answers are cut at 4,000 characters.",
+    "Data it holds: Per run: a trace of steps (names, sizes, reason codes, times, never prompts, answers or figures) and the proposals the run collected.",
+    "Talks to others: Synchronous. Tool calls are in-process Python. The model call goes through the router and the egress gateway.",
+    "Scales by: CPU-light and bounded by step limits, so cost per turn is capped. It scales with web threads; a stuck model call is limited by the transport timeout in the egress gateway.",
+    "If it fails: A refused tool is logged with a reason code and the loop carries on. Not finished: 'I could not finish this, so there is no answer yet'. Provider error: 'Something went wrong reaching the assistant'. A figure with no source is replaced, never shown.",
+    "Local vs production: Identical in both modes.",
+    "Main file: sh_platform/agents/loop.py"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "AGENTS | Memory and the context map | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: One entry point (context_for) answers what an agent should know before it answers, and one call (after_turn) records the turn. Short-term memory: the last turns and the focus object of each conversation, so 'make it dots' resolves to the tile just proposed. Long-term memory: per person (preferences, facts, corrections) and per company (agreed words). The graph: the knowledge map. Document passages: the top few from the document index. Every read is filtered by who the viewer is.",
+    "Technology: Python files under data/<company>/memory/v1 (people, company, convo). Items are append-only: a change supersedes, forgetting adds a tombstone and blanks the words. Old entries fold into a deterministic digest (keep the newest 5). Passages are wrapped as untrusted text.",
+    "Data it holds: Remembered items with source, time and certainty (said, inferred, model). No figure, email or restricted name is kept. The model proposes memory only through the egress gateway and the person sees 'I will remember'.",
+    "Talks to others: Synchronous: read before the model call, written after the turn. Reads the document index (SQLite) and the knowledge map in process.",
+    "Scales by: File per person keeps access simple and isolated. Scale is limited by the file locks of one machine; Postgres (planned) removes that limit.",
+    "If it fails: If memory cannot be read the agent answers without it. If the embedding model is missing, passage search falls back to words only.",
+    "Local vs production: Files in both today. Production moves app state to Postgres (planned); the files and index stay on the volume.",
+    "Main file: sh_platform/v1/mem_agent.py"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "PLATFORM SERVICES | Router and model tiers | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: Picks the tier for each model call by rules, no model: fast (extraction, doc_read, cleanup, summary), specialist (the usual tier) and manager (formula_sql, closing, design_approval, redraft). Use mode is Testing or Real and is read from the company on every call, so no restart. Retry goes up, never down: an unusable reply is asked once more on the next tier. If the provider is out, it tries the tier's alternative model; only an outage lets a manager call step down to specialist. In Testing the cheap models can be the same model, so the retry is skipped. Outage breaker: after a provider refusal the egress gateway blocks that host for 300 seconds.",
+    "Technology: sh_platform/v1/router.py (RoutedModel, pick_tier, route) over egress/providers (Gemini and OpenRouter adapters). SH_ROUTER=off pins every call to the specialist model.",
+    "Data it holds: Per call lines in context/model_costs.jsonl (tier, model, cost, attempt). The breaker table is an in-process dictionary.",
+    "Talks to others: Synchronous: the loop calls the routed model, which calls the egress gateway, which calls the provider.",
+    "Scales by: Stateless apart from the breaker, which is per process. Spend is bounded by the daily cap and the step limits.",
+    "If it fails: Over the daily cap or provider down: the agents carry on by rules. A gateway refusal is logged as an attempt before it is raised.",
+    "Local vs production: Local: free Gemini key falls to the specialist silently when at its limit. Production demo stays on Testing unless SH_ALLOW_REAL_MODE=1.",
+    "Main file: sh_platform/v1/router.py"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "PLATFORM SERVICES | Egress gateway | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: The only exit. Order for a model prompt: destination and URL checks, structure checks, swap each string through the name vault (PERSON_001 tokens), check the decoded strings and the serialised body (vault names, raw rows, suppressed figures, size), write the log line and fsync it, send, map the reply back. A list of two or more row objects is refused unless every item is an aggregate with a group_size of 5 or more. Redirects are never followed.",
+    "Technology: egress/gateway.py, vault.py, rows.py, policy.py, aggregates.py. Two transports: one for model prompts (may attach the provider key, only to model hosts), one for internet queries (never a credential). Per company policy: internet off unless clearly on, hosts only if listed.",
+    "Data it holds: egress_log.jsonl (every attempt, never with content, with a sha256), name_vault.json (real names, never leaves the plane and is never logged, up to 20,000 names), the allowlist.",
+    "Talks to others: Synchronous from the router, delivery and send_email or send_webhook callers.",
+    "Scales by: Stateless per call but its log and vault are files with lock files, which assume one machine. Several web instances need a shared log and vault store (planned).",
+    "If it fails: If the log line cannot be written, nothing is sent. If the vault cannot be read, the call is refused (vault_unavailable). If the transport fails, a second 'failed' line follows with the same hash. Table-shaped free text typed by a person is a known residual risk, accepted in the code comments.",
+    "Local vs production: Same in both. Production sends to OpenRouter, Slack, Teams, webhooks and email; local usually only to the model provider.",
+    "Main file: sh_platform/egress/gateway.py"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "PLATFORM SERVICES | Scheduler and pipeline runner | LOCAL + PRODUCTION (worker planned)",
+   "items": [
+    "What it does: A build plan is tried in a sandbox (a copy of the warehouse), goes live only after approval, and can run on a schedule. Tables run in dependency order; each step builds <table>__next and swaps it in one transaction. Never two runs of one project at once. The Airflow export writes the plan as a DAG. A file arriving runs the plans that depend on it (on_arrival).",
+    "Technology: Python. b6_schedule.py is one stdlib thread that wakes every minute; b6_run.py runs the SQL on DuckDB. Started with the app (SH_SCHEDULER=off disables it).",
+    "Data it holds: Plan versions (plan-v<n>.json), the run log build/<project>/runs.jsonl, the sandbox copy warehouse/sandbox.duckdb.",
+    "Talks to others: The thread calls the runner in process. Intake calls on_arrival after a load. Today there is no queue: the web process does the work.",
+    "Scales by: One scheduler thread per process. Sandbox runs take turns (one sandbox file per company). For more, the planned worker service takes the runs.",
+    "If it fails: A failed step leaves the previous table untouched and stops the run. A failed scheduler pass is logged and the loop carries on. If the process is down nothing runs.",
+    "Local vs production: Local and the current production demo: inside the one web process. Planned production: the worker service runs it and the web service only enqueues.",
+    "Main file: sh_platform/v1/b6_schedule.py"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "PLATFORM SERVICES | Job queue and worker | PLANNED, production only (Redis)",
+   "items": [
+    "What it does: Planned. The web service would enqueue long jobs (agent turns that take long, pipeline runs, deliveries) and a separate worker service would run them, so a long job never holds a web request. Nothing in sh_platform reads DATABASE_URL or REDIS_URL today.",
+    "Technology: Redis for the queue and a worker process from the same image (planned). Today's stand-in is the scheduler thread in b6_schedule.py.",
+    "Data it holds: Job id, kind, company, status, attempts, result pointer. No company figures in the job itself, only references.",
+    "Talks to others: Asynchronous: the web service enqueues and returns; the worker pulls, runs, and publishes status that the browser sees as events.",
+    "Scales by: Add workers. The one-run-per-project rule that b6_run enforces in process would need a shared lock in Redis.",
+    "If it fails: Planned behaviour: a failed job is retried a few times, then parked with a plain reason and shown to a person; a dead worker's job is picked up again.",
+    "Local vs production: Local: not present, the thread and request do the work. Production: web plus worker plus Redis.",
+    "Main file: sh_platform/v1/b6_schedule.py (today's thread)"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "PLATFORM SERVICES | Outbox events | PLANNED, production only",
+   "items": [
+    "What it does: Planned. A state change and the event it should cause would be written in one database transaction (the outbox), and a relay would publish it to Redis so the browser stream, deliveries and the Morning Note react without being lost. Today only a delivery outbox exists: delivery_outbox.json holds each message that could not be sent, with its preview and a plain reason, so nothing is silent.",
+    "Technology: Postgres outbox table plus a relay on the worker (planned). Today: a JSON list per project.",
+    "Data it holds: Event id, type, company, payload reference, status. Today: the preview and the refusal reason per message.",
+    "Talks to others: Asynchronous: written with the change, published after commit, consumed at least once.",
+    "Scales by: The relay scales with the worker count; consumers must be safe to repeat.",
+    "If it fails: Planned: an unpublished row stays and is retried. Today: a refused send stays in the outbox file and is shown.",
+    "Local vs production: Local: only the delivery outbox file. Production: the transactional outbox.",
+    "Main file: sh_platform/v1/d1_delivery.py (today's outbox)"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "PLATFORM SERVICES | Delivery channels | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: How people receive a published dashboard: Consume, the Morning Note, Slack, Teams, email digest, alert (a threshold, sent by email, Slack, Teams or webhook) and webhook. Each channel is a draft made by one person and approved by another, like a dashboard. Messages use the dashboard's own rows, printed as the record holds them.",
+    "Technology: d1_delivery.py. Slack, Teams and webhook addresses are secrets by name: an admin saves an environment variable name and host, and the address is read at send time, never stored, shown or logged.",
+    "Data it holds: Channel definitions and status per project, and delivery_outbox.json for refused or unconfigured sends.",
+    "Talks to others: Consume and the Morning Note are read inside the platform. All the others are synchronous calls to send_email or send_webhook on the egress gateway (host on the company list, names masked, attempt logged).",
+    "Scales by: One message per channel per run. Sending is rate limited by the destination, not by us. A queue (planned) would decouple it.",
+    "If it fails: A channel that is not set up, or a send that is refused, lands in the outbox with a plain reason. It is never silent.",
+    "Local vs production: Same code. Production has real webhook and email settings; local normally has none.",
+    "Main file: sh_platform/v1/d1_delivery.py"
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "PLATFORM SERVICES | Connectors | UPLOAD TODAY; mailbox, SFTP, SharePoint PLANNED",
+   "items": [
+    "What it does: Bring a file into the landing zone. Today: a person uploads through POST /api/v1/intake/upload, or drops a file in landing/inbox, and the file is kept untouched with a SHA-256, sender, source code and sensitivity. Planned connectors (mailbox, SFTP, SharePoint) would drop files into the same landing zone and nothing downstream changes.",
+    "Technology: e0c_routes.py (multipart upload) and e0c_landing.py (receive, census). Profiling and mapping go through e0b_tools; loading through e0c_load.",
+    "Data it holds: One record per file: file_id, sha256, name, size, received_at, sender, source_code, sensitivity, state (new, profiled, waiting_for_mapping, loaded, rejected_totals, quarantined). The same bytes are one file.",
+    "Talks to others: Synchronous for upload. Planned connectors would be asynchronous pollers on the worker.",
+    "Scales by: File size is capped at upload. Pollers would scale by source.",
+    "If it fails: A bad file is quarantined or rejected with a reason; the original stays. Totals that do not add up stop the load before any observation row is written.",
+    "Local vs production: Same today. Production adds the planned connectors and the worker to run them.",
+    "Main file: sh_platform/v1/e0c_landing.py"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | Original files | LANDING FOLDER TODAY; object store planned",
+   "items": [
+    "What it does: Keeps every original byte-for-byte so any figure can be traced back to its source file.",
+    "Technology: Folders under data/<company>/landing: inbox (scanned, never modified), originals/<sha256>__<name> (never rewritten), records/<file_id>.json.",
+    "Data it holds: The untouched files and one census record each.",
+    "Talks to others: Written by the connector, read by the loader (e0c_load) and the source viewer.",
+    "Scales by: A folder on one disk. An object store (planned) removes the disk limit and allows several services to read.",
+    "If it fails: Disk full or volume lost means lost originals; the code has no replica.",
+    "Local vs production: Local: your disk. Production demo: the Railway volume at /data. Planned: an object store.",
+    "Main file: sh_platform/v1/e0c_landing.py"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | DuckDB warehouse: bronze, silver, gold | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: One DuckDB file per company. Bronze is the loaded file as is (registered by intake loads). Silver is the core model (the catalogue). Gold is per project, built by the pipeline once a plan is approved. Facts are append-only: a correction is a new row that points at the row it replaces.",
+    "Technology: DuckDB through wh.connect(plane); nobody opens the file another way. Schema from docs/v2 DBML via e0a_catalogue. wh.serve() keeps one shared connection per company file.",
+    "Data it holds: Source batches, source records with sheet, row and cell locators, control totals, observations, and the gold tables.",
+    "Talks to others: Synchronous in process from loaders, the runner, checks, the agents' tools (which see counts and totals only) and the dashboards.",
+    "Scales by: Scale by company (one file each). One writer at a time per file, so many concurrent writers need the worker to own writes.",
+    "If it fails: A busy file is retried. A failed table swap leaves the old table. Loss of the volume loses the warehouse; the code has no replica.",
+    "Local vs production: Local: file on disk. Production: the same file on the Railway volume.",
+    "Main file: sh_platform/v1/wh.py"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | JSON state files | LOCAL (replaced by Postgres in production, planned)",
+   "items": [
+    "What it does: Today almost all app state is JSON or JSONL files in the company plane: accounts, plans, proposals, threads, memory, delivery outbox, logs, the name vault.",
+    "Technology: jsonfile.py: lock_for(path) a per-file lock, read_json_strict, and write_json_atomic (write a temp file, then replace). PlaneStore gives each company an isolated folder with areas landing, warehouse, intents, baseline, context and graph; it refuses links.",
+    "Data it holds: Everything small and structured that is not a warehouse fact or an original file.",
+    "Talks to others: Direct file reads and writes in process. No network.",
+    "Scales by: Fine for one machine. Locks do not span machines, so several services cannot share it safely; that is why Postgres is planned.",
+    "If it fails: An unreadable file is an error, not an empty value (read_json_strict). A crash mid-write leaves the old file because of the atomic replace.",
+    "Local vs production: Local and the demo: files. Production target: Postgres.",
+    "Main file: sh_platform/jsonfile.py"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "DATA PLANE | Postgres app state | PLANNED, production only",
+   "items": [
+    "What it does: Planned replacement for the JSON files for app state: accounts, versions, plans, proposals, the outbox. Warehouse facts and originals stay where they are.",
+    "Technology: Postgres on Railway (planned). Not referenced in code today.",
+    "Data it holds: App state with versions and a transactional outbox.",
+    "Talks to others: Synchronous SQL from web and worker; the outbox row is written in the same transaction as the change.",
+    "Scales by: Vertical first, read replicas later. Lets several web and worker services share state safely.",
+    "If it fails: Planned: managed backups and point-in-time restore; the app would show a plain error and keep the warehouse readable.",
+    "Local vs production: Local: not used, JSON files. Production: Postgres. Switch intended by DATABASE_URL and REDIS_URL being set.",
+    "Main file: sh_platform/jsonfile.py (what it replaces)"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | Document index | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: What the agents search and read, the way a coding agent searches a repository. A file's text is read once on this machine, cleaned into numbered lines, split into passages of about 800 to 1,200 characters, and stored for keyword search in BM25 order.",
+    "Technology: SQLite FTS5 at data/<company>/index/docs.sqlite. Embeddings: BAAI/bge-small-en-v1.5 quantized ONNX through fastembed, about 70 MB, downloaded once to data/_models and never sent anywhere. Multilingual model optional by SH_EMBED_MODEL.",
+    "Data it holds: Passages and their vectors. Who may see a file is not decided here: the tools pass only the paths the person may read.",
+    "Talks to others: Synchronous in process from doc_tools and context_passages.",
+    "Scales by: One SQLite file per company; ensure() skips unchanged files. Big collections need a reindex.",
+    "If it fails: If the embedding model is missing or fails to load, search falls back to words only and retries after 10 minutes.",
+    "Local vs production: Same. Production keeps the index and model cache on the volume.",
+    "Main file: sh_platform/v1/doc_index.py"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | Knowledge map and ontology | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: Where each data point lives, on one company graph: File, Charter, GapReport, Mart and the intent and build nodes, linked by held_in, lands_at, produces, consumes, defined_in, led_to, verified_by and owned_by. Powers Map, lineage and the definitions agents look up.",
+    "Technology: graph/build.py rebuild plus knowledge_map.py; versions and comments in graph/versions.py and comments.py. Reads records by path; never a row value or a document's text.",
+    "Data it holds: Nodes, edges, update moments (graph/updates.json) and verification rows.",
+    "Talks to others: Synchronous in process; rebuilt when records change.",
+    "Scales by: Rebuild cost grows with records; per company.",
+    "If it fails: A missing record adds nothing. A failed rebuild leaves the previous graph.",
+    "Local vs production: Same in both; files today, Postgres planned.",
+    "Main file: sh_platform/graph/knowledge_map.py"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DATA PLANE | Observability | LOCAL + PRODUCTION",
+   "items": [
+    "What it does: What happened, per company, without content. Run registry (one JSON line per agent run: no prompts, answers, names or figures), step traces (GET /api/v1/agent-runs/trace/{trace_id}), the model cost log, the egress log and the pipeline run log.",
+    "Technology: JSONL files in the company plane: run_steps.jsonl, context/model_costs.jsonl, egress_log.jsonl, build/<project>/runs.jsonl.",
+    "Data it holds: Run status, tools called, refusal codes, times, tier, model, cost, destination and hash. Never content.",
+    "Talks to others: Appended in process by the loop, router, gateway and runner; read by admin screens and the daily-cap check.",
+    "Scales by: Append-only files. The cap check re-reads the cost log per call; a running total is the noted upgrade.",
+    "If it fails: A log that cannot be written stops an egress send (by design). Other logs are best effort.",
+    "Local vs production: Same. No external monitoring service is wired; Railway keeps stdout logs.",
+    "Main file: sh_platform/agents/runs.py"
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "DEPLOYMENT | Railway | TODAY one web service + volume; planned worker, Postgres, Redis",
+   "items": [
+    "What it does: Today: one service built from the Dockerfile. Stage 1 builds the React UI; stage 2 runs uvicorn (sh_platform.app:create_app) serving UI and API. A persistent volume holds /data. The start command seeds only an empty volume, never wipes it.",
+    "Technology: Docker, Python 3.11, Node 22 for the build. Env: SH_MODE=prod, SH_DATA_ROOT=/data, SH_SCHEDULER=on, SH_ROUTER=on, SH_MODEL_PROVIDER=openrouter; keys in Railway variables. Health check /api/health, 300 second timeout, restart on failure up to 5 times.",
+    "Data it holds: The image, the volume (warehouse, landing, JSON, indexes), and variables. No keys in the repo.",
+    "Talks to others: HTTPS from users to the web service; the web service calls out only through the egress gateway.",
+    "Scales by: Today: one instance. Planned: separate worker, Postgres and Redis services, and then more web instances.",
+    "If it fails: A failed health check or crash restarts the service. The volume survives. Losing the volume loses data (no backup in code).",
+    "Local vs production: This is the production side. Local is the same app on your laptop with data in ./data.",
+    "Main file: Dockerfile"
+   ]
+  },
+  {
+   "dot": "slate",
+   "title": "OUTSIDE | Source files and systems",
+   "items": [
+    "What it does: Where data comes from: uploaded spreadsheets, CSV and documents today. Mailbox, SFTP and SharePoint are planned.",
+    "Technology: Browser multipart upload; planned: IMAP or Graph for mail, SFTP, SharePoint API.",
+    "Data it holds: Whatever the company sends: statements, custody rows, reports. Treated as data, never as instructions.",
+    "Talks to others: Synchronous upload today; planned connectors would poll.",
+    "Scales by: Per source.",
+    "If it fails: A bad file is quarantined with a reason; nothing downstream loads it.",
+    "Local vs production: Same in both.",
+    "Main file: sh_platform/v1/e0c_routes.py"
+   ]
+  },
+  {
+   "dot": "slate",
+   "title": "OUTSIDE | Model providers",
+   "items": [
+    "What it does: OpenRouter and Gemini models (and Google speech for voice) answer prompts. They only ever see masked, aggregate text that the egress gateway let through.",
+    "Technology: HTTPS APIs; adapters in egress/providers (gemini.py, openrouter.py). OpenAI voice is used only by the offline demo-video tool, not by the app.",
+    "Data it holds: Nothing is stored by us beyond the reply; cost and attempts are logged locally.",
+    "Talks to others: Synchronous call from the gateway; the outage breaker blocks a failing host for 300 seconds.",
+    "Scales by: Provider rate limits and spend caps.",
+    "If it fails: Out of credit or down: the router tries the alternative model, then the agents answer by rules.",
+    "Local vs production: Local: usually the free Gemini key. Production demo: OpenRouter.",
+    "Main file: sh_platform/egress/providers/__init__.py"
+   ]
+  },
+  {
+   "dot": "slate",
+   "title": "OUTSIDE | Slack, Teams, email, webhooks",
+   "items": [
+    "What it does: Where approved messages and alerts go. Only hosts on the company's list can be reached.",
+    "Technology: HTTPS webhooks and email through send_webhook and send_email on the gateway.",
+    "Data it holds: A short message built from a published dashboard's own rows.",
+    "Talks to others: Synchronous send through the egress gateway; a refusal lands in the delivery outbox.",
+    "Scales by: Per destination limits.",
+    "If it fails: Refused or unreachable: the message stays in the outbox with a plain reason.",
+    "Local vs production: Local normally has none; production configures them by environment variable name.",
+    "Main file: sh_platform/egress/gateway.py"
+   ]
+  }
+ ]
+}

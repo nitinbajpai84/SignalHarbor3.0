@@ -1,0 +1,518 @@
+- id: 42.header
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (problem header)
+  input: Reporter, date and stage chip
+  person: owner
+  mode: automatic
+  agent: null
+  source: people.reporter, created_at and stage
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Who reported what and when is shown by rule
+- id: 42.clock
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (clock, owner chip)
+  input: Day n of 5 and days left in the stage
+  person: owner
+  mode: automatic
+  agent: null
+  source: time_box and the working-day calendar
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: working out the deadline'
+  claim: The five-day clock is on the problem and not in someone's diary
+- id: 42.owner.change
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (Change owner)
+  input: Change the owner
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: an email handover'
+  claim: Changing the owner is a short manual step
+- id: 42.know.summary
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (What we know)
+  input: Running summary of the statement and all notes, each sentence sourced
+  person: owner
+  mode: derived
+  agent: North
+  source: the statement, every note and linked Ops records
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: reading the thread and writing the status'
+  claim: North keeps the what-we-know summary up to date and every sentence has a source
+- id: 42.know.gap
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (North line)
+  input: A flag for a missing item such as when it started
+  person: owner
+  mode: derived
+  agent: North
+  source: the statement and notes against the facts a cause needs
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: noticing the gaps'
+  claim: North says what nobody has said yet
+- id: 42.note.add
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (Add a note)
+  input: A note on the problem up to 2000 characters
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's own words
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: a reply on a thread'
+  claim: Notes are typed by the people who saw the problem
+- id: 42.note.anon
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (Add without my name)
+  input: Add a note without my name
+  person: participant
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tick'
+  claim: Anonymous notes hide the author from the owner and admin
+- id: 42.note.attach
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (attachment link)
+  input: Attach an Ops record to a note
+  person: participant
+  mode: manual
+  agent: null
+  source: the person picks a run, alert or node
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: pasting a screenshot'
+  claim: A note can point at the Ops record that shows the problem
+- id: 42.cause.draft
+  spec: '42'
+  journey: problem
+  stage: think
+  screen: /centre/intent/<id> (Draft the cause)
+  input: Root cause with up to three questions
+  person: owner
+  mode: confirm
+  agent: North
+  source: the notes and the Ops records with a Based on list
+  minutes_without: 40
+  minutes_with: 3
+  basis: 'estimate: reading the thread and writing the cause'
+  claim: North drafts the root cause from the evidence; the owner confirms or edits it
+- id: 42.cause.confirm
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Confirm this cause)
+  input: Confirm the cause
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: signing off the analysis'
+  claim: The cause is confirmed by a person and never by the agent
+- id: 42.cause.unknown
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (We cannot find the cause)
+  input: Record that the cause is not known
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: saying so in a meeting'
+  claim: Not knowing the cause is recorded honestly
+- id: 42.fix.kind
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Fix block)
+  input: Fixed or workaround
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one pick'
+  claim: The owner says whether it is a fix or a workaround
+- id: 42.fix.what
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (What was done)
+  input: What was done up to 2000 characters
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner's own words
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: writing up the fix'
+  claim: What was done is said by the person who did it
+- id: 42.fix.by
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Done by)
+  input: Who did it
+  person: owner
+  mode: confirm
+  agent: North
+  source: the owner as default
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: naming the person'
+  claim: The doer defaults to the owner
+- id: 42.fix.on
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Done on)
+  input: Date the fix was done
+  person: owner
+  mode: confirm
+  agent: North
+  source: today as default and never in the future
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: a date field'
+  claim: The fix date defaults to today
+- id: 42.fix.realby
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Real fix by)
+  input: Date the real fix is due for a workaround
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner commits a date
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: a promise in a meeting'
+  claim: A workaround carries a dated promise
+- id: 42.bigger
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Turn into an Initiative)
+  input: Turn the problem into an Initiative
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner decides it is a project and not a repair
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: raising a separate project request'
+  claim: Handing a problem to an Initiative is one tap with the answers pre-filled
+- id: 42.bigger.prefill
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Initiative preview, questions 1, 2, 5)
+  input: Goal, people and areas for the Initiative
+  person: owner
+  mode: derived
+  agent: North
+  source: the fix or what is wrong, the cause, the owner and affected, and the areas
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: retyping the problem as a project goal'
+  claim: The Initiative opens with goal, why, people and areas filled from the problem
+- id: 42.bigger.link
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Bigger than a fix panel)
+  input: The linked Initiative and its state
+  person: owner
+  mode: automatic
+  agent: null
+  source: the child link
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The problem shows the Initiative it became
+- id: 42.affected.fixline
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (Fix line)
+  input: Fix line shown to affected people
+  person: affected
+  mode: derived
+  agent: North
+  source: what the owner recorded as done and when
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: telling people it is fixed'
+  claim: Affected people are told what was done in one line
+- id: 42.affected.pulse
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: Pulse line to each affected person
+  input: Is it fixed for you
+  person: affected
+  mode: automatic
+  agent: Nira
+  source: stage confirm
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a message to each person'
+  claim: Each affected person is asked in their own Pulse
+- id: 42.affected.fixed
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (It is fixed for me)
+  input: Fixed for me
+  person: affected
+  mode: manual
+  agent: null
+  source: the affected person
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: replying to an email'
+  claim: The person who felt the problem confirms it is gone
+- id: 42.affected.still
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (Still happening for me)
+  input: Still happening, with a note
+  person: affected
+  mode: manual
+  agent: null
+  source: the affected person
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: replying to an email'
+  claim: The person tells the owner it is not fixed
+- id: 42.affected.tally
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (Confirm tally)
+  input: n of m say it is fixed
+  person: owner
+  mode: automatic
+  agent: null
+  source: affected_confirms
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counting replies'
+  claim: The tally comes from the people who felt the problem
+- id: 42.linked
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (Linked to)
+  input: The measure or process, Ops alert and source intent
+  person: owner
+  mode: automatic
+  agent: null
+  source: links.node, links.alert and links.source
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: looking up the context'
+  claim: The problem links to what it is about with no typing
+- id: 42.north.banner
+  spec: '42'
+  journey: problem
+  stage: run
+  screen: /centre/intent/<id> (North banner)
+  input: Two days left and no cause yet, with options
+  person: owner
+  mode: derived
+  agent: North
+  source: the clock and the stage
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: watching the deadline'
+  claim: North warns before the deadline and offers extend, close as accepted or cancel
+- id: 42.close.draft
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id>/close (outcome block)
+  input: Why it happened, what came out, next
+  person: owner
+  mode: confirm
+  agent: North
+  source: the cause, fix, tally and thread
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: writing the closure note'
+  claim: North drafts the closure from the cause and fix; the owner edits and closes
+- id: 42.close.owner
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id>/close (Close this problem)
+  input: Close the problem
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: closing a ticket'
+  claim: Closing is the owner's act
+- id: 42.close.nofix
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id>/close (Close without a fix)
+  input: Close without a fix, accepted
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner with a reason
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: writing off a ticket'
+  claim: Closing without a fix needs a stated reason
+- id: 42.close.counts
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id>/close (counts line)
+  input: Fixed for me, still happening, no answer
+  person: owner
+  mode: automatic
+  agent: null
+  source: affected_confirms
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counting replies'
+  claim: The closure shows how many people say it is fixed
+- id: 42.reporter.confirm
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Yes, it is fixed)
+  input: Reporter confirms the fix
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a reply'
+  claim: The person who raised the problem says if it is fixed
+- id: 42.reporter.reopen
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (No, reopen)
+  input: Reopen once with a reason
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter with one to three sentences
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: raising it again'
+  claim: Reopening is possible once and needs a reason
+- id: 42.reporter.silent
+  spec: '42'
+  journey: problem
+  stage: decide
+  screen: /centre/intent/<id> (Close, reporter did not answer)
+  input: Close when the reporter did not answer
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: chasing then closing'
+  claim: The owner can close if the reporter is silent
+- id: 42.node.version
+  spec: '42'
+  journey: problem
+  stage: prove
+  screen: Closure write to the node page
+  input: Version note on the measure or process
+  person: owner
+  mode: automatic
+  agent: North
+  source: the closure and links.node
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: updating the documentation'
+  claim: The closed problem leaves a version note on what it was about
+- id: 42.count.process
+  spec: '42'
+  journey: problem
+  stage: shared
+  screen: /centre (counters)
+  input: Problems per process or measure per month
+  person: company admin
+  mode: automatic
+  agent: null
+  source: problem intents grouped by links.node
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: a log kept by hand'
+  claim: Problems per process are counted without a log
+- id: 42.count.days
+  spec: '42'
+  journey: problem
+  stage: shared
+  screen: /centre (counters)
+  input: Days to close, closed inside the time box, reopened
+  person: company admin
+  mode: automatic
+  agent: null
+  source: events and closure dates
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Resolution speed is measured by the system
+- id: 42.count.confirm
+  spec: '42'
+  journey: problem
+  stage: shared
+  screen: /centre (counters)
+  input: Became Initiatives, closed without a fix, share fixed, workarounds past their date
+  person: company admin
+  mode: automatic
+  agent: null
+  source: closure.next, outcome.fix and affected_confirms
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The product shows whether fixes held

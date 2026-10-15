@@ -1,0 +1,56 @@
+# Template family_office@1 process map default: the document-to-decision path named in
+# Family Office Data/Agent_Specifications.md (Data Engineer tools register_document,
+# extract_document, validate_fields, reconcile, promote_approved_records; Insight Manager
+# run_liquidity_scenario, draft_decision_brief) and interview.jsonl T09/T17/T18. Every step is a
+# PROPOSAL until a person validates it; nothing here is a business rule or a company fact.
+template: family_office@1
+# The measures this path fits (document in, figure out, funding headroom and meeting pack). A measure not listed is never given it.
+for_kpis: [K01, K03, K04, K05, K06, K14]
+lanes:
+  - Managers and custodians
+  - Operations
+  - Investment analyst
+  - CIO
+steps:
+  - step_id: pm-01
+    lane: Managers and custodians
+    col: 0
+    name: "Document arrives"
+    body: "PDF statements, fund reports, capital-call notices and agreements arrive by email and SharePoint; some notices are scans."
+    manual: true
+  - step_id: pm-02
+    lane: Operations
+    col: 1
+    name: "Register the document"
+    body: "Record the version, the arrival time and whether it replaces an earlier notice."
+    manual: true
+  - step_id: pm-03
+    lane: Operations
+    col: 2
+    name: "Extract the fields"
+    body: "Amounts, currency, dates and scope are read into a staging area, with the place in the document they came from."
+    manual: true
+  - step_id: pm-04
+    lane: Investment analyst
+    col: 3
+    name: "Validate"
+    body: "Units and currency are checked. A missing value stays missing; it is never treated as zero."
+    manual: true
+  - step_id: pm-05
+    lane: Investment analyst
+    col: 4
+    name: "Reconcile"
+    body: "Differences between a manager's figure and an approved statement are shown as a conflict until an analyst resolves them."
+    manual: true
+  - step_id: pm-06
+    lane: CIO
+    col: 5
+    name: "Approve"
+    body: "A person approves the fact before it is used. Policy and investment decisions are always approved by people."
+    manual: true
+  - step_id: pm-07
+    lane: Investment analyst
+    col: 6
+    name: "Funding headroom and meeting pack"
+    body: "Approved facts feed the six-month funding headroom and the investment meeting pack."
+    manual: true

@@ -1,0 +1,276 @@
+# Template family_office@1 KPI scaffold: K01..K15 exactly as named, tiered and defined in
+# Family Office Data/Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json (role -> tier; the three
+# primary outcome measures are north_star). `definition` is the catalogue's own text, verbatim.
+# No values, baselines or targets: the catalogue leaves them null (Start_Here.md: 'No
+# industry-average thresholds were invented'). Every drives edge cites the catalogue formula that
+# literally contains the other KPI; none is an assumed correlation or a weight.
+template: family_office@1
+status: proposed
+kpis:
+- id: K01
+  name: Minimum six-month funding headroom
+  tier: north_star
+  unit: SGD
+  definition: 'For each month: opening cash + approved inflows - known obligations - scenario-only calls - proposed funding - reserve. Minimum across six closing-month headrooms. Carry cash month to month; reserve is a threshold, not a repeated cash outflow.'
+  formula: 'For each month: opening cash + approved inflows - known obligations - scenario-only calls - proposed funding - reserve. Minimum across six closing-month headrooms. Carry cash month to month; reserve is a threshold, not a repeated cash outflow.'
+  grain: scope x scenario x monthly bucket
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K01 (definition_status: concept_approved_formula_pending)'
+- id: K02
+  name: Reported-value evidence coverage
+  tier: north_star
+  unit: ratio
+  definition: Sum of nonnegative included asset carrying values supported by approved, in-scope source evidence / sum of all nonnegative included asset carrying values. Include cash once; expose exclusions and unavailable totals.
+  formula: Sum of nonnegative included asset carrying values supported by approved, in-scope source evidence / sum of all nonnegative included asset carrying values. Include cash once; expose exclusions and unavailable totals.
+  grain: scope x reporting date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K02 (definition_status: concept_approved_formula_pending)'
+- id: K03
+  name: Meeting-pack preparation effort
+  keywords: [committee, pack, preparation, hours]  # words documents use for this measure; only the document search reads them
+  tier: north_star
+  unit: hours
+  definition: Total logged person-hours from collecting inputs through approved pack publication, including reconciliation and rework, per meeting pack.
+  formula: Total logged person-hours from collecting inputs through approved pack publication, including reconciliation and rework, per meeting pack.
+  grain: meeting_pack_id
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K03 (definition_status: concept_approved_formula_pending)'
+- id: K04
+  name: Known obligations due
+  tier: driver
+  unit: SGD
+  definition: Sum of current, unpaid approved obligations within each monthly bucket after notice supersession; convert with approved FX basis.
+  formula: Sum of current, unpaid approved obligations within each monthly bucket after notice supersession; convert with approved FX basis.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: sum, column: amount, filters: [{column: status, op: eq, value: open}, {column: notice_ref, op: not_in_column, value: replaces}]}
+  grain: scope x currency x due month
+  drives:
+  - kpi: K01
+    sign: '-'
+    source: KPI_Catalog.json K01 definition subtracts 'known obligations' each month
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K04 (definition_status: proposed_for_review)'
+- id: K05
+  name: Unfunded commitments
+  tier: driver
+  unit: native currency and SGD
+  definition: Opening unfunded + approved commitment changes + recallable adjustments - reductions from applicable funded calls. Separate fees outside commitment.
+  formula: Opening unfunded + approved commitment changes + recallable adjustments - reductions from applicable funded calls. Separate fees outside commitment.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: sum, column: unfunded_commitment}
+  grain: commitment x date
+  drives:
+  - kpi: K06
+    sign: +
+    source: KPI_Catalog.json K06 required_fields names 'eligible_unfunded'
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K05 (definition_status: proposed_for_review)'
+- id: K06
+  name: Stress funding requirement
+  keywords: [stress, case, scenario, expected, calls, multiplier, distributions]  # words documents use for this measure; only the document search reads them
+  tier: driver
+  unit: SGD
+  definition: Additional scenario-only cash outflows over horizon beyond known obligations, with explicit monthly timing and scenario version.
+  formula: Additional scenario-only cash outflows over horizon beyond known obligations, with explicit monthly timing and scenario version.
+  grain: scope x scenario x month
+  drives:
+  - kpi: K01
+    sign: '-'
+    source: KPI_Catalog.json K01 definition subtracts 'scenario-only calls' each month
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K06 (definition_status: proposed_for_review)'
+- id: K07
+  name: Unresolved material conflicts
+  tier: guardrail
+  unit: count
+  definition: Count of open reconciliation issues above an approved materiality definition. Until materiality is approved, report all unresolved conflicts separately.
+  formula: Count of open reconciliation issues above an approved materiality definition. Until materiality is approved, report all unresolved conflicts separately.
+  grain: scope x issue date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K07 (definition_status: proposed_for_review)'
+- id: K08
+  name: Policy exceptions awaiting approval
+  tier: guardrail
+  unit: count
+  definition: Count of detected applicable policy breaches with no valid in-scope approved exception as of the reporting date.
+  formula: Count of detected applicable policy breaches with no valid in-scope approved exception as of the reporting date.
+  grain: scope x rule version x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K08 (definition_status: proposed_for_review)'
+- id: K09
+  name: Single-issuer concentration
+  tier: diagnostic
+  unit: ratio
+  definition: Aggregate direct issuer exposure / included asset value; look-through exposure shown separately with coverage and no addition to consolidated asset total.
+  formula: Aggregate direct issuer exposure / included asset value; look-through exposure shown separately with coverage and no addition to consolidated asset total.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: sum, column: exposure_value, group_by: issuer, pick: max}, denominator: {op: sum, column: exposure_value}}
+  grain: issuer x scope x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K09 (definition_status: proposed_for_review)'
+- id: K10
+  name: Private-market allocation
+  tier: diagnostic
+  unit: ratio
+  definition: Funded private equity and VC carrying value / included total asset value; unfunded commitments displayed separately.
+  formula: Funded private equity and VC carrying value / included total asset value; unfunded commitments displayed separately.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: sum, column: closing_value, filters: [{column: asset_class, op: in, value: [Private Equity, Venture Capital]}]}, denominator: {op: sum, column: closing_value}}
+  grain: scope x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K10 (definition_status: proposed_for_review)'
+- id: K11
+  name: Unhedged FX exposure
+  tier: diagnostic
+  unit: native currency and SGD
+  definition: Assets - liabilities - recognised hedge coverage per currency, translated under an approved exposure method; report long and short exposures separately.
+  formula: Assets - liabilities - recognised hedge coverage per currency, translated under an approved exposure method; report long and short exposures separately.
+  grain: currency x scope x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K11 (definition_status: proposed_for_review)'
+- id: K12
+  name: Stale-valuation share
+  keywords: [valuation, age, stale, valuation, date, private, valuations]  # words documents use for this measure; only the document search reads them
+  tier: driver
+  unit: ratio
+  definition: Carrying value with valuation age above approved asset-class threshold / included asset value. Publish age bands until thresholds are approved.
+  formula: Carrying value with valuation age above approved asset-class threshold / included asset value. Publish age bands until thresholds are approved.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: count, group_by: [account, security], having: {column: val_date, older_than_business_days: 5}}, denominator: {op: count, group_by: [account, security]}}
+  grain: scope x asset class x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K12 (definition_status: proposed_for_review)'
+- id: K13
+  name: Asset-value change bridge
+  tier: diagnostic
+  unit: SGD
+  definition: Closing asset value - opening value reconciled into net external flows, local-price/NAV change and FX effects using consistent position and cash-flow conventions. Show residual.
+  formula: Closing asset value - opening value reconciled into net external flows, local-price/NAV change and FX effects using consistent position and cash-flow conventions. Show residual.
+  grain: scope x reporting period
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K13 (definition_status: proposed_for_review)'
+- id: K14
+  name: Documents needing review
+  keywords: [document, intake, review, notice, exceptions, missing, evidence]  # words documents use for this measure; only the document search reads them
+  tier: driver
+  unit: count
+  definition: Count of active, nonduplicate document versions with unresolved required-field or reconciliation exceptions.
+  formula: Count of active, nonduplicate document versions with unresolved required-field or reconciliation exceptions.
+  grain: document type x date
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K14 (definition_status: proposed_for_review)'
+- id: K15
+  name: Manager performance versus benchmark
+  tier: deferred
+  unit: method-specific
+  definition: Compare approved net-of-fee performance methodology with agreed benchmark at matching currency and horizon. TWR for appropriate public portfolios; private-fund metrics separately.
+  formula: Compare approved net-of-fee performance methodology with agreed benchmark at matching currency and horizon. TWR for appropriate public portfolios; private-fund metrics separately.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: difference, left: {op: sum, column: 'closing_value - opening_value - net_flows'}, right: {op: sum, column: fees}}, denominator: {op: sum, column: opening_value}}
+  grain: manager x period
+  drives: []
+  baseline: null
+  target: null
+  source: 'Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K15 (definition_status: deferred)'
+# K16 to K19: added from the illustrative demo story (Signal Harbor). Proposals, pending practitioner review.
+- id: K16
+  status: proposal
+  name: Excess return versus benchmark (alpha)
+  tier: diagnostic
+  unit: percentage points
+  definition: Net-of-fee period return of a fund or manager minus the return of its agreed benchmark over the same period and currency. Positive means ahead of the benchmark. Public and private funds use separate methods and are not mixed.
+  formula: Net-of-fee period return of a fund or manager minus the return of its agreed benchmark over the same period and currency. Positive means ahead of the benchmark. Public and private funds use separate methods and are not mixed.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: difference, left: {op: ratio, scale: 100, numerator: {op: difference, left: {op: sum, column: 'closing_value - opening_value - net_flows'}, right: {op: sum, column: fees}}, denominator: {op: sum, column: opening_value}}, right: {op: ratio, scale: 100, numerator: {op: difference, left: {op: latest, column: level, order_by: date, period: {column: date, from: benchmark_start, to: benchmark_end, strict: true}, filters: [{column: index, op: eq, value: Global Equity Index}], label: index levels}, right: {op: first, column: level, order_by: date, period: {column: date, from: benchmark_start}, filters: [{column: index, op: eq, value: Global Equity Index}]}}, denominator: {op: first, column: level, order_by: date, period: {column: date, from: benchmark_start}, filters: [{column: index, op: eq, value: Global Equity Index}]}}}
+  grain: manager x benchmark x period
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: K17
+  status: proposal
+  name: Benchmark coverage of holdings
+  tier: diagnostic
+  unit: ratio
+  definition: Value of holdings that have an agreed, approved benchmark / value of all included holdings. Holdings with no benchmark or a disputed one are listed, not hidden.
+  formula: Value of holdings that have an agreed, approved benchmark / value of all included holdings. Holdings with no benchmark or a disputed one are listed, not hidden.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: sum, column: closing_value, filters: [{column: manager, op: listed_in, value: fund, where: benchmark_assigned}]}, denominator: {op: sum, column: closing_value, filters: [{column: manager, op: listed_in, value: fund}]}}
+  grain: scope x reporting date
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: K18
+  status: proposal
+  name: Compensation inputs reconciled
+  keywords: [bonus, pay, compensation, pool, manager, review, performance]  # words documents use for this measure; only the document search reads them
+  tier: guardrail
+  unit: ratio
+  definition: Count of performance inputs used in pay and review decisions that agree to the approved performance figure / count of all such inputs. Unmatched inputs are listed.
+  formula: Count of performance inputs used in pay and review decisions that agree to the approved performance figure / count of all such inputs. Unmatched inputs are listed.
+  grain: person x period
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: K19
+  status: proposal
+  name: Data definitions with a named owner
+  tier: guardrail
+  unit: ratio
+  definition: Count of agreed key terms (for example return, benchmark, NAV date) that have one approved definition and a named owner / count of key terms in use.
+  formula: Count of agreed key terms (for example return, benchmark, NAV date) that have one approved definition and a named owner / count of key terms in use.
+  rule_status: suggestion  # a runnable rule Lens may use when it cannot write one from the definition (module 3); column names are the matched catalogue fields
+  rule: {op: ratio, scale: 100, numerator: {op: count, column: term, filters: [{column: owner, op: not_contains, value: ' or '}]}, denominator: {op: count, column: term}}
+  grain: term
+  drives: []
+  baseline: null
+  target: null
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+levers:
+- id: lever:commitment_pacing
+  name: Commitment timing and size
+  moves:
+  - kpi: K01
+    sign: +
+  source: KPI_Catalog.json K01 business_lever; Start_Here.md 'Useful levers'
+- id: lever:evidence_intake
+  name: Document intake and missing-evidence follow-up
+  moves:
+  - kpi: K02
+    sign: +
+  source: KPI_Catalog.json K02 business_lever
+- id: lever:pack_automation
+  name: Automated collection, reconciliation and drafting
+  moves:
+  - kpi: K03
+    sign: '-'
+  source: KPI_Catalog.json K03 business_lever
+open_questions:
+- Every formula is pending analyst review (KPI_Catalog.json formula_review_status). Market movement is an external condition, not a lever (Start_Here.md).

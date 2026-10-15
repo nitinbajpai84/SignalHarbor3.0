@@ -1,0 +1,9 @@
+# V5W-3: verify, business review, fix and accept in the Pipelines step. Everyone on the project reads. The data engineer seat marks verified, sends
+# for review and fixes; the business owner (named in code from the project, never a role alone) flags and accepts. Seats are checked again in code.
+routes:
+  GET /api/v1/build/p/{pid}/verify: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/verify/mark: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/verify/send: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/verify/flag: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/verify/fix: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/verify/accept: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

@@ -1,0 +1,453 @@
+# Input ledger rows for spec 06: people and roles in an intent.
+- id: "06.pick_people"
+  spec: "06"
+  journey: shared
+  stage: notice
+  screen: "invite dialog, Pick from your company"
+  input: "People invited to the intent, with a role each"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the company people list, the areas and the type's stated range"
+  minutes_without: 10
+  minutes_with: 2
+  basis: "estimate: choosing invitees and roles by hand versus confirming suggestions"
+  claim: "The organiser picks from the company people list; North checks the count against the type's range"
+  built: manual
+- id: "06.area_affected"
+  spec: "06"
+  journey: shared
+  stage: notice
+  screen: "invite dialog, Tell people in these areas"
+  input: "Affected people told by area"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "everyone tagged to the intent's areas in the company people list"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: building a distribution list"
+  claim: "Ticking an area tells everyone in it as affected; nobody builds a list"
+- id: "06.named_slot"
+  spec: "06"
+  journey: shared
+  stage: notice
+  screen: "invite dialog (Decider, Owner single-person picker)"
+  input: "Decider of a Decision, owner of a Problem"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the area tag (owner suggestion for a Problem opened without an owner)"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: finding who owns an operations problem"
+  claim: "North suggests an owner for a Problem from the area; the organiser accepts or names someone else"
+  built: manual
+- id: "06.send_invites"
+  spec: "06"
+  journey: shared
+  stage: decide
+  screen: "invite dialog (Send invitations)"
+  input: "Send the invitations"
+  person: organiser
+  mode: manual
+  source: "the organiser's press; the invitations and Pulse lines are written by the system"
+  minutes_without: 15
+  minutes_with: 0.5
+  basis: "estimate: writing and sending invitations to five people"
+  claim: "One press invites everyone and writes a Pulse line for each"
+- id: "06.invite_email"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people panel (Draft the email)"
+  input: "Invite and for-your-information email text"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "the intent title, purpose, end date and link"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: writing an invitation email"
+  claim: "Nira drafts the invitation email; the organiser copies it and sends from their own mail"
+- id: "06.accept"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id>?view=invitation (Accept)"
+  input: "Accept the invitation"
+  person: participant
+  mode: manual
+  source: "the invited person; nobody accepts for them"
+  minutes_without: 3
+  minutes_with: 0.2
+  basis: "estimate: replying to an invite"
+  claim: "One tap accepts and lands the person on their part of the work"
+- id: "06.decline"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "/centre/intent/<id>?view=invitation (Decline, reason)"
+  input: "Decline with a reason"
+  person: participant
+  mode: manual
+  source: "the invited person"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: writing a decline reply"
+  claim: "A decline is recorded with its reason and the organiser is told at once"
+- id: "06.role_request"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "invitation card (Ask for a different role)"
+  input: "Ask for a different role"
+  person: participant
+  mode: manual
+  source: "the invited person"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: an email asking to change role"
+  claim: "A role request goes into the intent history for the organiser to decide"
+- id: "06.status"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people panel (status chips: invited, joined, contributed, confirmed)"
+  input: "Each person's status"
+  person: system
+  mode: automatic
+  source: "the first card, answer or confirm the person makes"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: chasing who has done their part"
+  claim: "Joined, contributed and confirmed are recorded as people act; nobody chases to find out"
+- id: "06.waiting_for"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people panel (Waiting for line)"
+  input: "Who is holding the intent up"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "people_detail and the stage"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: working out who has not replied"
+  claim: "North tells the organiser whose turn it is"
+- id: "06.reminder"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people panel (Remind them / Remind)"
+  input: "Reminder text to a person whose turn it is"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the person's status and the stage"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a chaser"
+  claim: "North drafts the reminder; the organiser copies it. North never sends"
+- id: "06.decline_gap"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people panel (North line after a decline)"
+  input: "Add someone, or carry on, when declines leave too few people"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the declined people against the type's stated range"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: noticing the numbers have dropped. Build check: the seatGone line (Name another person before this moves on) answers only a Decider or Owner decline, see 06.decline_slot, not a shortfall against the type range, so this row stays unbuilt"
+  claim: "North notices when declines leave too few people and proposes add or carry on"
+  built: missing
+- id: "06.change_role"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people screen (Change role)"
+  input: "Change a person's role, with a reason"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: telling someone their role changed"
+  claim: "A role change is recorded with who, when and why; earlier work stays"
+- id: "06.remove"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people screen (Remove, reason)"
+  input: "Remove a person, with a reason"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: telling someone they are off"
+  claim: "A removed person stays in the record with the reason; their work is kept"
+- id: "06.join_link"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "people screen (Invite by link, seat list, Take back)"
+  input: "Join link and seats"
+  person: organiser
+  mode: manual
+  source: "the organiser makes the link and takes seats back"
+  minutes_without: 8
+  minutes_with: 1
+  basis: "estimate: arranging access for guests"
+  claim: "A join link seats people without accounts and can be ended with one press"
+- id: "06.pulse_lines"
+  spec: "06"
+  journey: shared
+  stage: run
+  screen: "Pulse page (invite, affected, organiser not-answered lines)"
+  input: "Invitation, told-about and not-answered lines"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "people_detail on each intent"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: checking invitations across email and chat"
+  claim: "Nira puts each invitation and each not-answered count on the right person's Pulse"
+- id: "06.counters"
+  spec: "06"
+  journey: admin
+  stage: prove
+  screen: "people panel and company admin intent view (counts, time from invited to joined)"
+  input: "People in the intent, joined, contributed, confirmed, declined, removed, time to join"
+  person: organiser
+  mode: automatic
+  source: "people_detail on the record"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting responses by hand"
+  claim: "Participation is counted from what people did"
+- id: "06.role_default"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "invite dialog (role selector per picked person)"
+  input: "Default role of each picked person"
+  person: "organiser"
+  mode: "automatic"
+  source: "the intent type's named slots: Participant, Adviser for a Decision, Owner for a Problem with none named"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: deciding a role for each invitee"
+  claim: "Each person starts with the role the type expects; the organiser changes only the exceptions"
+  built: "automatic"
+- id: "06.range_note"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "invite dialog (range note)"
+  input: "Count of invited people against the type's stated range"
+  person: "organiser"
+  mode: "derived"
+  agent: "North"
+  source: "the picked list and the type's stated range"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: counting the list and remembering the right group size"
+  claim: "North tells the organiser whether the invited number sits inside the type's range as they pick"
+  built: "derived"
+- id: "06.area_counts"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "invite dialog (Tell people in these areas, count per area)"
+  input: "Number of people in each area"
+  person: "organiser"
+  mode: "automatic"
+  source: "the company people list tags"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: asking each area lead how many people sit in it"
+  claim: "Each area chip shows how many people it will tell before the organiser ticks it"
+- id: "06.invitation_card"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "invitation card (/centre/intent/<id>?view=invitation)"
+  input: "Purpose, role in words, end date and minutes expected shown to the invited person"
+  person: "any"
+  mode: "derived"
+  agent: "Nira"
+  source: "the intent purpose, the person's role, the time box end and the invite minutes constant"
+  minutes_without: 8
+  minutes_with: 0
+  basis: "estimate: writing what is asked, by when and how long it takes, for each invitee"
+  claim: "The invited person sees what is asked, by when and how long it takes without the organiser writing it"
+  built: "derived"
+- id: "06.role_note"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "invitation card (role note)"
+  input: "Role note for Affected and Observer invitees"
+  person: "any"
+  mode: "automatic"
+  source: "the person's role and the intent's areas"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: explaining to each person that they only need to read"
+  claim: "Affected and observer people are told in one line that nothing is asked of them"
+- id: "06.decline_slot"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "people panel (North line when a Decider or Owner declines)"
+  input: "Name another person when the Decider or Owner declines"
+  person: "organiser"
+  mode: "manual"
+  agent: "North"
+  source: "the declined named slot; North prepares the line, the organiser names the replacement"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: noticing the decider has gone and finding another"
+  claim: "North raises a declined decider or owner at once; the organiser names the replacement"
+  built: "manual"
+- id: "06.invite_again"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "person drawer (Invite again)"
+  input: "Invite a declined or removed person again"
+  person: "organiser"
+  mode: "manual"
+  source: "the organiser's press; the new invitation date is written by the system"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: finding the earlier thread and writing a new invitation"
+  claim: "One press invites a declined or removed person again; the earlier answer stays in history"
+  built: "manual"
+- id: "06.seat_take_back"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "full people screen (seat list, Take back)"
+  input: "Take back a seat"
+  person: "organiser"
+  mode: "manual"
+  source: "the organiser's press on the seat"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: finding who holds an access link and ending it"
+  claim: "A seat is taken back with one press and the person's cards stay"
+  built: "manual"
+- id: "06.guest_join"
+  spec: "06"
+  journey: "shared"
+  stage: "notice"
+  screen: "/join/<code> (name and role)"
+  input: "Name and role of a person joining by link"
+  person: "participant"
+  mode: "manual"
+  source: "what the joining person types or picks; signed-in people are seated by account"
+  minutes_without: 4
+  minutes_with: 1
+  basis: "estimate: collecting names from guests by message"
+  claim: "People without accounts seat themselves by name and role; signed-in people just join"
+  built: "manual"
+- id: "06.ask_add"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "people panel (Ask the organiser to add someone)"
+  input: "A sponsor's request to add a person"
+  person: "sponsor"
+  mode: "manual"
+  source: "the sponsor's one line; written to the history, nothing sent"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: a message or hallway request that is later forgotten"
+  claim: "A sponsor's request is kept in the intent history where the organiser sees it"
+  built: "manual"
+- id: "06.confirm"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "stage screen (I am done confirm)"
+  input: "Confirm own part at a stage that asks for it"
+  person: "participant"
+  mode: "manual"
+  source: "the person's own press; the system then records Confirmed"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: replying to say you have finished"
+  claim: "Each person confirms for themselves with one press; nobody confirms on their behalf"
+- id: "06.handover"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "person drawer (change organiser role)"
+  input: "Hand the organiser role to another joined person"
+  person: "organiser"
+  mode: "manual"
+  source: "the organiser's choice of a Joined person"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: agreeing and telling everyone who now runs it"
+  claim: "The organiser hands over with one choice; the history records who and when"
+- id: "06.reporter_slot"
+  spec: "06"
+  journey: "problem"
+  stage: "notice"
+  screen: "people panel (Reporter on a Problem)"
+  input: "Reporter of a Problem"
+  person: "system"
+  mode: "automatic"
+  source: "whoever opened the Problem"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: recording who raised it"
+  claim: "The reporter is whoever opened the Problem; nobody types it"
+  built: "automatic"
+- id: "06.history_strip"
+  spec: "06"
+  journey: "shared"
+  stage: "prove"
+  screen: "full people screen (history strip)"
+  input: "History of invitations, answers, role changes and removals"
+  person: "system"
+  mode: "automatic"
+  source: "events written as each change happens"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: rebuilding who was asked and who changed from email and chat"
+  claim: "Every invitation, answer, role change and removal is kept in time order with who and why"
+- id: "06.filter_counts"
+  spec: "06"
+  journey: "shared"
+  stage: "run"
+  screen: "full people screen (filter chips with counts)"
+  input: "People counts per status"
+  person: "system"
+  mode: "automatic"
+  source: "people_detail status"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: tallying responses by hand"
+  claim: "Counts per status sit on the filter chips and are exact"
+- id: "06.reminder_log"
+  spec: "06"
+  journey: "shared"
+  stage: "prove"
+  screen: "history strip (reminders drafted and copied)"
+  input: "Reminders drafted and copied"
+  person: "system"
+  mode: "automatic"
+  source: "people_detail reminders"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: remembering who was chased and when"
+  claim: "The last reminder date is kept so nobody is chased twice by mistake"

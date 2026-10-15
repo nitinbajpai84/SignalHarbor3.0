@@ -1,0 +1,43 @@
+/**
+ * V3-UIc (docs/signal-harbor/history/nira-platform/packages/V3-UI/brief.md item 2):
+ * js/screens/intent-session.js, js/screens/alignment-room.js, js/screens/charter-doc.js and the
+ * standing board/sessions tabs added to js/screens/intent-center.js. Charter tokens only (no hex
+ * here -- css/sh.css owns every colour value; this file reads them through var()).
+ *
+ * Loaded by index.html (V3-UIb owns that one `<link>` line -- see packages/V3-UI/split.md).
+ */
+
+.n-sticky {
+  min-width: 220px;
+  max-width: 280px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-hairline);
+  /* Charter theme is deliberately flat (css/sh.css: "no shadows except a paper drop under a
+     document" -- --shadow-elevated is `none`); the border above is this card's own elevation. */
+  box-shadow: var(--shadow-elevated);
+}
+
+.n-sticky-yellow { background: var(--sticky-yellow); }
+.n-sticky-teal { background: var(--sticky-teal); }
+.n-sticky-slate { background: var(--sticky-slate); }
+.n-sticky-copper { background: var(--sticky-copper); }
+
+.n-sticky-contested { border-color: var(--warning); }
+
+/* The question itself: italic Fraunces, per session-spec.md's sticky mockup. */
+.n-sticky-q {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.n-sticky-pain, .n-sticky-belief {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.n-sticky-row { display: flex; flex-direction: column; gap: 4px; }

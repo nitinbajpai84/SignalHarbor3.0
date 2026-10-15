@@ -1,0 +1,498 @@
+- id: v1.baseline.confirm
+  spec: v1
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/baseline/<id> (Confirm)
+  input: Confirm a measure's definition, owner and status
+  person: owner
+  mode: confirm
+  agent: Lens
+  source: the clusters and the pack definition
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: reading a data-dictionary email versus one confirm per measure'
+  claim: Lens drafts each baseline measure; the owner or approver confirms it in one tap
+- id: v1.baseline.sign
+  spec: v1
+  journey: initiative
+  stage: decide
+  screen: baseline, 'Sign off the baseline'
+  input: The sponsor's baseline signature
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor alone, after a gate check on the signed charter
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: circulating a PDF versus one signature'
+  claim: Only the sponsor signs the baseline and the gate message explains any block
+- id: v1.baseline.sendback
+  spec: v1
+  journey: initiative
+  stage: decide
+  screen: baseline, 'Send back'
+  input: A note that returns a measure to draft
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's words
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: an email with comments versus a required note'
+  claim: A send-back needs a note and returns the measure to draft with the owner told
+- id: v1.truth.upload
+  spec: v1
+  journey: build
+  stage: build
+  screen: /centre/intent/truth/<id> (Upload sample)
+  input: A sample file from the source
+  person: source owner
+  mode: manual
+  agent: null
+  source: the owner's own file; only a name matching the source pattern is accepted
+  minutes_without: 20
+  minutes_with: 5
+  basis: 'estimate: emailing a sample then someone loading it versus a drop'
+  claim: The source owner drops a sample and the run log updates
+- id: v1.truth.rules
+  spec: v1
+  journey: build
+  stage: build
+  screen: truth, trial table quality rules
+  input: Quality rules in plain language
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: the uploaded file's columns
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: an analyst writing data-quality rules by hand'
+  claim: Lens profiles the sample and states the quality rules in plain words
+  built: derived
+- id: v1.truth.trial
+  spec: v1
+  journey: build
+  stage: build
+  screen: truth, scoreboard and trial table
+  input: Match, gap and not-yet per measure
+  person: analyst
+  mode: automatic
+  agent: null
+  source: the trial run against the benchmark
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: comparing report figures by hand in a spreadsheet'
+  claim: The trial counts match, gap and not yet per measure by itself
+- id: v1.truth.sign
+  spec: v1
+  journey: build
+  stage: build
+  screen: truth, signature panel
+  input: Owner and analyst signatures
+  person: analyst
+  mode: manual
+  agent: null
+  source: the named owner and analyst
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: chasing signatures versus two signs on one page'
+  claim: Signing is by named people only and is disabled until both confirm
+- id: v1.build.environment
+  spec: v1
+  journey: build
+  stage: build
+  screen: /centre/build/environment (five questions)
+  input: The five environment answers
+  person: analyst
+  mode: manual
+  agent: null
+  source: the analyst's confirmation of each answer
+  minutes_without: 40
+  minutes_with: 15
+  basis: 'estimate: an environment questionnaire versus five confirms; planning estimate'
+  claim: Each environment answer is committed on Confirm with no Save step
+  built: manual
+- id: v1.build.blueprint
+  spec: v1
+  journey: build
+  stage: build
+  screen: /centre/build/blueprint
+  input: Facts and dimensions table
+  person: architect
+  mode: derived
+  agent: Lens
+  source: the signed baseline
+  minutes_without: 480
+  minutes_with: 0
+  basis: 'estimate: a data architect drafting a data model'
+  claim: The blueprint is drafted from the signed baseline with every row traceable
+  built: derived
+- id: v1.build.blueprint.sign
+  spec: v1
+  journey: build
+  stage: build
+  screen: blueprint, sign-off panel
+  input: Architect, analyst and tester signatures
+  person: architect
+  mode: manual
+  agent: null
+  source: named signers
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: an approval round by email versus signs on one page'
+  claim: Each signature persists with name and date; it cannot be signed before the baseline
+- id: v1.build.pipelines.run
+  spec: v1
+  journey: build
+  stage: run
+  screen: /centre/build/pipelines (Run now, drop a file)
+  input: Run a pipeline or drop a file on the source card
+  person: owner
+  mode: manual
+  agent: null
+  source: the operator's decision to run
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: asking an engineer to rerun a load versus one tap'
+  claim: A source card runs on demand and a dropped file starts a run when the name matches
+- id: v1.build.pipelines.log
+  spec: v1
+  journey: build
+  stage: run
+  screen: pipelines run log
+  input: One row per run for 180 days
+  person: owner
+  mode: automatic
+  agent: null
+  source: the run records
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: reading job logs versus a table'
+  claim: Run start, end, status and rows are logged by the system
+- id: v1.build.prove.sections
+  spec: v1
+  journey: build
+  stage: prove
+  screen: /centre/build/prove (Matches, Gaps, Not yet)
+  input: Each measure placed in Match, Gap or Not yet
+  person: analyst
+  mode: automatic
+  agent: null
+  source: the trial results and baseline
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: reconciling report figures by hand'
+  claim: Measures are sorted into match, gap and not yet from the trial
+- id: v1.build.prove.accept
+  spec: v1
+  journey: build
+  stage: prove
+  screen: prove, 'Accept this gap'
+  input: Accept a gap with a reason
+  person: analyst
+  mode: manual
+  agent: null
+  source: the analyst's reason
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: an email trail versus a reason on the record'
+  claim: Accepting a gap needs a reason and moves the measure to Done
+- id: v1.build.prove.uat
+  spec: v1
+  journey: build
+  stage: prove
+  screen: prove, Sign UAT and Release
+  input: The tester signs UAT; the sponsor releases
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the named signers; release asks 'Are you releasing?'
+  minutes_without: 20
+  minutes_with: 5
+  basis: 'estimate: release approval by email versus two signs'
+  claim: Agents never sign; release lists every measure for the sponsor
+- id: v1.build.ops.arrivals
+  spec: v1
+  journey: build
+  stage: run
+  screen: /centre/build/ops (Today's arrivals)
+  input: Files landed since yesterday midnight
+  person: owner
+  mode: automatic
+  agent: null
+  source: the landing zone
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking a folder by hand versus a count'
+  claim: Arrival counts trace to the landing zone files
+- id: v1.build.ops.checks
+  spec: v1
+  journey: build
+  stage: run
+  screen: ops, Failed checks and range breaks
+  input: Rules broken and measures outside their range
+  person: owner
+  mode: automatic
+  agent: null
+  source: the quality rules and baseline ranges
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: scanning reports for odd figures'
+  claim: Failed checks and range breaks are found by rule; restricted areas show counts only
+- id: v1.build.ops.alerts
+  spec: v1
+  journey: build
+  stage: run
+  screen: ops, Alerts
+  input: A drafted alert per issue
+  person: owner
+  mode: derived
+  agent: Watcher
+  source: the run log, checks and feeds
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: writing an incident ask by hand versus acknowledging a draft'
+  claim: The Watcher drafts an alert with a drafted ask for each issue; a person acknowledges
+  built: derived
+- id: v1.build.ops.ack
+  spec: v1
+  journey: build
+  stage: run
+  screen: ops, Acknowledge
+  input: Acknowledge an alert with an optional note
+  person: owner
+  mode: manual
+  agent: null
+  source: the operator
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: replying to an alert email versus one tap'
+  claim: Acknowledging is the operator's act and persists across reloads
+- id: v1.consume.home
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume (counters and waiting items)
+  input: Measures released, within range, outside range, watchers
+  person: sponsor
+  mode: automatic
+  agent: null
+  source: the signed baseline, releases and ranges
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: compiling a status pack'
+  claim: The four counters are computed and each links to its list
+- id: v1.consume.waiting
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume (Nira's top three)
+  input: The top three waiting items
+  person: sponsor
+  mode: derived
+  agent: Nira
+  source: the person's open lines
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: scanning an inbox for what is waiting'
+  claim: Nira puts what is waiting on each person's page
+  built: derived
+- id: v1.consume.feeds
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume/feeds
+  input: A card per released measure with value, status and sparkline
+  person: sponsor
+  mode: automatic
+  agent: null
+  source: the warehouse records
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: producing a monthly measures pack by hand'
+  claim: Every released measure shows its latest value, status and 30-day line from the warehouse
+- id: v1.consume.measure
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume/measure/<id>
+  input: A measure's history, definition and links
+  person: sponsor
+  mode: automatic
+  agent: null
+  source: the warehouse and the baseline
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: finding the definition and series in separate files'
+  claim: One page shows the series, the definition, the owner and live links to map, blueprint and rules
+- id: v1.consume.comment
+  spec: v1
+  journey: consume
+  stage: run
+  screen: measure page, Comments
+  input: A comment on a measure
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner or steward
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: an email about a figure versus a comment on it'
+  claim: Comments sit on the measure with name and time; most roles read only
+- id: v1.consume.market
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume/market
+  input: Which measures an outside brief touches
+  person: sponsor
+  mode: derived
+  agent: Lens
+  source: the pack brief and the company's own measures
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: an analyst reading a market report against the measures'
+  claim: Lens lists the company's measures that an outside brief touches, always marked Outside material
+  built: derived
+- id: v1.consume.whatif.slider
+  spec: v1
+  journey: consume
+  stage: run
+  screen: /centre/consume/whatif (slider)
+  input: Move a driver from minus 10 to plus 10 percent
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's own question
+  minutes_without: 60
+  minutes_with: 2
+  basis: 'estimate: asking an analyst to rerun a model versus a slider'
+  claim: A driver slider shows which measures move with no model built by hand
+- id: v1.consume.whatif.impact
+  spec: v1
+  journey: consume
+  stage: run
+  screen: what-if map
+  input: Which measures move and in which direction
+  person: sponsor
+  mode: automatic
+  agent: null
+  source: the measure tree
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: a model run by an analyst'
+  claim: The impact on dependent measures is computed as the slider moves
+- id: v1.consume.whatif.save
+  spec: v1
+  journey: consume
+  stage: run
+  screen: what-if, scenario save
+  input: Name and save a scenario
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's label
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a file kept on a desktop versus a named scenario'
+  claim: A scenario is kept with its name and time and restored from the list
+- id: v1.register.row
+  spec: v1
+  journey: shared
+  stage: shared
+  screen: /centre/register
+  input: One row per signed measure
+  person: approver
+  mode: automatic
+  agent: null
+  source: the signed baselines
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: maintaining a data register in a spreadsheet'
+  claim: The register fills itself from signatures
+  built: automatic
+- id: v1.memory.agent
+  spec: v1
+  journey: shared
+  stage: shared
+  screen: /centre/memory
+  input: What the agents remember of past work
+  person: organiser
+  mode: derived
+  agent: North
+  source: closed intents and closures
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: searching old project files'
+  claim: Memory is written from closures so lessons are findable
+  built: derived
+- id: v1.control.settings
+  spec: v1
+  journey: admin
+  stage: shared
+  screen: /centre/control
+  input: Company settings and access
+  person: admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 20
+  minutes_with: 10
+  basis: 'estimate: changing settings across several tools versus one panel; planning estimate'
+  claim: Control is the one place for company settings and is admin only
+- id: v1.pulse.lines
+  spec: v1
+  journey: shared
+  stage: shared
+  screen: /centre/pulse
+  input: What is waiting for me
+  person: participant
+  mode: derived
+  agent: Nira
+  source: each person's open lines across intents and Build
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: checking email and chat for what is waiting'
+  claim: One Pulse page holds only the person's own lines
+- id: v1.map.page
+  spec: v1
+  journey: shared
+  stage: shared
+  screen: /centre/intent/graph (How my organisation connects)
+  input: The map of things and links
+  person: participant
+  mode: automatic
+  agent: null
+  source: the company graph built from records
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: drawing a data map by hand'
+  claim: The company map is built from records, never edited by hand
+- id: v1.home.centre
+  spec: v1
+  journey: shared
+  stage: shared
+  screen: /centre/intent (home)
+  input: Running, finished and past intents by area
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the intent index
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: a project list kept in a tracker'
+  claim: The Intent home lists running, finished and past work from the index
+- id: v1.wall.lanes
+  spec: v1
+  journey: initiative
+  stage: think
+  screen: /centre/intent/wall/<id> (as built in module 1)
+  input: Four lane counts on the wall
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the wall session cards
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting notes by hand'
+  claim: Lane counts per quarter come from the cards

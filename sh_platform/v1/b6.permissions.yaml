@@ -1,0 +1,18 @@
+# Card B2: Span's build plan. Everyone on the project may read; Span is asked and plans are proposed by the data engineer seat,
+# approved or sent back by the architect seat (head of data), never the proposer. Seats are checked again in code.
+routes:
+  GET /api/v1/build/projects: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/build/p/{pid}/plan: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/build/p/{pid}/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/chat/files: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/plan/propose: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/plan/approve: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/plan/reject: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/plan/changes/{cid}/accept: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/plan/changes/{cid}/reject: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/run: {roles: [company_admin, analyst]}
+  PUT /api/v1/build/p/{pid}/schedule: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/runs: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/build/p/{pid}/airflow: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

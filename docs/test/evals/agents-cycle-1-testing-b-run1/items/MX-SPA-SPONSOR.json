@@ -1,0 +1,245 @@
+{
+  "id": "MX-SPA-SPONSOR",
+  "agent": "span",
+  "role": "sponsor",
+  "desc": "A1 sponsor asks Span which gold table holds cash by entity and what feeds it.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> tool -> model -> tool -> model -> guard; tools list_tables, get_lineage"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "3 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "14961 ms",
+      "value": 14961
+    },
+    {
+      "name": "cost",
+      "passed": true,
+      "detail": "3 calls, 7388 tokens, $0.002476",
+      "value": 7388
+    }
+  ],
+  "error": null,
+  "latency_ms": 14961,
+  "cost": {
+    "calls": 3,
+    "tokens": 7388,
+    "usd": 0.002476,
+    "estimated": false
+  },
+  "trace_id": "tr-span-c2bf28ad-d6692588",
+  "forgotten": [],
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity, and which bronze tables feed it?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The gold table that holds cash by entity is named `gold_investment_report_cash_daily`, which tracks cash per entity per day for the administrator view. This table is fed by data from `instruments`, `legal_entities`, `portfolios`, and `position_snapshots`.",
+        "rules_only": false,
+        "trace_id": "tr-span-c2bf28ad-d6692588"
+      },
+      "ms": 14961,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 9812,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:57:58+0800",
+      "trace_id": "tr-span-c2bf28ad-d6692588"
+    },
+    {
+      "bytes": 9122,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:57:55+0800",
+      "trace_id": "tr-span-c2bf28ad-d6692588"
+    },
+    {
+      "bytes": 8660,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:57:50+0800",
+      "trace_id": "tr-span-c2bf28ad-d6692588"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-c2bf28ad-d6692588",
+      "status": 200,
+      "runs": [
+        {
+          "id": "33a9da91931644f0af366755f1605e25",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:58:03+00:00",
+          "elapsed_ms": 14375,
+          "steps": 7,
+          "tool_calls": 2,
+          "cost_usd": 0.002476,
+          "trace_id": "tr-span-c2bf28ad-d6692588",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-c2bf28ad-d6692588",
+          "at": "2026-10-10T01:58:03+00:00",
+          "run_id": "33a9da91931644f0af366755f1605e25",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 14375,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "2"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 4859,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2306,
+              "tokens_out": 22,
+              "cost_usd": 0.000747
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 225,
+              "refused": false,
+              "reason": null,
+              "ms": 265
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3327,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2399,
+              "tokens_out": 38,
+              "cost_usd": 0.000815
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "get_lineage",
+              "arg_keys": [
+                "project",
+                "table"
+              ],
+              "result_chars": 406,
+              "refused": false,
+              "reason": null,
+              "ms": 63
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 5859,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2565,
+              "tokens_out": 58,
+              "cost_usd": 0.000914
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002476,
+        "tokens": 7388
+      }
+    }
+  ]
+}

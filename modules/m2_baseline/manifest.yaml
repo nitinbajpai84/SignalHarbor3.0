@@ -1,0 +1,122 @@
+id: m2_baseline
+name: Baseline
+agent: Lens
+# One section per package; each package appends its own routes under its heading (M2 scaffold, A-042).
+routes:
+  # M2-SCAFFOLD
+  - {method: GET, path: "/api/modules/m2_baseline/status", roles: [company_admin, sponsor, analyst]}
+  # M2-P01 work list, triage, nominate, governance
+  - {method: GET, path: "/api/modules/m2_baseline/baselines", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis", roles: [company_admin, sponsor, analyst]}
+  - {method: DELETE, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/triage", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/questions/{question_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/owners", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/owners/{role}/decline", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/governance", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens/draft", roles: [company_admin, sponsor, analyst]}
+  # M2-AGENTS Lens's block, its conversation, the pre-read checklist, Nira (same roles as lens/draft)
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens/redraft", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens/ask", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/preread", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/preread/{kind}", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/preread/documents/{doc_id}/not-personal", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/nira", roles: [company_admin, sponsor, analyst]}
+  # M2-P02 requests, owner questionnaire, sensing, trace. The four /answer routes are guest `entry` routes: no sign-in, the handler checks the link token (api/requests.py)
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/remind", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/revoke", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/relink", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/meeting", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/reopen", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/answers", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/meeting-answers", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/sample", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/form", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/save", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/submit", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/sample", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/confirm", roles: [participant, owner, company_admin, sponsor, analyst]}
+  # M2-P03 process map
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/draw", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}/validate", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: DELETE, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/tracking", roles: [company_admin, sponsor, analyst]}
+  # M2-P04 data catalogue
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/refresh", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/{tab}/rows", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/{tab}/rows/{row_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/conflicts/{conflict_id}/settle", roles: [company_admin, sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/suggest-fields", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/catalogue/export", roles: [company_admin, sponsor, analyst]}
+  # M2-P05 review, sign-off, readiness, hand-off
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review", roles: [company_admin, sponsor, analyst, owner]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/my-parts", roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}", roles: [company_admin, sponsor, analyst, owner]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/accept", roles: [sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/owner", roles: [sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/signoff/settle", roles: [sponsor, company_admin]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/confirm", roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/countersign", roles: [sponsor, company_admin]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/versions", roles: [sponsor, company_admin]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/audit", roles: [company_admin, sponsor, analyst, owner]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/handoff", roles: [company_admin, sponsor, analyst, owner]}
+  # M2-E4 ready to build, left out, the signed baseline download
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/leave-out", roles: [sponsor, company_admin]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/bring-back", roles: [sponsor, company_admin]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/signoff/bundle", roles: [company_admin, sponsor, analyst]}
+  # M2-E2 business glossary
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/build", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/upload", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/entries/{kpi_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/entries/{kpi_id}/review", roles: [company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/review-unchanged", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/export", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/glossary/print", roles: [company_admin, sponsor, analyst]}
+  # M2-E3 governance view: who may see each measure and field, personal data, in one place
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/governance", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/governance/fields/{field_id}", roles: [company_admin, sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/governance/proposals/confirm", roles: [company_admin, sponsor, analyst]}
+  # M2-E1 technical definition per measure and the open questions (ambiguities)
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/technical", roles: [company_admin, sponsor, analyst, owner, approver]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/ambiguities", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical/use", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical/confirm", roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/measures/{kpi_id}/send-back", roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/my-technical", roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens/technical", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/lens/technical/redraft", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/answer", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/ask", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/accept", roles: [company_admin, sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/question", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m2_baseline/answer/technical/confirm", roles: [participant, owner, company_admin, sponsor, analyst]}
+  # IC-3c governed state (A-054): six fields per measure; who may confirm each is checked in the store, not by role alone
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/governed", roles: [company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/governed/{measure_id}/confirm", roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  # IC-B15 data sources and technical areas (spec 28): the baseline-side spelling of /api/intents/{id}/data-sources. Row and field checks are in the handlers
+  - {method: GET, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources", roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources", roles: [company_admin, sponsor, analyst, participant]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/draft", roles: [company_admin, sponsor]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/done", roles: [company_admin]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/areas", roles: [company_admin, sponsor, analyst, participant]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/areas/{area_id}", roles: [company_admin, sponsor, analyst, participant]}
+  - {method: PUT, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}", roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/confirm", roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/reassign", roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  - {method: POST, path: "/api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/problems", roles: [company_admin, sponsor, analyst, participant, owner]}
+tools: []
+pack_sections: [kpi_tree, industry_defaults, glossary]
+inputs: [charter]
+output: catalogue
+

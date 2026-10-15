@@ -1,0 +1,238 @@
+# Input ledger rows for spec 14: permissions matrix. Most of this spec is rules, not inputs; the rows below are the inputs and computed values it owns.
+- id: "14.access_layer"
+  spec: "14"
+  journey: admin
+  stage: shared
+  screen: "every Intent Centre route (role check, then per-intent check, then state check)"
+  input: "What each person may see and do in each intent"
+  person: system
+  mode: derived
+  agent: ""
+  source: "the person's company role, their part in the intent, the areas, the share and the intent state, computed on every call"
+  minutes_without: 120
+  minutes_with: 0
+  basis: "estimate: setting and reviewing access per project by hand"
+  claim: "Access to every intent is worked out from who is in it and the state it is in; nobody maintains permissions per project"
+- id: "14.refused_hint"
+  spec: "14"
+  journey: shared
+  stage: shared
+  screen: "refused panel (hint line: Ask Janet to add you)"
+  input: "Who to ask for access"
+  person: any
+  mode: derived
+  agent: North
+  source: "the organiser named in the record, never content"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: working out who runs something and asking for access"
+  claim: "A refused person is told who to ask, without learning anything about the content"
+- id: "14.closer_nudge"
+  spec: "14"
+  journey: shared
+  stage: prove
+  screen: "Pulse line to the named closer"
+  input: "Nudge to a closer who has not acted"
+  person: sponsor
+  mode: derived
+  agent: North
+  source: "the closing state and the named closer"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing a sign-off"
+  claim: "North tells the named closer that a sign-off is waiting"
+- id: "14.settings"
+  spec: "14"
+  journey: admin
+  stage: decide
+  screen: "/centre/intent/admin (company intent settings: titles private, affected may read default per type, time boxes)"
+  input: "Company switches for the Intent Centre"
+  person: company_admin
+  mode: manual
+  source: "the company admin"
+  minutes_without: 30
+  minutes_with: 3
+  basis: "estimate: a policy discussion versus three switches"
+  claim: "A company sets its own defaults with a few switches; the rest of the rules are fixed"
+- id: "14.share_token"
+  spec: "14"
+  journey: shared
+  stage: prove
+  screen: "share routes (one token per named person, expiry, revoke)"
+  input: "Share token for a named person"
+  person: organiser
+  mode: manual
+  source: "the organiser names the person and the expiry; the token is made by the system"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: arranging access for one reader"
+  claim: "Each named person gets their own token, revocable one at a time"
+- id: "14.super_admin_projection"
+  spec: "14"
+  journey: admin
+  stage: prove
+  screen: "/centre/control/intents (eight or nine named keys)"
+  input: "Existence of intents per company: id, type, state, areas, people count, dates, time box status"
+  person: super_admin
+  mode: automatic
+  source: "one projection function read through the kernel; no copy kept"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: asking each company for a status list"
+  claim: "The platform owner sees that intents exist and never what is in them"
+- id: "14.refusal_log"
+  spec: "14"
+  journey: admin
+  stage: prove
+  screen: "run log (intent_refused lines per code and week)"
+  input: "Refused per-intent calls per code and week"
+  person: company_admin
+  mode: automatic
+  source: "run log lines: who, intent id, route, reason code, no content"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: auditing access attempts"
+  claim: "Refused attempts are counted from the run log, never with content"
+- id: "14.refused_panel"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "refused panel (cause line)"
+  input: "Plain words for why access was refused"
+  person: participant
+  mode: automatic
+  source: "the refusal code"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: asking IT why access failed"
+  claim: "The refusal explains itself without naming content"
+- id: "14.per_intent_role"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "every intent page (layer 2)"
+  input: "Role in this intent, worked out in order"
+  person: participant
+  mode: derived
+  source: "the people on the intent, areas and company role"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: a permission check by hand"
+  claim: "Rights are worked out from the record; nobody assigns them per page"
+- id: "14.existence_view"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "intent list (existence only)"
+  input: "What an area member sees without content access"
+  person: participant
+  mode: automatic
+  source: "the viewer's tier"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: deciding what to disclose"
+  claim: "Title and outcome show; the thinking stays closed"
+- id: "14.top_bar"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "top bar and section links"
+  input: "Links shown per role"
+  person: participant
+  mode: automatic
+  source: "the role table"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: configuring menus per role"
+  claim: "The bar adapts to the role from one table"
+- id: "14.affected_switch"
+  spec: "14"
+  journey: admin
+  stage: think
+  screen: "start form (affected people may read)"
+  input: "Whether affected people may read the content"
+  person: organiser
+  mode: manual
+  source: "the organiser's decision"
+  minutes_without: 1
+  minutes_with: 0.3
+  basis: "estimate: one switch"
+  claim: "A person decides once at creation; default off"
+- id: "14.titles_private"
+  spec: "14"
+  journey: admin
+  stage: think
+  screen: "admin settings (titles private to the company)"
+  input: "Hide titles from the super admin view"
+  person: company admin
+  mode: manual
+  source: "the company admin's decision"
+  minutes_without: 3
+  minutes_with: 0.5
+  basis: "estimate: one switch"
+  claim: "One switch keeps titles private; default off"
+- id: "14.closer_by_type"
+  spec: "14"
+  journey: admin
+  stage: decide
+  screen: "closure route (per-type closer)"
+  input: "Who confirms closure for this type"
+  person: sponsor
+  mode: derived
+  source: "the type and the named people"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: agreeing who signs off"
+  claim: "The closer is the named sponsor, decider or owner by type"
+- id: "14.refusal_codes"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "error copy (read only, not your closer, closed)"
+  input: "Reason a write was refused"
+  person: participant
+  mode: automatic
+  source: "the intent state and role"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: asking why a button failed"
+  claim: "Each refusal gives its own plain reason"
+- id: "14.number_floor"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "counts and averages (fewer than five)"
+  input: "Floor on small-group figures"
+  person: participant
+  mode: automatic
+  source: "the record count"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: checking small groups for exposure"
+  claim: "Figures under five show a floor; ratings show from three"
+- id: "14.token_counts"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "share tokens live, expired, revoked"
+  input: "Counts of tokens by state"
+  person: company admin
+  mode: automatic
+  source: "the share rows"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: auditing access"
+  claim: "Token states are counted from the rows"
+- id: "14.module_gate"
+  spec: "14"
+  journey: admin
+  stage: notice
+  screen: "module gate on /api/intents"
+  input: "Whether the company owns the Intent module"
+  person: company admin
+  mode: automatic
+  source: "the company plan"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: plan check by hand"
+  claim: "A company without the module is refused before any role is read"

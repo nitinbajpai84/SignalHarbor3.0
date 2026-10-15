@@ -1,0 +1,6 @@
+# C3 Consumption conversation (Lumen). Every company role reads the brief and answers the short questions; the analyst or the
+# decision maker shapes the page (the handler refuses anyone else too).
+routes:
+  GET /api/v1/consume/brief: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/brief/{iid}/chat: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/consume/brief/{iid}/input: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

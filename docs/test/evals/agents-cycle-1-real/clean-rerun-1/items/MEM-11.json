@@ -1,0 +1,184 @@
+{
+  "id": "MEM-11",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "Shared memory - Span answers from what Lumen was told (context_for, MEM2), so the blue-lines preference is recalled.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "3 egress lines, 1 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 9050,
+  "cost": {
+    "calls": 2,
+    "tokens": 4172,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 3,
+  "egress_blocked": 1,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "I prefer blue lines"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference; gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like blue for chart lines; you like lines for charts. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-284aa2d9",
+        "remembered": [
+          "you like blue for chart lines",
+          "you like lines for charts"
+        ]
+      },
+      "ms": 1627,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What do you remember about how I like my charts?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I don't have a stored chart preference for you. My memory lookup came back empty. The notes in the conversation context say you prefer lines for charts and blue for chart lines, but I couldn't confirm those in the stored memory, so treat them as unverified.\n\nFrom the earlier talk on 2026-10-09 with Lumen, two dashboard tiles were discussed: cash by entity over time, set to monthly rather than daily, and holdings by status, set to display as bars. Whether you accepted those tiles was still open.",
+        "rules_only": false
+      },
+      "ms": 7396,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "blue"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-ab53263e",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "fact",
+            "text": "What do you remember about how I like my charts?",
+            "sure": "said",
+            "at": "2026-10-09T17:43:37+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          },
+          {
+            "id": "m-e7505dcd",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:43:30+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-0854136a",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "said",
+            "at": "2026-10-09T17:43:29+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 13,
+      "expect": null,
+      "cleanup": true
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-0854136a",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-0854136a"
+      },
+      "ms": 14,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 3962,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:34+0800"
+    },
+    {
+      "bytes": 3654,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:43:30+0800"
+    },
+    {
+      "bytes": 12380,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:43:29+0800"
+    }
+  ]
+}

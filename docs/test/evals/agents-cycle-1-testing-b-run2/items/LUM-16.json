@@ -1,0 +1,129 @@
+{
+  "id": "LUM-16",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "The why-this-figure view on K01 gives the table and refresh time the number came from.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "61 ms",
+      "value": 61
+    }
+  ],
+  "error": null,
+  "latency_ms": 61,
+  "cost": null,
+  "trace_id": "tr-lumen-c2bf28ad-6610ef39",
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/why"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/tiles/t-000001/why",
+      "request": null,
+      "status": 200,
+      "json": {
+        "answer": "Net worth by entity is up 3,367,000 from 1 Aug 2026 to 1 Sep 2026: 100,038,000 then 103,405,000. Evergreen Family Trust 62,097,000 to 63,950,000 (up 1,853,000); Evergreen Holdings 15,416,000 to 16,580,000 (up 1,164,000); Entity B 22,525,000 to 22,875,000 (up 350,000).",
+        "evidence": [
+          {
+            "period": "2026-08-01",
+            "value": "100,038,000"
+          },
+          {
+            "period": "2026-09-01",
+            "value": "103,405,000"
+          },
+          {
+            "split": "Evergreen Family Trust",
+            "change": "1,853,000"
+          },
+          {
+            "split": "Evergreen Holdings",
+            "change": "1,164,000"
+          },
+          {
+            "split": "Entity B",
+            "change": "350,000"
+          }
+        ],
+        "sources": {
+          "tables": [
+            "gold_investment_report_holdings_monthly"
+          ],
+          "last_refresh": "2026-10-09T22:36:06+00:00"
+        },
+        "caveats": [
+          "Worked out by fixed rules from the tile's own rows; no model is used for this answer.",
+          "The figures say what moved, not why; the cause is not in the data."
+        ],
+        "wording": "rules",
+        "next_action": "Open the tile's figures by month to see each step.",
+        "trace_id": "tr-lumen-c2bf28ad-6610ef39"
+      },
+      "ms": 61,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-6610ef39",
+      "status": 200,
+      "runs": [
+        {
+          "id": null,
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:20:11+00:00",
+          "elapsed_ms": 47,
+          "steps": 1,
+          "tool_calls": 0,
+          "cost_usd": null,
+          "trace_id": "tr-lumen-c2bf28ad-6610ef39",
+          "kind": "loop",
+          "worded_by": "rules"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-6610ef39",
+          "at": "2026-10-10T02:20:11+00:00",
+          "run_id": null,
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 47,
+          "steps": [
+            {
+              "kind": "rules",
+              "why": "why_tile"
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": null,
+        "tokens": 0
+      }
+    }
+  ]
+}

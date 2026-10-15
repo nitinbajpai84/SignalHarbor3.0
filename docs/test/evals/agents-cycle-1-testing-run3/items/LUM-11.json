@@ -1,0 +1,70 @@
+{
+  "id": "LUM-11",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A question is answered in words and no tile is proposed.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 491,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "holdings",
+        "table",
+        "gold_investment_report"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "What is the net worth tile based on?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Net worth USD is 103,405,000 in total (Entity B 22,875,000; Evergreen Family Trust 63,950,000; Evergreen Holdings 16,580,000). From the tile 'Net worth by entity' on the dashboard 'Monthly investment report in USD and SGD', last refreshed 2026-10-09.",
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 491,
+      "expect": {
+        "equals": {
+          "proposals": "[]"
+        }
+      },
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

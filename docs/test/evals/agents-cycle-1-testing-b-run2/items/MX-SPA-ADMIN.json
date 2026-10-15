@@ -1,0 +1,209 @@
+{
+  "id": "MX-SPA-ADMIN",
+  "agent": "span",
+  "role": "company_admin",
+  "desc": "A1 company admin asks Span which gold table holds cash by entity and what feeds it.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Span: context -> model -> tool -> model -> guard; tools describe_table"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "10277 ms",
+      "value": 10277
+    },
+    {
+      "name": "cost",
+      "passed": true,
+      "detail": "2 calls, 5073 tokens, $0.001716",
+      "value": 5073
+    }
+  ],
+  "error": null,
+  "latency_ms": 10277,
+  "cost": {
+    "calls": 2,
+    "tokens": 5073,
+    "usd": 0.001716,
+    "estimated": false
+  },
+  "trace_id": "tr-span-07e358e3-f2001fc5",
+  "forgotten": [
+    "company_admin: summary s-1bb61fa3"
+  ],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "company_admin",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity, and which bronze tables feed it?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The `gold_investment_report_cash_daily` table holds daily cash by entity. This table is fed by `instruments`, `legal_entities`, `portfolios`, and `position_snapshots`. To trace these back to the original bronze tables, I would need to know which project this specific table belongs to.",
+        "rules_only": false,
+        "trace_id": "tr-span-07e358e3-f2001fc5"
+      },
+      "ms": 10277,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 9754,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:27:56+0800",
+      "trace_id": "tr-span-07e358e3-f2001fc5"
+    },
+    {
+      "bytes": 9083,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:27:52+0800",
+      "trace_id": "tr-span-07e358e3-f2001fc5"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-07e358e3-f2001fc5",
+      "status": 200,
+      "runs": [
+        {
+          "id": "d9319260c9674350a459e3bae354db2e",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:28:01+00:00",
+          "elapsed_ms": 9781,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.001716,
+          "trace_id": "tr-span-07e358e3-f2001fc5",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-07e358e3-f2001fc5",
+          "at": "2026-10-10T02:28:01+00:00",
+          "run_id": "d9319260c9674350a459e3bae354db2e",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 9781,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "2"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3406,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2407,
+              "tokens_out": 23,
+              "cost_usd": 0.00078
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "describe_table",
+              "arg_keys": [
+                "table"
+              ],
+              "result_chars": 398,
+              "refused": false,
+              "reason": null,
+              "ms": 218
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 6156,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2578,
+              "tokens_out": 65,
+              "cost_usd": 0.000936
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.001716,
+        "tokens": 5073
+      }
+    }
+  ]
+}

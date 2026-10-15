@@ -1,0 +1,127 @@
+// Brainstorm session wording (spec 36) and the pre-thinking screen (spec 35, Screen D). Plain words, British spelling, no ids.
+const DAY: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" };
+
+/** "Thu 15 Oct" from "2026-10-15" or an ISO time written in the company zone (the date part is read as it is, no zone shift). */
+export function day(iso: string | null | undefined): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? "");
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("en-GB", DAY) : "";
+}
+export const weekday = (iso: string | null | undefined): string => day(iso).split(" ")[0] ?? "";
+/** "10:00" from "2026-10-15T10:00:00+00:00". */
+export const clock = (iso: string | null | undefined): string => (/T(\d{2}:\d{2})/.exec(iso ?? "") ?? [])[1] ?? "";
+export function until(iso: string | null | undefined, minutes: number | null | undefined): string {
+  const m = /T(\d{2}):(\d{2})/.exec(iso ?? "");
+  if (!m || !minutes) return clock(iso);
+  const t = Number(m[1]) * 60 + Number(m[2]) + minutes;
+  return `${clock(iso)} to ${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+}
+export const mmss = (s: number): string => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
+
+export const bsCopy = {
+  crumbLead: "Intent Centre / Brainstorm /",
+  lead: "What are we thinking about:",
+  phases: { diverge: "Diverge", group: "Group", converge: "Converge" } as Record<string, string>,
+  rules: { diverge: "Everyone adds. No judging.", group: "Move cards that sit wrong. Rename groups." , converge: "Choose the idea." } as Record<string, string>,
+  notOpened: "The session has not opened.",
+  live: "Live",
+  paused: "Paused",
+  people: (n: number, total: number) => `${n} / ${total} people`,
+  ideas: (n: number) => `${n} ${n === 1 ? "idea" : "ideas"}`,
+  clockNone: "Not available yet. The session has no end set.",
+  northSuggests: "North suggests",
+  editedBy: (who: string) => `Edited by ${who}`,
+  editPrompt: "Edit the prompt",
+  usePrompt: "Use it",
+  resetPrompt: "Reset to North's words",
+  emptyLane: "No ideas yet. The first idea you add appears here at once.",
+  onlyMine: "Show only mine",
+  ideaBox: "Add your idea",
+  ideaPlaceholder: "Add your idea in a sentence or two",
+  say: "Say why (optional)",
+  whyField: "Why it would work",
+  add: "Add",
+  adding: "Adding",
+  hideName: "Hide my name",
+  hideNameNote: "Nobody can see who wrote this, not the organiser, not an admin.",
+  pausedBox: "The session is paused.",
+  converging: "Adding is closed. This is the time to choose.",
+  closedBox: "The session is closed. Ideas are kept.",
+  anonymous: "Anonymous",
+  you: "You",
+  replies: (n: number) => (n === 0 ? "" : `${n} ${n === 1 ? "reply" : "replies"}`),
+  notGrouped: "Not grouped yet",
+  decidedIn: "Led to:",
+  joinAt: "Join at",
+  groupsHead: "Groups so far",
+  groupsEmpty: "North starts grouping when there are enough ideas.",
+  groupedByWords: "Grouped by shared words, check it.",
+  northHead: "North",
+  northRole: "the industry expert",
+  groupAgain: "Group again",
+  groupAgainSure: "Group again? People's moves are kept as moves, not undone.",
+  addIdeasFirst: "Add ideas first",
+  rename: "Rename",
+  save: "Save",
+  cancel: "Cancel",
+  moveTo: "Move to group",
+  newGroup: "A new group",
+  open: "Open",
+  close: "Close",
+  buildOn: "Build on this",
+  buildOnPlaceholder: "Add to this idea, do not judge it",
+  buildOnButton: "Add to the idea",
+  noReplies: "No one has built on this yet.",
+  edit: "Edit",
+  withdraw: "Withdraw",
+  sure: "Are you sure?",
+  yes: "Yes",
+  no: "No",
+  failed: "That did not work. Try again.",
+  retry: "Try again",
+  loading: "Loading the session",
+  projector: "Projector view",
+  exitProjector: "Back to the full view",
+  barLabel: "Session controls",
+  bar: { open: "Open the session", group: "Move to group", converge: "Move to converge", pause: "Pause", resume: "Resume", close: "Close the session", time: "Add time" },
+  closeSure: "Close the session now? Ideas are kept.",
+  addTimeLead: "Add minutes",
+  more: "More",
+  talk: "Talk to North",
+  closedLine: "The session is closed. The ideas, replies and groups are kept.",
+  chooseLater: "Not available yet. Choosing the idea waits for the converge screen.",
+  // before the session
+  thinkBefore: (when: string, statement: string) => `Think before ${when}: ${statement}`,
+  windowOpen: "Ideas open until the session starts. You can add as many as you like, and change them until then.",
+  windowNotYet: (when: string) => `Ideas open on ${when}. Come back then.`,
+  windowShut: "Ideas are closed. Come to the session.",
+  goodOutcome: (t: string) => `A good outcome: ${t}`,
+  sessionLine: (day_: string, time: string, ideas: string, close: string) => `Session ${day_}, ${time}. Ideas open from ${ideas}. We choose the idea in the session and close on ${close}.`,
+  ideaFieldPlaceholder: "One idea, in your own words",
+  addYours: "Add your idea",
+  kept: "Kept. Others see it when the session starts.",
+  yours: "Your ideas so far",
+  noneYet: "No ideas yet. One is enough.",
+  takeBack: "Take back",
+  othersPrivate: "Other people's ideas stay private until the session starts, so that nobody copies anybody.",
+  prethink: (authors: number, invited: number, ideas: number) => `${authors} of ${invited} invited have added ideas. ${ideas} ${ideas === 1 ? "idea" : "ideas"}.`,
+  prethinkNone: "No ideas added yet.",
+  // invitation card
+  invitedHead: (who: string) => `${who} has invited you to think about`,
+  invitedHeadNoName: "You are invited to think about",
+  accept: "Accept",
+  decline: "Decline",
+  declineWhy: "One line on why you cannot take part",
+  declineSend: "Send my answer",
+  declined: "You declined this invitation. Ask the organiser if you change your mind.",
+  // organiser invitations panel
+  invitations: "Invitations",
+  invitedLine: (n: number, a: number, d: number) => `${n} invited, ${a} accepted, ${d} declined`,
+  statusWord: { Invited: "Invited", Accepted: "Accepted", Declined: "Declined" } as Record<string, string>,
+  message: "Your invitation message",
+  copyMessage: "Copy message",
+  copySubject: "Copy subject",
+  copied: "Copied",
+  copyFailed: "Could not copy. Select the text instead.",
+  pulsePreview: (who: string, statement: string, when: string) => `${who} has invited you to think about ${statement}. Session ${when}.`,
+  accessNote: "Observers read along and do not add ideas.",
+};

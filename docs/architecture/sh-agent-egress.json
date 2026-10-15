@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: An Agent's Journey and the Way Out",
+    "subtitle": "Ideal state: one exit, four guards, and tools that run inside the company plane",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-sh-agent-egress-20261003-110000/sh-agent-egress.html"
+  },
+  "components": [
+    {"id": "user", "type": "external", "label": "Company user", "sublabel": "asks in a module", "pos": [40, 70], "size": [150, 64]},
+    {"id": "module", "type": "frontend", "label": "Module screen", "sublabel": "one of the six", "pos": [285, 70], "size": [150, 64]},
+    {"id": "agent", "type": "backend", "label": "Module agent", "sublabel": "plans, calls tools, drafts", "tag": "the brain", "pos": [530, 70], "size": [150, 64]},
+    {"id": "minimiser", "type": "security", "label": "Minimiser", "sublabel": "only what the question needs", "tag": "guard 2", "pos": [775, 70], "size": [150, 64]},
+    {"id": "pseudo", "type": "security", "label": "Pseudonymiser", "sublabel": "names swapped for tokens", "tag": "guard 3", "pos": [1020, 70], "size": [150, 64]},
+    {"id": "egress", "type": "security", "label": "Egress gateway", "sublabel": "allowlist, classifier, log", "tag": "guard 4, the only exit", "pos": [1265, 70], "size": [150, 64]},
+
+    {"id": "entitlement", "type": "database", "label": "Entitlements", "sublabel": "modules this company owns", "pos": [285, 250], "size": [150, 64]},
+    {"id": "registry", "type": "backend", "label": "Tool registry", "sublabel": "MCP tools allowed per module", "pos": [530, 250], "size": [150, 64]},
+    {"id": "internal_tools", "type": "backend", "label": "Internal tools", "sublabel": "read-only, aggregates only", "tag": "guard 1", "pos": [775, 250], "size": [150, 64]},
+    {"id": "vault", "type": "database", "label": "Name vault", "sublabel": "real name to token", "tag": "never leaves", "pos": [1020, 250], "size": [150, 64]},
+    {"id": "model", "type": "cloud", "label": "Model provider", "sublabel": "no retention, or private", "pos": [1265, 250], "size": [150, 64]},
+
+    {"id": "company_data", "type": "database", "label": "Company data", "sublabel": "warehouse, documents, memory", "pos": [775, 430], "size": [150, 64]},
+    {"id": "internet", "type": "external", "label": "Internet", "sublabel": "search, market feeds", "pos": [1265, 430], "size": [150, 64]}
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "Company data plane: tools run here, nothing is reachable from outside", "wraps": ["internal_tools", "vault", "company_data"], "pad": 18}
+  ],
+  "connections": [
+    {"id": "u1", "from": "user", "to": "module", "label": "uses", "variant": "emphasis"},
+    {"id": "u2", "from": "module", "to": "agent", "label": "ask, answer", "variant": "emphasis"},
+    {"id": "u3", "from": "agent", "to": "minimiser", "label": "draft prompt"},
+    {"id": "u4", "from": "minimiser", "to": "pseudo", "label": "minimum"},
+    {"id": "u5", "from": "pseudo", "to": "egress", "label": "tokens only", "variant": "security"},
+    {"id": "u6", "from": "egress", "to": "model", "label": "checked prompt", "variant": "emphasis"},
+    {"id": "u7", "from": "egress", "to": "internet", "label": "public query only", "variant": "dashed", "fromSide": "right", "toSide": "right", "via": [[1445, 102], [1445, 462]]},
+    {"id": "t0", "from": "entitlement", "to": "registry", "label": "per company"},
+    {"id": "t1", "from": "agent", "to": "registry", "label": "allowed tools"},
+    {"id": "t2", "from": "registry", "to": "internal_tools", "label": "read-only call"},
+    {"id": "t3", "from": "internal_tools", "to": "company_data", "label": "aggregates"},
+    {"id": "t4", "from": "internal_tools", "to": "minimiser", "label": "results"},
+    {"id": "t5", "from": "vault", "to": "pseudo", "label": "token map", "variant": "security"}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What an agent's brain is",
+      "items": [
+        "Its instructions, the context pack for its module, the tools it is allowed, and its memory. Nothing else",
+        "The context pack is assembled per question: industry pack, domain context, and the company's own context from inside its plane",
+        "One agent per module; it can only see tools and context for modules the company owns"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Three things can leave, each with a rule",
+      "items": [
+        "A prompt to the model provider: minimised, names as tokens, checked, logged",
+        "A query to the internet: written in public terms only, to an allowlisted destination",
+        "A call to an outside tool: treated exactly like an internet query and sent through the same exit",
+        "There is no other path: tools inside the plane have no network access of their own"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Four guards, in order",
+      "items": [
+        "1 Internal tools return counts, totals and field names, never rows; a group smaller than five is not shown",
+        "2 The minimiser keeps only the fields the question needs",
+        "3 The pseudonymiser swaps company, people, fund and counterparty names for tokens; the vault stays inside and the reply is mapped back inside",
+        "4 The egress gateway allows only listed destinations, blocks any payload holding a vault name or a raw record, and logs every call"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Asking the internet without telling it anything",
+      "items": [
+        "The agent never forwards the user's question. It writes a new query in public terms, such as a market, an asset class or a regulation",
+        "What comes back is marked as outside material: context for the answer, never an instruction and never a source of the company's own figures",
+        "Internet access is a switch per company and per module; off means the agent answers from the plane and the pack only"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "For the strictest client",
+      "items": [
+        "A private model running inside the client's own cloud, so no prompt leaves at all",
+        "Internet off, outside tools off, typing only",
+        "The same modules and agents; only the egress settings change"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Built today, not yet, and the honest limit",
+      "items": [
+        "Built: one model gateway, a read-only tool loop, the under-five rule, a classifier on remote writes, company isolation, numbers traced to facts",
+        "Not built: the pseudonymiser and vault, the public-query writer, the destination allowlist, the MCP tool registry, the per-company internet switch",
+        "Limit: unless the model is private, a prompt does go to a provider. Tokens and minimising reduce what it contains; a no-retention contract covers the rest"
+      ]
+    }
+  ]
+}

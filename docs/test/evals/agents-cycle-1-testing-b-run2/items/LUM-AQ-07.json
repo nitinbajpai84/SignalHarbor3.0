@@ -1,0 +1,228 @@
+{
+  "id": "LUM-AQ-07",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "LQ-6 (A15, A16) where a figure comes from - in words (holdings, administrator and trading exports), never a table-and-column dump.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10454,
+  "cost": {
+    "calls": 3,
+    "tokens": 14844,
+    "usd": 0.002752,
+    "estimated": false
+  },
+  "trace_id": "tr-lumen-c2bf28ad-ce40831f",
+  "forgotten": [],
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "administrator",
+        "trading",
+        "holdings",
+        "Span"
+      ]
+    ],
+    "forbidden": [
+      "gold_investment_report",
+      "with columns",
+      "benchmark_code"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Where does this figure come from?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The \"Holdings by status\" tile uses data from administrator and trading export systems, as well as manager emails. This raw data is loaded into the data warehouse as the raw exports, then processed by a pipeline built by Span. The processed data is stored in the month-end holdings figures and used by the \"Monthly investment report in USD and SGD\" dashboard. The head of data approved this data plan on October 9, 2026.",
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "model",
+        "remembered": [],
+        "trace_id": "tr-lumen-c2bf28ad-ce40831f"
+      },
+      "ms": 10454,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 19384,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:43+0800",
+      "trace_id": "tr-lumen-c2bf28ad-ce40831f"
+    },
+    {
+      "bytes": 19384,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:40+0800",
+      "trace_id": "tr-lumen-c2bf28ad-ce40831f"
+    },
+    {
+      "bytes": 17320,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:36+0800",
+      "trace_id": "tr-lumen-c2bf28ad-ce40831f"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-ce40831f",
+      "status": 200,
+      "runs": [
+        {
+          "id": "c2c348fe1952414fb19695d63cf5b578",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:20:45+00:00",
+          "elapsed_ms": 10219,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002752,
+          "trace_id": "tr-lumen-c2bf28ad-ce40831f",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-ce40831f",
+          "at": "2026-10-10T02:20:45+00:00",
+          "run_id": "c2c348fe1952414fb19695d63cf5b578",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 10219,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                },
+                {
+                  "kind": "graph",
+                  "id": "dashboard:dash-0ad2b1c7"
+                },
+                {
+                  "kind": "graph",
+                  "id": "tile:t-000003"
+                },
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3578,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4512,
+              "tokens_out": 31,
+              "cost_usd": 0.000464
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "explain_figure_source",
+              "arg_keys": [
+                "item_id",
+                "kind"
+              ],
+              "result_chars": 1769,
+              "refused": false,
+              "reason": null,
+              "ms": 15
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 6625,
+              "tool_calls": 0,
+              "tries": 2,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 10202,
+              "tokens_out": 99,
+              "cost_usd": 0.002288,
+              "attempts": [
+                {
+                  "tier": "fast",
+                  "model": "gemini-2.5-flash-lite",
+                  "step": "first",
+                  "ok": "empty",
+                  "tokens_in": 5101,
+                  "tokens_out": 0,
+                  "cost_usd": 0.00051,
+                  "ms": 2769
+                },
+                {
+                  "tier": "specialist",
+                  "model": "gemini-2.5-flash",
+                  "step": "retry_up",
+                  "ok": "ok",
+                  "tokens_in": 5101,
+                  "tokens_out": 99,
+                  "cost_usd": 0.001778,
+                  "ms": 3859
+                }
+              ]
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002752,
+        "tokens": 14844
+      }
+    }
+  ]
+}

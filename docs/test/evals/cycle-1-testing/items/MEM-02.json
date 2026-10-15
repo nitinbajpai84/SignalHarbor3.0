@@ -1,0 +1,86 @@
+{
+  "id": "MEM-02",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "A colour preference is used by the next tile (blue line colour in the spec).",
+  "status": "error",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 1: status 403, wanted 200; turn 2: missing 'blue'; turn 3: status 403, wanted 200; turn 3: missing '#2563eb'"
+    }
+  ],
+  "error": "nothing saved as 'mid'",
+  "latency_ms": 71,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "I prefer blue lines"
+      },
+      "status": 403,
+      "json": {
+        "error": "not_allowed",
+        "message": "You do not have access to this dashboard."
+      },
+      "ms": 33,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 6,
+      "expect": {
+        "contains": [
+          "blue"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 403,
+      "json": {
+        "error": "not_allowed",
+        "message": "You do not have access to this dashboard."
+      },
+      "ms": 33,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "#2563eb"
+        ]
+      },
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

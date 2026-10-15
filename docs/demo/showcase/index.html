@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Harbor: every figure, explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F1B2D; --navy2:#1A2B44; --teal:#177878; --aqua:#5FC2C2; --amber:#E0A34A;
+    --paper:#F6F4EF; --ink:#0F1B2D; --muted:#5B6678; --line:#D9DED8; --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#0b1321;overflow:hidden;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--ink)}
+  h1,h2,h3,.serif{font-family:"Fraunces",Georgia,serif;font-weight:600;letter-spacing:-.01em}
+
+  /* stage: fixed 1280x720 design, scaled to fit */
+  .stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+  .slide{position:absolute;inset:0;width:1280px;height:720px;background:var(--paper);padding:56px 72px 64px;display:none;flex-direction:column;overflow:hidden}
+  .slide.active{display:flex}
+  .slide.dark{background:var(--navy);color:var(--white)}
+  .kicker{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:600;margin-bottom:10px}
+  .dark .kicker{color:var(--aqua)}
+  h2{font-size:40px;line-height:1.12;margin-bottom:22px;max-width:1100px}
+  h3{font-size:22px;margin-bottom:8px}
+  p,li{font-size:20px;line-height:1.45}
+  ul{list-style:none}
+  li{padding-left:22px;position:relative;margin-bottom:9px}
+  li:before{content:"";position:absolute;left:0;top:.6em;width:9px;height:9px;border-radius:50%;background:var(--teal)}
+  .dark li:before{background:var(--aqua)}
+  .muted{color:var(--muted)}
+  .small{font-size:15px;line-height:1.4}
+  .foot{position:absolute;left:72px;right:72px;bottom:24px;display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .dark .foot{color:#9FB0C4}
+  .num{font-variant-numeric:tabular-nums}
+  .amber{color:#8A5B12}
+  .tag{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:4px;margin-right:6px;vertical-align:middle}
+  .tag.m{background:#D7EFEF;color:var(--teal)}
+  .tag.e{background:#F7E6C6;color:#7A4E0C}
+  .flag{background:#FBEFD9;border-left:5px solid var(--amber);padding:12px 16px;font-size:17px;line-height:1.4}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+  .dark .card{background:var(--navy2);border-color:#2A3D5C}
+  .row{display:flex;gap:24px}
+  .col{flex:1;min-width:0}
+  .shot{border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 6px 18px rgba(15,27,45,.12);object-fit:cover;object-position:top left;width:100%;height:400px;display:block}
+  .cap{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.35}
+
+  .tight li{font-size:17px;line-height:1.35;margin-bottom:6px}
+  .tight table{font-size:15px}
+  .tight th,.tight td{padding:6px 10px}
+  .tight h2{font-size:34px;margin-bottom:16px}
+
+  /* title and closing */
+  .title h1{font-size:76px;line-height:1.05;margin-top:auto;max-width:1000px}
+  .title h1 em{font-style:normal;color:var(--aqua)}
+  .title .sub{font-size:24px;color:#C9D4E2;margin-top:24px;max-width:900px;line-height:1.4}
+  .bar{width:120px;height:6px;background:var(--amber);border-radius:3px;margin-bottom:34px}
+
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:10px;margin:6px 0 18px}
+  .flow div{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 12px;font-size:16px;line-height:1.3}
+  .flow div b{display:block;font-family:"Fraunces",serif;font-size:19px;margin-bottom:4px;color:var(--teal)}
+  .flow div.hl{border-color:var(--amber);background:#FFF8EA}
+  .arr{align-self:center;color:var(--teal);font-size:22px;flex:0 0 auto}
+
+  /* grid of four */
+  .four{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .four .card h3{color:var(--teal)}
+  .four .card p{font-size:17px}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:17px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.35}
+  th{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  /* architecture */
+  .arch{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px}
+  .lay{display:grid;grid-template-columns:200px 1fr;gap:14px;align-items:stretch}
+  .lay .lab{font-family:"Fraunces",serif;font-size:19px;color:var(--teal);display:flex;align-items:center}
+  .lay .boxes{display:flex;gap:10px}
+  .box{flex:1;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:16px;line-height:1.3}
+  .box.hl{border-color:var(--amber);background:#FFF8EA}
+  .box.nv{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .box b{font-weight:600}
+
+  /* ui */
+  .ui{position:fixed;left:0;right:0;bottom:0;height:34px;display:flex;align-items:center;justify-content:center;gap:14px;color:#9FB0C4;font:13px "IBM Plex Sans",sans-serif;background:rgba(11,19,33,.82);z-index:10;opacity:.35;transition:opacity .2s}
+  .ui:hover{opacity:1}
+  .ui button{background:none;border:1px solid #3A4E6B;color:#D5DEEA;border-radius:4px;padding:2px 10px;cursor:pointer;font:inherit}
+  .ui .n{min-width:70px;text-align:center}
+
+  @page{size:1280px 720px;margin:0}
+  @media print{
+    html,body{overflow:visible;height:auto;background:#fff}
+    .ui{display:none !important}
+    .stage{position:static;transform:none !important;width:1280px;height:auto}
+    .slide{position:relative;display:flex !important;page-break-after:always;break-after:page;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .slide:last-child{page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+<!-- 1 Title -->
+<section class="slide dark title">
+  <div class="bar"></div>
+  <div class="kicker">Client showcase · Evergreen Office · 13 Oct 2026</div>
+  <h1>Signal Harbor <em>&mdash;</em> every figure, explained</h1>
+  <p class="sub">How a monthly number moves from the source file, through a design the head of data approves, to a dashboard, a case and a traceable answer for the family council.</p>
+  <div class="foot"><span>Evergreen Office is a synthetic family office. All names, files and figures are invented.</span><span class="sn"></span></div>
+</section>
+
+<!-- 2 Problem -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>When the council asks &ldquo;how did we do?&rdquo;, the answer is in six places.</h2>
+  <div class="row" style="gap:28px">
+    <div class="col">
+      <div class="four" style="grid-template-columns:1fr 1fr;gap:14px">
+        <div class="card"><h3>Manager statements</h3><p>PDFs, one per fund, arriving at different times.</p></div>
+        <div class="card"><h3>Administrator export</h3><p>Month-end positions and values, as a spreadsheet.</p></div>
+        <div class="card"><h3>Trading file</h3><p>Trades and cash, on its own daily cycle.</p></div>
+        <div class="card"><h3>Working spreadsheets</h3><p>Copied tabs, typed-in formulas, one person&rsquo;s version.</p></div>
+      </div>
+    </div>
+    <div class="col">
+      <ul>
+        <li><b>Late.</b> The figures arrive after the date the council needs them.</li>
+        <li><b>Revised.</b> A statement is amended after a report has been issued, and nobody is sure which version was used.</li>
+        <li><b>Untraceable.</b> A number cannot be walked back to its file, its row or the person who checked it.</li>
+      </ul>
+      <p class="flag" style="margin-top:22px">The question is simple. Answering it should take minutes, and every figure should be able to show where it came from.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 3 What it is -->
+<section class="slide">
+  <div class="kicker">What it is</div>
+  <h2>Four centres for the work, four agents that draft. People sign.</h2>
+  <div class="four">
+    <div class="card"><h3>Action</h3><p>Today&rsquo;s cases, reconciliations and what waits for a person.</p></div>
+    <div class="card"><h3>Build</h3><p>Intent, design pack, pipelines and the dashboard studio.</p></div>
+    <div class="card"><h3>Consume</h3><p>Today, financial health, markets, reports and what if, in USD or SGD.</p></div>
+    <div class="card"><h3>Map</h3><p>The office&rsquo;s ontology, data model with impact, process maps and glossary.</p></div>
+  </div>
+  <div class="four" style="margin-top:22px">
+    <div class="card" style="border-top:4px solid var(--amber)"><h3>North</h3><p>Listens and drafts the intent of work and the process map.</p></div>
+    <div class="card" style="border-top:4px solid var(--amber)"><h3>Span</h3><p>Architect designs the data. Builder connects, runs and checks it.</p></div>
+    <div class="card" style="border-top:4px solid var(--amber)"><h3>Lumen</h3><p>Proposes a starter dashboard and drafts the briefs.</p></div>
+    <div class="card" style="border-top:4px solid var(--amber)"><h3>Tally</h3><p>Explains a case and answers questions about Action items.</p></div>
+  </div>
+  <p class="flag" style="margin-top:26px">Agents draft and check. A named person approves each step that changes what the council sees.</p>
+  <div class="foot"><span>Four centres and four agents</span><span class="sn"></span></div>
+</section>
+
+<!-- 4 Intent -->
+<section class="slide">
+  <div class="kicker">How it works &middot; 1 of 5 &middot; Intent (North)</div>
+  <h2>The business owner says what is needed, in her own words.</h2>
+  <div class="row">
+    <div class="col" style="flex:0 0 430px">
+      <ul>
+        <li>North asks one question at a time and drafts the figures, readers, sources and the process map as the conversation goes.</li>
+        <li>The sponsor reads the signed intent and signs it.</li>
+        <li>A signed intent is read-only. Changes go in as a new version.</li>
+      </ul>
+      <p class="small muted" style="margin-top:18px"><span class="tag m">Measured</span>In our walkthrough: about ten minutes of conversation, ten messages from the business owner, one signature.</p>
+    </div>
+    <div class="col">
+      <img class="shot" src="img/intent-ready.png" alt="Intent ready to sign, drafted with North">
+      <p class="cap">Intent drafted with North, ready for the sponsor to sign. Evergreen Office, synthetic data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 5 Design pack -->
+<section class="slide">
+  <div class="kicker">How it works &middot; 2 of 5 &middot; Design pack (Span, architect)</div>
+  <h2>Span designs the target. The head of data approves it before anything is built.</h2>
+  <div class="row">
+    <div class="col" style="flex:0 0 430px">
+      <ul>
+        <li>Span reads the signed intent and asks only what it does not already know, each with a default to accept.</li>
+        <li>It profiles the sample files and drafts a versioned pack: bronze, silver and gold tables, the catalogue, and a mapping sheet from each source field to the figure.</li>
+        <li>The head of data approves. Approved means locked for the builder; any change is a new version.</li>
+      </ul>
+      <p class="small muted" style="margin-top:16px"><span class="tag m">Measured</span>Walkthrough pack: two gold tables, five silver tables, 19 mapping rows, four questions answered.</p>
+    </div>
+    <div class="col">
+      <img class="shot" src="img/span-design-pack.png" alt="Design pack drafted by Span">
+      <p class="cap">Design pack as drafted by the architect. Approval is a separate step, shown on the next slide.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 6 Build and prove -->
+<section class="slide">
+  <div class="kicker">How it works &middot; 3 of 5 &middot; Build and prove (Span, builder)</div>
+  <h2>The builder runs on a copy and checks every line against the report already issued.</h2>
+  <div class="flow">
+    <div><b>1 Connect</b>Sources as the pack says</div><span class="arr">&rarr;</span>
+    <div><b>2 Run on a copy</b>Automatic, no click</div><span class="arr">&rarr;</span>
+    <div class="hl"><b>3 Check</b>Against September&rsquo;s issued report</div><span class="arr">&rarr;</span>
+    <div><b>4 Correct</b>Four definition texts, version 2</div><span class="arr">&rarr;</span>
+    <div><b>5 Approve and rerun</b>Head of data approves; builder checks again</div><span class="arr">&rarr;</span>
+    <div><b>6 Go live</b>Monthly at 06:00, from the pack</div>
+  </div>
+  <div class="row" style="align-items:flex-start">
+    <div class="col" style="flex:0 0 430px">
+      <div class="card" style="border-left:6px solid var(--teal)">
+        <p class="small muted">Built figures against the issued September report</p>
+        <p style="font-size:21px;margin-top:8px;line-height:1.55"><b>Portfolio</b> <span class="num">4.17%</span> vs <span class="num">4.17%</span> issued<br><b>Office blend</b> <span class="num">2.71%</span> vs <span class="num">2.71%</span> issued<br><b>Difference</b> <span class="num">+1.46</span> vs <span class="num">1.46</span> points<br>All three legs matched too.</p>
+      </div>
+      <p class="small muted" style="margin-top:14px"><span class="tag m">Measured</span>The first run matched the report. Version 2 corrected four definition texts, and the rerun matched again before go-live.</p>
+    </div>
+    <div class="col">
+      <img class="shot" style="height:260px" src="img/builder-variance.png" alt="Benchmark check against the issued report">
+      <p class="cap">Benchmark check against the report as issued. Source: walkthrough, 11 Oct 2026, synthetic data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 7 Consume -->
+<section class="slide tight">
+  <div class="kicker">How it works &middot; 4 of 5 &middot; Consume</div>
+  <h2>Consume: the morning note, financial health and markets, each line with its source.</h2>
+  <div class="row">
+    <div class="col" style="flex:0 0 430px">
+      <ul>
+        <li><b>Today.</b> One sentence, four key numbers, and what moved against the benchmark.</li>
+        <li><b>Financial health.</b> Daily P&amp;L and NAV by portfolio, entity or fund, with how far each value can be trusted.</li>
+        <li><b>Markets.</b> Every outside line is tagged <b>FILE</b> or <b>LIVE API</b>, with its source and date.</li>
+        <li><b>Reports</b> hold the library and the dashboards a person approved. <b>What if</b> shows attribution.</li>
+        <li>One <b>USD / SGD</b> switch stays set as you move between pages.</li>
+      </ul>
+      <p class="flag" style="margin-top:14px;font-size:16px">A missing input shows as missing. If the daily price file has not arrived, the screen says so instead of showing a number.</p>
+    </div>
+    <div class="col">
+      <img class="shot" src="img/consume-markets-top.png" alt="Consume Markets screen with FILE and LIVE API tags">
+      <p class="cap">Consume, Markets: each outside line carries FILE or LIVE API, its source and its date. Synthetic data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 8 Action -->
+<section class="slide">
+  <div class="kicker">How it works &middot; 5 of 5 &middot; Action</div>
+  <h2>Action is one page: what needs a person today, and why.</h2>
+  <div class="row">
+    <div class="col" style="flex:0 0 430px">
+      <ul>
+        <li><b>Cases to handle</b>, with the evidence attached.</li>
+        <li><b>Reconciliations to clear.</b> When Tally reads a break as timing, one click closes it as timing.</li>
+        <li><b>Figures to confirm</b> read from files, and statements to chase.</li>
+        <li><b>Waiting for my approval</b>: packs, plans, dashboards, deliveries and Map items.</li>
+        <li><b>Done today</b> grows as the team clears the list.</li>
+      </ul>
+      <p class="small muted" style="margin-top:14px">Follow-ups to managers are drafted for a person to copy. Nothing is sent by the system.</p>
+    </div>
+    <div class="col">
+      <img class="shot" src="img/action-demo.png" alt="Action one page">
+      <p class="cap">Action, one page, as the head of data sees it. &ldquo;Where is this from?&rdquo; opens the trail on any figure. Synthetic data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 9 Map: ontology -->
+<section class="slide">
+  <div class="kicker">The Map &middot; Ontology</div>
+  <h2>One graph of the office: people, projects, data and how each number is made.</h2>
+  <div class="row" style="align-items:flex-start">
+    <div class="col">
+      <img class="shot" style="height:380px" src="img/map-ontology.png" alt="Ontology graph on the Map">
+      <p class="cap">Map, Ontology view. Synthetic data.</p>
+    </div>
+    <div class="col" style="flex:0 0 400px">
+      <ul>
+        <li><b>Whole company.</b> People, projects, sources, tables, dashboards and reports, cases and decisions on one graph.</li>
+        <li><b>Zoom and pan.</b> Plus, minus and Fit buttons; ctrl-wheel or pinch zooms at the pointer; drag to pan.</li>
+        <li><b>Narrow it.</b> Find box, one project at a time, state, and Show chips.</li>
+        <li><b>Click a node</b> for its owner, state and what it connects to.</li>
+        <li>Switch to <b>Process map</b>, <b>Data model</b> or <b>Business glossary</b>.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 10 Map: data model -->
+<section class="slide tight">
+  <div class="kicker">The Map &middot; Data model with impact</div>
+  <h2>See what each number is made of, and what a change to a table would touch.</h2>
+  <div class="flow" style="margin-bottom:14px">
+    <div><b>Bronze</b>As it arrived. Originals are kept.</div><span class="arr">&rarr;</span>
+    <div><b>Silver</b>The clean model, one version for the whole office.</div><span class="arr">&rarr;</span>
+    <div class="hl"><b>Gold</b>Ready-made figures, per project. What a dashboard or report reads.</div>
+  </div>
+  <div class="row" style="align-items:flex-start">
+    <div class="col">
+      <img class="shot" style="height:300px" src="img/map-data-model.png" alt="Data model view on the Map">
+      <p class="cap">Data model: every table by layer, with row counts. A picked table lights what it reads and what reads it.</p>
+    </div>
+    <div class="col" style="flex:0 0 400px">
+      <ul>
+        <li><b>Pick a table.</b> Columns with meaning, row count, owner and what it reads.</li>
+        <li><b>If this table changes.</b> The gold tables, dashboards, reports and projects that depend on it.</li>
+        <li><b>Loaded or whole model.</b> Tables that hold rows today, or the full model with the rest dimmed.</li>
+        <li><b>Model additions.</b> A new table needs a model change first. The head of data approves it, and it then joins the model, outlined as added for this office.</li>
+      </ul>
+      <p class="small muted" style="margin-top:12px">The data team sees every layer. Everyone else sees only the gold tables of projects they may see.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 11 Operations -->
+<section class="slide">
+  <div class="kicker">Operations &middot; data team</div>
+  <h2>Is everything arriving and running? Sources, runs and deliveries on one page.</h2>
+  <div class="row" style="align-items:flex-start">
+    <div class="col" style="flex:0 0 430px">
+      <ul>
+        <li><b>Sources.</b> Each source, who owns it, when it last arrived and whether it is late.</li>
+        <li><b>Live pipelines.</b> Each pipeline that has gone live, and whether its last run was healthy.</li>
+        <li><b>Runs.</b> Every run has a run ID, a TEST or PRODUCTION badge and its steps.</li>
+        <li><b>Deliveries.</b> The email and Slack previews and what is waiting to go out.</li>
+      </ul>
+      <p class="small muted" style="margin-top:14px">Anything wrong also lands in Action for the person who owns it. Operations sits under Build, next to Projects.</p>
+    </div>
+    <div class="col">
+      <img class="shot" style="height:380px" src="img/operations.png" alt="Operations page">
+      <p class="cap">Operations: tiles, then Runs with run IDs and TEST or PRODUCTION badges. Sources, live pipelines and deliveries are on the same page. Synthetic data.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 12 Live market data -->
+<section class="slide tight">
+  <div class="kicker">Live market data &middot; Connect an API</div>
+  <h2>Four public sources, Singapore included, on the same controls as the files.</h2>
+  <div class="row" style="align-items:flex-start">
+    <div class="col" style="flex:1.25">
+      <table>
+        <tr><th>Source</th><th>What it gives</th><th>Key</th></tr>
+        <tr><td><b>Frankfurter</b><br><span class="small muted">ECB reference rates</span></td><td>USD/SGD, EUR/USD, EUR/SGD, GBP/USD</td><td>None</td></tr>
+        <tr><td><b>FRED</b><br><span class="small muted">US Federal Reserve data</span></td><td>US 10- and 2-year Treasury yields, SGD per USD, Singapore CPI inflation</td><td>Free key</td></tr>
+        <tr><td><b>Finnhub</b></td><td>ETF quotes (ACWI, AGG, EWS) and market news</td><td>Free key, sent in a header</td></tr>
+        <tr><td><b>MAS</b><br><span class="small muted">Monetary Authority of Singapore</span></td><td>Singapore Government Securities auction yields, 2 to 30 years</td><td>None</td></tr>
+      </table>
+      <p class="small muted" style="margin-top:12px">SGS yields are the yield at the last auction of each tenor, not a daily curve. EWS stands in for the licensed Straits Times Index. SORA is not connected yet: it needs a MAS API key registration.</p>
+    </div>
+    <div class="col" style="flex:0 0 330px">
+      <div class="card">
+        <h3>How a connection works</h3>
+        <ul>
+          <li>Choose the source and series, then <b>Test</b>: you see real rows and the time it took.</li>
+          <li>Save, and the daily pull runs. <b>Fetch now</b> is on the Connectors page.</li>
+          <li>The host is fixed on an allowlist. Every call goes through the egress gateway.</li>
+          <li>Keys are read from the environment, never shown on screen or in the address.</li>
+          <li>Each series is tagged <b>LIVE API</b> with its source and date on Consume.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 13 Governance -->
+<section class="slide">
+  <div class="kicker">Governance &middot; Lineage and run IDs</div>
+  <h2>Every run has an ID, and every gold figure walks back to its file.</h2>
+  <div class="flow">
+    <div><b>Source file</b>From a named source and owner</div><span class="arr">&rarr;</span>
+    <div><b>File batch</b>One batch ID, with control totals</div><span class="arr">&rarr;</span>
+    <div><b>Record</b>Each row kept with its batch</div><span class="arr">&rarr;</span>
+    <div><b>Bronze</b>As received, with its load ID</div><span class="arr">&rarr;</span>
+    <div class="hl"><b>Gold</b>Each table carries the run ID that built it</div>
+  </div>
+  <div class="row" style="align-items:flex-start">
+    <div class="col">
+      <div class="card" style="border-left:6px solid var(--teal)">
+        <h3>A run ID on every run</h3>
+        <ul>
+          <li>An ID like <span class="num">run-20261012-131500-ab12</span>, with who started it and what triggered it: manual, schedule, file arrived or connector.</li>
+          <li><b>TEST</b> runs are on a copy. <b>PRODUCTION</b> runs are live.</li>
+          <li>Covers pipeline runs, file loads, connector pulls and reconciliations, each with its steps.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>What governance can answer</h3>
+        <ul>
+          <li>Which run built this figure, and when?</li>
+          <li>Which file and batch did it come from?</li>
+          <li>Who started the run, and was it a test?</li>
+        </ul>
+      </div>
+      <p class="flag" style="margin-top:14px;font-size:16px">The run ID is on gold tables today. The bronze load ID on the market-data loader, and the run ID on the silver tables, are still being joined up.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Runs are listed in Operations (data team)</span><span class="sn"></span></div>
+</section>
+
+<!-- 14 Roles -->
+<section class="slide tight">
+  <div class="kicker">People and access</div>
+  <h2>Each person sees what their role needs. The maker never approves their own work.</h2>
+  <table>
+    <tr><th style="width:22%">Role (in the demo)</th><th style="width:40%">What they see and do</th><th>What they sign or approve</th></tr>
+    <tr><td><b>Sponsor</b><br><span class="small muted">Daniel Foo, CIO</span></td><td>Action, Build (their own intent), Consume, Map (read only). Decides what the office needs.</td><td>Signs the intent. Approves the dashboard and each delivery channel.</td></tr>
+    <tr><td><b>Business owner</b><br><span class="small muted">Mei Chen, Operations</span></td><td>Talks to North, reads Consume and Map, acts on her Action items. Not the data team.</td><td>Sends work for approval. Never approves her own.</td></tr>
+    <tr><td><b>Approver</b><br><span class="small muted">Raj Patel, Finance</span></td><td>Action, Consume, Map. Clears cases and confirms figures.</td><td>Approves what is sent to him, never his own work.</td></tr>
+    <tr><td><b>Head of data</b><br><span class="small muted">Anita Rao</span></td><td>Owns the data design and the data approvals in Action.</td><td>Approves the design pack, the build plan, verified Map items and model changes.</td></tr>
+    <tr><td><b>Data engineer</b><br><span class="small muted">Leo Park</span></td><td>Operations, Pipelines and Connect an API. Confirms sources and takes the pipeline live.</td><td>Confirms the sources. Presses Go live.</td></tr>
+    <tr><td><b>Administrator</b><br><span class="small muted">Grace Ong</span></td><td>Access and every setting.</td><td>Gives people access to each centre.</td></tr>
+  </table>
+  <p class="small muted" style="margin-top:12px">Settings follow the role: three items for the sponsor and the business owner, seven for the head of data, eight for the data engineer, sixteen for the administrator. Operations and the full data model are for the data team; everyone else sees the gold tables of their own projects.</p>
+  <div class="foot"><span>Evergreen Office is synthetic. Access is set per office at rollout.</span><span class="sn"></span></div>
+</section>
+
+<!-- 11 Architecture -->
+<section class="slide">
+  <div class="kicker">Technical architecture</div>
+  <h2>One application, one exit, one data plane for each company.</h2>
+  <div class="arch">
+    <div class="lay"><div class="lab">People</div><div class="boxes"><div class="box">Sponsor</div><div class="box">Analyst</div><div class="box">Approver</div><div class="box">Head of data</div></div></div>
+    <div class="lay"><div class="lab">Browser</div><div class="boxes"><div class="box"><b>Action</b></div><div class="box"><b>Build</b></div><div class="box"><b>Consume</b></div><div class="box"><b>Map</b></div><div class="box">Settings</div></div></div>
+    <div class="lay"><div class="lab">API</div><div class="boxes"><div class="box" style="flex:2">One permission table. Any route not in it is refused by default.</div><div class="box" style="flex:1">Company and module checks per request</div></div></div>
+    <div class="lay"><div class="lab">Four agents</div><div class="boxes"><div class="box">North</div><div class="box">Span</div><div class="box">Lumen</div><div class="box">Tally</div><div class="box hl" style="flex:1.6">One shared read-only loop. A guard: each figure must trace to a recorded fact.</div></div></div>
+    <div class="lay"><div class="lab">One exit</div><div class="boxes"><div class="box hl" style="flex:2"><b>Egress gateway</b>: allowlist, names masked, no raw rows leave, every call logged, outage breaker</div><div class="box">Model services and the four market sources, through the gateway only</div></div></div>
+    <div class="lay"><div class="lab">Company data</div><div class="boxes"><div class="box nv">Landing (originals)</div><div class="box nv">Bronze</div><div class="box nv">Silver</div><div class="box nv">Gold per project</div><div class="box">Checks, cases, documents, logs</div></div></div>
+  </div>
+  <p class="small muted" style="margin-top:14px">Deployment: one service, one persistent volume per company, a health check. Demo platform today; the office&rsquo;s own cloud is a rollout option.</p>
+  <div class="foot"><span>Diagrams in the technical pack: four centres, data layers, deployment</span><span class="sn"></span></div>
+</section>
+
+<!-- 12 Security -->
+<section class="slide">
+  <div class="kicker">Security and data governance</div>
+  <h2>The office&rsquo;s data stays in its own space. Every figure traces to a file and a person.</h2>
+  <div class="row" style="gap:40px">
+    <div class="col">
+      <ul>
+        <li><b>Data stays in the office&rsquo;s space.</b> Each company has its own data plane and volume.</li>
+        <li><b>One way out.</b> The egress gateway is the only route to any outside service.</li>
+        <li><b>Names are masked</b> before text leaves the office. Raw rows never leave.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <ul>
+        <li><b>Every figure traces</b> to its file, row and person through &ldquo;Where is this from?&rdquo;.</li>
+        <li><b>Approvals by a different person.</b> Maker and checker differ. Approved is locked.</li>
+        <li><b>Text in files is data, never instructions.</b> Agents cannot approve or send.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="flag" style="margin-top:26px"><b>Run tracking:</b> every run, test or production, has a run ID, its person, its trigger and its steps. Slide 13 shows the chain from file to gold figure.</div>
+  <p class="small muted" style="margin-top:14px">Demo data is synthetic. Production controls (keys, roles, retention) are set per office during rollout.</p>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 13 Efficiency -->
+<section class="slide">
+  <div class="kicker">Operating efficiency</div>
+  <h2>One monthly report: measured in our walkthrough, against a typical manual month.</h2>
+  <table>
+    <tr><th style="width:26%">What</th><th style="width:37%">Measured in our walkthrough</th><th>Typical manual month-end</th></tr>
+    <tr><td>Time to a delivered report</td><td><span class="tag m">Measured</span>About 45 minutes, first words to delivery live, of which about 10 minutes was the conversation.</td><td><span class="tag e">Estimated</span>Typically two working days of spreadsheet work, to be validated with your team.</td></tr>
+    <tr><td>People involved</td><td><span class="tag m">Measured</span>Four people, each acting at their own points. Agents ran and checked between them.</td><td><span class="tag e">Estimated</span>An analyst and a reviewer, plus time chasing statements. To be validated.</td></tr>
+    <tr><td>Model cost</td><td><span class="tag m">Measured</span>About USD 0.01 for the whole run (test mode, 26 model calls).</td><td><span class="tag e">Estimated</span>No model cost; the cost is staff time.</td></tr>
+  </table>
+  <p class="flag" style="margin-top:20px">Not included in the 45 minutes: waiting for managers to send statements, and any real corrections found later. The manual figures are typical, not measured in your office.</p>
+  <div class="foot"><span>Measured = from the walkthrough of 11 Oct 2026 (synthetic data). Estimated = to validate.</span><span class="sn"></span></div>
+</section>
+
+<!-- 14 Rollout -->
+<section class="slide">
+  <div class="kicker">Rollout plan</div>
+  <h2>Start with one use case in two to four weeks, then add the next.</h2>
+  <div class="four" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card"><h3>1 &middot; Choose</h3><p>One use case with an owner. Proposed: the monthly portfolio against its benchmark.</p></div>
+    <div class="card"><h3>2 &middot; Prove</h3><p>Build on synthetic or pilot files. Check every line against a report already issued.</p></div>
+    <div class="card"><h3>3 &middot; Run alongside</h3><p>One real month-end in parallel with the current process. Head of data signs off.</p></div>
+    <div class="card"><h3>4 &middot; Extend</h3><p>Add the next use case on the same design and approvals, one at a time.</p></div>
+  </div>
+  <div class="row" style="margin-top:26px">
+    <div class="col"><ul><li><b>Pilot data first.</b> Synthetic or pilot files until the pack is approved.</li><li><b>Hosting.</b> The demo platform today; your own cloud when the pilot ends.</li></ul></div>
+    <div class="col"><ul><li><b>Success is measured.</b> The pilot report must tie to the issued figures line by line.</li><li><b>Timing.</b> Two to four weeks to the first parallel run, depending on file access.</li></ul></div>
+  </div>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 15 Asks -->
+<section class="slide">
+  <div class="kicker">What we need from you</div>
+  <h2>Six decisions to start the pilot.</h2>
+  <div class="row" style="gap:36px">
+    <div class="col">
+      <ul>
+        <li><b>One use case and one owner</b> for the pilot.</li>
+        <li><b>Sample files</b> for each source, or confirmation of the list in the intent.</li>
+        <li><b>A head of data</b> who approves the design pack and the plan.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <ul>
+        <li><b>An access list:</b> who signs, who reads, who approves.</li>
+        <li><b>Hosting choice:</b> the demo platform for the pilot, or your cloud.</li>
+        <li><b>The success line:</b> the pilot report ties to the issued figures.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="flag" style="margin-top:28px">Next step: a working session with the owner, the head of data and the business reader, within the week.</p>
+  <div class="foot"><span>Signal Harbor</span><span class="sn"></span></div>
+</section>
+
+<!-- 16 Thank you -->
+<section class="slide dark title">
+  <div class="bar"></div>
+  <div class="kicker">Thank you</div>
+  <h1>Questions and discussion</h1>
+  <p class="sub">Every figure in this session came from synthetic Evergreen Office data. The same trail works on your data once the pilot starts.</p>
+  <div class="foot"><span>Signal Harbor &middot; Evergreen Office is synthetic</span><span class="sn"></span></div>
+</section>
+
+</div>
+
+<div class="ui">
+  <button id="prev" type="button" aria-label="Previous slide">&larr;</button>
+  <span class="n" id="num"></span>
+  <button id="next" type="button" aria-label="Next slide">&rarr;</button>
+  <span>Arrow keys or click. P to print.</span>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var stage = document.getElementById('stage');
+  var num = document.getElementById('num');
+  var total = slides.length;
+  var cur = 0;
+
+  slides.forEach(function(s, i){
+    var sn = s.querySelector('.sn');
+    if (sn) sn.textContent = (i + 1) + ' / ' + total;
+  });
+
+  function fit(){
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+
+  function show(i){
+    if (i < 0) i = 0;
+    if (i > total - 1) i = total - 1;
+    cur = i;
+    slides.forEach(function(s, k){ s.classList.toggle('active', k === i); });
+    num.textContent = (i + 1) + ' / ' + total;
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+  }
+
+  function go(d){ show(cur + d); }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(-1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+    else if (e.key === 'p' || e.key === 'P') window.print();
+  });
+
+  document.addEventListener('click', function(e){
+    if (e.target.closest('a, button, input, select, textarea')) return;
+    if (e.target.closest('.ui')) return;
+    var x = e.clientX / window.innerWidth;
+    go(x < 0.3 ? -1 : 1);
+  });
+
+  document.getElementById('prev').addEventListener('click', function(e){ e.stopPropagation(); go(-1); });
+  document.getElementById('next').addEventListener('click', function(e){ e.stopPropagation(); go(1); });
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('beforeprint', function(){ stage.style.transform = 'none'; });
+  window.addEventListener('afterprint', fit);
+
+  var start = parseInt((location.hash || '#1').slice(1), 10);
+  fit();
+  show(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+{
+  "id": "LUM-04",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Asked for net worth by entity, the proposed tile's rows equal the universe for September 2026.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 22875000, 63950000, 16580000"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "410 ms",
+      "value": 410
+    },
+    {
+      "name": "cost",
+      "passed": null,
+      "detail": "no cost rows (program-only route, or log not readable)"
+    }
+  ],
+  "error": null,
+  "latency_ms": 410,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "22875000",
+      "63950000",
+      "16580000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by entity by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth USD by entity per month. It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-95f9a5",
+            "title": "Net worth USD by entity per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", \"entity\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "From gold_investment_report_holdings_monthly, worded by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": "entity",
+              "kind": "line",
+              "period": "month",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-659d6d62",
+        "remembered": []
+      },
+      "ms": 271,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 12,
+  "egress": []
+}

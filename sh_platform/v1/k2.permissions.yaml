@@ -1,0 +1,13 @@
+# K2 The live company map: every company role reads concepts, may suggest a change and answer what is addressed to them; the handlers decide
+# who may settle a proposal (owners of the definitions, company admin), set a KPI's choice (the project's team) or answer a suggestion (its addressee).
+routes:
+  GET /api/v1/map/concepts: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/concepts/{concept_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/proposals: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/proposals/{pid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/collision: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/choice: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/suggestions: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/suggestions: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/suggestions/{cid}/accept: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/suggestions/{cid}/decline: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

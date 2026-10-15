@@ -1,0 +1,7 @@
+# F1 Data engineer conversation (Flow). Answering and flagging are the data engineer's acts (analyst, company_admin); the decision maker
+# (sponsor) may read. The handler checks the seat again.
+routes:
+  GET /api/v1/build/{iid}/engineer: {roles: [company_admin, analyst, sponsor]}
+  POST /api/v1/build/{iid}/engineer: {roles: [company_admin, analyst]}
+  POST /api/v1/build/{iid}/engineer/flag: {roles: [company_admin, analyst]}
+  GET /api/v1/build/{iid}/engineer/flagged.md: {roles: [company_admin, analyst, sponsor]}

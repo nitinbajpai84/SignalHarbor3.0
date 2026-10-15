@@ -1,0 +1,7 @@
+# B3 Mapping sheet. The handler also refuses a draft or an edit by anyone but the architect (analyst, company_admin) and a switched-off
+# Build centre.
+routes:
+  GET /api/v1/build/{iid}/mapping: {roles: [company_admin, analyst, sponsor]}
+  POST /api/v1/build/{iid}/mapping: {roles: [company_admin, analyst]}
+  PUT /api/v1/build/{iid}/mapping/rows/{n}: {roles: [company_admin, analyst]}
+  GET /api/v1/build/{iid}/mapping.xlsx: {roles: [company_admin, analyst, sponsor]}

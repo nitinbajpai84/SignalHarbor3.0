@@ -1,0 +1,80 @@
+# Template family_office@1 column synonyms. Seeded ONLY from spellings actually present in the
+# synthetic pack: the workbook's own column names (data_dictionary sheet) and the field names
+# Signal_Harbor_Intent_Test_Pack/Expected_Document_Extraction.json uses for the same thing in a
+# document. Where only the canonical spelling is known the list is that one spelling; none is
+# guessed.
+template: family_office@1
+status: proposed
+feeds:
+  obligations:
+    amount_native:
+      spellings:
+        - spelling: amount_native
+          source: "Family_Office_Test_Data.xlsx data_dictionary (obligations.amount_native)"
+        - spelling: amount
+          source: "Expected_Document_Extraction.json S04/S05 expected_fields.amount"
+      regex: "^(?i:amount_native|amount)$"
+    due_date:
+      spellings:
+        - spelling: due_date
+          source: "Family_Office_Test_Data.xlsx data_dictionary (obligations.due_date); Expected_Document_Extraction.json S04/S05"
+      regex: "^(?i:due_date)$"
+    currency:
+      spellings:
+        - spelling: currency
+          source: "Family_Office_Test_Data.xlsx data_dictionary (obligations.currency); Expected_Document_Extraction.json S04/S05"
+      regex: "^(?i:currency)$"
+  commitment_events:
+    unfunded_delta_native:
+      spellings:
+        - spelling: unfunded_delta_native
+          source: "Family_Office_Test_Data.xlsx data_dictionary (commitment_events.unfunded_delta_native)"
+        - spelling: unfunded_delta
+          source: "Expected_Document_Extraction.json S05/S09 expected_fields.unfunded_delta"
+      regex: "^(?i:unfunded_delta_native|unfunded_delta)$"
+  positions:
+    value_native:
+      spellings:
+        - spelling: value_native
+          source: "Family_Office_Test_Data.xlsx data_dictionary (positions.value_native)"
+        - spelling: nav
+          source: "Expected_Document_Extraction.json S03 expected_fields.nav"
+      regex: "^(?i:value_native|nav)$"
+    valuation_date:
+      spellings:
+        - spelling: valuation_date
+          source: "Family_Office_Test_Data.xlsx data_dictionary (positions.valuation_date); Expected_Document_Extraction.json S03"
+      regex: "^(?i:valuation_date)$"
+  policy_rules:
+    threshold:
+      spellings:
+        - spelling: threshold
+          source: "Family_Office_Test_Data.xlsx data_dictionary (policy_rules.threshold)"
+        - spelling: reserve_sgd
+          source: "Expected_Document_Extraction.json S01 expected_fields.reserve_sgd (the minimum_reserve rule)"
+      regex: "^(?i:threshold|reserve_sgd)$"
+  # Illustrative, synthetic: the column spellings of the module 3 demo files (demo_module3/). Added 2026-10-04 (M3-INT); the key is the name a rule hint
+  # in kpi_tree.yaml uses, the spelling is how the demo office writes it.
+  demo_module3:
+    manager: {spellings: [{spelling: "Fund / Manager", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:fund / manager)$"}
+    asset_class: {spellings: [{spelling: "Asset Cls", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:asset cls)$"}
+    opening_value: {spellings: [{spelling: "Opening Value (SGD)", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:opening value \\(sgd\\))$"}
+    closing_value: {spellings: [{spelling: "Closing Value (SGD)", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:closing value \\(sgd\\))$"}
+    net_flows: {spellings: [{spelling: "Net Flows", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:net flows)$"}
+    fees: {spellings: [{spelling: "Fees Charged", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:fees charged)$"}
+    period_return: {spellings: [{spelling: "Period Return %", source: "demo_module3 performance_workbook.xlsx"}], regex: "^(?i:period return %)$"}
+    val_date: {spellings: [{spelling: "Val Date", source: "demo_module3 custody_daily_positions.csv"}], regex: "^(?i:val date)$"}
+    account: {spellings: [{spelling: "Acct", source: "demo_module3 custody_daily_positions.csv"}], regex: "^(?i:acct)$"}
+    mkt_value: {spellings: [{spelling: "Mkt Value", source: "demo_module3 custody_daily_positions.csv"}], regex: "^(?i:mkt value)$"}
+    notice_ref: {spellings: [{spelling: "notice_ref", source: "demo_module3 capital_calls_export.json"}], regex: "^(?i:notice_ref)$"}
+    amount: {spellings: [{spelling: "amt", source: "demo_module3 capital_calls_export.json"}], regex: "^(?i:amt)$"}
+    date: {spellings: [{spelling: "Date", source: "demo_module3 index_levels.csv"}], regex: "^(?i:date)$"}
+    level: {spellings: [{spelling: "Level", source: "demo_module3 index_levels.csv"}], regex: "^(?i:level)$"}
+    issuer: {spellings: [{spelling: "Issuer", source: "demo_module3 exposure_workbook.csv"}], regex: "^(?i:issuer)$"}
+    exposure_value: {spellings: [{spelling: "Exposure Value (SGD)", source: "demo_module3 exposure_workbook.csv"}], regex: "^(?i:exposure value \\(sgd\\))$"}
+    # Added with LI-M3 (illustrative, synthetic): the fund administrator's statement, the manager list and the business glossary of the low-input demo.
+    unfunded_commitment: {spellings: [{spelling: "Unfunded Commitment (USD)", source: "demo administrator statement"}], regex: "^(?i:unfunded commitment \\(usd\\))$"}
+    fund: {spellings: [{spelling: "Fund", source: "demo manager list"}], regex: "^(?i:fund)$"}
+    benchmark_assigned: {spellings: [{spelling: "Benchmark Assigned", source: "demo manager list"}], regex: "^(?i:benchmark assigned)$"}
+    term: {spellings: [{spelling: "Term", source: "demo business glossary"}], regex: "^(?i:term)$"}
+    owner: {spellings: [{spelling: "Owner", source: "demo business glossary"}], regex: "^(?i:owner)$"}

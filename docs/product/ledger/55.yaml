@@ -1,0 +1,168 @@
+- id: 55.map.update
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: graph/updates.json (after a signed charter)
+  input: A map update after each signature or scan
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the signed charter, gap report, blueprint, release or scan run
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: redrawing an architecture or data-lineage diagram by hand'
+  claim: The company map learns where each data point lives every time a record is signed
+- id: 55.map.line
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: Pulse 'What changed in the map'
+  input: One summary line per viewer
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: the update row, as this viewer sees it
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: a change-log email versus a line'
+  claim: Nira writes what changed for each person, limited to what they may see
+- id: 55.map.where
+  spec: '55'
+  journey: shared
+  stage: shared
+  screen: /centre/intent/map/<node> ('Where it lives')
+  input: Held in, lands at, written down in, feeds, produced by, owners
+  person: participant
+  mode: automatic
+  agent: null
+  source: edges on the company map
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: asking around to find where a field lives'
+  claim: Any permitted person can see where a data point lives, what it feeds and who owns it
+- id: 55.map.lineage
+  spec: '55'
+  journey: shared
+  stage: shared
+  screen: /centre/intent/graph?view=lineage
+  input: The line from process to field to measure
+  person: approver
+  mode: automatic
+  agent: null
+  source: the same map, walked upstream and downstream
+  minutes_without: 120
+  minutes_with: 0
+  basis: 'estimate: a manual lineage trace across systems'
+  claim: Lineage is one click on the map
+- id: 55.map.systems
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: /centre/build/gap-analysis (Systems to connect)
+  input: The list of systems to connect
+  person: analyst
+  mode: derived
+  agent: North
+  source: the charter's measures walked along the map
+  minutes_without: 60
+  minutes_with: 2
+  basis: 'estimate: a scoping workshop with the source owners'
+  claim: North lists the systems a charter's measures need; the analyst taps Use this list
+- id: 55.map.claims
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: data sources map and catalogue
+  input: Said available, said missing
+  person: source owner
+  mode: confirm
+  agent: Lens
+  source: the data sources map and catalogue, confirmed by people
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: a requirements questionnaire versus confirming drafts'
+  claim: What people said is available is recorded once and later checked
+- id: 55.map.scan
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: gap analysis, 'Run the scan'
+  input: Run the scan
+  person: analyst
+  mode: manual
+  agent: null
+  source: the analyst's decision to start
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking an engineer to check versus one tap'
+  claim: One tap checks every claim against the files received
+- id: 55.map.verify
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: intents/m3_connect/.../verify.json
+  input: Available, missing or found elsewhere per claim
+  person: analyst
+  mode: derived
+  agent: null
+  source: profiled column names and types against the claims; no row values
+  minutes_without: 240
+  minutes_with: 0
+  basis: 'estimate: a data engineer checking files against the claims by hand'
+  claim: The scan decides for each claim whether it holds, from column names and types only
+- id: 55.map.confirm
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: node page, 'Confirm it is the same'
+  input: Confirm or reject a found-elsewhere field
+  person: source owner
+  mode: manual
+  agent: null
+  source: the named source owner; a rejection needs a reason
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: an email to ask if it is the same field versus a tap'
+  claim: Only the source owner confirms or rejects; North never does
+- id: 55.map.decisionline
+  spec: '55'
+  journey: shared
+  stage: build
+  screen: Pulse decision line to the source owner
+  input: A line for each found-elsewhere field
+  person: source owner
+  mode: automatic
+  agent: Nira
+  source: the verify rows
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: finding which fields need an answer versus a line'
+  claim: Each owner is asked only about fields they own
+- id: 55.map.counters
+  spec: '55'
+  journey: shared
+  stage: shared
+  screen: map counters
+  input: Things and links, checked by the scan, fields with no owner
+  person: admin
+  mode: automatic
+  agent: null
+  source: company.json and verify.json
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: auditing a data inventory in a spreadsheet'
+  claim: Coverage and gaps in the map are counted from records
+- id: 55.map.guard
+  spec: '55'
+  journey: shared
+  stage: shared
+  screen: viewer rule on the map
+  input: What a viewer may see on the map
+  person: participant
+  mode: automatic
+  agent: null
+  source: the viewer rule over every node and edge
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: reviewing diagrams for sensitive content'
+  claim: Restricted and sealed material never shows its label, owner, system or file; small counts read 'Fewer than five'

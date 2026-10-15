@@ -1,0 +1,280 @@
+{
+  "id": "MX-LUM-APPROVER",
+  "agent": "lumen",
+  "role": "approver",
+  "desc": "A1 approver asks Lumen for net worth by entity at the end of September.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "loop_trace",
+      "passed": true,
+      "detail": "Lumen: context -> model -> tool -> model -> tool -> model -> guard; tools list_gold_tables, query_figure"
+    },
+    {
+      "name": "trace_complete",
+      "passed": true,
+      "detail": "1 loop run(s), tiers manager, specialist"
+    },
+    {
+      "name": "groundedness",
+      "passed": false,
+      "detail": "not from the program: 16,580,000, 22,875,000, 63,950,000"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "4 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "26807 ms",
+      "value": 26807
+    },
+    {
+      "name": "cost",
+      "passed": null,
+      "detail": "no cost rows (program-only route, or log not readable)"
+    }
+  ],
+  "error": null,
+  "latency_ms": 26807,
+  "cost": null,
+  "trace_id": "tr-lumen-413e179b-e2136ac7",
+  "forgotten": [
+    "approver: summary s-448cdc3c"
+  ],
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "net worth",
+        "entity",
+        "entities"
+      ]
+    ],
+    "forbidden": [
+      "Traceback"
+    ]
+  },
+  "turns": [
+    {
+      "role": "approver",
+      "method": "POST",
+      "path": "/api/v1/consume/chat",
+      "request": {
+        "text": "What was the net worth of each entity at the end of September 2026?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Net worth on 1 Sep 2026, from the rows: Entity B 22,875,000; Evergreen Family Trust 63,950,000; Evergreen Holdings 16,580,000. The net worth figures you asked for are as of September 1, 2026, not the end of September. These figures do not explain why the net worth of some entities moved up or down. To understand the causes, I would need to analyze the changes over a period.",
+        "rules_only": false,
+        "trace_id": "tr-lumen-413e179b-e2136ac7"
+      },
+      "ms": 26807,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12328,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:28:53+0800",
+      "trace_id": "tr-lumen-413e179b-e2136ac7"
+    },
+    {
+      "bytes": 12328,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:28:44+0800",
+      "trace_id": "tr-lumen-413e179b-e2136ac7"
+    },
+    {
+      "bytes": 11413,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:28:40+0800",
+      "trace_id": "tr-lumen-413e179b-e2136ac7"
+    },
+    {
+      "bytes": 10371,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:28:36+0800",
+      "trace_id": "tr-lumen-413e179b-e2136ac7"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-413e179b-e2136ac7",
+      "status": 200,
+      "runs": [
+        {
+          "id": "522dd15f0a0e4483b4a00baea4c9ca37",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:29:01+00:00",
+          "elapsed_ms": 25875,
+          "steps": 7,
+          "tool_calls": 2,
+          "cost_usd": 0.004675,
+          "trace_id": "tr-lumen-413e179b-e2136ac7",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-413e179b-e2136ac7",
+          "at": "2026-10-10T02:29:01+00:00",
+          "run_id": "522dd15f0a0e4483b4a00baea4c9ca37",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 25875,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "2"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3718,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3026,
+              "tokens_out": 26,
+              "cost_usd": 0.000973
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "list_gold_tables",
+              "arg_keys": [
+                "project"
+              ],
+              "result_chars": 812,
+              "refused": false,
+              "reason": null,
+              "ms": 15
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3547,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3280,
+              "tokens_out": 74,
+              "cost_usd": 0.001169
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "query_figure",
+              "arg_keys": [
+                "group_by",
+                "filters",
+                "project",
+                "figure",
+                "period",
+                "currency",
+                "table",
+                "month"
+              ],
+              "result_chars": 485,
+              "refused": false,
+              "reason": null,
+              "ms": 93
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 18500,
+              "tool_calls": 0,
+              "tries": 2,
+              "tier": "manager",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 7002,
+              "tokens_out": 173,
+              "cost_usd": 0.002533,
+              "attempts": [
+                {
+                  "tier": "specialist",
+                  "model": "gemini-2.5-flash",
+                  "step": "first",
+                  "ok": "number_guard",
+                  "tokens_in": 3501,
+                  "tokens_out": 114,
+                  "cost_usd": 0.001335,
+                  "ms": 9159
+                },
+                {
+                  "tier": "manager",
+                  "model": "gemini-2.5-flash",
+                  "step": "retry_up",
+                  "ok": "ok",
+                  "tokens_in": 3501,
+                  "tokens_out": 59,
+                  "cost_usd": 0.001198,
+                  "ms": 9328
+                }
+              ]
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.004675,
+        "tokens": 13581
+      }
+    }
+  ]
+}

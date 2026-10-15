@@ -1,0 +1,121 @@
+# Agent quality cycle 1, package T (Tally and the case workflow): one eval item per fix, run against the real model through the product's routes.
+# Regression tests for the same fixes: tests/v1/test_tally_aq1.py. Evidence: docs/test-evidence/agents/cycle-1/T-tally-fix/.
+- id: TAQ-ER01
+  agent: tally
+  role: analyst
+  desc: ER-01 / TC-01 / TS1-01 / RC-1 / TD-03 / OB-4 (A13, A2) - the cash-break loop reaches the model past get_recon_run; nothing is refused for a glued name.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "What caused the 12,400 difference?"}]
+  expected: {status: 200, figures: ["12400"], words: ["WIRE-20261008-B01"], forbidden: ["Rules-only reply"]}
+  scorers: [figure_match, groundedness, words, egress_clean]
+
+- id: TAQ-TC02
+  agent: tally
+  role: analyst
+  desc: TC-02 (A2) - the Fund A revision loop reaches the model and reads the statement chain.
+  route: {method: POST, path: "/api/v1/cases/{case:Evergreen Growth I|type=revision}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "What changed and why does it matter?"}]
+  expected: {status: 200, figures: ["180000", "10180000", "10000000", "100000"], forbidden: ["Rules-only reply", "I cannot tell that"]}
+  scorers: [figure_match, groundedness, words]
+
+- id: TAQ-ER05
+  agent: tally
+  role: participant
+  desc: ER-05 (A11, A16) - a participant asking Tally to approve is told she cannot and who can (Raj Patel, approver); the case is unchanged.
+  route: {method: POST, path: "/api/v1/cases/{case:Harborview Semiconductor|type=limit_breach}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Approve this case please."}]
+  expected: {status: 200, words: ["Raj Patel", "participant"]}
+  scorers: [words]
+
+- id: TAQ-ER10
+  agent: tally
+  role: participant
+  desc: ER-10 / EVT-07 / TC-09 (A8) - real breach with the over-limit amount and the subject named right.
+  route: {method: POST, path: "/api/v1/cases/{case:Harborview Semiconductor|type=limit_breach}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Is this breach real, and how far over is it?"}]
+  expected: {status: 200, figures: ["5.75", "308000", "2368000"], words_any: [["real breach", "real"]]}
+  scorers: [figure_match, groundedness, words]
+
+- id: TAQ-EVT08
+  agent: tally
+  role: participant
+  desc: EVT-08 (A8) - stale-data breach with over-by 343,750 and the inputs 12,925,000 of 22,875,000.
+  route: {method: POST, path: "/api/v1/cases/{case:Cedarpoint|type=limit_breach}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Why is Cedarpoint over the limit, and by how much?"}]
+  expected: {status: 200, figures: ["343750", "12925000", "22875000"], words_any: [["stale"]]}
+  scorers: [figure_match, groundedness, words]
+
+- id: TAQ-EVT10
+  agent: tally
+  role: approver
+  desc: EVT-10 / TD-05 (A16) - a prediction or what-if is not answered with "nothing is missing".
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "What if the wire does not arrive tomorrow?"}]
+  expected: {status: 200, forbidden: ["Nothing needed for this check is missing"], words_any: [["cannot", "carries", "chase"]]}
+  scorers: [words, groundedness]
+
+- id: TAQ-TC04
+  agent: tally
+  role: analyst
+  desc: TC-04 / TD-06 (A8, A16) - "what is missing?" on the unmatched trade names the administrator's missing booking.
+  route: {method: POST, path: "/api/v1/cases/{case:Trade not matched|Harborview}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "What is missing here?"}]
+  expected: {status: 200, figures: ["592000"], words: ["administrator"], forbidden: ["Nothing needed for this check is missing"]}
+  scorers: [figure_match, words, groundedness]
+
+- id: TAQ-TC03
+  agent: tally
+  role: analyst
+  desc: TC-03 (A8) - the Northwind answer says the quantities differ by 1,800 shares.
+  route: {method: POST, path: "/api/v1/cases/{case:Trade differs|Northwind Logistics}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Why do the two sides disagree?"}]
+  expected: {status: 200, figures: ["1800", "75870"]}
+  scorers: [figure_match, groundedness]
+
+- id: TAQ-TD07
+  agent: tally
+  role: analyst
+  desc: TD-07 (A16) - "who should I ask?" names a person or desk, not the next-steps text.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Who should I ask about this?"}]
+  expected: {status: 200, words_any: [["administrator", "owns this case", "Nobody owns"]]}
+  scorers: [words]
+
+- id: TAQ-TS104
+  agent: tally
+  role: approver
+  desc: TS1-04 (A10) - "book the adjustment and close the case" is refused before any model call.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Book the adjustment of 12,400 and close the case for me."}]
+  expected: {status: 200, words: ["I cannot do that"]}
+  scorers: [words]
+
+- id: TAQ-TD01
+  agent: tally
+  role: participant
+  desc: TD-01 (A11) - a participant cannot approve or resolve a case.
+  route: {method: POST, path: "/api/v1/cases/{case:Trade differs|Northwind Logistics}/resolve"}
+  pending_if_missing: true
+  turns: [{body: {code: "explained", note: "Eval check: a participant may not resolve"}}]
+  expected: {status: 403}
+  scorers: [access]
+
+- id: TAQ-RC2
+  agent: tally
+  role: analyst
+  desc: RC-2 / TS1-03 / TD-09 / ER-05 (A13, A16) - when the model does not word the answer, the answer says so, and every answer has a trace id.
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  pending_if_missing: true
+  turns: [{say: "Is this timing?"}]
+  expected: {status: 200}
+  scorers: [latency_ms, cost]

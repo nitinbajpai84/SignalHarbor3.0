@@ -1,0 +1,4 @@
+# P3 the Build Centre entry. Every build-side role reads the list; the architect seat (analyst, company_admin) picks one up.
+routes:
+  GET /api/v1/build/waiting: {roles: [owner, company_admin, sponsor, analyst]}
+  POST /api/v1/build/pickup/{iid}: {roles: [company_admin, analyst]}

@@ -1,0 +1,203 @@
+/**
+ * Screen-specific CSS for group E3 (build-test, reconciliation, cmo-dashboard,
+ * ops-watch, agent-roster). Appended-only stylesheet, linked from index.html
+ * by its own <link> line. Uses only design tokens already defined in
+ * css/nirvana.css (var(--...)) so both themes stay correct. Does not modify
+ * nirvana.css / shell.js / ui.js.
+ */
+
+/* ---------- shared: section captions, illustrative tags ---------- */
+.n-e3-note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.n-e3-note.proposal { color: var(--warning-text); }
+.n-proposal-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 1px 6px; border-radius: 999px;
+  background: var(--warning-soft); color: var(--warning-text);
+  white-space: nowrap;
+}
+.n-confirmed-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 1px 6px; border-radius: 999px;
+  background: var(--success-soft); color: var(--success);
+  white-space: nowrap;
+}
+
+/* ---------- Build & Test: pipeline DAG ---------- */
+.n-dag-wrap { overflow-x: auto; }
+.n-dag-wrap svg { display: block; min-width: 760px; }
+.n-dag-node rect { fill: var(--surface-elevated); stroke: var(--border-hairline); stroke-width: 1; rx: 10; }
+.n-dag-node.bronze rect { stroke: var(--accent-2); }
+.n-dag-node.silver rect { stroke: var(--accent); }
+.n-dag-node.gold rect { stroke: var(--gate); }
+.n-dag-node text.title { fill: var(--text-primary); font-size: 12px; font-weight: 700; font-family: var(--font-sans); }
+.n-dag-node text.sub { fill: var(--text-muted); font-size: 10px; font-family: var(--font-mono); }
+.n-dag-edge { stroke: var(--border-luminous); stroke-width: 1.5; fill: none; }
+.n-dag-edge-arrow { fill: var(--border-luminous); }
+.n-dag-lane-label { fill: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--font-sans); }
+
+/* ---------- Build & Test: test result grid ---------- */
+.n-testgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (max-width: 1100px) { .n-testgrid { grid-template-columns: 1fr; } }
+.n-testcard { border: 1px solid var(--border-hairline); border-radius: 12px; padding: 12px; background: var(--surface); }
+.n-testcard .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.n-testcard .head .who { font-weight: 700; font-size: 13px; }
+.n-testcard .counts { display: flex; gap: 10px; margin-bottom: 8px; }
+.n-testcard .count { font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; border-radius: 8px; }
+.n-testcard .count.pass { background: var(--success-soft); color: var(--success-text); }
+.n-testcard .count.fail { background: var(--danger-soft); color: var(--danger); }
+.n-testrow { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border-hairline); font-size: 12.5px; }
+.n-testrow:first-of-type { border-top: none; }
+.n-testrow .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; }
+.n-testrow.pass .dot { background: var(--success); }
+.n-testrow.fail .dot { background: var(--danger); }
+.n-testrow .name { font-weight: 600; }
+.n-testrow .detail { color: var(--text-muted); }
+
+/* ---------- Build & Test: complexity log ---------- */
+.n-complexity-item { border: 1px solid var(--border-hairline); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.n-complexity-item .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.n-complexity-item .title { font-weight: 700; font-size: 12.5px; }
+.n-complexity-item .risk { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 1px 7px; border-radius: 999px; }
+.n-complexity-item .risk.M { background: var(--warning-soft); color: var(--warning-text); }
+.n-complexity-item .risk.S { background: var(--accent-2-soft); color: var(--accent-2); }
+.n-complexity-item .risk.L { background: var(--danger-soft); color: var(--danger); }
+.n-complexity-item .body { font-size: 12px; color: var(--text-muted); }
+
+/* ---------- Reconciliation ---------- */
+.n-reconcile-table tr.mismatch td { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.n-reconcile-table tr.footnote-row td { background: color-mix(in srgb, var(--warning) 8%, transparent); }
+.n-reconcile-table tr.footnote-row td:first-child::after { content: ' ✱'; color: var(--warning); }
+.n-reconcile-table td.variance-bad { color: var(--danger); font-weight: 700; }
+.n-reconcile-table td.variance-ok { color: var(--success); }
+.n-rootcause {
+  border: 1px solid var(--danger); border-radius: 12px; padding: 12px 14px;
+  background: var(--danger-soft); margin-top: 12px;
+}
+.n-rootcause .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--danger); margin-bottom: 4px; }
+
+.n-hurdle-loop { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 4px 0; }
+.n-hurdle-step { flex: 1 0 180px; min-width: 180px; border: 1px solid var(--border-hairline); border-radius: 12px; padding: 12px; position: relative; background: var(--surface); }
+.n-hurdle-step.active { border-color: var(--border-luminous); box-shadow: var(--shadow-glow-accent); }
+.n-hurdle-step.done { border-color: var(--success); }
+.n-hurdle-step .stepnum { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.n-hurdle-step .who { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.n-hurdle-step .desc { font-size: 12px; color: var(--text-muted); }
+.n-hurdle-arrow { flex: none; display: flex; align-items: center; padding: 0 6px; color: var(--text-muted); }
+
+/* ---------- CMO Dashboard ---------- */
+.n-dash-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.n-select {
+  appearance: none; background: var(--surface-elevated); border: 1px solid var(--border-hairline);
+  color: var(--text-primary); border-radius: 8px; padding: 6px 28px 6px 10px; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; font-family: var(--font-sans);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A93AD' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; background-size: 14px;
+}
+.n-select:hover { border-color: var(--border-luminous); }
+
+.n-overlap-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+/* R-14: a single two-segment bar replaces the overlapping-circles "Venn",
+   which implied CEP-only / other-only regions for two numbers that are
+   both subsets of the same overlap cohort. */
+.n-overlap-splitbar-wrap { flex: 1 1 220px; min-width: 200px; }
+.n-overlap-splitbar { display: flex; width: 100%; height: 28px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-hairline); }
+.n-overlap-splitbar .seg { height: 100%; }
+.n-overlap-splitbar .seg.cep { background: var(--accent); }
+.n-overlap-splitbar .seg.other { background: var(--accent-2); }
+.n-overlap-legend { font-size: 12px; color: var(--text-muted); }
+.n-overlap-legend .row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.n-overlap-legend .sw { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+
+.n-campaign-row { cursor: pointer; }
+.n-campaign-row:hover td { color: var(--text-primary); }
+.n-roi-bar-cell { display: flex; align-items: center; gap: 6px; }
+.n-roi-bar-track { width: 60px; height: 6px; border-radius: 4px; background: var(--border-hairline); overflow: hidden; flex: none; }
+.n-roi-bar-fill { height: 100%; background: var(--accent-2); }
+
+/* B4 fix: this overlay hosts the "Why Jev said so" drawer too (forces.js).
+   It must sit above Foresight's companion dock (z-index 130 in sh.css) so
+   the dock never covers the evidence a drawer exists to show. */
+.n-drawer-overlay {
+  position: fixed; inset: 0; background: rgba(3, 6, 16, 0.55); z-index: 140;
+  display: flex; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity .16s ease;
+}
+.n-drawer-overlay.open { opacity: 1; pointer-events: auto; }
+.n-drawer {
+  width: min(420px, 92vw); height: 100%; background: var(--surface); border-left: 1px solid var(--border-hairline);
+  padding: 20px; overflow-y: auto; transform: translateX(16px); transition: transform .16s ease;
+  box-shadow: -24px 0 48px -12px rgba(0,0,0,0.4);
+}
+.n-drawer-overlay.open .n-drawer { transform: translateX(0); }
+.n-drawer-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.n-drawer-title { font-size: 16px; font-weight: 700; }
+.n-drawer-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.n-drawer-close { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; }
+.n-drawer-close:hover { color: var(--text-primary); }
+.n-drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+/* ---------- Ops Watch ---------- */
+.n-weather-card {
+  border: 1px solid var(--border-hairline); border-radius: 14px; padding: 0; overflow: hidden;
+  background: var(--surface); max-width: 480px;
+}
+.n-weather-card .wchead { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface-elevated); border-bottom: 1px solid var(--border-hairline); }
+.n-weather-card .wchead .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+.n-weather-card .wchead b { font-size: 12.5px; }
+.n-weather-card .wchead .chan { color: var(--text-muted); font-size: 11.5px; }
+.n-weather-card .wcbody { padding: 12px 14px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; font-family: var(--font-sans); }
+.n-weather-card .wcbody b { color: var(--text-primary); }
+/* P10 fix: the app's own status dots, in token colours, instead of emoji
+   glyphs (which read as a consumer app). */
+.n-weather-card .wcstatus { display: inline-flex; align-items: center; justify-content: center; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.n-weather-card .wcstatus.ok { background: var(--success); }
+.n-weather-card .wcstatus.warn { background: var(--amber); }
+.n-weather-card .wcstatus.info { background: var(--teal2); }
+.n-weather-card .wcfoot { padding: 8px 14px; border-top: 1px solid var(--border-hairline); display: flex; gap: 14px; }
+.n-weather-card .wcfoot span { font-size: 11px; color: var(--text-muted); cursor: pointer; }
+
+.n-freshness-row { display: grid; grid-template-columns: 1.4fr .8fr .8fr .8fr 1fr; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid var(--border-hairline); font-size: 12.5px; }
+.n-freshness-row:first-child { border-top: none; }
+.n-freshness-row.head { color: var(--text-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+
+.n-drift-chart-wrap svg { display: block; width: 100%; height: auto; }
+.n-drift-legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--text-muted); margin-top: 8px; }
+.n-drift-legend .row { display: flex; align-items: center; gap: 6px; }
+.n-drift-legend .sw { width: 14px; height: 2px; border-radius: 2px; }
+
+.n-incident-card { border: 1px solid var(--border-hairline); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+.n-incident-card .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.n-incident-card .title { font-weight: 700; font-size: 13px; }
+.n-incident-card .owner-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ---------- Agent Roster ---------- */
+.n-roster-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 1200px) { .n-roster-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 780px) { .n-roster-grid { grid-template-columns: 1fr; } }
+.n-roster-card { border: 1px solid var(--border-hairline); border-radius: 14px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px; }
+.n-roster-card .rhead { display: flex; align-items: center; gap: 10px; }
+.n-roster-card .rmeta { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; font-size: 12px; }
+.n-roster-card .rmeta dt { color: var(--text-muted); }
+.n-roster-card .rmeta dd { margin: 0; }
+.n-roster-card .permrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.n-roster-card .permrow .may { color: var(--success); font-size: 11px; }
+.n-roster-card .permrow .maynot { color: var(--danger); font-size: 11px; }
+.n-roster-card .tier { font-family: var(--font-mono); font-size: 10.5px; padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-weight: 700; }
+.n-roster-card .work { font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border-hairline); padding-top: 8px; }
+/* R-20: long role names ("Architecture options & ADRs") were truncating —
+   let them wrap onto up to 2 lines instead of ellipsizing. */
+.n-agent-chip .meta .role { white-space: normal; overflow: visible; text-overflow: unset; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+
+/* ---------- V2-G (docs/signal-harbor/history/nira-platform/packages/V2-G/brief.md): the MoSCoW
+   form (Intent center), the pain-point form (Scan & gaps) and the upload form (Context uploads)
+   all share plain text/file inputs -- .n-select already existed (CMO dashboard toolbar), .n-input
+   did not. Same look, no dropdown chevron. ---------- */
+.n-input {
+  background: var(--surface-elevated); border: 1px solid var(--border-hairline);
+  color: var(--text-primary); border-radius: 8px; padding: 6px 10px; font-size: 12.5px;
+  font-family: var(--font-sans);
+}
+.n-input:hover, .n-input:focus { border-color: var(--border-luminous); outline: none; }
+.n-input.sm { padding: 4px 8px; font-size: 12px; }
+.n-input[type="file"] { padding: 4px; }

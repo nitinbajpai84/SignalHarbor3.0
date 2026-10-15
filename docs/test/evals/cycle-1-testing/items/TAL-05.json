@@ -1,0 +1,33 @@
+{
+  "id": "TAL-05",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P30 FX forward - SGD 4,027,500.00 against 4,035,600.00, SGD 8,100 = USD 6,050.19, over the 5,000 tolerance.",
+  "status": "error",
+  "scores": [],
+  "error": "no case matching 'Trade differs|FXF-2026-002' visible to analyst",
+  "latency_ms": 33,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Trade differs|FXF-2026-002}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "8100",
+      "6050.19",
+      "4035600",
+      "4027500"
+    ],
+    "tolerance": 0.01
+  },
+  "turns": [],
+  "rows_seen": 0,
+  "egress": []
+}

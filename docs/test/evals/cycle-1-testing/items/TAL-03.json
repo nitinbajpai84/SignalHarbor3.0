@@ -1,0 +1,35 @@
+{
+  "id": "TAL-03",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P28 quantity mismatch - Northwind Logistics, export 12,000 at 42.15 = 505,800 against administrator 10,200 = 429,930, difference 75,870.",
+  "status": "error",
+  "scores": [],
+  "error": "no case matching 'Trade differs|Northwind Logistics' visible to analyst",
+  "latency_ms": 36,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Trade differs|Northwind Logistics}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "75870",
+      "505800",
+      "429930",
+      "1800"
+    ],
+    "words": [
+      "Northwind Logistics"
+    ]
+  },
+  "turns": [],
+  "rows_seen": 0,
+  "egress": []
+}

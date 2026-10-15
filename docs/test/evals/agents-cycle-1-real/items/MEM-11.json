@@ -1,0 +1,169 @@
+{
+  "id": "MEM-11",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "Shared memory - Span answers from what Lumen was told (context_for, MEM2), so the blue-lines preference is recalled.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 2: missing 'blue'"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 2 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 2163,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 2,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "I prefer blue lines"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference; gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like blue for chart lines. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": [
+          "you like blue for chart lines"
+        ]
+      },
+      "ms": 1368,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What do you remember about how I like my charts?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Rules-only reply: The company's core model has 42 tables in 9 groups: access (5), master_data (4), intake (6), documents_and_rag (3), observations (7), rules_and_benchmarks (4), intents_and_outputs (7), exceptions_and_pulse (5), agents (1). You can read 14 projects. Ask about a table or a project for detail.",
+        "rules_only": true
+      },
+      "ms": 754,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "blue"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-f02a15a6",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "fact",
+            "text": "What do you remember about how I like my charts?",
+            "sure": "said",
+            "at": "2026-10-09T17:33:43+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          },
+          {
+            "id": "m-93eeb620",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "said",
+            "at": "2026-10-09T17:33:42+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-df4dc74c",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:23+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 27,
+      "expect": null,
+      "cleanup": true
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-93eeb620",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-93eeb620"
+      },
+      "ms": 13,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 4030,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:43+0800"
+    },
+    {
+      "bytes": 12932,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:42+0800"
+    }
+  ]
+}

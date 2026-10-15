@@ -1,0 +1,60 @@
+{
+  "id": "LUM-12",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A question about cash in words quotes only figures that exist in the universe (no model-written digits).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 366,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "allowed_numbers": [
+      "880400",
+      "868000",
+      "12400",
+      "5000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "How much cash does Entity B hold, and does it match the administrator?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 2 gold tables, each ready for dashboards: gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span.",
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 366,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

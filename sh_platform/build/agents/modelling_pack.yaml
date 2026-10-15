@@ -1,0 +1,212 @@
+# Span's modelling knowledge pack (plan 3.5, requirement A). Suggestion material, never company policy.
+# Industry-neutral on purpose, so it lives here and not in packs/<industry>/.
+# Seeded from the earlier data architect charter: grain first, a dimensional star by default and say why,
+# history only on the attributes worth tracking, flag measures that do not add up, state the cost of a deviation.
+#
+# Editing rules: plain words, British spelling, no em dashes, no vendor or product names, no industry words.
+# One entry per technique. Required keys: id, name, what, fits_when, avoid_when, keys, effort, signals.
+# `signals` are conditions on read-tool facts that point to the technique. Span's code (modelling.pick) reads them:
+#   "name"         the fact is present and truthy
+#   "not name"     the fact is absent or false
+#   "name > 0"     also >=, <, <=, ==
+# Fact names used here:
+#   keys_changed_last_n_loads  keys whose tracked values changed across recent loads (read_change_rate)
+#   value_changes              the catalogue says the value changes over time
+#   audit_needed               the catalogue or access rules ask for a full history or audit trail
+#   needs_previous_value       the measure compares the current value with the one before
+#   rapid_change               keys change on most loads
+#   current_and_history        queries read both the value as it was and the value as it is now
+#   measures                   measures in scope
+#   consumers                  marts or dashboards that read the model (read_queries)
+#   sources_per_entity         sources that describe the same entity
+#   source_changes_often       a source's fields changed in recent contracts
+#   stable_vocabulary          the company has one agreed set of entity definitions
+#   process_has_milestones     the measure follows a process with fixed steps and dates
+#   measured_at_period_end     the measure is a balance or level read at the end of a period
+#   event_measure              the measure counts or sums individual events
+#   natural_key_stable         the source key never changes and is never reused
+#   many_sources               more than one source feeds the model
+#   late_dimension_rows        fact rows arrive before their dimension rows
+#   non_additive_measure       the measure is a ratio, balance or distinct count
+
+entries:
+  - id: kimball
+    name: Dimensional model (star)
+    what: Facts hold the events or levels you measure at one stated grain; dimensions hold the descriptions you filter and group by. Dimensions shared by several facts are conformed, so every mart means the same thing by the same word. A bus matrix lists facts against the dimensions they share.
+    fits_when: [more than one measure over shared entities, analysts slice by many descriptions, query patterns are known]
+    avoid_when: [a single measure with a single consumer, where a wide table is simpler]
+    keys: Surrogate keys on dimensions; facts carry the dimension keys plus a degenerate key for the source record when needed.
+    effort: medium
+    signals: ["measures > 1"]
+    notes: Grain first. Write the grain as one sentence ("one row per what") before choosing anything else.
+
+  - id: scd0
+    name: Slowly changing dimension, type 0 (keep the original)
+    what: The first value is kept for ever and later changes are ignored.
+    fits_when: [the value is fixed by definition, such as a start date or original rating]
+    avoid_when: [the value can be corrected, because a correction would be lost]
+    keys: Natural or surrogate key; no history columns.
+    effort: small
+    signals: ["not value_changes", "keys_changed_last_n_loads == 0"]
+
+  - id: scd1
+    name: Slowly changing dimension, type 1 (overwrite)
+    what: A change overwrites the old value. Reports always show the latest value, including for past periods.
+    fits_when: [corrections of mistakes, attributes nobody reports history on]
+    avoid_when: [the catalogue says the value changes and past reports must not move]
+    keys: One row per key.
+    effort: small
+    signals: ["keys_changed_last_n_loads > 0", "not value_changes"]
+
+  - id: scd2
+    name: Slowly changing dimension, type 2 (add a row per change)
+    what: Each change closes the current row and adds a new one with valid from and valid to dates and a current flag. Past facts keep pointing at the version that was true then.
+    fits_when: [the catalogue says the value changes, reports must show history as it was, an audit trail is needed]
+    avoid_when: [tracking every attribute, which grows the table and is rarely wanted; track only the attributes that matter]
+    keys: Surrogate key per version; the natural key repeats. The change test hashes the tracked attributes only.
+    effort: medium
+    signals: ["keys_changed_last_n_loads > 0", "value_changes"]
+
+  - id: scd3
+    name: Slowly changing dimension, type 3 (previous value column)
+    what: One extra column holds the value before the last change. Only one step of history.
+    fits_when: [a report compares current against previous, such as after a reorganisation]
+    avoid_when: [more than one step of history matters]
+    keys: One row per key, with a previous column per tracked attribute.
+    effort: small
+    signals: ["keys_changed_last_n_loads > 0", "needs_previous_value"]
+
+  - id: scd4
+    name: Slowly changing dimension, type 4 (history table)
+    what: The dimension keeps the current row only; a separate history table keeps every version.
+    fits_when: [attributes change very often, most queries want the current value]
+    avoid_when: [most queries need history, where type 2 is simpler to join]
+    keys: Current table one row per key; history table one row per key per version.
+    effort: medium
+    signals: ["keys_changed_last_n_loads > 0", "rapid_change"]
+
+  - id: scd5
+    name: Slowly changing dimension, type 5 (mini-dimension with a current pointer)
+    what: Fast-changing attributes move to a small mini-dimension; the main dimension carries a type 1 pointer to the current mini-dimension row.
+    fits_when: [a few attributes change often on a large dimension, reports want both the profile then and now]
+    avoid_when: [a small dimension, where type 2 is enough]
+    keys: Mini-dimension surrogate key on the fact and on the main dimension.
+    effort: large
+    signals: ["keys_changed_last_n_loads > 0", "rapid_change", "current_and_history"]
+
+  - id: scd6
+    name: Slowly changing dimension, type 6 (types 1, 2 and 3 together)
+    what: Rows are added per change as in type 2, and every row also carries the current value as in type 1, so reports can show either view without a second join.
+    fits_when: [reports need the value as it was and the value as it is now side by side]
+    avoid_when: [only one view is ever needed]
+    keys: Surrogate key per version; natural key; current columns updated on every version.
+    effort: large
+    signals: ["keys_changed_last_n_loads > 0", "value_changes", "current_and_history"]
+
+  - id: data_vault
+    name: Data Vault (hubs, links, satellites)
+    what: Hubs hold business keys, links hold relationships, satellites hold descriptive history per source. Loads only insert, so the full history and its source are kept.
+    fits_when: [many sources describe the same entity, a high audit need, sources change often]
+    avoid_when: [few sources and a small team, because it adds many tables before any mart]
+    keys: Hash keys of the business key; load date and record source on every row.
+    effort: large
+    signals: ["sources_per_entity > 2", "audit_needed", "source_changes_often"]
+
+  - id: inmon
+    name: Enterprise model in third normal form
+    what: One normalised, subject-oriented model of the whole company; marts are built from it.
+    fits_when: [many consumers, a stable agreed vocabulary, several departments share entities]
+    avoid_when: [one team and a few measures, where the extra layer slows delivery]
+    keys: Natural keys with integrity rules; surrogate keys in the marts.
+    effort: large
+    signals: ["consumers > 5", "stable_vocabulary"]
+
+  - id: medallion
+    name: Bronze, silver and gold layers
+    what: Bronze keeps what arrived as it arrived, silver cleans and conforms it, gold serves one mart per measure. This is how the runner already builds.
+    fits_when: [always as the layering, whatever model sits in silver]
+    avoid_when: [never as such; it says where data sits, not how silver is modelled]
+    keys: Bronze keeps load ids; silver and gold follow the chosen model.
+    effort: small
+    signals: ["many_sources"]
+
+  - id: obt
+    name: One big table and wide marts
+    what: One wide table per measure with every description joined in. No joins at query time.
+    fits_when: [one measure, one consumer, simple query patterns]
+    avoid_when: [several measures share descriptions, because the same attribute is copied and drifts]
+    keys: The grain key of the measure.
+    effort: small
+    signals: ["measures == 1", "consumers == 1"]
+
+  - id: transaction_fact
+    name: Transaction fact
+    what: One row per event, at the finest grain the source gives.
+    fits_when: [the measure counts or sums events]
+    avoid_when: [the measure is a level at a point in time]
+    keys: Dimension keys plus the event's own key.
+    effort: small
+    signals: ["event_measure"]
+
+  - id: periodic_snapshot
+    name: Periodic snapshot fact
+    what: One row per entity per period, holding the level at the end of the period.
+    fits_when: [balances, levels or positions read at period end]
+    avoid_when: [the question is about individual events]
+    keys: Entity key plus period. Levels are semi-additive, so do not add them across periods.
+    effort: small
+    signals: ["measured_at_period_end"]
+
+  - id: accumulating_snapshot
+    name: Accumulating snapshot fact
+    what: One row per process instance, updated as it reaches each milestone, with a date per milestone and the time between them.
+    fits_when: [a process with fixed steps whose durations matter]
+    avoid_when: [steps repeat or have no fixed order]
+    keys: The process instance key plus one date key per milestone.
+    effort: medium
+    signals: ["process_has_milestones"]
+
+  - id: keys_surrogate
+    name: Surrogate keys
+    what: A meaningless whole number or generated key per dimension row, owned by the warehouse.
+    fits_when: [type 2 history, natural keys that change or are reused, several sources for one entity]
+    avoid_when: [a one-off mart with a stable natural key]
+    keys: Generated in silver; facts look them up at load.
+    effort: small
+    signals: ["many_sources", "keys_changed_last_n_loads > 0"]
+
+  - id: keys_natural
+    name: Natural keys
+    what: The key the source system uses, kept as it is.
+    fits_when: [the key is stable, never reused and comes from one source]
+    avoid_when: [history is tracked or two sources use different keys]
+    keys: The source key.
+    effort: small
+    signals: ["natural_key_stable", "not many_sources"]
+
+  - id: keys_hash
+    name: Hash keys
+    what: A hash of the business key, computed the same way everywhere, so loads can run in parallel without a lookup.
+    fits_when: [Data Vault, parallel loads, several sources share a business key]
+    avoid_when: [a small model where a lookup costs nothing]
+    keys: Hash of the trimmed, upper-cased business key parts.
+    effort: small
+    signals: ["sources_per_entity > 2"]
+
+  - id: late_arriving
+    name: Late-arriving dimension rows
+    what: When a fact arrives before its dimension row, add an inferred member with the key only and fill it in when the row arrives, or hold the fact back in quarantine.
+    fits_when: [fact files land before reference files]
+    avoid_when: [the dimension always lands first]
+    keys: The inferred member gets a real surrogate key at once.
+    effort: small
+    signals: ["late_dimension_rows"]
+
+  - id: non_additive
+    name: Measures that do not add up
+    what: Ratios, balances and distinct counts must not be summed across every dimension. Store the parts (numerator and denominator) and compute the ratio in the mart.
+    fits_when: [any ratio, balance or distinct count]
+    avoid_when: [never ignore it, it causes more reporting mistakes than anything else]
+    keys: Same as the fact.
+    effort: small
+    signals: ["non_additive_measure"]

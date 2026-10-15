@@ -1,0 +1,34 @@
+# Charter, sign-off and the room's result (M1-24 to M1-28, M1-P09). Read by domain/charter.py; a change here changes behaviour.
+# Values marked "chosen" were not given by the spec or a decision: placeholders for Nitin to confirm (A-028).
+
+# What the charter reads from the together stage. M1-P07 exposes the same thing as read_together_result(plane, session_id)
+# (see contracts/board.yaml). Until it lands, a stand-in file holds it: intents/m1_intent/together/<session id>.json.
+together_result:
+  clusters:                      # one row per problem cluster on the board, ticked or not
+    required: [id, title, priority, note_count, agree_count, ticked]
+    optional: [so_that, library_problem_id]   # so_that: the purpose line, if the room wrote one. library_problem_id: the pack problem it came from, if any
+  # id: text. title: text. priority: one of priority_options below, or null when nobody voted (D-020: the tally is the priority).
+  # note_count, agree_count: whole numbers. ticked: true when the organiser ticked it into the charter.
+
+priority_options:                # D-020, in the order the charter lists them. `id` is what the together result carries.
+  - {id: must, label: Must}
+  - {id: should, label: Should}
+  - {id: could, label: Could}       # A-058: `could` is the stored id of the Good to have shelf (alias, read as good_to_have; label rename and id change are IC-3e)
+  - {id: not_this_time, label: Not this time}
+
+signing:
+  signers_required: 1            # LI-M1: one signature is enough (the sponsor, or the approver by link); the organiser may ask for two in Prepare
+  signers_required_solo: 1       # spec M1-25: one owner alone on the smallest plan (a one-seat session)
+  sign_roles: [company_admin, sponsor]   # who may sign in the room; chosen: the roles the role table says back the work and run the company
+
+approver_link:
+  hours_valid: 72                # chosen: spec M1-26 says the link expires but gives no length
+  comment_max_chars: 1000        # chosen: a plain size cap
+
+text_limits:
+  so_that: 300                   # chosen: a plain size cap for the purpose line of one problem
+
+# The frozen wall (IC-2f): each version carries `wall` = {closed_at, lanes: [{lane, count, cards}]}, the wall of this session
+# (cards whose `room` is the session id) as frozen when the private rooms closed. A card is {id, text, quarters (marks only),
+# author or "Anonymous", sealed}; a sealed card is always a silhouette {id, lane, sealed, silhouette} in the version. It is page one of
+# the charter files ("What the committee put on the wall"). Stored in intents/m1_intent/wall/<session id>.json; read-only once signed.

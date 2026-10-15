@@ -1,0 +1,133 @@
+# Input ledger rows for spec 16: transcript and audit trail.
+- id: "16.event_log"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "intents/<id>/events.jsonl (append-only, one line per act)"
+  input: "What was said and done, who did it, whether an agent drafted it"
+  person: system
+  mode: automatic
+  source: "the server, written by the routes that make the acts"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: taking minutes of a project's discussions and decisions"
+  claim: "Every intent keeps a plain, append-only log of what happened; nobody takes minutes"
+- id: "16.draft_vs_act"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "event lines (draft chip: Draft by North or Lens; Confirmed by)"
+  input: "Draft by North or Lens, and the person's confirmation"
+  person: system
+  mode: automatic
+  source: "north_drafted and lens_drafted events and the confirming act"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: showing an auditor who decided what"
+  claim: "The log tells apart what an agent drafted from what a person did; only a person's confirmation counts as the act"
+- id: "16.timeline"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent/<id>/events (What happened tab)"
+  input: "Timeline cut to what the viewer may see"
+  person: any
+  mode: automatic
+  source: "the event log, cut by tier, anonymity, seal and restriction"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: reconstructing how a decision was reached from email and chat"
+  claim: "A later visitor can see what was said and done, and who said it unless anonymous"
+- id: "16.filters"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "What happened tab (kind, person, stage filters)"
+  input: "Filter the timeline"
+  person: any
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: scanning through discussion threads"
+  claim: "The timeline is filtered by kind, person and stage in one tap"
+- id: "16.summary"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "What happened tab (summary: by kind, by person, agent and people)"
+  input: "Counts by kind, by person, drafted by agents, done by people"
+  person: any
+  mode: automatic
+  source: "the cut event log"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: compiling a participation summary"
+  claim: "What kind of talk happened is counted, not judged"
+- id: "16.transcript"
+  spec: "16"
+  journey: shared
+  stage: prove
+  screen: "closed intent (Download transcript: Markdown, PDF)"
+  input: "A transcript of the closed intent, cut to the downloader"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the event log and the closure"
+  minutes_without: 90
+  minutes_with: 1
+  basis: "estimate: writing up a transcript of an initiative"
+  claim: "A closed intent downloads as a transcript in Markdown and PDF, ready to attach to the Build hand-off"
+- id: "16.include_drafts"
+  spec: "16"
+  journey: shared
+  stage: prove
+  screen: "download dialog (Include agent drafts)"
+  input: "Include agent drafts in the file"
+  person: organiser
+  mode: manual
+  source: "the organiser's choice"
+  minutes_without: 1
+  minutes_with: 0.1
+  basis: "estimate: a checkbox"
+  claim: "The organiser decides whether agent drafts appear in the transcript"
+- id: "16.event_pointer"
+  spec: "16"
+  journey: shared
+  stage: shared
+  screen: "intent record (events count, last seq, last at)"
+  input: "Events recorded count and last change"
+  person: system
+  mode: automatic
+  source: "the server after each append"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: counting activity"
+  claim: "How many things were recorded is counted on each card"
+- id: "16.gap_notice"
+  spec: "16"
+  journey: admin
+  stage: shared
+  screen: "organiser line (1 act has no line in the log)"
+  input: "Acts missing from the log"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "acts in the records minus matching refs in the log"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: auditing records against logs"
+  claim: "The product notices when an act is missing from its own trail"
+- id: "16.admin_milestones"
+  spec: "16"
+  journey: admin
+  stage: prove
+  screen: "What happened tab for the company admin (milestones and counts only)"
+  input: "Milestones of every intent"
+  person: company_admin
+  mode: automatic
+  source: "opened, stage, extended, signed, closed, cancelled and shared events"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: checking that an intent ran as it should"
+  claim: "The company admin can check that an intent ran properly without reading anyone's words"

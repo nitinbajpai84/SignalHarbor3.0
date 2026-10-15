@@ -1,0 +1,284 @@
+{
+  "id": "TAL-07",
+  "agent": "tally",
+  "role": "participant",
+  "desc": "P18 breach caused by stale valuations - Cedarpoint Ventures 56.50% against 55%, over by 343,750, cause stale data.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 9501,
+  "cost": null,
+  "trace_id": "tr-tally-ef0d9e8a-bd317c56",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Cedarpoint|type=limit_breach}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "56.5",
+      "55",
+      "343750",
+      "12925000",
+      "22875000"
+    ],
+    "words_any": [
+      [
+        "stale",
+        "older than 90 days"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/cases/21d4fa9c-8bf1-411c-98b0-076902accd51/ask",
+      "request": {
+        "question": "Why is Cedarpoint over the limit?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "21d4fa9c-8bf1-411c-98b0-076902accd51",
+        "kind": "limit_breach",
+        "summary": "Cedarpoint Ventures is 56.50% of the Entity B operating portfolio (12,925,000 USD of 22,875,000 USD), above the 55% maximum by 343,750 USD. 3 input values of the 3 in the portfolio are older than 90 days or not yet verified: Saltmarsh Infrastructure Fund II (not yet verified, 9 days old), Cedarpoint Ventures III (valued 30 Jun 2026, 101 days old) and Cedarpoint Opportunities II (valued 31 Mar 2026, 192 days old). The share may be out of date: a stale-data cause, not yet a proven breach.",
+        "findings": [
+          {
+            "key": "exposure",
+            "text": "Cedarpoint Ventures is 56.50% of the Entity B operating portfolio (12,925,000 USD of 22,875,000 USD), above the 55% maximum by 343,750 USD. The Cedarpoint Ventures share of the Entity B operating portfolio must be at most 55%.",
+            "figure": "56.50%",
+            "chips": []
+          },
+          {
+            "key": "input",
+            "text": "Saltmarsh Infrastructure Fund II: 9,950,000 USD, valued 30 Sep 2026 (9 days old), status pending, counted in the portfolio total, not yet verified.",
+            "figure": "9,950,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "c49d1262-e3dc-4457-923c-1ef7198e9849"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "2792fcd9-25c0-41cd-a239-277b92f2ebb3"
+              }
+            ]
+          },
+          {
+            "key": "input",
+            "text": "Cedarpoint Ventures III: 8,275,000 USD, valued 30 Jun 2026 (101 days old), status approved, older than 90 days.",
+            "figure": "8,275,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "2b46794f-a65f-4835-9b2b-523f23491055"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "353cfdc5-c997-4b54-9d97-1fb66738aaae"
+              }
+            ]
+          },
+          {
+            "key": "input",
+            "text": "Cedarpoint Opportunities II: 4,650,000 USD, valued 31 Mar 2026 (192 days old), status approved, older than 90 days.",
+            "figure": "4,650,000 USD",
+            "chips": [
+              {
+                "label": "Valuation",
+                "kind": "valuation",
+                "id": "1b1a3e59-edb4-49cf-93c2-cb26c9c34540"
+              },
+              {
+                "label": "Statement",
+                "kind": "document",
+                "id": "d783ea08-0d76-4116-8e0b-6e9cb4b66b77"
+              }
+            ]
+          },
+          {
+            "key": "cause",
+            "text": "3 input values of the 3 in the portfolio are older than 90 days or not yet verified: Saltmarsh Infrastructure Fund II (not yet verified, 9 days old), Cedarpoint Ventures III (valued 30 Jun 2026, 101 days old) and Cedarpoint Opportunities II (valued 31 Mar 2026, 192 days old). The share may be out of date: a stale-data cause, not yet a proven breach.",
+            "figure": null,
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Chase the manager for the latest statement of the oldest input and get it confirmed."
+          },
+          {
+            "who": "Case owner",
+            "text": "Hold the case until the statement is in; recheck the limit then."
+          }
+        ],
+        "missing": [
+          "A recent, confirmed valuation of Saltmarsh Infrastructure Fund II, Cedarpoint Ventures III and Cedarpoint Opportunities II; the managers can supply them, through Operations."
+        ],
+        "sources": [
+          "valuation c49d1262-e3dc-4457-923c-1ef7198e9849",
+          "Statement",
+          "valuation 2b46794f-a65f-4835-9b2b-523f23491055",
+          "Statement",
+          "valuation 1b1a3e59-edb4-49cf-93c2-cb26c9c34540",
+          "Statement"
+        ],
+        "worded_by": "rules",
+        "question": "Why is Cedarpoint over the limit?",
+        "answer": "The holding's share of the portfolio is 56.50% or 12,925,000 USD of 22,875,000 USD, which is 343,750 USD past the maximum limit. 3 input values of the 3 in the portfolio are older than 90 days or not yet verified: Saltmarsh Infrastructure Fund II (not yet verified, 9 days old), Cedarpoint Ventures III (valued 30 Jun 2026, 101 days old) and Cedarpoint Opportunities II (valued 31 Mar 2026, 192 days old). The share may be out of date: a stale-data cause, not yet a proven breach.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": [],
+        "pending_model": false,
+        "trace_id": "tr-tally-ef0d9e8a-bd317c56"
+      },
+      "ms": 9479,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17443,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:21:58+0800",
+      "trace_id": "tr-tally-ef0d9e8a-bd317c56"
+    },
+    {
+      "bytes": 16358,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T10:21:55+0800",
+      "trace_id": "tr-tally-ef0d9e8a-bd317c56"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-tally-ef0d9e8a-bd317c56",
+      "status": 200,
+      "runs": [
+        {
+          "id": "ed24ed202ca54cb6ba4caf932b6d72a2",
+          "agent_type": "Tally",
+          "status": "done",
+          "started_at": "2026-10-10T02:22:03+00:00",
+          "elapsed_ms": 9014,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.003152,
+          "trace_id": "tr-tally-ef0d9e8a-bd317c56",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-tally-ef0d9e8a-bd317c56",
+          "at": "2026-10-10T02:22:03+00:00",
+          "run_id": "ed24ed202ca54cb6ba4caf932b6d72a2",
+          "agent": "Tally",
+          "status": "done",
+          "elapsed_ms": 9014,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "case:21d4fa9c-8bf1-411c-98b0-076902accd51"
+                },
+                {
+                  "kind": "turns",
+                  "id": "1"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3125,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4305,
+              "tokens_out": 12,
+              "cost_usd": 0.001321
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "get_limit_inputs",
+              "arg_keys": [],
+              "result_chars": 1050,
+              "refused": false,
+              "reason": null,
+              "ms": 0
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 5889,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 4677,
+              "tokens_out": 171,
+              "cost_usd": 0.001831
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.003152,
+        "tokens": 9165
+      }
+    }
+  ]
+}

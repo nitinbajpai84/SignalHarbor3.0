@@ -1,0 +1,6 @@
+# B2 Scan and agree. Scan: architect seat. Agree and send back: decision maker seat.
+routes:
+  GET /api/v1/build/{iid}/scan: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}
+  POST /api/v1/build/{iid}/scan: {roles: [company_admin, analyst]}
+  POST /api/v1/build/{iid}/scan/agree: {roles: [company_admin, sponsor]}
+  POST /api/v1/build/{iid}/scan/send-back: {roles: [company_admin, sponsor]}

@@ -1,0 +1,476 @@
+- id: 37.candidates
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (candidate rows)
+  input: Groups and cards to choose from
+  person: participant
+  mode: derived
+  agent: North
+  source: the session groups and cards loaded as candidates with sample ideas
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: rewriting the ideas onto a voting sheet'
+  claim: The shortlist is built from the session, not retyped for the vote
+- id: 37.back
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Back this)
+  input: Up to three backs
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant's judgement, three each, counts shown never names
+  minutes_without: 4
+  minutes_with: 1
+  basis: 'estimate: dot voting round the wall versus three taps'
+  claim: Backing is a manual choice; counts are shown and names are never kept
+- id: 37.takeback
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Take back)
+  input: Take back a back
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A person can change their mind until the count closes
+- id: 37.backed.count
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (backed chip)
+  input: Backed count per candidate
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the open-round tally, a number only
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting dots by hand'
+  claim: The tally is computed and never shows who backed
+- id: 37.have.backed
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (n of m have backed)
+  input: n of m have backed
+  person: organiser
+  mode: automatic
+  agent: null
+  source: seats with at least one back against the seats
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who has voted'
+  claim: The organiser sees how many have backed without seeing who
+- id: 37.nudge.back
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: Pulse line to each participant
+  input: Reminder to back
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: stage 3 clock and whether the seat has backed, once a day
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: a chaser message'
+  claim: Nira nudges only people who have not backed
+- id: 37.north.line
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (North line)
+  input: 'Before close: n of m backed and days left; after close: who leads'
+  person: organiser
+  mode: derived
+  agent: North
+  source: the tally, the seats and the clock
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: totting up'
+  claim: North reads the count out for the organiser
+- id: 37.tie.chip
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Tied with)
+  input: Tie across first or third place
+  person: organiser
+  mode: derived
+  agent: North
+  source: equal counts across a boundary
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: noticing a tie from a tally'
+  claim: North spots a tie and says so
+- id: 37.count.close
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Close the count)
+  input: Close the count
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser, after Are you sure
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Closing the count drops the seat keys and writes counts only
+- id: 37.tie.break
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Tie dialog)
+  input: Which tied ideas go into round 2
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser chooses; ties go to the organiser
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a discussion versus ticking boxes'
+  claim: A tie is always broken by a person
+- id: 37.round2
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Run round 2)
+  input: Run round 2 on the top three
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: booking a second vote versus one button'
+  claim: A second round is one button and runs once
+- id: 37.skip
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Skip to the outcome, Close with what we have)
+  input: Skip the vote or close early
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The organiser can stop the vote and the record says so
+- id: 37.outcome.idea
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (The idea)
+  input: The chosen idea and its one-paragraph synthesis
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the chosen group or card, its cards and comments
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: writing up the winning idea'
+  claim: North writes the idea up; the organiser reads and edits it
+- id: 37.outcome.why
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Why it was chosen)
+  input: Why it was chosen, with a source on each sentence
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the counts, the comments and the round record, one source chip per sentence
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: writing the rationale versus reading sourced lines'
+  claim: Every sentence of the rationale points at a count or a comment
+- id: 37.outcome.takes
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (What it would take)
+  input: 'What it would take: people, data, systems, time'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: what was named in the thinking and the time box
+  minutes_without: 15
+  minutes_with: 3
+  basis: 'estimate: working out the ask versus editing a list'
+  claim: The ask is assembled from what people already said
+- id: 37.outcome.proposed
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Proposed by)
+  input: Who proposed the chosen idea
+  person: organiser
+  mode: derived
+  agent: North
+  source: names on the chosen cards; unnamed ones counted as stayed unnamed
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: remembering who said it'
+  claim: Credit goes to the proposers by name unless they chose not to
+- id: 37.outcome.backed
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Backed by)
+  input: n of m backed this, per round
+  person: organiser
+  mode: automatic
+  agent: null
+  source: closed round counts
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: tallying'
+  claim: The backing figure is read from the closed count
+- id: 37.outcome.runners
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Runners-up)
+  input: The two next candidates with counts
+  person: organiser
+  mode: automatic
+  agent: null
+  source: ideas_kept ranked by backs
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: noting the alternatives'
+  claim: The runners-up are kept with their counts for the record
+- id: 37.outcome.different
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Pick a different idea)
+  input: Choose another idea and a reason when not the most backed
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision with a reason
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: explaining an override'
+  claim: Overriding the count needs a reason and is recorded
+- id: 37.outcome.numbers
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Numbers panel)
+  input: Ideas, groups, backs, people who backed, rounds, time to confirm
+  person: organiser
+  mode: automatic
+  agent: null
+  source: cards, clusters and rounds in the record
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: compiling a summary'
+  claim: The numbers panel is computed from the record
+- id: 37.outcome.confirm
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>?view=outcome (Confirm this outcome)
+  input: Confirm the outcome
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; the agent prepared the whole card
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one tap after reading'
+  claim: The outcome is confirmed by a person; North only drafts
+- id: 37.next.kind
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (What next)
+  input: One of six next steps
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice among Initiative, Problem, Decision, backlog, handled, nothing
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: deciding who takes it on versus one choice'
+  claim: The next step is chosen by a person from six options
+- id: 37.next.reason
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Reason line)
+  input: One-sentence reason for the next step
+  person: organiser
+  mode: confirm
+  agent: North
+  source: North's draft from the outcome
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: a one-line justification'
+  claim: The reason line arrives drafted
+- id: 37.next.initiative_q1
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Initiative preview, question 1)
+  input: Goal line and why, pre-filled
+  person: organiser
+  mode: derived
+  agent: North
+  source: the chosen idea trimmed, the why and what it would take
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: restating the idea in a new form'
+  claim: The Initiative start opens with the goal and the why already written
+- id: 37.next.initiative_q2
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Initiative preview, question 2)
+  input: Whom to involve, suggested chips
+  person: organiser
+  mode: derived
+  agent: North
+  source: named proposers and brainstorm participants, never from who backed
+  minutes_without: 8
+  minutes_with: 1
+  basis: 'estimate: working out the team'
+  claim: People who proposed the idea are offered as chips
+- id: 37.next.initiative_q5
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Initiative preview, question 5)
+  input: Areas as chips
+  person: organiser
+  mode: derived
+  agent: North
+  source: the brainstorm areas
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: retyping areas'
+  claim: Areas carry over from the brainstorm
+- id: 37.next.initiative_q346
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Initiative preview, questions 3, 4, 6)
+  input: Build needed, definitions exist, decide-by
+  person: organiser
+  mode: manual
+  agent: null
+  source: left empty on purpose; the start screen runs its own look-up and default date
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: three answers only the organiser knows'
+  claim: These three answers are never guessed from a vote
+- id: 37.next.backlog
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Backlog preview)
+  input: 'Backlog item: idea, why, raised by, also considered'
+  person: organiser
+  mode: derived
+  agent: North
+  source: the outcome with runners-up as Also considered
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing a backlog entry'
+  claim: Parking an idea takes one tap because the entry writes itself
+- id: 37.next.nothing
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Nothing reason)
+  input: Reason for nothing or handled
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: a sentence'
+  claim: Closing with nothing still needs a human reason
+- id: 37.late.window
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Window line)
+  input: Late thought window end
+  person: participant
+  mode: automatic
+  agent: North
+  source: the closing time plus the window rule
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: setting a deadline'
+  claim: The window closes by rule and freezes the record
+- id: 37.late.add
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (Late thought)
+  input: A late thought up to 300 characters
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant, by name or anonymous per the names rule
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: a follow-up email'
+  claim: Late thoughts are typed by people and attach to the record
+- id: 37.late.about
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close (About)
+  input: Which idea the thought is about
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant picks the chosen idea or a runner-up
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one pick'
+  claim: A late thought is tied to an idea, not floating
+- id: 37.late.frozen
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id> (Frozen chip)
+  input: Frozen at the window end
+  person: organiser
+  mode: automatic
+  agent: North
+  source: late_window.closes_at
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: remembering to lock the record'
+  claim: The record freezes itself
+- id: 37.count.centre
+  spec: '37'
+  journey: brainstorm
+  stage: decide
+  screen: /centre (counters)
+  input: Ties broken, next-step mix, late thoughts, most backed chosen yes or no
+  person: company admin
+  mode: automatic
+  agent: null
+  source: rounds, outcome.next, late_thoughts and chosen.overridden_reason across closed brainstorms
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: a quarterly summary by hand'
+  claim: Closed brainstorms feed the centre counters with no report to write

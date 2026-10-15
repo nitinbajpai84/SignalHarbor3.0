@@ -1,0 +1,83 @@
+# Template insurance@1 process map default (V3-06 brief item 4) -- moved verbatim in substance
+# from docs/signal-harbor/prototype/js/screens/process-map.js's own LANES and `steps` array (the
+# as-is swimlane: CEP -> LMS -> Agency/Banca -> Policy Admin -> Marketing Ops/Finance -> CMO
+# Office), cited there to docs/signal-harbor/history/nirvana/research/insurance-marketing-domain.md
+# section 5 and inputs/signal_harbor/marketing_analytics/DATA_DESIGN.md. Every step here is a
+# PROPOSAL (source: pack) until a person validates it (brief item 4, rule 4) -- nothing here is a
+# business rule or a company fact.
+template: insurance@1
+lanes:
+  - CMO Office
+  - Marketing Ops
+  - CEP
+  - LMS
+  - Agency / Banca
+  - Policy Admin
+  - Finance
+steps:
+  - step_id: pm-01
+    lane: CEP
+    col: 0
+    name: "Journeys send: Email / SMS / WhatsApp"
+    body: "Automated -- the CEP logs its own sends, deliveries, opens and clicks."
+    manual: false
+  - step_id: pm-02
+    lane: CEP
+    col: 1
+    name: "CTA click -> nightly batch to LMS"
+    body: "Batch hand-off keyed on email/phone, not a live event -- lag of hours is typical."
+    manual: false
+  - step_id: pm-03
+    lane: LMS
+    col: 2
+    name: "Lead created (lead_source = CEP)"
+    body: "lead_created_date = send_date + 1-5 days."
+    manual: false
+  - step_id: pm-04
+    lane: Agency / Banca
+    col: 2
+    name: "Agent / branch enters walk-in or referral lead"
+    body: "Entered by hand into the LMS, or into a spreadsheet reconciled later -- a common duplicate-lead source."
+    manual: true
+  - step_id: pm-05
+    lane: LMS
+    col: 3
+    name: "Distributed to agent / branch queue"
+    body: "Semi-automated LMS routing, with manual overrides at the branch."
+    manual: false
+  - step_id: pm-06
+    lane: Agency / Banca
+    col: 4
+    name: "Lead accepted (human picks it up)"
+    body: "Distributed -> accepted gap is a real responsiveness metric, not just a data artefact."
+    manual: false
+  - step_id: pm-07
+    lane: Policy Admin
+    col: 5
+    name: "Policy issued (system of record)"
+    body: "PAS rarely knows which lead or campaign caused the sale."
+    manual: false
+  - step_id: pm-08
+    lane: Marketing Ops
+    col: 6
+    name: "Join lead -> policy by customer identity"
+    body: "The single most fragile point in the chain: identity matching across CRM/LMS/PAS, done by hand in Excel."
+    manual: true
+  - step_id: pm-09
+    lane: Finance
+    col: 6
+    name: "Post campaign spend to the ledger"
+    body: "Refreshed monthly after invoices land -- slower than the weekly engagement/lead cadence."
+    manual: true
+  - step_id: pm-10
+    lane: Marketing Ops
+    col: 7
+    name: "Compile the monthly benchmark report"
+    body: "Pulls CEP, LMS, PAS and Finance exports into one workbook by hand."
+    manual: true
+  - step_id: pm-11
+    lane: CMO Office
+    col: 8
+    name: "Review report, ask questions"
+    body: "The sponsor's starting point -- and the benchmark Signal Harbor must reconcile to."
+    manual: false

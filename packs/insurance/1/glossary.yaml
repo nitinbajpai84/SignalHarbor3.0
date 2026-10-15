@@ -1,0 +1,548 @@
+# Template insurance@1 glossary (design section 3.1) -- feeds the context graph's Term nodes
+# (section 7.3, projectors/contracts.py -- W6). Provisioning installs this verbatim into
+# <workspace>/contracts/context/glossary.yaml (clean mode onward); it is not a contract (rule 1
+# does not apply to it) and never gates anything.
+#
+# V3-03: grown from 6 to 100+ terms (brief item 2). The first 6 entries below are UNCHANGED
+# (same term, same definition) -- new entries use the fuller schema (term, definition, synonyms,
+# do_not_confuse_with, source) the brief asks for. Every new entry carries a source; none
+# contains a target or threshold (CLAUDE.md rule 4). Where a definition is standard industry
+# terminology rather than specific to this pack's own data, the source names the issuing body
+# (LIMRA, IRDAI, NAIC, a named regulator/association) per ND-35 -- it is background definitional
+# knowledge, never a business rule or a figure. No agent is a practitioner; this file is unreviewed
+# pack content pending the human review the brief calls for (see packages/V3-03/report.md, Open
+# Questions).
+template: insurance@1
+terms:
+  - term: New business APE
+    definition: Annualised premium equivalent written on policies incepted in the period.
+  - term: Persistency
+    definition: Share of in-force premium retained at renewal, by cohort month.
+  - term: Loss ratio
+    definition: Incurred claims divided by earned premium for a period/product.
+  - term: CEP
+    definition: Customer engagement platform -- journeys, campaigns and send events (cep_* sources).
+  - term: LBU
+    definition: Local business unit -- the geographic/legal entity dimension on ref_lbu.
+  - term: Lapse
+    definition: A policy that leaves in-force status without renewal or claim.
+
+  # -- Premium and volume metrics --------------------------------------------------------------
+  - term: APE
+    definition: >-
+      Annualised Premium Equivalent -- the industry-standard way to size new business across
+      single- and regular-premium products on one scale: annualised first-year regular premium
+      plus 10% of single premium.
+    synonyms: [Annualised premium equivalent, Annual premium equivalent]
+    do_not_confuse_with: [GWP, FYP, New business APE]
+    source: "LIMRA/industry usage; research note section 1.4 (insurance-marketing-domain.md)"
+  - term: FYP
+    definition: First Year Premium -- the premium collected in the first policy year of a regular-premium contract.
+    synonyms: [First year premium]
+    do_not_confuse_with: [RYP, APE, GWP]
+    source: "Standard life insurance industry terminology (LIMRA/IRDAI glossary usage)"
+  - term: RYP
+    definition: Renewal Year Premium -- premium collected on an existing in-force policy after its first year.
+    synonyms: [Renewal year premium]
+    do_not_confuse_with: [FYP]
+    source: "Standard life insurance industry terminology (LIMRA/IRDAI glossary usage)"
+  - term: GWP
+    definition: Gross Written Premium -- total premium written in a period before reinsurance and cancellations.
+    synonyms: [Gross written premium]
+    do_not_confuse_with: [NWP, APE]
+    source: "Standard insurance industry terminology (IRDAI/NAIC glossary usage)"
+  - term: NWP
+    definition: Net Written Premium -- gross written premium less premium ceded to reinsurers.
+    synonyms: [Net written premium]
+    do_not_confuse_with: [GWP]
+    source: "Standard insurance industry terminology (IRDAI/NAIC glossary usage)"
+  - term: Premium
+    definition: The amount a policyholder pays, on the policy's agreed schedule, to keep a policy in force.
+    synonyms: []
+    do_not_confuse_with: [Sum assured, APE]
+    source: "Standard insurance industry terminology"
+  - term: Single premium
+    definition: A policy funded by one lump-sum payment at inception rather than recurring instalments.
+    synonyms: []
+    do_not_confuse_with: [Regular premium]
+    source: "Research note section 1.4 (APE rule distinguishes single vs regular premium)"
+  - term: Regular premium
+    definition: A policy funded by recurring instalments (e.g. monthly, annual) rather than one lump sum.
+    synonyms: [Recurring premium]
+    do_not_confuse_with: [Single premium]
+    source: "Research note section 1.4 (APE rule distinguishes single vs regular premium)"
+  - term: Sum assured
+    definition: The guaranteed amount payable on a policy's claim event (death, maturity), distinct from the premium paid for it.
+    synonyms: [Sum insured]
+    do_not_confuse_with: [Premium, APE]
+    source: "Standard life insurance industry terminology"
+  - term: Rider
+    definition: A supplementary benefit attached to a base policy (e.g. critical illness, waiver of premium), sold alongside it rather than as a standalone contract.
+    synonyms: [Supplementary benefit]
+    do_not_confuse_with: [Base policy]
+    source: "Standard life insurance industry terminology (LIMRA/IRDAI glossary usage)"
+  - term: Base policy
+    definition: The core policy a rider is attached to; APE in this pack sums a policy's base plus rider coverages.
+    synonyms: [Base product]
+    do_not_confuse_with: [Rider]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula (pol_policy_coverages)"
+  - term: Case size
+    definition: Average APE per policy sold, for a given cut (campaign, channel, journey, period); a direct arithmetic derivative of APE and policy count, not a stored fact.
+    synonyms: [Average case size]
+    do_not_confuse_with: [Sum assured]
+    source: "Research note section 1.6; docs/signal-harbor/cmo-proof/kpis.json K04"
+
+  # -- Value / profit metrics ------------------------------------------------------------------
+  - term: NBP
+    definition: New Business Profit -- profit margin on new business written in a period, so growth is judged on value, not just volume. Not computable from this pack's monthly drops today (no margin assumption in the source data).
+    synonyms: [New business profit]
+    do_not_confuse_with: [APE, VNB margin]
+    source: "Research note section 1.5; docs/signal-harbor/cmo-proof/kpis.json K02"
+  - term: VNB
+    definition: Value of New Business -- the present value of future shareholder profit expected from business written in a period, discounted at the point of writing. Also called NBP in this pack.
+    synonyms: [Value of new business, NBP]
+    do_not_confuse_with: [EV, APE]
+    source: "Umbrex, Embedded Value and Value of New Business Analysis; Twenty Third Floor (cited in research note section 1.5)"
+  - term: VNB margin
+    definition: VNB divided by APE for the period -- behaves like a profit margin on new business; a rising APE with a falling VNB margin signals growth from lower-margin business.
+    synonyms: []
+    do_not_confuse_with: [NBP]
+    source: "Business Standard, LIC FY26 commentary; Zerodha Varsity (cited in research note section 6 glossary)"
+  - term: EV
+    definition: Embedded Value -- the present value of future profits from in-force business plus adjusted net asset value; VNB is the new-business component added to EV each period.
+    synonyms: [Embedded value]
+    do_not_confuse_with: [VNB]
+    source: "Umbrex, Embedded Value and Value of New Business Analysis (cited in research note section 1.5 sources)"
+
+  # -- Policy lifecycle / status ---------------------------------------------------------------
+  - term: In-force
+    definition: A policy status meaning the policy is currently active and not lapsed, cancelled or matured.
+    synonyms: [In force]
+    do_not_confuse_with: [Lapsed, Cancelled]
+    source: "docs/signal-harbor/cmo-proof/kpis.json observed_jan_jun_2026.status (pol_policies.policy_status values)"
+  - term: Surrender
+    definition: A policyholder's voluntary termination of a policy before maturity in exchange for its cash value -- distinct from a lapse, which is termination through non-payment.
+    synonyms: [Policy surrender]
+    do_not_confuse_with: [Lapse, Free-look cancellation]
+    source: "Standard life insurance industry terminology (IRDAI glossary usage)"
+  - term: Free-look
+    definition: A regulatory cooling-off period after a policy is issued during which the policyholder may cancel for a full refund; a free-look cancellation is not the same as a lapse or surrender.
+    synonyms: [Free-look period, Free-look cancellation]
+    do_not_confuse_with: [Lapse, Surrender]
+    source: "IRDAI/MAS-style free-look regulation (standard industry terminology); docs/signal-harbor/cmo-proof/kpis.json open_questions OQ7"
+  - term: Cancelled
+    definition: A policy status distinct from Lapsed in this pack's data (pol_policies.policy_status); includes free-look cancellations among other reasons.
+    synonyms: [Cancellation]
+    do_not_confuse_with: [Lapsed, Free-look]
+    source: "docs/signal-harbor/cmo-proof/kpis.json observed_jan_jun_2026.status"
+  - term: Reinstatement
+    definition: Restoring a lapsed policy to in-force status, usually on payment of arrears and evidence of continued insurability.
+    synonyms: []
+    do_not_confuse_with: [Lapse]
+    source: "Standard life insurance industry terminology"
+  - term: Grace period
+    definition: The window after a premium due date during which a policy stays in force before it lapses for non-payment.
+    synonyms: []
+    do_not_confuse_with: [Free-look]
+    source: "Standard life insurance industry terminology"
+  - term: Maturity
+    definition: The date on which a policy's term ends and any maturity benefit becomes payable.
+    synonyms: [Policy maturity]
+    do_not_confuse_with: [Lapse, Surrender]
+    source: "Standard life insurance industry terminology"
+  - term: Early termination
+    definition: A new policy that has already lapsed or been cancelled by a later drop, used in this pack as a persistency proxy because the drops lack a 13+ month history.
+    synonyms: []
+    do_not_confuse_with: [Persistency, Lapse rate]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K18"
+  - term: Lapse rate
+    definition: The share of premium or policies lapsing over a period -- the inverse view of persistency.
+    synonyms: []
+    do_not_confuse_with: [Persistency, Early termination]
+    source: "LIMRA, Experience Studies Program (cited in research note section 6 glossary, Persistency row)"
+  - term: 13-month persistency
+    definition: The share of premium or policies still in force 13 months after issue -- the first standard LIMRA persistency duration.
+    synonyms: []
+    do_not_confuse_with: [25-month persistency]
+    source: "LIMRA, Experience Studies Program; research note section 1.8"
+  - term: 25-month persistency
+    definition: The share of premium or policies still in force 25 months after issue -- the second standard LIMRA persistency duration; not computable from this pack's current 2-year rolling sample for the earliest cohorts.
+    synonyms: []
+    do_not_confuse_with: [13-month persistency]
+    source: "LIMRA, Experience Studies Program; research note section 1.8"
+
+  # -- Distribution / channel -------------------------------------------------------------------
+  - term: Bancassurance
+    definition: Distribution of insurance products through a bank's branches and customer base, under a partnership between the insurer and the bank.
+    synonyms: []
+    do_not_confuse_with: [Agency channel]
+    source: "AccelTree, AI-Driven Lead Management Systems ... Bancassurance (cited in research note section 5)"
+  - term: Agency channel
+    definition: Distribution through the insurer's own tied agency force, tracked in this pack via dist_agents.
+    synonyms: [Agency distribution]
+    do_not_confuse_with: [Bancassurance]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K07 source_tables (dist_agents)"
+  - term: MDRT
+    definition: Million Dollar Round Table -- an international, membership-by-production recognition body for top-performing life insurance and financial services agents.
+    synonyms: [Million Dollar Round Table]
+    do_not_confuse_with: []
+    source: "Standard industry recognition body, general industry knowledge (mdrt.org); not present in this pack's own data"
+  - term: Clawback
+    definition: Recovery of previously paid agent commission when a policy lapses, surrenders or is cancelled within a defined period after issue.
+    synonyms: [Commission clawback]
+    do_not_confuse_with: [Early termination]
+    source: "Standard life insurance distribution terminology"
+  - term: Orphaned policy
+    definition: An in-force policy whose servicing agent has left the company or is no longer active, leaving the policyholder without an assigned servicing agent.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "Standard life insurance distribution terminology"
+  - term: Branch
+    definition: The agent's distribution branch, the grain used for lead-distribution and SLA reporting in this pack.
+    synonyms: []
+    do_not_confuse_with: [LBU]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K17 grain (dist_agents.branch)"
+  - term: Lead source
+    definition: The channel or system a lead originated from (e.g. email_marketing, agent_owned, cep_handoff, agency in this pack's drops).
+    synonyms: []
+    do_not_confuse_with: [Lead distribution]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K05 data_support; lms_leads.lead_source"
+  - term: Walk-in lead
+    definition: A lead captured in person at a branch rather than through a digital or agent-owned channel.
+    synonyms: []
+    do_not_confuse_with: [Lead source]
+    source: "Research note section 5.2 (branch walk-in hand-off pattern)"
+  - term: Agent-assisted conversion
+    definition: A marketing-influenced lead converted by a human agent's own relationship, timing and persuasion -- work no CEP or web analytics event captures.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "Research note section 2.4"
+
+  # -- Engagement / lead funnel -------------------------------------------------------------------
+  - term: LMS
+    definition: Lead Management System -- captures leads from CEP and other sources, distributes them to agents/channels, and tracks acceptance.
+    synonyms: [Lead Management System]
+    do_not_confuse_with: [CEP, PAS, CRM]
+    source: "Research note section 5.1 (03_data_model.md table prefixes)"
+  - term: PAS
+    definition: Policy Admin System -- issues and administers policies and coverages; the source of record for in-force/lapsed/cancelled status.
+    synonyms: [Policy Admin System]
+    do_not_confuse_with: [LMS, CRM]
+    source: "Research note section 5.1 (03_data_model.md table prefixes)"
+  - term: CRM
+    definition: Customer master and relationship-history system, often the "who is this person" system distinct from PAS and the CEP.
+    synonyms: []
+    do_not_confuse_with: [PAS, LMS]
+    source: "Research note section 5.1"
+  - term: Journey
+    definition: A CEP-orchestrated sequence of sends to a customer over time, tracked in this pack via cep_journeys and credited with policies in cep_journey_campaign_map.
+    synonyms: [CEP journey]
+    do_not_confuse_with: [Campaign]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K15 source_tables"
+  - term: Campaign
+    definition: A named marketing initiative tracked in mkt_campaigns, distinct from a CEP journey though the two are mapped together for attribution.
+    synonyms: []
+    do_not_confuse_with: [Journey]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K10 source_tables (mkt_campaigns)"
+  - term: Send
+    definition: One message delivery attempt from the CEP to a customer on a given channel.
+    synonyms: [CEP send]
+    do_not_confuse_with: [Delivered, Opened]
+    source: "Research note section 1.1; docs/signal-harbor/cmo-proof/kpis.json K16 formula"
+  - term: Delivered
+    definition: A send that successfully reached the customer's device/inbox, the denominator for open rate.
+    synonyms: []
+    do_not_confuse_with: [Send, Opened]
+    source: "Research note section 1.1; docs/signal-harbor/cmo-proof/kpis.json K16 formula"
+  - term: Delivery rate
+    definition: Delivered sends divided by total sends.
+    synonyms: []
+    do_not_confuse_with: [Open rate, CTR]
+    source: "Industry standard; research note section 6 glossary (CTR / open rate / delivery rate row)"
+  - term: Open rate
+    definition: Opened messages divided by delivered messages; by definition always 0 for SMS in this pack's channel set.
+    synonyms: []
+    do_not_confuse_with: [Delivery rate, CTR]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K16"
+  - term: CTR
+    definition: Click-through rate -- clicked messages divided by sends (as used in this pack's K16).
+    synonyms: [Click-through rate, Click rate]
+    do_not_confuse_with: [Open rate]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K16 formula"
+  - term: Conversion
+    definition: A policy whose inception date falls inside the agreed observation window after a qualifying touch.
+    synonyms: []
+    do_not_confuse_with: [Lead acceptance]
+    source: "Research note section 1.3/6 glossary; 02_kpi_definitions.md"
+  - term: Lead distribution
+    definition: The hand-off of a lead to an agent or channel queue for follow-up -- an insurance-specific funnel stage a generic marketing funnel doesn't have.
+    synonyms: [Distributed]
+    do_not_confuse_with: [Lead acceptance, Conversion]
+    source: "Research note section 1.2"
+  - term: Lead acceptance
+    definition: The point a human agent actually picks up a distributed lead, distinct from distribution itself.
+    synonyms: [Accepted]
+    do_not_confuse_with: [Lead distribution]
+    source: "Research note section 1.2/5.2"
+  - term: Duplicate lead
+    definition: A re-submission of the same customer to the same campaign within a short window; flagged as a candidate in this pack because the drops carry no is_duplicate_of column.
+    synonyms: []
+    do_not_confuse_with: [Overlap / cannibalisation]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K06"
+
+  # -- Attribution ---------------------------------------------------------------------------
+  - term: Attribution
+    definition: The rule by which a converted policy is credited to the marketing touch(es) that influenced it.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "Research note section 2"
+  - term: Attributed policy
+    definition: A policy credited to one funnel (CEP or Lead Management) after de-duplication, counted once in any total.
+    synonyms: []
+    do_not_confuse_with: [Overlap / cannibalisation]
+    source: "Research note section 6 glossary; 01_intent.md"
+  - term: Observation window
+    definition: The number of days after a touch within which a policy inception can still be attributed to it; 120 days in this pack, via ref_lbu.attribution_window_days.
+    synonyms: [Attribution window]
+    do_not_confuse_with: []
+    source: "Research note section 2.3/6 glossary; docs/signal-harbor/cmo-proof/kpis.json K09 formula"
+  - term: First-touch attribution
+    definition: A single-touch model crediting 100% of a conversion to the first recorded interaction.
+    synonyms: []
+    do_not_confuse_with: [Last-touch attribution, MTA]
+    source: "Research note section 2.1/6 glossary; Workshop Digital, Attribution Models for Financial Institutions"
+  - term: Last-touch attribution
+    definition: A single-touch model crediting 100% of a conversion to the interaction immediately before conversion.
+    synonyms: []
+    do_not_confuse_with: [First-touch attribution, MTA]
+    source: "Research note section 2.1/6 glossary; Workshop Digital, Attribution Models for Financial Institutions"
+  - term: Earliest-qualifying-touch
+    definition: This pack's own single-touch rule -- within a funnel the touch is fixed (CEP first send, or lead creation date), and across funnels the earliest touch inside the window wins, CEP breaking a same-day tie.
+    synonyms: []
+    do_not_confuse_with: [First-touch attribution, MTA]
+    source: "Research note section 2.1; 02_kpi_definitions.md attribution table, open question Q1"
+  - term: MTA
+    definition: Multi-touch attribution -- credit split across several touchpoints by a weighting rule (linear, time-decay, U-shaped/position-based); not used by this pack today.
+    synonyms: [Multi-touch attribution]
+    do_not_confuse_with: [First-touch attribution, Last-touch attribution]
+    source: "Nielsen, Methods and Models: A Guide to Multi-Touch Attribution (cited in research note section 2.2/6)"
+  - term: Overlap / cannibalisation
+    definition: A customer or policy touched by more than one funnel/channel before conversion; this pack resolves each case to one funnel rather than reporting the overlap as its own number.
+    synonyms: [Channel overlap]
+    do_not_confuse_with: [Duplicate lead]
+    source: "Research note section 2.4/2.5/6 glossary; round-1 use case brief"
+  - term: De-duplication
+    definition: The rule that a policy is counted once in any total however many journeys, campaigns or leads touched it; breakdowns do not sum to the total.
+    synonyms: []
+    do_not_confuse_with: [Duplicate lead]
+    source: "Research note section 1.9; 02_kpi_definitions.md"
+
+  # -- Cost / ROI -----------------------------------------------------------------------------
+  - term: CAC
+    definition: Customer Acquisition Cost -- campaign spend divided by conversions, proposed in this pack as spend divided by policies sold attributed to a campaign.
+    synonyms: [Customer Acquisition Cost]
+    do_not_confuse_with: [Cost per lead, Cost per policy]
+    source: "Research note section 1.7/6 glossary (Proposal, to confirm with CMO)"
+  - term: Cost per lead
+    definition: Campaign spend divided by unique (de-duplicated) leads generated by that campaign.
+    synonyms: []
+    do_not_confuse_with: [Cost per policy, CAC]
+    source: "Research note section 1.7; docs/signal-harbor/cmo-proof/kpis.json K11"
+  - term: Cost per policy
+    definition: Campaign spend divided by policies sold attributed to that campaign; a form of CAC.
+    synonyms: []
+    do_not_confuse_with: [Cost per lead]
+    source: "Research note section 1.7; docs/signal-harbor/cmo-proof/kpis.json K12"
+  - term: Marketing ROI
+    definition: Value attributed to a campaign (APE, or NBP once available) relative to its spend.
+    synonyms: [ROI]
+    do_not_confuse_with: [VNB margin]
+    source: "Research note section 6 glossary (Proposal, to confirm with CMO/Finance); docs/signal-harbor/cmo-proof/kpis.json K13"
+  - term: Campaign spend
+    definition: Marketing spend by campaign/channel/period; not present in this pack's monthly drops today -- the README for the underlying input pack states explicitly there is no budget or spend data.
+    synonyms: [Spend]
+    do_not_confuse_with: [Premium]
+    source: "Research note section 1.7; docs/signal-harbor/cmo-proof/kpis.json K11/K12/K13 data_support"
+
+  # -- Product / segment ------------------------------------------------------------------------
+  - term: Product category
+    definition: The grouping a policy's base product belongs to (Investment-linked, Retirement, Savings, Protection, Health in this pack); riders use the policy's base product category.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 source_tables (pol_products), observed_jan_jun_2026.product_mix"
+  - term: Protection product
+    definition: A product category in this pack's product mix (12.2% of APE at 2026-06); grouped with Health for the protection-vs-savings push question.
+    synonyms: []
+    do_not_confuse_with: [Savings product]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 observed_jan_jun_2026.product_mix"
+  - term: Savings product
+    definition: A product category in this pack's product mix (21.3% of APE at 2026-06); grouped with Retirement and Investment-linked for the protection-vs-savings question.
+    synonyms: []
+    do_not_confuse_with: [Protection product]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 observed_jan_jun_2026.product_mix"
+  - term: Retirement product
+    definition: A product category in this pack's product mix (27.2% of APE at 2026-06).
+    synonyms: []
+    do_not_confuse_with: [Savings product]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 observed_jan_jun_2026.product_mix"
+  - term: ILP
+    definition: Investment-linked product -- a product category in this pack's product mix (35.0% of APE at 2026-06), the largest single category.
+    synonyms: [Investment-linked product]
+    do_not_confuse_with: [Savings product]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 observed_jan_jun_2026.product_mix"
+  - term: Health product
+    definition: A product category in this pack's product mix (4.3% of APE at 2026-06); grouped with Protection for the protection-vs-savings push question.
+    synonyms: []
+    do_not_confuse_with: [Protection product]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14 observed_jan_jun_2026.product_mix"
+  - term: Customer segment
+    definition: "The crm_customers.customer_segment dimension used for case-size breakdowns (sample values in this pack: Mass, Emerging Affluent, Affluent)."
+    synonyms: []
+    do_not_confuse_with: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K04 source_tables; sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json"
+  - term: Mass segment
+    definition: A customer_segment value observed in this pack's CRM profile.
+    synonyms: [Mass]
+    do_not_confuse_with: [Affluent segment, Emerging Affluent segment]
+    source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json sample_values"
+  - term: Affluent segment
+    definition: A customer_segment value observed in this pack's CRM profile.
+    synonyms: [Affluent]
+    do_not_confuse_with: [Mass segment, Emerging Affluent segment]
+    source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json sample_values"
+  - term: Emerging Affluent segment
+    definition: A customer_segment value observed in this pack's CRM profile, between Mass and Affluent.
+    synonyms: [Emerging Affluent]
+    do_not_confuse_with: [Mass segment, Affluent segment]
+    source: "sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json sample_values"
+
+  # -- Org / geography / currency ----------------------------------------------------------------
+  - term: LBU currency
+    definition: The local currency (e.g. SGD, MYR, HKD) a policy is written in, converted to the reporting currency via ref_fx_rates for the policy's inception month.
+    synonyms: []
+    do_not_confuse_with: [Reporting currency]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 formula/currency"
+  - term: Reporting currency
+    definition: The single currency (USD in this pack) all KPIs are reported in after FX conversion.
+    synonyms: []
+    do_not_confuse_with: [LBU currency]
+    source: "docs/signal-harbor/cmo-proof/kpis.json scope.reporting_currency"
+  - term: FX rate
+    definition: The rate_to_usd value on ref_fx_rates for a currency and month, used to convert local-currency amounts to the reporting currency.
+    synonyms: [rate_to_usd]
+    do_not_confuse_with: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 source_tables (ref_fx_rates)"
+
+  # -- Regional regulators and associations (cited, no figures) -----------------------------------
+  - term: LIA Singapore
+    definition: Life Insurance Association, Singapore -- the industry body named as a market indicator source for new-business APE growth.
+    synonyms: [Life Insurance Association Singapore]
+    do_not_confuse_with: [LIAM]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 market_indicators"
+  - term: MAS
+    definition: Monetary Authority of Singapore -- named as a market indicator source (policy rates, SORA) and the bancassurance/data-privacy regulator for Singapore.
+    synonyms: [Monetary Authority of Singapore]
+    do_not_confuse_with: [BNM, HKMA]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01/K09 market_indicators"
+  - term: LIAM
+    definition: Life Insurance Association of Malaysia -- the industry body named as a market indicator source for new-business statistics.
+    synonyms: [Life Insurance Association of Malaysia]
+    do_not_confuse_with: [LIA Singapore]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 market_indicators"
+  - term: BNM
+    definition: Bank Negara Malaysia -- named as a market indicator source (OPR, policy rates) for Malaysia.
+    synonyms: [Bank Negara Malaysia]
+    do_not_confuse_with: [MAS, HKMA]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 market_indicators"
+  - term: HKIA
+    definition: Hong Kong Insurance Authority -- named as a market indicator source (provisional statistics) for Hong Kong new-business APE growth.
+    synonyms: [Hong Kong Insurance Authority]
+    do_not_confuse_with: [HKMA]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 market_indicators"
+  - term: HKMA
+    definition: Hong Kong Monetary Authority -- named as a market indicator source (base rate, HIBOR) for Hong Kong.
+    synonyms: [Hong Kong Monetary Authority]
+    do_not_confuse_with: [HKIA, MAS]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 market_indicators"
+  - term: PDPA
+    definition: Personal Data Protection Act -- the data-privacy/marketing-consent regulation named for Singapore and Malaysia in this pack's market indicators.
+    synonyms: [Personal Data Protection Act]
+    do_not_confuse_with: [PDPO]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K09 market_indicators"
+  - term: PDPO
+    definition: Personal Data (Privacy) Ordinance -- the data-privacy regulation named for Hong Kong in this pack's market indicators.
+    synonyms: [Personal Data (Privacy) Ordinance]
+    do_not_confuse_with: [PDPA]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K09 market_indicators"
+  - term: SSIR
+    definition: Singapore SMS Sender ID Registry -- a named platform/regulatory change affecting SMS channel sending, cited as a market indicator for engagement rates.
+    synonyms: [Singapore SMS Sender ID Registry]
+    do_not_confuse_with: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K16 market_indicators"
+  - term: AAJI
+    definition: Asosiasi Asuransi Jiwa Indonesia -- Indonesia's life insurance association, the Indonesian analogue to LIA Singapore/LIAM named in this pack's Indonesia market brief.
+    synonyms: [Indonesia Life Insurance Association]
+    do_not_confuse_with: [OJK]
+    source: "General industry knowledge (association name); not present in this pack's own kpis.json -- see market_briefs/indonesia.md, status: proposal"
+  - term: OJK
+    definition: Otoritas Jasa Keuangan -- Indonesia's financial services regulator, named in this pack's Indonesia market brief as the analogue to MAS/BNM/HKIA.
+    synonyms: [Financial Services Authority of Indonesia]
+    do_not_confuse_with: [AAJI]
+    source: "General industry knowledge (regulator name); not present in this pack's own kpis.json -- see market_briefs/indonesia.md, status: proposal"
+  - term: IRDAI
+    definition: Insurance Regulatory and Development Authority of India -- India's insurance regulator, named in this pack's India market brief.
+    synonyms: [Insurance Regulatory and Development Authority of India]
+    do_not_confuse_with: []
+    source: "General industry knowledge (regulator name); not present in this pack's own kpis.json -- see market_briefs/india.md, status: proposal"
+  - term: Life Insurance Council
+    definition: A life insurance industry council in India named in this pack's India market brief as an industry-statistics source.
+    synonyms: []
+    do_not_confuse_with: [IRDAI]
+    source: "General industry knowledge (body name); not present in this pack's own kpis.json -- see market_briefs/india.md, status: proposal"
+
+  # -- Pack / model concepts -----------------------------------------------------------------
+  - term: Policy coverage
+    definition: A row on pol_policy_coverages -- one of a policy's base or rider coverages, each with its own ape_amount.
+    synonyms: []
+    do_not_confuse_with: [Base policy, Rider]
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01 source_tables"
+  - term: Funnel
+    definition: One stage-by-stage chain in the engagement-leads-policies-profit measurement chain this pack uses (engagement funnel, lead funnel).
+    synonyms: []
+    do_not_confuse_with: []
+    source: "Research note section 1"
+  - term: Belief to test
+    definition: A problem template's stated hypothesis the data should confirm or disprove, carried as the belief_to_test field on each problems.yaml entry.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "templates/insurance/1/problems.yaml (this pack)"
+  - term: Signal
+    definition: A named pattern (e.g. continuity risk, hidden gems, friction, pull) a problem template asks North to surface, carried as the signals field on each problems.yaml entry.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "templates/insurance/1/problems.yaml (this pack)"
+  - term: KPI tree
+    definition: The set of KPI nodes, drives edges and lever nodes for an industry, with definitions and units but no values or targets.
+    synonyms: []
+    do_not_confuse_with: []
+    source: "templates/insurance/1/kpi_tree.yaml header (this pack)"
+  - term: North-star KPI
+    definition: A tier-1 KPI the whole KPI tree exists to move (K01 New-business APE, K02 New-business profit in this pack).
+    synonyms: [North star KPI]
+    do_not_confuse_with: [Driver KPI]
+    source: "docs/signal-harbor/cmo-proof/kpis.json tier field"
+  - term: Driver KPI
+    definition: A tier-2 KPI (e.g. policies sold, leads generated) that feeds a north-star KPI.
+    synonyms: []
+    do_not_confuse_with: [North-star KPI]
+    source: "docs/signal-harbor/cmo-proof/kpis.json tier field"
+  - term: Efficiency KPI
+    definition: A KPI tier measuring cost or return (cost per lead, cost per policy, marketing ROI in this pack).
+    synonyms: []
+    do_not_confuse_with: [Driver KPI]
+    source: "docs/signal-harbor/cmo-proof/kpis.json tier field"
+  - term: YTD
+    definition: Year-to-date -- 1 January of the latest data date's year, through the latest data date.
+    synonyms: [Year to date]
+    do_not_confuse_with: []
+    source: "Research note section 6 glossary; 02_kpi_definitions.md"

@@ -1,0 +1,672 @@
+- id: 43.q1.question
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 1)
+  input: What must be decided, one line
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's own words (title and outcome.question); North may pre-fill from a source intent
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: a one-line meeting request'
+  claim: The only thing the organiser must type is the question to be decided
+- id: 43.q1.rewrite
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 1, North line)
+  input: Offer to rewrite the line as a question, and a one-decision-only hint
+  person: organiser
+  mode: derived
+  agent: North
+  source: the line typed in question 1
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: a colleague saying it is two decisions'
+  claim: North checks the line is one decision and offers a rewrite, never forced
+- id: 43.q1.prefill
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision&from=<id> (question 1)
+  input: Question pre-filled from the source intent
+  person: organiser
+  mode: derived
+  agent: North
+  source: the source intent's chosen idea, closure or check-in item
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: retyping the context from another record'
+  claim: A decision started from another intent opens with the question already drafted
+- id: 43.q2.by_when
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 2)
+  input: By when
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the two working day default from the clock
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: picking a date versus accepting a filled default'
+  claim: The decide-by date defaults to two working days and is one tap to accept
+- id: 43.q2.cap_note
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 2, note)
+  input: Note when the date is longer than a decision should take
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the date against the cap
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: A too-long date is flagged by rule and suggests an Initiative
+- id: 43.q3.decider
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 3)
+  input: Who decides, one person
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the sponsor resolved from the company profile
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: working out who owns the call versus a default name'
+  claim: The decider defaults to the sponsor; the organiser changes it if needed
+- id: 43.q3.self_warning
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 3, warning)
+  input: You chose yourself, advisers will still be asked
+  person: organiser
+  mode: automatic
+  agent: null
+  source: decider equal to organiser
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The system flags when the decider is the organiser
+- id: 43.q4.advisers
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 4)
+  input: Whose advice you want, up to the cap
+  person: organiser
+  mode: confirm
+  agent: North
+  source: people suggested from the areas and earlier decisions
+  minutes_without: 8
+  minutes_with: 2
+  basis: 'estimate: asking round for who has a view'
+  claim: The organiser picks advisers from named suggestions
+- id: 43.q5.areas
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (question 5)
+  input: Which areas it affects
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the areas of the decider and advisers and the question
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: choosing departments from memory'
+  claim: North marks the areas; the organiser ticks chips
+- id: 43.q5.affected_may_read
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (switch)
+  input: Affected people may read the options and notes
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice, default off
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one decision, one toggle'
+  claim: Affected reading is the organiser's explicit choice
+- id: 43.review.preview
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/new?type=decision (preview and What North will do)
+  input: Intent header preview with title, time box and decider
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the five answers
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The header is previewed from the answers
+- id: 43.open.open
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/new?type=decision (Open this decision)
+  input: Open this decision
+  person: organiser
+  mode: manual
+  agent: null
+  source: the five valid answers
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Opening is a person's press; North never opens
+- id: 43.open.record
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (on open)
+  input: Record, clock, event log and first Nira lines
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the validated answers and the clock
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: setting up a tracker entry and emailing the advisers'
+  claim: The decision record and the asks to the decider and advisers are made by the system on open
+- id: 43.open.nira_asks
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: Pulse pages of the decider and advisers
+  input: Decision due and advice asked lines
+  person: decider
+  mode: automatic
+  agent: Nira
+  source: people.decider and people.advisers
+  minutes_without: 8
+  minutes_with: 0
+  basis: 'estimate: an email to each person'
+  claim: The decider and advisers are told on their Pulse page
+- id: 43.options.draft
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Options)
+  input: Option cards with what it means, for, against and needs
+  person: organiser
+  mode: derived
+  agent: North
+  source: records for the named areas, named nodes, earlier decisions and advisers' notes
+  minutes_without: 90
+  minutes_with: 3
+  basis: 'estimate: researching and writing up the options in a paper'
+  claim: North drafts option cards from the records, each marked Guessed with the count of records
+- id: 43.options.cost
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (option card, What it costs or needs)
+  input: Cost or need as traced or Not known with who to ask
+  person: organiser
+  mode: derived
+  agent: North
+  source: a recorded figure or an owner named for an estimate
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: chasing a quote'
+  claim: A cost North cannot trace is shown as Not known, never a made-up figure
+- id: 43.options.guessed
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Guessed mark)
+  input: Guessed by North from n records
+  person: decider
+  mode: automatic
+  agent: North
+  source: the length of sources on each option
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: asking where a statement came from'
+  claim: Each drafted card shows how many records it rests on
+- id: 43.options.redraft
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Redraft options)
+  input: Redraft cards nobody has edited
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser presses the button
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Redraft never overwrites a person's edit
+- id: 43.option.add
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Add an option)
+  input: An option with name, what it means, for, against, cost
+  person: adviser
+  mode: manual
+  agent: null
+  source: the adviser's own knowledge
+  minutes_without: 10
+  minutes_with: 5
+  basis: 'estimate: writing an option into a paper'
+  claim: Advisers add options in a form; the idea is their own
+- id: 43.option.confirm
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (option card)
+  input: Confirm or edit a drafted card
+  person: adviser
+  mode: confirm
+  agent: North
+  source: the drafted card
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: editing a paragraph in a document'
+  claim: A drafted card is accepted or edited in place
+- id: 43.option.anonymous
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Anonymous switch)
+  input: Add without my name
+  person: adviser
+  mode: manual
+  agent: null
+  source: the adviser's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Anonymous options and notes store no author
+- id: 43.note.add
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Add a note)
+  input: A comment or suggestion on an option
+  person: adviser
+  mode: manual
+  agent: null
+  source: the adviser's view, one line
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an email reply'
+  claim: Advice is given on the card, not in a mail chain
+- id: 43.note.decide
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Accept, Decline, Answer)
+  input: Accept, decline or answer a suggestion
+  person: organiser
+  mode: manual
+  agent: null
+  source: the card owner or decider
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: replying to a comment'
+  claim: Only the card's owner or the decider settles a suggestion
+- id: 43.adviser.status
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Advisers panel)
+  input: Added n notes or Not replied yet
+  person: organiser
+  mode: automatic
+  agent: null
+  source: notes by person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: chasing and tallying'
+  claim: Who has replied is counted without chasing
+- id: 43.adviser.nudge
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Nudge)
+  input: One reminder line to an adviser
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser presses the button
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: writing a chase email'
+  claim: A nudge is one press and goes as one Nira line
+- id: 43.affects.nodes
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Affects, Name a measure or process)
+  input: Measures and processes the decision names
+  person: organiser
+  mode: confirm
+  agent: North
+  source: nodes in the map matching the question and areas
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: working out which measures are touched'
+  claim: Named nodes are picked from suggestions; they get the version note
+- id: 43.affects.lens
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Affects, Lens draft)
+  input: Draft definition for a named node with none
+  person: organiser
+  mode: derived
+  agent: Lens
+  source: the node and the glossary
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: writing the definition'
+  claim: Lens drafts a missing definition for a person to confirm in the glossary
+- id: 43.draft.line
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (North drafting line)
+  input: North drafted 3 options from 6 records
+  person: organiser
+  mode: automatic
+  agent: North
+  source: counts of options, records and notes
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The drafting line counts what North used
+- id: 43.recommend.line
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (North's draft recommendation)
+  input: One option, one reason and source chips
+  person: decider
+  mode: derived
+  agent: North
+  source: the options, records and notes
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: writing a recommendation paper'
+  claim: North leans one way with a reason and every source; it is labelled a draft, not a decision
+- id: 43.recommend.trace
+  spec: '43'
+  journey: decision
+  stage: think
+  screen: /centre/intent/<id> (Trace rule note)
+  input: Missing item named when a number cannot be traced
+  person: decider
+  mode: automatic
+  agent: null
+  source: numbers without a record are dropped
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking the figures behind a recommendation'
+  claim: An untraceable number is dropped and what is missing is named
+- id: 43.change.decider
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (More, Change the decider)
+  input: Change the decider
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser before any choice
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: telling people who decides now'
+  claim: Changing the decider is one pick and is logged
+- id: 43.decide.pick
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (Choose an option)
+  input: Pick one option
+  person: decider
+  mode: manual
+  agent: null
+  source: the decider after reading cards, notes and the recommendation
+  minutes_without: 30
+  minutes_with: 3
+  basis: 'estimate: a meeting to decide'
+  claim: The decider chooses; no agent ever picks
+- id: 43.decide.why
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (sign modal, Why)
+  input: Why this option
+  person: decider
+  mode: confirm
+  agent: North
+  source: the options and notes, offered as a draft line
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: writing the reasons in a memo'
+  claim: North offers a Why the decider confirms or rewrites; an unedited draft is flagged
+- id: 43.decide.writes
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (sign modal, What this writes)
+  input: Version notes and links that will be written
+  person: decider
+  mode: automatic
+  agent: null
+  source: the Affects panel and links.from
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: listing what must be updated'
+  claim: The modal lists what the decision will write before it is pressed
+- id: 43.decide.record
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (Record my decision)
+  input: Record my decision
+  person: decider
+  mode: manual
+  agent: null
+  source: the choice, the why and the signed-in person
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: signing a paper'
+  claim: Recording is the decider's own press
+- id: 43.decide.later
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (Decide later)
+  input: New date and reason, once
+  person: decider
+  mode: manual
+  agent: null
+  source: the decider
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: one date and one line'
+  claim: Deferral is allowed once with a reason
+- id: 43.decide.none
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (No decision)
+  input: No decision with a reason
+  person: decider
+  mode: manual
+  agent: null
+  source: the decider
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: one line'
+  claim: A no decision is recorded with its reason
+- id: 43.banner
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (North banner)
+  input: Will not be decided inside the time box, with options
+  person: organiser
+  mode: derived
+  agent: North
+  source: the clock against the state
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: watching the calendar'
+  claim: North warns early and offers extend, close with no decision or cancel
+- id: 43.cancel
+  spec: '43'
+  journey: decision
+  stage: decide
+  screen: /centre/intent/<id> (Cancel this decision)
+  input: Cancel with a reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser or decider
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: one line'
+  claim: Cancelling needs a reason and is kept in Past
+- id: 43.write.versions
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: Node pages of the named measures and processes
+  input: Decision version note on each named node
+  person: business owner
+  mode: automatic
+  agent: null
+  source: the recorded decision and the Affects list
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: updating the metric history by hand'
+  claim: Each named node gets the decision in its history without anyone typing it
+- id: 43.write.link
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: /centre/intent/<from> (links.to)
+  input: Link on the source intent
+  person: organiser
+  mode: automatic
+  agent: null
+  source: links.from
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The source intent gains the link
+- id: 43.close.draft
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: /centre/intent/<id>/close
+  input: 'Closure draft: why, what came out, next'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the decision, options and notes
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: writing the decision minute'
+  claim: North drafts the closure; Janet edits, and it is kept marked Drafted by North if she does not
+- id: 43.close.snapshot
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: /centre/intent/<id> (Options considered)
+  input: Every option as it stood, with the chosen one marked
+  person: participant
+  mode: automatic
+  agent: null
+  source: outcome.considered_snapshot
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: filing the options paper with the decision'
+  claim: The options considered are frozen into the record
+- id: 43.pulse.decided
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: Pulse pages of the area members
+  input: Decided option and by whom
+  person: area member
+  mode: automatic
+  agent: Nira
+  source: the recorded decision
+  minutes_without: 8
+  minutes_with: 0
+  basis: 'estimate: an announcement email'
+  claim: The decision is announced to the areas without anyone writing it
+- id: 43.pulse.owner
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: Pulse pages of node owners
+  input: Decision changed this node
+  person: business owner
+  mode: automatic
+  agent: Nira
+  source: the version notes written
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: telling each owner'
+  claim: Owners of named nodes are told what changed
+- id: 43.rating
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: Pulse pages of participants
+  input: Rating request
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the closed intent and spec 10
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: a feedback request'
+  claim: Raters are asked by the system, anonymously by default
+- id: 43.share.view
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: /centre/intent/<id>/share
+  input: Read-only record for people named on a share
+  person: participant
+  mode: automatic
+  agent: null
+  source: the record filtered by the share list
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: forwarding the memo'
+  claim: A share link shows the full decision record read-only
+- id: 43.count.decisions
+  spec: '43'
+  journey: decision
+  stage: prove
+  screen: /centre (counters)
+  input: Decisions opened, decided, no decision, deferred, cancelled, days to decide
+  person: company admin
+  mode: automatic
+  agent: null
+  source: intent records and events of type decision
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: a decision log kept by hand'
+  claim: Decision counters are counted by the system

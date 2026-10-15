@@ -1,0 +1,259 @@
+- id: 49.strip.build
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Suggested first intents strip)
+  input: Dashed cards for first intents from the industry pack
+  person: company admin
+  mode: derived
+  agent: North
+  source: the pack's first_intents file for the company's industry, minus dismissed and picked up
+  minutes_without: 120
+  minutes_with: 1
+  basis: 'estimate: a consultant workshop to work out where to begin'
+  claim: A new company opens the centre to a starting list from the industry, with no workshop
+- id: 49.strip.label
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Strip label and source chip)
+  input: Suggested from what others in the industry usually do, with the pack label
+  person: company admin
+  mode: automatic
+  agent: null
+  source: SUGGESTION_LABEL and pack.yaml
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Every suggestion is labelled as a suggestion and never as company policy
+- id: 49.strip.card
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Suggestion card)
+  input: Type, title, purpose, areas and why others start here
+  person: organiser
+  mode: derived
+  agent: North
+  source: first_intents.yaml
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: researching what peers work on'
+  claim: Each card says what to start and why others start there
+- id: 49.strip.start
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Start this)
+  input: Open the chooser with title, purpose and areas pre-filled
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser presses the button
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: starting from a blank form'
+  claim: One press starts a draft that is already filled
+- id: 49.strip.dismiss
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Not for us)
+  input: Hide the card for me
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A suggestion can be dismissed in one tap
+- id: 49.strip.restore
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Show suggestions again)
+  input: Show dismissed suggestions
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Dismissed cards can be brought back
+- id: 49.strip.preview
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Preview panel)
+  input: The start answers the pack would pre-fill, marked Suggested
+  person: organiser
+  mode: automatic
+  agent: null
+  source: first_intents start_answers
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: reading a template'
+  claim: The person can see what would be pre-filled before starting
+- id: 49.mark.pickup
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: Suggestion marks file of the person
+  input: Picked up or dismissed mark
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the person's action
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Picked up and dismissed suggestions are remembered per person
+- id: 49.mark.from_pack
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: intents/<id>/intent.json (from_pack)
+  input: from_pack on the new intent
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the suggestion id travelling with the start
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The intent records that it began from a suggestion
+- id: 49.hint.line
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=<type> (Hint line)
+  input: 'Others often say: a wording hint under a start question'
+  person: organiser
+  mode: derived
+  agent: North
+  source: start_hints.yaml
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking peers how they would answer'
+  claim: A hint line shows what others usually say and never fills the field
+  built: missing
+- id: 49.hint.use
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=<type> (Use this wording)
+  input: Copy the hint into the field as a draft
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the pack hint
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: typing an answer from scratch'
+  claim: The organiser can take the suggested wording in one tap and then edit it
+  built: missing
+- id: 49.hint.hide
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=<type> (Hide suggestions)
+  input: Hide hints for this session
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Hints can be hidden
+  built: missing
+- id: 49.checkin.panel
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=pulse (Suggested questions)
+  input: Suggested weekly questions for the chosen area
+  person: organiser
+  mode: derived
+  agent: North
+  source: checkin_questions.yaml
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: working out what to ask each week'
+  claim: The check-in organiser gets suggested questions per area
+  built: missing
+- id: 49.checkin.add
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=pulse (Add to my check-in)
+  input: Add a suggested question as my own
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the pack question
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: typing the question'
+  claim: One tap makes a suggested question the organiser's own question
+  built: missing
+- id: 49.checkin.dismiss
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/new?type=pulse (Not for us)
+  input: Hide a suggested question
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A suggested question can be dismissed
+  built: missing
+- id: 49.areas.suggested
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: Suggested areas panel (spec 05)
+  input: Suggested areas from the pack
+  person: company admin
+  mode: derived
+  agent: North
+  source: areas.yaml for the industry
+  minutes_without: 30
+  minutes_with: 1
+  basis: 'estimate: designing departments and teams for the first setup'
+  claim: The pack proposes the areas so the admin does not start from nothing
+- id: 49.wall.cards
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/wall (North pack cards)
+  input: Problem and measure cards on a blank lane
+  person: participant
+  mode: derived
+  agent: North
+  source: problems.yaml and kpi_tree.yaml, measure names only
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: brainstorming typical problems to prime a wall'
+  claim: A blank lane starts with what others in the industry usually work on
+  built: missing
+- id: 49.empty.nopack
+  spec: '49'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (empty company with no pack)
+  input: An honest empty line, never another industry's content
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the pack loader empty state
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: A company with no pack sees an honest empty line, never another industry's content

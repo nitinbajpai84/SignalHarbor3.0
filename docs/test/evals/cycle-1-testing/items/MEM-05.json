@@ -1,0 +1,142 @@
+{
+  "id": "MEM-05",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "And the other way - the sponsor's quarterly preference does not reach the analyst.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 313,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures quarterly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 2 gold tables, each ready for dashboards: gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: cash_usd, net_worth_sgd, net_worth_usd. I will remember: you like figures by quarter. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-659d6d62",
+        "remembered": [
+          "you like figures by quarter"
+        ]
+      },
+      "ms": 275,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 6,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "quarterly"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-dbb823d4",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures by quarter",
+            "sure": "said",
+            "at": "2026-10-09T14:50:29+00:00",
+            "source": {
+              "said": "From now on show my figures quarterly",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-9ee8601f",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures in SGD",
+            "sure": "inferred",
+            "at": "2026-10-09T14:50:15+00:00",
+            "source": {
+              "said": "in SGD",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-3717efef",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T14:50:14+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 22,
+      "expect": null,
+      "cleanup": true
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-dbb823d4",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-dbb823d4"
+      },
+      "ms": 10,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

@@ -1,0 +1,11 @@
+# V5W-1 Assignments and the Action landing. Everyone signed in sees their own landing and the assignments of projects they may read.
+# Assigning and handing over are for the project owner or a company admin; code checks that (g1_access.can_manage) and refuses anyone else.
+routes:
+  GET /api/v1/pulse: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/action/landing: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/assignments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/assign/candidates: {roles: [company_admin, sponsor, analyst, owner]}
+  POST /api/v1/projects/{pid}/assign: {roles: [company_admin, sponsor, analyst, owner]}
+  POST /api/v1/projects/{pid}/handover: {roles: [company_admin, sponsor, analyst, owner]}
+  POST /api/v1/assignments/{aid}/done: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/assignments/{aid}/withdraw: {roles: [company_admin, sponsor, analyst]}

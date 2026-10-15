@@ -1,0 +1,26 @@
+fastapi
+uvicorn
+pyyaml
+httpx
+pypdf
+pymupdf  # PDF text (pypdf is the fallback)
+python-docx  # SOW and SOP documents
+python-multipart
+duckdb
+pytz  # duckdb needs it to return timestamps with time zone
+openpyxl
+numpy
+pillow
+tzdata>=2024.1  # time zone database for zoneinfo (company time zone, ruling 22)
+sqlglot>=25
+jsonschema>=4
+referencing>=0.30
+rapidocr-onnxruntime
+fastembed  # local embeddings for meaning search (BAAI/bge-small-en-v1.5; cached in /data/_models)
+pydbml  # reads the data model scripts (DBML) into the catalogue
+reportlab
+paramiko  # SFTP connectors (C5)
+python-pptx  # pptx exports
+
+psycopg[binary]>=3.1  # production mode: Postgres state and outbox (sh_platform/state, sh_platform/events.py)
+redis>=5  # production mode: job queue, cache, rate limit, breaker (sh_platform/jobs, sh_platform/state/kv.py)

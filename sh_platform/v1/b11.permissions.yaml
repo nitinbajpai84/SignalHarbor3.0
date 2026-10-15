@@ -1,0 +1,12 @@
+# V6-builder: Span the builder in the Pipelines step. Everyone on the project reads. The data engineer seat starts, settles, gives the benchmark, goes live and
+# sends back; the architect seat issues the next pack version. Seats are checked again in code.
+routes:
+  GET /api/v1/build/p/{pid}/builder: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/build/p/{pid}/builder/start: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/recheck: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/settle: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/benchmark: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/go-live: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/send-back: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/pack: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/builder/not-needed: {roles: [company_admin, analyst]}

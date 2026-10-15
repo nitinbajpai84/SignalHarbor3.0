@@ -1,0 +1,39 @@
+# Template family_office@1 -- what the forces view covers and where each kind of subject gets its
+# inputs, in the settings contract pattern of contracts/settings/insurance.signals.yaml.
+$schema: sh/settings/v1
+domain: family_office
+owner: Signal Harbor build (FO-11)
+
+settings:
+  label_provider_preference:
+    value: [rules]
+    status: "Confirmed - no model is called for this domain"
+    description: >
+      The insurance domain lists an external judgement service and a fallback here. This domain
+      lists rules only: every verdict comes from family_office.classifier.yaml.
+
+  model_wording:
+    value: "off"
+    status: "Confirmed"
+    description: >
+      No model rewrites the reasons. If this is ever turned on, the model may receive only the
+      evaluated facts of one subject, never document text, and the route must work without it.
+
+  subjects:
+    value:
+      opportunity: {inputs_table: decision_inputs, key: opportunity_id, basis: "workbook"}
+      holding: {inputs_table: holding_decision_inputs, key: investment_id, basis: "synthetic illustration"}
+    status: "Proposal"
+    description: >
+      Proposals are evaluated from the workbook's own decision_inputs. Existing holdings are
+      evaluated from holding_decision_inputs, a labelled synthetic supplement the seed generates:
+      values taken from the workbook are marked derived_snapshot, invented ones
+      synthetic_illustration. No measure reads the supplement.
+
+  allocation_test:
+    value: {contexts_file: Jev_Contexts.json, label: "The test pack's allocation feasibility test: a toy SGD 100 example. Not optimisation and not advice."}
+    status: "Confirmed - the pack's own wording"
+    description: >
+      A deterministic port of the pack's jev_demo.py: reserve first, reject products that are
+      ineligible, stale or below their minimum ticket, respect the stress-loss budget, keep the
+      residual as cash, and abstain when a required input such as loss capacity is unknown.

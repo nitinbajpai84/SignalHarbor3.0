@@ -1,0 +1,42 @@
+# IC-3c (A-054, INTENT-CENTRE-SPEC section 5): the governed state of a measure, six provenance cells.
+# File: intents/m2_baseline/<baseline id>/governed_state.json = {measure id: {field: cell}}, cell = {value, mark, by, at, from, agent?}
+# (sh_platform.profile.store.cell). A guess never replaces a stated value; an agent never replaces a person's cell.
+# Routes: GET /baselines/{id}/governed, POST /baselines/{id}/governed/{measure}/confirm {field, value}.
+complete: "all six fields are marked stated. A guessed or unknown field is not complete. Never a score."
+percentages:    # of the measures the viewer may see; whole numbers; 0 when there are none
+  owned: owners stated
+  classified: classification stated
+  may_see_confirmed: may_see stated
+  sealed: classification stated and not open, and may_see stated   # chosen: the spec names the counter but not its rule
+confirmers:
+  named_owner: a person named in the measure's owners (matched on the account when the nomination had one, else on the name)
+  head_of_data: a person the profile marks as head of data (matched the same way)
+  governance_lead: the approver role, or the head of data
+  sponsor: the sponsor role
+  # the company admin role confirms nothing for others (A-069); it counts only when the person is also named above
+fields:
+  owners:
+    value: "{business, data, process}: a name or null each"
+    draft_from: the measure's owners (work list nominations, RACI, interviews)
+    confirmed_by: [named_owner, head_of_data]
+  classification:
+    value: open | personal | sensitive | restricted
+    draft_from: the measure's personal and sensitive answers, the profile's field rules and restricted areas (the strictest wins)
+    confirmed_by: [governance_lead]
+  may_see:
+    value: "list of names; empty means everyone with access"
+    draft_from: the measure's may_see, the profile's restricted areas and field rules
+    confirmed_by: [governance_lead]
+  resolving:
+    value: "{team, target_week}: a text or null, a whole week number or null"
+    draft_from: the team of the business owner in the profile; the nearest profile deadline that names the measure or the team ("week N")
+    confirmed_by: [sponsor]
+  affects:
+    value: list of measure names
+    draft_from: the industry pack's kpi_tree drives
+    confirmed_by: [named_owner]
+  review_date:
+    value: ISO date
+    draft_from: today plus one quarter (91 days), marked guessed, from "default"
+    confirmed_by: [named_owner, head_of_data, governance_lead, sponsor]   # spec: "nobody; a default". Until the spec names a person, any of these may confirm it.
+refusal: one plain sentence; nothing technical

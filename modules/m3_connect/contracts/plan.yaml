@@ -1,0 +1,44 @@
+# The phased build plan (M3-P04, D-036). Read by domain/plan.py, domain/accept.py and agent/plan_lens.py; a change here changes behaviour.
+# Values marked "chosen" were not given by the spec or a decision: placeholders for Nitin to confirm.
+
+bands:
+  now:   {label: Now,   weeks: "Weeks 0 to 3"}
+  next:  {label: Next,  weeks: "Weeks 3 to 8"}
+  later: {label: Later, weeks: "8 weeks and beyond"}
+
+# Source effort (P01 marks) to words. Small means days, medium about a week, large two or more weeks.
+effort:
+  small:  {label: Days}
+  medium: {label: About a week}
+  large:  {label: Two or more weeks}
+default_effort: medium            # chosen: a source with no effort mark is planned as medium
+default_team: Team not named yet  # chosen
+
+# What blocks a measure in "Next", from a source's marks. who: "owner" = the source owners; "sponsor" = the sponsor (a licence).
+blockers:
+  no_sample:          {text: "No sample data has arrived yet", who: owner}
+  licence:            {text: "The licence for this source is not agreed", who: sponsor}
+  personal_undecided: {text: "Personal data in this source is not decided yet", who: owner}
+  owners_disagree:    {text: "The owners of this source disagree", who: owner}
+  blocked_upstream:   {text: "Waiting on a system upstream of this source", who: owner}
+unblock_sponsor: the sponsor
+unblock_unnamed: the source owner
+
+# No date yet is `date: null` (and `date_text: null`) in the API; the screen words it.
+not_planned: not planned yet
+
+# Why an item is de-scoped to Later.
+later_why:
+  no_source: "No source for this measure is known yet"
+  low_impact: "Its sources have low impact for now"
+  restricted_undecided: "It is restricted and its risks are not decided yet"
+
+limits: {reason: 400, note: 400, team: 200, covered_by: 300, date: 10, summary: 240}
+
+# Who signs, in order (module 2's rule: the sponsor, then the head of data).
+countersign:
+  - {slot: sponsor,      label: Sponsor,       roles: [sponsor]}
+  - {slot: head_of_data, label: Head of data,  roles: [company_admin]}
+
+# The record module 4 reads.
+outcome: {kind: plan, module: m3_connect}

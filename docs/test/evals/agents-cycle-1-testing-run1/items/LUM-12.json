@@ -1,0 +1,78 @@
+{
+  "id": "LUM-12",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A question about cash in words quotes only figures that exist in the universe (no model-written digits).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "1 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 2021,
+  "cost": {
+    "calls": 1,
+    "tokens": 319,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "allowed_numbers": [
+      "880400",
+      "868000",
+      "12400",
+      "5000",
+      "1150000",
+      "1148200",
+      "2300000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "How much cash does Entity B hold, and does it match the administrator?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Cash USD: Entity B, accounting 880,400; Entity B, operational 868,000; Evergreen Family Trust, accounting 1,150,000; Evergreen Family Trust, operational 1,148,200; Evergreen Holdings, accounting 2,300,000; Evergreen Holdings, operational 2,300,000. From the tile 'Cash by entity' on the dashboard 'Monthly investment report in USD and SGD', last refreshed 2026-10-09.",
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 2021,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 1171,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:27:42+0800"
+    }
+  ]
+}

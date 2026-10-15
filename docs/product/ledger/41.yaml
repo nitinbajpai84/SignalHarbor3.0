@@ -1,0 +1,518 @@
+- id: 41.origin.prefill
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (origin banner)
+  input: Questions 1 and 2 pre-filled from an alert or a check-in item
+  person: reporter
+  mode: derived
+  agent: North
+  source: the alert source and kind or the check-in item words and links
+  minutes_without: 6
+  minutes_with: 0
+  basis: 'estimate: retyping what the alert already says'
+  claim: A problem started from an alert or a weekly item opens already described
+- id: 41.q1.what
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 1)
+  input: What is wrong in one line
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's words (140 characters)
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: a ticket title'
+  claim: The one thing only the reporter can say is what is wrong
+- id: 41.q1.saw
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 1)
+  input: What you saw
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's words (600 characters)
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: the ticket body'
+  claim: The reporter says what they saw in their own words
+- id: 41.q2.about
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 2)
+  input: Which process or measure it is about
+  person: reporter
+  mode: confirm
+  agent: North
+  source: a match of the words against the signed catalogue and the process list
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: looking up the name of the report or process'
+  claim: North proposes the process or measure; the reporter picks or taps Not sure
+- id: 41.q3.bites
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 3)
+  input: Slowed us, stopped us or cost money
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's judgement
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: saying how bad it is'
+  claim: Severity is one tap by the person who feels it
+- id: 41.q3.count
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 3)
+  input: How many times or items
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter, only if known
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: an estimate in the ticket'
+  claim: A count is optional and never invented by North
+- id: 41.q3.amount
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 3)
+  input: Amount in the company currency
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter, only if known
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: an estimate in the ticket'
+  claim: An amount is optional and never invented by North
+- id: 41.q4.business
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 4, Business owner chip)
+  input: Suggested business owner
+  person: reporter
+  mode: derived
+  agent: North
+  source: the business owner on the signed baseline for the picked process or measure
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: asking round who owns it'
+  claim: North finds the owner from the signed baseline
+- id: 41.q4.source
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 4, Source owner chip)
+  input: Suggested source owner
+  person: reporter
+  mode: derived
+  agent: North
+  source: the owner on the pipeline contract of the source feeding the measure
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: asking IT'
+  claim: North finds the source owner from the pipeline contract
+- id: 41.q4.data
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 4, Data owner chip)
+  input: Suggested data owner
+  person: reporter
+  mode: derived
+  agent: North
+  source: the owned_by person of the data node in the knowledge map
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: asking the data team'
+  claim: North finds the data owner from the map
+- id: 41.q4.pick
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 4)
+  input: The owner the reporter picks
+  person: reporter
+  mode: confirm
+  agent: North
+  source: North's three proposals, a different person or I do not know
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: guessing who to send it to'
+  claim: The reporter confirms one of three traced proposals or picks another
+- id: 41.q5.areas
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 5, Areas)
+  input: Areas affected
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the area of the picked process or measure marked Suggested
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: picking areas from a list'
+  claim: The area is suggested from the process the reporter named
+- id: 41.q5.people
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 5, Who feels it)
+  input: People who feel it
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter names at least one
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: listing who is affected'
+  claim: Only the reporter knows who feels the problem
+- id: 41.q5.read
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (question 5, switch)
+  input: Affected people may read
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's choice, off by default
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Visibility of the content is the reporter's choice and defaults to hidden
+- id: 41.readback
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (read-back line)
+  input: 'So: the answer, Right?'
+  person: reporter
+  mode: derived
+  agent: North
+  source: each answer just given
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: re-reading'
+  claim: North reads each answer back so the reporter confirms in a tap
+- id: 41.title.purpose
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (review card)
+  input: Title and purpose
+  person: reporter
+  mode: derived
+  agent: North
+  source: question 1 words
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: writing a title'
+  claim: The title and purpose are drafted from the one-line answer
+- id: 41.review.open
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (Open this problem)
+  input: Open this problem
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter after reading the card
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: sending the ticket'
+  claim: Opening the problem is one tap
+- id: 41.clock.set
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/new?type=problem (review card)
+  input: Ends on date
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the intent type time box and the working-day calendar
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: setting a due date'
+  claim: The deadline is set by rule and not negotiated
+- id: 41.triage.note
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (triage banner)
+  input: A triage note for the owner
+  person: owner
+  mode: derived
+  agent: North
+  source: closed problems, open intents, alerts and range breaks for the measure
+  minutes_without: 30
+  minutes_with: 1
+  basis: 'estimate: searching old tickets, open projects and alerts'
+  claim: North reads everything on the same measure and writes the note before the owner opens it
+- id: 41.triage.similar
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Similar past problems)
+  input: Up to five similar closed problems
+  person: owner
+  mode: derived
+  agent: North
+  source: closed Problem intents the viewer may open, same process first
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: remembering whether it happened before'
+  claim: North finds similar past problems and what fixed them
+- id: 41.triage.related
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Related open intents)
+  input: Open intents on the same area or process
+  person: owner
+  mode: derived
+  agent: North
+  source: open intents by area and process
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: asking round who is already on it'
+  claim: North finds work already under way so effort is not duplicated
+- id: 41.triage.alerts
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Recent alerts and range breaks)
+  input: Ops alerts and range breaks for the measure
+  person: owner
+  mode: derived
+  agent: North
+  source: build alerts and range checks on the measure and its source
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: checking the alert board'
+  claim: North pulls in the alerts that explain the problem
+- id: 41.triage.terms
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Terms to define)
+  input: Terms in the report the catalogue does not hold
+  person: owner
+  mode: derived
+  agent: North
+  source: words in the report against the catalogue
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: noticing a term is unclear'
+  claim: North flags words that need a definition
+- id: 41.triage.why
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Why these)
+  input: How North matched each row
+  person: owner
+  mode: automatic
+  agent: North
+  source: the match basis recorded per row
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Every suggestion shows why it was matched
+- id: 41.triage.redraw
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Redraw the note)
+  input: Ask North to redraw the note
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The owner can ask for a fresh note
+- id: 41.pulse.waiting
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: Pulse line to the proposed owner
+  input: A problem is waiting for you
+  person: owner
+  mode: automatic
+  agent: Nira
+  source: triage waiting and the proposed owner
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: an email to the owner'
+  claim: The proposed owner is told in their own Pulse
+- id: 41.pulse.reporter
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: Pulse line to the reporter
+  input: Your problem is with the owner
+  person: reporter
+  mode: automatic
+  agent: Nira
+  source: triage state
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a status reply'
+  claim: The reporter is told who has it
+- id: 41.accept
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Accept)
+  input: Accept the problem
+  person: owner
+  mode: manual
+  agent: null
+  source: the proposed owner after reading the note
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: replying yes to a ticket'
+  claim: Accepting is one tap and writes the owner
+- id: 41.pass
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Pass it on)
+  input: Pass to a named person with a reason
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner names a person and a reason
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: forwarding an email with an explanation'
+  claim: A pass names who and why, and it is on the record
+- id: 41.pass.history
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Pass history)
+  input: Each pass with reason
+  person: owner
+  mode: automatic
+  agent: null
+  source: the passes list
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a trail of forwarded emails'
+  claim: Every pass is kept without anyone writing the trail
+- id: 41.escalate
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Escalation note)
+  input: Passed twice, the admin picks an owner
+  person: company admin
+  mode: automatic
+  agent: North
+  source: passes length of two
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: escalating by email'
+  claim: A problem passed twice goes to the admin by rule
+- id: 41.assign
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Admin card, Assign)
+  input: The owner the admin assigns
+  person: company admin
+  mode: manual
+  agent: null
+  source: the company admin
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: deciding who takes it'
+  claim: The admin decides who owns a stuck problem
+- id: 41.alert.ack
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Also acknowledge the Ops alert)
+  input: Acknowledge the Ops alert
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter clicks
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: going to the alert board'
+  claim: Nothing is acknowledged without a click
+- id: 41.extend
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre/intent/<id> (Extend)
+  input: Extend the end date once
+  person: owner
+  mode: manual
+  agent: null
+  source: the owner
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: asking for more time'
+  claim: Extension is one tap and is limited to once
+- id: 41.count.problems
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre (counters)
+  input: Problems opened, waiting, median time to accept
+  person: company admin
+  mode: automatic
+  agent: null
+  source: problem intents, triage state and accepted_at
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: a tracker sheet'
+  claim: Problem volume and speed to ownership come free
+- id: 41.count.first
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre (counters)
+  input: Accepted on first offer, passed once or twice
+  person: company admin
+  mode: automatic
+  agent: null
+  source: passes and accepted_by
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: How often the proposed owner was right is measured
+- id: 41.count.origin
+  spec: '41'
+  journey: problem
+  stage: notice
+  screen: /centre (counters)
+  input: Problems from alerts and from check-in items
+  person: company admin
+  mode: automatic
+  agent: null
+  source: links.alert and from_item
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The product counts how many problems come from its own signals

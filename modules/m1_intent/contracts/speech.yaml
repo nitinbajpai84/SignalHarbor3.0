@@ -1,0 +1,14 @@
+# Module 1 speech settings (M1-08 speech in, M1-09 spoken replies, D-028). Values marked "chosen" were not given by the
+# spec or a decision: placeholders for Nitin to confirm (autonomous decisions in the M1-P06 report).
+# D-028: the Gemini free tier, for DEVELOPMENT AND DEMOS ONLY (the free tier uses content to improve Google's products).
+# The provider is chosen by the setting SH_SPEECH_PROVIDER, never here; the key is read from GOOGLE_API_KEY by name.
+gemini:
+  transcribe_model: gemini-2.5-flash          # chosen: speech to text
+  speak_model: gemini-2.5-flash-preview-tts   # chosen: text to speech
+  voice: Kore                                 # chosen
+speak_style: "Say this in a warm, casual, conversational voice:"   # M1-09: "a casual conversational voice"
+audio_mime_types: [audio/wav, audio/x-wav, audio/wave]   # the screens record and convert to 16 kHz mono WAV
+max_recording_seconds: 120                  # chosen: what the screen records at most
+max_audio_bytes: 3900000                    # chosen: 120 seconds of 16 kHz mono WAV, with room for the header
+max_speak_chars: 200                        # chosen: a spoken reply is short; longer text is read up to its last whole sentence
+unavailable_message: "North's voice is not available right now; keep typing."

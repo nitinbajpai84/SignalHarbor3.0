@@ -1,0 +1,13 @@
+# C5 Connectors (statements mailbox, SFTP, cloud folder). Data engineer seat only (checked again in code). Specs hold environment
+# variable NAMES; every outbound call goes through the egress allowlist and log.
+routes:
+  GET /api/v1/connectors: {roles: [company_admin, analyst]}
+  GET /api/v1/connectors/health: {roles: [company_admin, analyst]}
+  PUT /api/v1/connectors/{cid}: {roles: [company_admin, analyst]}
+  DELETE /api/v1/connectors/{cid}: {roles: [company_admin, analyst]}
+  POST /api/v1/connectors/{cid}/test: {roles: [company_admin, analyst]}
+  POST /api/v1/connectors/{cid}/dry-run: {roles: [company_admin, analyst]}
+  POST /api/v1/connectors/{cid}/fetch: {roles: [company_admin, analyst]}
+  GET /api/v1/connect-api/providers: {roles: [company_admin, analyst]}
+  POST /api/v1/connect-api/test: {roles: [company_admin, analyst]}
+  GET /api/v1/connect-api/latest: {roles: [company_admin, analyst]}

@@ -1,0 +1,434 @@
+- id: 48.all.count
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Count line)
+  input: '126 intents: open, overdue, closed, cancelled'
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the rows the filter returns
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: a project register kept in a spreadsheet'
+  claim: The register of every intent counts itself
+- id: 48.all.table
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Table)
+  input: Every non-draft intent with type, state, stage, areas, people, dates, clock, outcome and rating
+  person: company admin
+  mode: automatic
+  agent: null
+  source: intent records filtered per viewer
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: chasing project owners for a status list'
+  claim: The company admin sees every intent with its outcome without asking anyone
+- id: 48.all.filters
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (filters and search)
+  input: Type, state, area, organiser, date filters and search
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin's choices
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: filtering a spreadsheet'
+  claim: Filters are one tap each
+- id: 48.all.clock
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Column Clock)
+  input: 3 days left, Overdue by 2 days, Done in time
+  person: company admin
+  mode: automatic
+  agent: null
+  source: time_box against the clock
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking deadlines against dates'
+  claim: The state of every clock is computed by the system
+- id: 48.all.outcome
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Column Outcome)
+  input: First line of what came out and the next steps
+  person: company admin
+  mode: derived
+  agent: North
+  source: closure.what_came_out and closure.next
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: asking each organiser for an outcome line'
+  claim: The outcome of each closed intent appears without anyone writing a report
+- id: 48.all.rating
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Column Rating)
+  input: Mean and count, or not rated
+  person: company admin
+  mode: automatic
+  agent: null
+  source: ratings with three or more required for a mean
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: collecting survey scores'
+  claim: Ratings are summarised without naming raters
+- id: 48.overdue.line
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=overdue (North line)
+  input: 4 intents are past their end, 3 extended once
+  person: company admin
+  mode: derived
+  agent: North
+  source: record fields only
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: reviewing project status'
+  claim: North says what is late and why from the records
+- id: 48.overdue.rows
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=overdue (Overdue row)
+  input: Title, days overdue, extensions, organiser, sponsor
+  person: company admin
+  mode: automatic
+  agent: null
+  source: time_box and people
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: checking each project''s end date'
+  claim: Late work is listed most overdue first
+- id: 48.overdue.risk
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=overdue (At risk group)
+  input: Intents not yet overdue but at risk
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the clock rule from spec 07
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: At-risk intents are listed before they become late
+- id: 48.unrated.rows
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=unrated (Unrated row)
+  input: Closed intents with no rating
+  person: company admin
+  mode: automatic
+  agent: null
+  source: ratings empty on closed intents
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking whether feedback was gathered'
+  claim: Closed work with no feedback is listed
+- id: 48.unrated.note
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=unrated (Reminder note)
+  input: North reminded the participants once
+  person: company admin
+  mode: automatic
+  agent: North
+  source: the reminder in history
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The admin sees that a reminder was already sent
+- id: 48.counters.area_type
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=counters (Area by type table)
+  input: Open, overdue, closed and cancelled by area and type
+  person: company admin
+  mode: automatic
+  agent: null
+  source: intent records
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: building a pivot table by hand'
+  claim: The mix of work by area and type is counted by the system
+- id: 48.counters.untagged
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=counters (Untagged line)
+  input: People not tagged to any area
+  person: company admin
+  mode: automatic
+  agent: null
+  source: people areas in the profile
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking the staff list'
+  claim: The product says who is not tagged and so sees nothing
+- id: 48.counters.no_area
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=counters (No area line)
+  input: Intents with no area
+  person: company admin
+  mode: automatic
+  agent: null
+  source: areas on each record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Intents with no area are counted and linked
+- id: 48.defaults.timebox
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=defaults (Time box rows)
+  input: Working days per type with the catalogue default beside it
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin's choice of whole numbers
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: writing a policy on how long each kind of work should take'
+  claim: Time box defaults come from the catalogue and are changed only if the admin wishes
+- id: 48.defaults.reset
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=defaults (Back to catalogue defaults)
+  input: Reset the time boxes
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin presses the button with confirm
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Resetting is one confirmed press
+- id: 48.defaults.private
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=defaults (Titles private)
+  input: Keep titles private to this company
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin's choice, default off
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a policy decision'
+  claim: Hiding titles from the operator is one switch
+- id: 48.defaults.north
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=defaults (North line)
+  input: A short time box against the stage defaults
+  person: company admin
+  mode: derived
+  agent: North
+  source: the catalogue stage defaults
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: noticing a conflict in a policy'
+  claim: North warns when a chosen time box is shorter than the stages need
+- id: 48.defaults.save
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin?tab=defaults (Save defaults)
+  input: Save the settings
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin presses the button
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Settings are saved in one press and apply to new intents only
+- id: 48.register.csv
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/admin (Download register CSV)
+  input: Register of closed intents with summary, outcome, next, rating count and mean
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the closed intents filtered per viewer
+  minutes_without: 90
+  minutes_with: 1
+  basis: 'estimate: compiling a register for the sponsor or auditor'
+  claim: The register is one download instead of a month-end compile
+- id: 48.register.runlog
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: Run log (register download)
+  input: Who, when, filters and row count
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the download
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Every download is logged without any row text
+- id: 48.cancel.reason
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/<id> (Cancel this intent, Reason)
+  input: Reason for the cancel
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin's words
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: one line'
+  claim: The one act the admin has needs a reason
+- id: 48.cancel.confirm
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/intent/<id> (Cancel this intent, Confirm)
+  input: Cancel the intent
+  person: company admin
+  mode: manual
+  agent: null
+  source: the admin presses the button
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Cancelling is the admin's own press; the record is kept
+- id: 48.cancel.told
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: Pulse pages of the organiser and sponsor
+  input: Your company admin cancelled the intent with the reason
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: the cancel record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: an email to those affected'
+  claim: The organiser and sponsor are told with the reason
+- id: 48.cancel.record
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: intents/<id>/events.jsonl
+  input: Cancelled by admin history entry, closure and run-log line
+  person: company admin
+  mode: automatic
+  agent: null
+  source: the cancel
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: updating the register'
+  claim: The cancel is written to the record, history and run log by the system
+- id: 48.ctl.switch
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/control/intents (Intent centre switch)
+  input: Switch the centre on or off for a company
+  person: super admin
+  mode: manual
+  agent: null
+  source: the super admin
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: one switch'
+  claim: Turning the centre on or off is one switch; records are kept
+- id: 48.ctl.counts
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/control/intents (Counts by type and state)
+  input: Counts of intents per type and state
+  person: super admin
+  mode: automatic
+  agent: null
+  source: the company's intent records read through the kernel
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: asking each company for numbers'
+  claim: The platform sees counts without seeing content
+- id: 48.ctl.overdue
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/control/intents (Overdue count)
+  input: n overdue and n at risk
+  person: super admin
+  mode: automatic
+  agent: null
+  source: time_box derivation
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The platform sees how many are late
+- id: 48.ctl.last
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/control/intents (Last activity)
+  input: Date of the newest activity
+  person: super admin
+  mode: automatic
+  agent: null
+  source: created_at and closed_at
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The platform sees whether the centre is in use
+- id: 48.ctl.existence
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: /centre/control/intents (Existence table)
+  input: Title, type, state, areas, people count, dates and clock, no content
+  person: super admin
+  mode: automatic
+  agent: null
+  source: intent existence read through the kernel
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: asking a company which projects exist'
+  claim: The platform sees that intents exist and never what is in them
+- id: 48.pulse.overdue
+  spec: '48'
+  journey: admin
+  stage: shared
+  screen: Pulse page of the company admin
+  input: N intents are overdue
+  person: company admin
+  mode: automatic
+  agent: Nira
+  source: the overdue count
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: reviewing a tracker'
+  claim: The admin is told when work is late

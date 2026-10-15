@@ -1,0 +1,6 @@
+# E2a Manager statement intake. Operations (analyst), the sponsor and the company admin read statements; uploading needs analyst or company admin.
+routes:
+  POST /api/v1/evidence/documents: {roles: [company_admin, analyst]}
+  GET /api/v1/evidence/documents: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  GET /api/v1/evidence/documents/{document_id}: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  GET /api/v1/evidence/documents/{document_id}/original: {roles: [company_admin, sponsor, analyst, owner, approver]}

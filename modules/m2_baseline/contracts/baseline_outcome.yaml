@@ -1,0 +1,43 @@
+# The baseline outcome record module 3 reads (M2-28, D-026): written once per signed version, to
+# intents/m2_baseline/outcomes/<outcome id>.json in the company plane. Module 3 reads this record, never the workbook
+# file and never the module's own files. The two ids link it both ways: outcome_id is the process record's outcome,
+# session_id the module 2 process it came from (sh_platform/process_record.py links that session back to this outcome).
+kind: baseline
+required: [outcome_id, session_id, module, kind, baseline_id, baseline_version, charter_outcome_id, signed_at,
+           signatures, confirmations, process_map, catalogue, gaps]
+signature_fields: [slot, name, at, restricted_covered, note]
+confirmation_fields: [kpi_id, part, name, at]
+gap_fields: [id, type, label, kpi_id, where, severity, why, action, accepted]
+
+# M2-E4: keys ADDED to the record (never in `required`: an older record without them still loads, and module 3 must read them with a default).
+# What was signed is two named documents, each with a content fingerprint (sha256 of the full, unfiltered content as built at signing).
+#   glossary    [one entry per measure as stored in glossary.json: kpi_id, term, aliases, business_definition, owner, frequency, who_may_see,
+#                personal, change, previous, assumption, source_document, reviewed, ...]
+#   technical   {kpi_id: {sources, tables, fields, calculation, filters, grain, period, currency_basis, notes: provenance value each,
+#                confirmed: {by, at} | null}}   sources, tables and fields hold ids of catalogue rows
+#   ambiguities [{kpi_id, id, kind, text, question, where, status: accepted, reason, by, at}]   known risks only; none is open at signing
+#   left_out    [{kpi_id, name, reason, by, at}]   measures left out of this baseline
+#   documents   {business_glossary: {sha256, built_at}, data_catalogue: {sha256, built_at}}   NOT filtered per viewer: it shows that content changed, never what
+added_keys: [glossary, technical, ambiguities, left_out, documents]
+
+# Gaps are only things module 3 must know about, in this order (N-F). A blank optional catalogue cell is not a gap, and an
+# "I don't know" in a cell is not one either: the cell itself says so. Each kind has one plain message.
+gap_types:
+  - {id: conflict,           label: Conflict not settled,     severity: high,
+     why: "Two owners gave different answers and nobody has settled which one counts.",
+     action: "The sponsor or the company admin settles it."}
+  - {id: no_owner,           label: No owner,                 severity: high,
+     why: "Nobody owns this part of the measure, so nobody can answer for it.",
+     action: "The sponsor names an owner."}
+  - {id: personal_undecided, label: Personal data undecided,  severity: high,
+     why: "Nobody has said whether this holds personal data, so who may see it is not settled.",
+     action: "Decide it, then say who may see it."}
+  - {id: tracking_unknown,   label: Tracking unknown,         severity: high,
+     why: "Nobody has said whether the measure is tracked today, and no next step is planned.",
+     action: "Ask the owner, or plan a next step."}
+  - {id: silent_accepted,    label: Owner never answered,     severity: medium,
+     why: "An owner was never heard from. The sponsor accepted the measure without their answer.",
+     action: "Ask the owner again when they are free."}
+  - {id: not_tracked,        label: Not tracked today,        severity: medium,
+     why: "The measure is not tracked today, so module 3 treats it as a gap.",
+     action: "Follow the next step or project named for it."}

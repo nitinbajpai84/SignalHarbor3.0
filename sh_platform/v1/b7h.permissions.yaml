@@ -1,0 +1,11 @@
+# STUDIO2 card A: talk, history, inspector. Makers only (default deny); the sponsor approves, never edits.
+routes:
+  POST /api/v1/build/p/{pid}/studio/{did}/talk: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/studio/{did}/history: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/undo: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/history/{n}/restore: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/studio/{did}/history/{n}/compare: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/withdraw: {roles: [company_admin, analyst]}
+  PATCH /api/v1/build/p/{pid}/studio/{did}/tiles/{tid}: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/studio/{did}/widgets/{wid}/duplicate: {roles: [company_admin, analyst]}
+  DELETE /api/v1/build/p/{pid}/studio/{did}/widgets/{wid}: {roles: [company_admin, analyst]}

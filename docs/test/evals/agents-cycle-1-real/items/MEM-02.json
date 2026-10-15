@@ -1,0 +1,225 @@
+{
+  "id": "MEM-02",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "A colour preference is used by the next tile (blue line colour in the spec).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6532,
+  "cost": {
+    "calls": 1,
+    "tokens": 890,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 3,
+  "egress_blocked": 2,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "I prefer blue lines"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference; gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like lines for charts. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": [
+          "you like lines for charts"
+        ]
+      },
+      "ms": 4983,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-df4dc74c",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:23+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-eb557019",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures in SGD",
+            "sure": "inferred",
+            "at": "2026-10-09T17:30:27+00:00",
+            "source": {
+              "said": "in SGD",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-75131795",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T17:29:01+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 20,
+      "expect": {
+        "contains": [
+          "blue"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth SGD per month. It is waiting for you: accept it or choose Not this. I used what I remember about you: blue lines and figures in SGD.",
+        "proposals": [
+          {
+            "id": "t-aae6fb",
+            "title": "Net worth SGD per month",
+            "kpi": "net_worth_sgd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_sgd\") as \"net_worth_sgd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true,
+                "color": "#2563eb"
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_sgd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_sgd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "period": "month",
+              "color": "blue",
+              "table": "gold_investment_report_holdings_monthly",
+              "from_memory": [
+                "blue lines",
+                "figures in SGD"
+              ],
+              "memory_skipped": []
+            }
+          }
+        ],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": []
+      },
+      "ms": 1514,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "#2563eb"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-75131795",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-75131795"
+      },
+      "ms": 15,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 13113,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:28+0800"
+    },
+    {
+      "bytes": 1426,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:33:23+0800"
+    },
+    {
+      "bytes": 13261,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:23+0800"
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "id": "LUM-12",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A question about cash in words quotes only figures that exist in the universe (no model-written digits).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 10505,
+  "cost": {
+    "calls": 2,
+    "tokens": 9031,
+    "usd": 0.000959,
+    "estimated": false
+  },
+  "trace_id": "tr-lumen-c2bf28ad-cace95e6",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "allowed_numbers": [
+      "880400",
+      "868000",
+      "12400",
+      "5000",
+      "1150000",
+      "1148200",
+      "2300000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "How much cash does Entity B hold, and does it match the administrator?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Cash on 8 Oct 2026, from the rows: accounting 880,400; operational 868,000. How much cash does Entity B hold? To answer your question, I need to know if you want to see the 'accounting' or 'operational' view of cash. Does it match the administrator?",
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "model",
+        "remembered": [],
+        "trace_id": "tr-lumen-c2bf28ad-cace95e6"
+      },
+      "ms": 10505,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 17364,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T09:52:05+0800",
+      "trace_id": "tr-lumen-c2bf28ad-cace95e6"
+    },
+    {
+      "bytes": 16280,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T09:51:58+0800",
+      "trace_id": "tr-lumen-c2bf28ad-cace95e6"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-cace95e6",
+      "status": 200,
+      "runs": [
+        {
+          "id": "f70d2bd3388c4962ab987123f6204a94",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T01:52:07+00:00",
+          "elapsed_ms": 10155,
+          "steps": 6,
+          "tool_calls": 2,
+          "cost_usd": 0.000959,
+          "trace_id": "tr-lumen-c2bf28ad-cace95e6",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-cace95e6",
+          "at": "2026-10-10T01:52:07+00:00",
+          "run_id": "f70d2bd3388c4962ab987123f6204a94",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 10155,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                },
+                {
+                  "kind": "graph",
+                  "id": "dashboard:dash-0ad2b1c7"
+                },
+                {
+                  "kind": "graph",
+                  "id": "tile:t-000003"
+                },
+                {
+                  "kind": "turns",
+                  "id": "1"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 6358,
+              "tool_calls": 2,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4309,
+              "tokens_out": 105,
+              "cost_usd": 0.000473
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "query_figure",
+              "arg_keys": [
+                "figure",
+                "filters",
+                "period",
+                "group_by",
+                "table"
+              ],
+              "result_chars": 433,
+              "refused": false,
+              "reason": null,
+              "ms": 110
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "query_figure",
+              "arg_keys": [
+                "group_by",
+                "period",
+                "table",
+                "filters",
+                "figure"
+              ],
+              "result_chars": 98,
+              "refused": true,
+              "reason": "argument_check:filters",
+              "ms": 93,
+              "tried": {
+                "group_by": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "period": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "table": {
+                  "type": "str",
+                  "chars": 33
+                },
+                "filters": {
+                  "type": "list"
+                },
+                "figure": {
+                  "type": "str",
+                  "chars": 8
+                }
+              }
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3593,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4536,
+              "tokens_out": 81,
+              "cost_usd": 0.000486
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.000959,
+        "tokens": 9031
+      }
+    }
+  ]
+}

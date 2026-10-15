@@ -1,0 +1,172 @@
+{
+  "id": "SPA-08",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Outside any project, Span answers in words about the company model.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 8534,
+  "cost": {
+    "calls": 2,
+    "tokens": 5847,
+    "usd": 0.002051,
+    "estimated": false
+  },
+  "trace_id": "tr-span-3ae73a59-d22c7e19",
+  "forgotten": [],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What tables does the company model hold?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The company's data model has three layers.\n\nThe bronze layer holds files as they arrive, with two tables, such as the `bronze_administrator_positions` table which stores positions and cash from administrator exports.\n\nThe silver layer is the shared core data model, with 42 tables, like `cash_movements` which records cash transactions.\n\nThe gold layer contains tables built for specific project reports and dashboards, with three tables, for example, `gold_investment_report_holdings_monthly` which shows month-end holdings.\n\nAsk about a table for detail.",
+        "rules_only": false,
+        "trace_id": "tr-span-3ae73a59-d22c7e19"
+      },
+      "ms": 8534,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12425,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:20+0800",
+      "trace_id": "tr-span-3ae73a59-d22c7e19"
+    },
+    {
+      "bytes": 8088,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T09:46:15+0800",
+      "trace_id": "tr-span-3ae73a59-d22c7e19"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-3ae73a59-d22c7e19",
+      "status": 200,
+      "runs": [
+        {
+          "id": "e8b2009275734124bc31696b14e6dd81",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T01:46:23+00:00",
+          "elapsed_ms": 8297,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.002051,
+          "trace_id": "tr-span-3ae73a59-d22c7e19",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-3ae73a59-d22c7e19",
+          "at": "2026-10-10T01:46:23+00:00",
+          "run_id": "e8b2009275734124bc31696b14e6dd81",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 8297,
+          "steps": [
+            {
+              "kind": "context",
+              "items": []
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3719,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2198,
+              "tokens_out": 13,
+              "cost_usd": 0.000692
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "describe_layers",
+              "arg_keys": [
+                "project"
+              ],
+              "result_chars": 4017,
+              "refused": false,
+              "reason": null,
+              "ms": 452
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 4125,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 3514,
+              "tokens_out": 122,
+              "cost_usd": 0.001359
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.002051,
+        "tokens": 5847
+      }
+    }
+  ]
+}

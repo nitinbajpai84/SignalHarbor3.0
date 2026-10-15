@@ -1,0 +1,56 @@
+{
+  "id": "MEM-10",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "Context map - the Map page lists conversations as a graph (MEM2; route name from the plan, pending until it exists).",
+  "status": "pending",
+  "scores": [
+    {
+      "name": "words",
+      "passed": false,
+      "detail": "none of: nodes / conversations; status 404, wanted 200"
+    },
+    {
+      "name": "citation_present",
+      "passed": false,
+      "detail": "no sources, trail or trace id in the response"
+    }
+  ],
+  "error": null,
+  "latency_ms": 22,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/map/conversations"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "nodes",
+        "conversations"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/map/conversations",
+      "request": null,
+      "status": 404,
+      "json": {
+        "detail": "Not Found"
+      },
+      "ms": 22,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

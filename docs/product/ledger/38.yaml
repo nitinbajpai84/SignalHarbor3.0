@@ -1,0 +1,518 @@
+- id: 38.q1.area
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 1)
+  input: Which ops area the check-in is for
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser picks one area from the company area list
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: an email thread to agree scope versus one pick'
+  claim: Choosing the area is the one scoping decision only the organiser can make
+- id: 38.q2.reporters
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 2)
+  input: Who reports each week
+  person: organiser
+  mode: confirm
+  agent: North
+  source: people tagged to the chosen area in the company profile
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: building a distribution list versus one tap on Everyone in the area'
+  claim: North proposes the area's people; the organiser confirms or edits
+- id: 38.q2.count
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 2, count)
+  input: Number of reporters chosen
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the chips picked on the screen
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: counting'
+  claim: The reporter count is computed
+- id: 38.q3.close_day
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 3)
+  input: Which weekday the week closes
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the default close day shown on the screen
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: agreeing a day by email versus accepting a default'
+  claim: The close day arrives with a default the organiser can change
+- id: 38.q3.reviewer
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 3)
+  input: Who reviews the week
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the organiser as default, another named person if picked
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: deciding who owns the review'
+  claim: The reviewer defaults to the organiser and changes with one pick
+- id: 38.q4.prompts
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (question 4)
+  input: 'The three standing questions: ran well, broke, on your mind'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: three fixed lines of the type
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: designing a template each week'
+  claim: Every check-in starts with the same three questions, so nobody designs a form
+- id: 38.q4.extra
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (Add one question)
+  input: One extra question of the organiser's own
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's own words, optional
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: optional'
+  claim: An extra question is optional and typed by the person who knows the area
+- id: 38.preview
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (preview panel)
+  input: First week open, close, review and sort dates
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the close day, the clock and the working-day calendar
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: working out the calendar'
+  claim: The week's dates are computed from the close day
+- id: 38.north.line
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (North line)
+  input: North's promise to open, remind and draft each week
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the series settings
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: reading a note'
+  claim: The product states what North will do each week
+- id: 38.start
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (Start the check-in)
+  input: Start the check-in
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; North writes the series record and opens week 1
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: setting up a recurring meeting versus one tap'
+  claim: Starting is one tap and the first week opens by itself
+- id: 38.draft
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/new?type=checkin (Save as draft)
+  input: Save as draft
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A draft series can be saved and resumed
+- id: 38.invite.line
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: Pulse and invitation messages
+  input: Message inviting reporters to the series
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the series settings, drafted as intent_week for the organiser to send
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing an invitation versus reading a draft'
+  claim: North drafts the invitation to the reporters; the organiser sends it
+- id: 38.home.status
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (series home)
+  input: Running, Paused or Ended
+  person: organiser
+  mode: automatic
+  agent: null
+  source: series.status
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: remembering'
+  claim: The series status is always on screen
+- id: 38.home.thisweek
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (This week panel)
+  input: Week label, stage chip and n of m answered
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the week file state and distinct answers over people
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: chasing to count replies'
+  claim: The organiser sees who has answered without asking anyone
+- id: 38.home.notanswered
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Who has not answered)
+  input: Reporters without an answer this week
+  person: organiser
+  mode: automatic
+  agent: null
+  source: answers against the reporter list
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: scanning replies'
+  claim: The list of who has not answered is computed
+- id: 38.home.earlier
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Earlier weeks)
+  input: 'Per closed week: answered, items, settled as problems'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: closed week files
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: a spreadsheet of past weeks'
+  claim: Past weeks are listed with counts and no spreadsheet
+- id: 38.home.seenagain
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Seen again)
+  input: Items that came back, n of the last m weeks
+  person: organiser
+  mode: derived
+  agent: North
+  source: repeat_of links against earlier weeks' items
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: reading old notes to spot repeats'
+  claim: North notices that something broke again and says how often
+- id: 38.home.counters
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (counters strip)
+  input: Weeks run, answers this week, items settled
+  person: organiser
+  mode: automatic
+  agent: null
+  source: week files and items
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counting'
+  claim: The strip is computed from the week files
+- id: 38.settings.edit
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Series settings)
+  input: Change reporters, close day, reviewer, questions
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; changes apply from the next week
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: editing a recurring invite'
+  claim: Changes apply from the next week; the open week keeps its terms
+- id: 38.settings.applies
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Changes apply from)
+  input: The week the change starts
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the next week start
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: working it out'
+  claim: The product says when the change takes effect
+- id: 38.pause
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Pause, Resume)
+  input: Pause or resume the series
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; reason optional on pause
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: cancelling a recurring meeting'
+  claim: A pause keeps the open week and stops the next one opening
+- id: 38.end
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (End the series)
+  input: End the series and a reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; reason required
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: a note to everyone'
+  claim: Ending needs a reason and closes the intent
+- id: 38.share
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (Share)
+  input: Share link to the series
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the share rules of 11
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: forwarding an invitation'
+  claim: Sharing a series is a link
+- id: 38.week.open
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: North, by the clock
+  input: Open the next week
+  person: reporter
+  mode: automatic
+  agent: North
+  source: the next working day after the close day, even if the last week is unreviewed
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: sending the weekly request'
+  claim: Each week opens by itself on the clock with the same people and questions
+- id: 38.week.pulse
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: Pulse line to reporters
+  input: Your check-in is open
+  person: reporter
+  mode: automatic
+  agent: Nira
+  source: week state collect
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a weekly reminder message'
+  claim: Reporters are asked in their own Pulse, not by email
+- id: 38.answer.ran
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (answer, what ran well)
+  input: What ran well
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: the reporter''s own words'
+  claim: Only the person knows what ran well or broke
+- id: 38.answer.broke
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (answer, what broke)
+  input: What broke or nearly broke
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: the reporter''s own words'
+  claim: Only the person knows what ran well or broke
+- id: 38.answer.mind
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (answer, on your mind)
+  input: What is on your mind
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: optional line'
+  claim: The reporter can say anything else in one line
+- id: 38.answer.extra
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (extra question)
+  input: Answer to the organiser's own question
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 2
+  minutes_with: 2
+  basis: 'estimate: optional'
+  claim: Extra questions are answered in the same sitting
+- id: 38.answer.none
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (Nothing this week)
+  input: Nothing this week on a line
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: saying nothing to report'
+  claim: Saying nothing to report is one tap, not a blank
+- id: 38.answer.anon
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (Keep my name off this)
+  input: Keep my name off this line
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter, per line
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tick'
+  claim: Anonymous lines hide the name from the reviewer
+- id: 38.answer.send
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (Send my check-in)
+  input: Send the check-in
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Sending is one tap
+- id: 38.answer.items
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (North wrote)
+  input: One drafted item per answer line
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the reporter's own words kept first
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: writing up each point as an issue'
+  claim: North turns each answer into an item; the reporter keeps, edits or rejects it
+- id: 38.answer.late
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id>/week (Late state)
+  input: Answer after the window closed
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter chooses Add it to next week
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a late email'
+  claim: A late answer is carried to next week with one tap
+- id: 38.remind
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: Pulse line to reporters not yet answered
+  input: Reminder before answers close
+  person: reporter
+  mode: automatic
+  agent: Nira
+  source: answers against reporters and the close day
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: chasing people'
+  claim: Reminders go only to people who have not answered
+- id: 38.count.weeks
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (counters)
+  input: Weeks run, closed late, empty, paused
+  person: organiser
+  mode: automatic
+  agent: null
+  source: week files and events
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: a tracker sheet'
+  claim: Series health is a set of counts and not a tracker sheet
+- id: 38.count.fates
+  spec: '38'
+  journey: checkin
+  stage: think
+  screen: /centre/intent/<id> (counters)
+  input: Fates by kind and items that came back
+  person: organiser
+  mode: automatic
+  agent: null
+  source: items fate and repeat_of across closed weeks
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: a quarterly look-back'
+  claim: Fates and repeats are computed across weeks

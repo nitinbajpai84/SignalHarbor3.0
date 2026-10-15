@@ -1,0 +1,163 @@
+{
+  "id": "TAL-03",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P28 quantity mismatch - Northwind Logistics, export 12,000 at 42.15 = 505,800 against administrator 10,200 = 429,930, difference 75,870.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6685,
+  "cost": {
+    "calls": 2,
+    "tokens": 6600,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Trade differs|Northwind Logistics}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "75870",
+      "505800",
+      "429930",
+      "1800"
+    ],
+    "words": [
+      "Northwind Logistics"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/cases/fcfdce01-deaa-427b-a984-eeaba72dfe05/ask",
+      "request": {
+        "question": "What is the difference between the two records?"
+      },
+      "status": 200,
+      "json": {
+        "case_id": "fcfdce01-deaa-427b-a984-eeaba72dfe05",
+        "kind": "trade_break",
+        "summary": "Trade T-20261002-003 in Northwind Logistics on 2 Oct 2026 has differing records. The trading export reports 505,800 USD and the administrator reports 429,930 USD. The Quantity and Amount fields differ. The money at stake is 75,870 USD.",
+        "findings": [
+          {
+            "key": "field",
+            "text": "Quantity: trading export 12,000, administrator 10,200, a difference of 1,800.",
+            "figure": null,
+            "chips": [
+              {
+                "label": "Trading system export \u00b7 trading_export_20261002.csv \u00b7 Sheet1 row 3",
+                "kind": "transaction",
+                "id": "9d2346c9-cf98-44ba-a314-1b3575a2523e"
+              },
+              {
+                "label": "Fund administrator \u00b7 administrator_trades_20261002.xlsx \u00b7 Sheet1 row 3",
+                "kind": "transaction",
+                "id": "9c8ad511-ea9f-49f5-9f38-9a8ef9c188a2"
+              }
+            ]
+          },
+          {
+            "key": "field",
+            "text": "Amount: trading export 505,800 USD, administrator 429,930 USD, a difference of 75,870 USD.",
+            "figure": null,
+            "chips": [
+              {
+                "label": "Trading system export \u00b7 trading_export_20261002.csv \u00b7 Sheet1 row 3",
+                "kind": "transaction",
+                "id": "9d2346c9-cf98-44ba-a314-1b3575a2523e"
+              },
+              {
+                "label": "Fund administrator \u00b7 administrator_trades_20261002.xlsx \u00b7 Sheet1 row 3",
+                "kind": "transaction",
+                "id": "9c8ad511-ea9f-49f5-9f38-9a8ef9c188a2"
+              }
+            ]
+          },
+          {
+            "key": "impact",
+            "text": "The money at stake is 75,870 USD; the signed tolerance is 5,000 USD, so it is 70,870 USD over it.",
+            "figure": "75,870 USD",
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Ask the administrator and the trading desk which quantity and amount is right, and get the booking corrected at the wrong side."
+          },
+          {
+            "who": "Case owner",
+            "text": "Record the cause on the case and send it for check by another person."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "Trading system export \u00b7 trading_export_20261002.csv \u00b7 Sheet1 row 3",
+          "Fund administrator \u00b7 administrator_trades_20261002.xlsx \u00b7 Sheet1 row 3"
+        ],
+        "worded_by": "model",
+        "question": "What is the difference between the two records?",
+        "answer": "The quantity and amount differ between the two rows. The money at stake is 75,870 USD; the signed tolerance is 5,000 USD, so it is 70,870 USD over it.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [],
+        "remembered": []
+      },
+      "ms": 6607,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12531,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:39:17+0800"
+    },
+    {
+      "bytes": 11817,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:39:14+0800"
+    }
+  ]
+}

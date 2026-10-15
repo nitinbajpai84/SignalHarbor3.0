@@ -1,0 +1,413 @@
+# Template family_office@1 industry defaults: one entry per KPI, every field copied from
+# Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json (definition, cadence, grain, business_lever,
+# caveat). The catalogue is 'a reference contract, not an industry-wide mandated scorecard'
+# (Start_Here.md), so nothing here is a business rule, a target or a threshold.
+template: family_office@1
+status: proposed
+defaults:
+- id: ID-K01
+  kpi_id: K01
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Minimum six-month funding headroom is the lowest month-end cash left over the next six months after known payments, stress calls, any proposed funding and the reserve.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K01 definition
+  window: null
+  cadence: Weekly and on new notice
+  breakdowns:
+  - scope
+  - scenario
+  - monthly bucket
+  levers:
+  - Pace commitments; arrange funding; delay proposal
+  customer_decides:
+  - question: Confirm the minimum reserve the CIO approves. SGD 5 million is a pilot assumption.
+    fields: []
+  - question: Confirm the timing of stress calls.
+    fields: []
+  customer_decides_sources:
+  - interview.jsonl T07-MD, T19-MD
+  - Family_Office_Test_Data.xlsx intents INT01 missing_information
+  caveat: Estimated distributions excluded from downside. No counting the same obligation twice.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K01
+- id: ID-K02
+  kpi_id: K02
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Reported-value evidence coverage is the share of reported asset value that is backed by approved source evidence.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K02 definition
+  window: null
+  cadence: On refresh
+  breakdowns:
+  - scope
+  - reporting date
+  levers:
+  - Resolve missing evidence; improve document intake
+  customer_decides: []
+  customer_decides_sources: []
+  caveat: Coverage measures support, not valuation accuracy. Track stale values separately.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K02
+- id: ID-K03
+  kpi_id: K03
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Meeting-pack preparation effort is the logged hours spent on each investment meeting pack, from collecting inputs to the approved pack.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K03 definition
+  window: null
+  cadence: Per meeting
+  breakdowns:
+  - meeting_pack_id
+  levers:
+  - Automate collection, reconciliation and drafting
+  customer_decides:
+  - question: How will preparation time be recorded?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K03 caveat; interview.jsonl T17-MD
+  caveat: Baseline requires time logging; cannot infer hours from document timestamps.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K03
+- id: ID-K04
+  kpi_id: K04
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Known obligations due is the total of current, unpaid, approved payments falling due in each month, counting an amended notice once.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K04 definition
+  window: null
+  cadence: Daily
+  breakdowns:
+  - scope
+  - currency
+  - due month
+  levers:
+  - Schedule funding and payments
+  usual_practice:
+  - text: "Family offices usually keep one register of capital calls and distributions, owned by one named person, and log every notice the day it arrives. Each manager is asked to send notices to a shared mailbox and to give the notice period the fund documents promise; a notice that arrives later than that is raised with the manager."
+    status: proposal
+  - text: "Cash for expected calls is usually planned months ahead from each fund's remaining commitment and the manager's pacing guidance, so a short notice is a timing problem rather than a funding surprise."
+    status: proposal
+  customer_decides:
+  - question: Which FX basis is approved for converting obligations?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K04 definition ('approved FX basis')
+  caveat: No duplicate original/amended notice. Exclude paid obligations.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K04
+- id: ID-K05
+  kpi_id: K05
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Unfunded commitments is the part of each fund commitment that has not been called yet.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K05 definition
+  window: null
+  cadence: On notice
+  breakdowns:
+  - commitment
+  - date
+  levers:
+  - Control new commitments and pacing
+  customer_decides:
+  - question: Are fees outside the commitment recorded separately?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K05 definition; Agent_Specifications.md Data Engineer questions
+  caveat: Unfunded is an obligation exposure, not asset NAV.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K05
+- id: ID-K06
+  kpi_id: K06
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Stress funding requirement is the extra cash a stress scenario would call for beyond known obligations.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K06 definition
+  window: null
+  cadence: Weekly
+  breakdowns:
+  - scope
+  - scenario
+  - month
+  levers:
+  - Change stress assumptions and investment timing
+  customer_decides:
+  - question: Confirm the stress scenario and the timing of stress calls.
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K06 definition; workbook intents INT01 missing_information
+  caveat: Model estimate; do not present as committed payment.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K06
+- id: ID-K07
+  kpi_id: K07
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Unresolved material conflicts is the number of open differences between sources that still need reconciling.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K07 definition
+  window: null
+  cadence: Daily
+  breakdowns:
+  - scope
+  - issue date
+  levers:
+  - Resolve conflicts before dependent decisions
+  customer_decides:
+  - question: What counts as a material conflict?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K07 definition ('Until materiality is approved')
+  caveat: No assumed materiality threshold; counts do not indicate monetary risk.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K07
+- id: ID-K08
+  kpi_id: K08
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Policy exceptions awaiting approval is the number of mandate breaches that have no approved exception.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K08 definition
+  window: null
+  cadence: On refresh
+  breakdowns:
+  - scope
+  - rule version
+  - date
+  levers:
+  - Reduce exposure or seek explicit exception
+  customer_decides:
+  - question: Do the allocation limits apply to strategic holdings, and which exceptions are approved?
+    fields: []
+  customer_decides_sources:
+  - interview.jsonl T14-MD; KPI_Catalog.json K08 caveat
+  caveat: Strategic holding does not imply exemption.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K08
+- id: ID-K09
+  kpi_id: K09
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Single-issuer concentration is the share of asset value held directly in one issuer.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K09 definition
+  window: null
+  cadence: Weekly
+  breakdowns:
+  - issuer
+  - scope
+  - date
+  levers:
+  - Review allocation and concentration
+  usual_practice:
+  - text: "Family offices usually write a single-name limit into the investment policy as a share of total assets; the family council or investment committee approves it and reviews it about once a year, or when the portfolio changes materially. A holding the family chose to keep, such as a founding business, is normally handled as an agreed exception, and some offices set no limit and simply report the exposure."
+    status: proposal
+  - text: "The usual range is a modest slice of total assets, with a higher allowance for a deliberate strategic holding. The company sets its own figure."
+    status: proposal
+  customer_decides: []
+  customer_decides_sources: []
+  caveat: Fund issuer differs from underlying issuers; disclose unknown look-through.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K09
+- id: ID-K10
+  kpi_id: K10
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Private-market allocation is the share of total asset value held in funded private equity and venture capital.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K10 definition
+  window: null
+  cadence: Monthly
+  breakdowns:
+  - scope
+  - date
+  levers:
+  - Review funded allocation and future commitments
+  customer_decides: []
+  customer_decides_sources: []
+  caveat: Unfunded commitments are not added to NAV.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K10
+- id: ID-K11
+  kpi_id: K11
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Unhedged FX exposure is what remains in each currency after liabilities and recognised hedges are taken off assets.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K11 definition
+  window: null
+  cadence: Weekly
+  breakdowns:
+  - currency
+  - scope
+  - date
+  levers:
+  - Match currency needs; review hedges
+  customer_decides:
+  - question: Which exposure method is approved for translating currency exposure?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K11 definition ('approved exposure method')
+  caveat: Unavailable if liabilities/hedges missing. SGD reporting alone does not remove currency risk.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K11
+- id: ID-K12
+  kpi_id: K12
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Stale-valuation share is the share of asset value carried at a valuation older than the approved age for its asset class.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K12 definition
+  window: null
+  cadence: On refresh
+  breakdowns:
+  - scope
+  - asset class
+  - date
+  levers:
+  - Request new marks; qualify decision
+  customer_decides:
+  - question: What valuation age makes a mark stale, for each asset class?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K12 definition; interview.jsonl T19-MD
+  caveat: Private and public assets need different thresholds.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K12
+- id: ID-K13
+  kpi_id: K13
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Asset-value change bridge splits the change in asset value over a period into external flows, price change and currency effect.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K13 definition
+  window: null
+  cadence: Monthly
+  breakdowns:
+  - scope
+  - reporting period
+  levers:
+  - Explain change; investigate residual
+  customer_decides:
+  - question: Which cash-flow timing and FX convention should the bridge use?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K13 caveat
+  caveat: A change in value is not an investment return. Method must define timing and FX interaction.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K13
+- id: ID-K14
+  kpi_id: K14
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Documents needing review is the number of current documents with an unresolved field or reconciliation exception.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K14 definition
+  window: null
+  cadence: Daily
+  breakdowns:
+  - document type
+  - date
+  levers:
+  - Assign reviewers and fix intake templates
+  customer_decides: []
+  customer_decides_sources: []
+  caveat: High auto-extraction coverage can hide errors; pair with field accuracy tests.
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K14
+- id: ID-K15
+  kpi_id: K15
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Manager performance versus benchmark compares net-of-fee performance with an agreed benchmark. It is deferred.
+    source: Plain restatement of Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K15 definition
+  window: null
+  cadence: Quarterly
+  breakdowns:
+  - manager
+  - period
+  levers:
+  - Review manager mandate
+  usual_practice:
+  - text: "The investment committee usually approves the benchmark for each fund when the fund is first approved, and reviews it once a year with the manager review."
+    status: proposal
+  - text: "Managers are usually reviewed against their benchmark once a year, with a quarterly look in between."
+    status: proposal
+  customer_decides:
+  - question: Which benchmark and performance method are agreed?
+    fields: []
+  customer_decides_sources:
+  - KPI_Catalog.json K15 caveat; interview.jsonl T15-MD, T16-MD
+  caveat: 'Deferred: source histories and benchmark definition missing. No fabricated alpha.'
+  source: Signal_Harbor_Intent_Test_Pack/KPI_Catalog.json K15
+# K16 to K19: suggestions added from the illustrative demo story (Signal Harbor). Proposals, pending practitioner review.
+- id: ID-K16
+  status: proposal
+  kpi_id: K16
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Excess return is how far a fund or manager is ahead of or behind its agreed benchmark over the same period, after fees.
+    source: Illustrative demo story (Signal Harbor), pending practitioner review
+  window: null
+  cadence: Quarterly
+  breakdowns:
+  - manager
+  - benchmark
+  - period
+  levers:
+  - Review managers that trail their benchmark over a full period
+  usual_practice:
+  - text: "A change of benchmark is usually brought to the investment committee by the head of investments, and the family council is told. A benchmark chosen after the result is known is not accepted."
+    status: proposal
+  - text: "Tracking error is usually watched quarterly. An index-like fund is expected to keep it small and an active manager is allowed more; the committee agrees in words what is acceptable for each manager."
+    status: proposal
+  customer_decides:
+  - question: Which benchmark and which return method are agreed for each fund?
+    fields: []
+  customer_decides_sources:
+  - Illustrative demo story (Signal Harbor)
+  caveat: No fabricated alpha. Private funds report late and on a different method from public funds.
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: ID-K17
+  status: proposal
+  kpi_id: K17
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Benchmark coverage is the share of holdings that have an agreed benchmark.
+    source: Illustrative demo story (Signal Harbor), pending practitioner review
+  window: null
+  cadence: Quarterly
+  breakdowns:
+  - asset class
+  - manager
+  levers:
+  - Agree a benchmark for each uncovered holding
+  usual_practice:
+  - text: "The investment committee usually approves the benchmark for each holding, one owner is named for the choice, and it is written down when the holding is approved."
+    status: proposal
+  customer_decides:
+  - question: Who approves the benchmark for each holding?
+    fields: []
+  customer_decides_sources:
+  - Illustrative demo story (Signal Harbor)
+  caveat: A benchmark chosen after the result is known is not a benchmark.
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: ID-K18
+  status: proposal
+  kpi_id: K18
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Compensation inputs reconciled is the share of figures used in pay decisions that agree to the approved performance figure.
+    source: Illustrative demo story (Signal Harbor), pending practitioner review
+  window: null
+  cadence: Quarterly
+  breakdowns:
+  - person
+  - period
+  levers:
+  - Reconcile pay inputs before the bonus round
+  customer_decides:
+  - question: Which performance figure does the bonus policy use?
+    fields: []
+  customer_decides_sources:
+  - Illustrative demo story (Signal Harbor)
+  caveat: Pay data is personal data. Show counts and exceptions, not individual pay.
+  source: illustrative demo story (Signal Harbor), pending practitioner review
+- id: ID-K19
+  status: proposal
+  kpi_id: K19
+  label: Industry practice (suggestion)
+  definition_variants:
+  - variant: Data definitions with a named owner is the share of key terms that have one approved definition and one named owner.
+    source: Illustrative demo story (Signal Harbor), pending practitioner review
+  window: null
+  cadence: On change
+  breakdowns:
+  - term
+  - source
+  levers:
+  - Name an owner for each key term and each benchmark choice
+  customer_decides:
+  - question: Who owns the definition of return?
+    fields: []
+  customer_decides_sources:
+  - Illustrative demo story (Signal Harbor)
+  caveat: A count of definitions says nothing about whether people follow them.
+  source: illustrative demo story (Signal Harbor), pending practitioner review

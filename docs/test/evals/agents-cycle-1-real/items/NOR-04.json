@@ -1,0 +1,62 @@
+{
+  "id": "NOR-04",
+  "agent": "north",
+  "role": "analyst",
+  "desc": "Step 2 exception carries Entity B 12,400 USD (P32) as written in the narrative.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": false,
+      "detail": "missing: 12400"
+    },
+    {
+      "name": "words",
+      "passed": false,
+      "detail": "missing 'Entity B'; status 500, wanted 200"
+    }
+  ],
+  "error": null,
+  "latency_ms": 828,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/intents/chat"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "12400"
+    ],
+    "words": [
+      "Entity B"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/intents/chat",
+      "request": {
+        "text": "Draft the intent and the process map.",
+        "files": [
+          "month_end_process_narrative-fde4125c.md"
+        ]
+      },
+      "status": 500,
+      "json": {
+        "error": "invalid",
+        "message": "This intent could not be read. Please tell your administrator."
+      },
+      "ms": 827,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

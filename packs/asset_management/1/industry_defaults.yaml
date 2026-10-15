@@ -1,0 +1,307 @@
+# Template asset_management@1 industry defaults (V3-13), same schema as insurance@1's
+# industry_defaults.yaml -- one entry per KPI in kpi_tree.yaml, every entry's label fixed to
+# "Industry practice (suggestion)" per ND-35: these describe how asset managers typically define
+# and track the KPI, never a business rule, and never a target or threshold (CLAUDE.md rule 4).
+# An entry without a source is invalid (enforced by tests/test_asset_management_pack.py).
+#
+# NO NUMERIC INDUSTRY RANGE OR BENCHMARK FIGURE appears anywhere in this file, and `window` is
+# null on every entry: this builder has no cited source for any asset-management figure, and
+# emitters/benchmark.py already treats a missing range as "no industry range" rather than an
+# error. A practitioner or Market Intelligence agent may add a dated, cited range later.
+#
+# Every definition_variants entry is PACK-DEFAULT content from general asset-management practice,
+# not practitioner-reviewed. customer_decides entries are {question, fields}: `fields` names the
+# feeds.yaml field id(s) that question governs (the column matcher refuses to auto-confirm
+# them), empty when the question is a calculation convention with no column of its own.
+# feeds.yaml marks the same fields `customer_decides: true`, so the two files agree.
+template: asset_management@1
+status: proposed
+defaults:
+  - id: ID-aum
+    kpi_id: "kpi:aum"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM of positions.market_value in base currency at the period-end position date, per portfolio"
+        source: "contracts/semantics/asset_management.gold.yaml total_market_value = SUM(market_value)"
+      - variant: "Industry practice: AUM is reported at period end and as a period average; firms differ on whether cash, accruals, advisory-only assets and holdings of their own funds are counted"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly, at period end"
+    breakdowns: [portfolio_code, portfolio_type, base_currency, month]
+    levers: []
+    customer_decides:
+      - question: "What counts in AUM -- cash, accruals, advisory-only assets -- and are holdings of our own funds counted once or twice?"
+        fields: []  # an inclusion convention, not a feeds.yaml column
+    source: "Pack default (V3-13); contracts/semantics/asset_management.gold.yaml; templates/asset_management/1/glossary.yaml 'AUM'"
+  - id: ID-net_flows
+    kpi_id: "kpi:net_flows"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(flows.amount for subscriptions) - SUM(flows.amount for redemptions) in the period, excluding market movement"
+        source: "templates/asset_management/1/glossary.yaml 'Net flows'"
+      - variant: "Industry practice: firms differ on whether switches between their own funds and reinvested distributions count as flows, and on trade date versus settlement date"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, client_type, distributor_id, month]
+    levers: [lever:distributor_coverage]
+    customer_decides:
+      - question: "Do switches between our own funds and reinvested distributions count as flows?"
+        fields: [transaction_type]
+      - question: "Are flows counted on trade date or settlement date?"
+        fields: [trade_date]
+    source: "Pack default (V3-13); templates/asset_management/1/glossary.yaml 'Net flows'"
+  - id: ID-gross_subscriptions
+    kpi_id: "kpi:gross_subscriptions"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(flows.amount) for subscription transactions in the period"
+        source: "Pack default (V3-13); kpi_tree.yaml identity net flows = gross subscriptions - redemptions"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, client_type, distributor_id, month]
+    levers: [lever:distributor_coverage]
+    customer_decides:
+      - question: "Do switches into a fund from another of our funds count as subscriptions?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-redemptions
+    kpi_id: "kpi:redemptions"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(flows.amount) for redemption transactions in the period"
+        source: "Pack default (V3-13); kpi_tree.yaml identity net flows = gross subscriptions - redemptions"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, client_type, distributor_id, month]
+    levers: [lever:client_engagement_spend]
+    customer_decides:
+      - question: "Do switches out of a fund into another of our funds count as redemptions?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-redemption_rate
+    kpi_id: "kpi:redemption_rate"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: redemptions in the period / AUM -- non-additive ratio"
+        source: "Pack default (V3-13); kpi_tree.yaml kpi:redemptions drives edge"
+      - variant: "Industry practice: the denominator is either opening AUM or average AUM for the period; the choice changes the figure"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, client_type, distributor_id, month]
+    levers: [lever:client_engagement_spend]
+    customer_decides:
+      - question: "Is the redemption rate measured against opening AUM or average AUM?"
+        fields: []  # a denominator convention, not a feeds.yaml column
+      - question: "Do switches out of a fund count as redemptions?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-organic_growth_rate
+    kpi_id: "kpi:organic_growth_rate"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: net flows in the period / opening AUM -- non-additive ratio"
+        source: "Pack default (V3-13); kpi_tree.yaml kpi:organic_growth_rate source"
+    window: null
+    cadence: "Quarterly, and annualised for the year"
+    breakdowns: [portfolio_code, client_type, quarter]
+    levers: []
+    customer_decides:
+      - question: "Do switches and reinvested distributions count in the net flows used here?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-market_movement
+    kpi_id: "kpi:market_movement"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: closing AUM - opening AUM - net flows for the period (the residual of the AUM identity)"
+        source: "Pack default (V3-13); kpi_tree.yaml identity closing AUM = opening AUM + net flows + market movement"
+      - variant: "Industry practice: some firms split the residual further into market return, currency effect and distributions paid out"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, base_currency, month]
+    levers: []
+    customer_decides:
+      - question: "Do reinvested distributions count as flows or as market movement?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-fee_revenue
+    kpi_id: "kpi:fee_revenue"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(fees.fee_amount) earned in the period"
+        source: "Pack default (V3-13); feeds.yaml fees feed (proposal)"
+      - variant: "Industry practice: firms report management fees separately from performance fees, and state revenue before and after payments to distributors"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, share_class_code, fee_type, month]
+    levers: [lever:fee_pricing]
+    customer_decides:
+      - question: "Which fee types count as revenue -- management, performance, entry and exit charges?"
+        fields: [fee_type]
+    source: "Pack default (V3-13)"
+  - id: ID-fee_yield
+    kpi_id: "kpi:fee_yield"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: fee revenue for the period / average AUM for the period -- non-additive ratio"
+        source: "templates/asset_management/1/glossary.yaml 'Fee yield'"
+      - variant: "Industry practice: usually quoted in basis points, annualised, and shown before and after distributor payments"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [portfolio_code, share_class_code, client_type, quarter]
+    levers: [lever:fee_pricing]
+    customer_decides:
+      - question: "Which fee types count in the numerator?"
+        fields: [fee_type]
+      - question: "Is fee yield shown before or after payments to distributors, and how is average AUM calculated?"
+        fields: []  # calculation conventions, not a feeds.yaml column
+    source: "Pack default (V3-13); templates/asset_management/1/glossary.yaml 'Fee yield'"
+  - id: ID-performance_vs_benchmark
+    kpi_id: "kpi:performance_vs_benchmark"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: performance.portfolio_return - performance.benchmark_return for the same period"
+        source: "Pack default (V3-13); templates/asset_management/1/glossary.yaml 'Benchmark'"
+      - variant: "Industry practice: reported over several standard periods, before and after fees, alongside a peer-group ranking"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [portfolio_code, share_class_code, period]
+    levers: []
+    customer_decides:
+      - question: "Which benchmark is the official one for each portfolio?"
+        fields: [benchmark_code]
+      - question: "Is the portfolio return compared before fees or after fees, and over which periods?"
+        fields: [portfolio_return]
+    source: "Pack default (V3-13)"
+  - id: ID-client_retention
+    kpi_id: "kpi:client_retention"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: clients at the start of the period still holding at the end / clients at the start of the period"
+        source: "Pack default (original OQ-5 scaffold KPI; V3-13 definition)"
+      - variant: "Industry practice: measured by client count and by AUM retained; the two can move in opposite directions when a large client leaves"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [client_type, relationship manager, quarter]
+    levers: [lever:client_engagement_spend]
+    customer_decides:
+      - question: "What counts as a lost client -- a full redemption, or no holding for a period the company sets?"
+        fields: [relationship_end_date]
+    source: "Pack default (V3-13)"
+  - id: ID-client_concentration
+    kpi_id: "kpi:client_concentration"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(client_holdings.holding_value) of the largest clients / total AUM, at a holding date"
+        source: "Pack default (V3-13); feeds.yaml client_holdings feed (proposal)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [portfolio_code, client_type, quarter]
+    levers: []
+    customer_decides:
+      - question: "How many clients count as 'the largest'?"
+        fields: []  # a cut-off the customer sets, not a feeds.yaml column
+      - question: "At what level is a client counted -- account, legal entity or group -- and is a distributor's omnibus account one client?"
+        fields: [client_id]
+    source: "Pack default (V3-13)"
+  - id: ID-share_class_mix
+    kpi_id: "kpi:share_class_mix"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(client_holdings.holding_value) per share class group / total AUM, at a holding date"
+        source: "Pack default (V3-13); feeds.yaml client_holdings and share_classes feeds (proposal)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [portfolio_code, distributor_id, quarter]
+    levers: [lever:fee_pricing]
+    customer_decides:
+      - question: "How are share classes grouped (for example retail, institutional, clean)?"
+        fields: [share_class_group]
+    source: "Pack default (V3-13)"
+  - id: ID-distributor_net_flows
+    kpi_id: "kpi:distributor_net_flows"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: net flows (as ID-net_flows) grouped by flows.distributor_id"
+        source: "Pack default (V3-13); kpi_tree.yaml kpi:distributor_net_flows drives edge"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [distributor_id, distributor_type, portfolio_code, month]
+    levers: [lever:distributor_coverage]
+    customer_decides:
+      - question: "Which party is a flow credited to when it arrives through an omnibus or nominee account?"
+        fields: [distributor_id]
+      - question: "Do switches count as flows?"
+        fields: [transaction_type]
+    source: "Pack default (V3-13)"
+  - id: ID-mandate_wins_losses
+    kpi_id: "kpi:mandate_wins_losses"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: COUNT and SUM(mandates.mandate_amount) by mandate_event_type (won, lost) in the period"
+        source: "Pack default (V3-13); feeds.yaml mandates feed (proposal)"
+      - variant: "Industry practice: firms also track won-but-not-yet-funded mandates as a pipeline figure, separate from flows"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [strategy, client_type, quarter]
+    levers: [lever:distributor_coverage]
+    customer_decides:
+      - question: "When does a mandate count as won -- awarded, contract signed or first funded?"
+        fields: [mandate_event_date]
+    source: "Pack default (V3-13)"
+  - id: ID-distribution_cost
+    kpi_id: "kpi:distribution_cost"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(fees.distributor_payment_amount) in the period"
+        source: "Pack default (V3-13); feeds.yaml fees feed (proposal)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [distributor_id, portfolio_code, quarter]
+    levers: []
+    customer_decides:
+      - question: "Which payments to distributors count as distribution cost -- rebates, trailer fees, retrocessions, marketing support?"
+        fields: [distributor_payment_amount]
+      - question: "Are distributor payments booked as a cost or netted off revenue?"
+        fields: []  # an accounting convention, not a feeds.yaml column
+    source: "Pack default (V3-13)"
+  - id: ID-cost_to_income
+    kpi_id: "kpi:cost_to_income"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: SUM(costs.cost_amount) / SUM(fees.fee_amount) for the same period -- non-additive ratio"
+        source: "Pack default (V3-13); kpi_tree.yaml kpi:fee_revenue drives edge"
+      - variant: "Industry practice: often shown with and without performance fees, because they vary from year to year"
+        source: "Pack default (general asset-management practice, not practitioner-reviewed)"
+    window: null
+    cadence: "Quarterly"
+    breakdowns: [cost_category, quarter]
+    levers: []
+    customer_decides:
+      - question: "Which cost lines count in the ratio?"
+        fields: [cost_category]
+      - question: "Do performance fees count as income in the ratio?"
+        fields: [fee_type]
+    source: "Pack default (V3-13)"
+  - id: ID-onboarding_time
+    kpi_id: "kpi:onboarding_time"
+    label: "Industry practice (suggestion)"
+    definition_variants:
+      - variant: "This pack: AVG(clients.onboarding_complete_date - clients.onboarding_start_date), day-level"
+        source: "Pack default (V3-13); feeds.yaml clients feed (proposal)"
+    window: null
+    cadence: "Monthly"
+    breakdowns: [client_type, onboarding step, month]
+    levers: [lever:onboarding_process]
+    customer_decides:
+      - question: "What starts and what stops the onboarding clock? No time limit is assumed by this pack -- that is the customer's to set (see problems.yaml T-DIST-04)."
+        fields: [onboarding_start_date, onboarding_complete_date]
+    source: "Pack default (V3-13)"

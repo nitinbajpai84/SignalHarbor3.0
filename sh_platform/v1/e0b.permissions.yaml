@@ -1,0 +1,8 @@
+# E0b2 Sheet mapping records. Anyone signed in may read them; approving or rejecting is for the sheet owner or the data engineer seat
+# (never the proposer when the proposer is a person). The data engineer seat is the analyst role; the rule is checked again in code.
+routes:
+  GET /api/v1/model/mappings: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/mappings/{mapping_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/model/mappings/{mapping_id}/approve: {roles: [company_admin, analyst]}
+  POST /api/v1/model/mappings/{mapping_id}/reject: {roles: [company_admin, analyst]}
+  PUT /api/v1/model/mappings/{mapping_id}: {roles: [company_admin, analyst]}

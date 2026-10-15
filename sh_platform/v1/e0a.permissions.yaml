@@ -1,0 +1,14 @@
+# E0a The data model catalogue. Anyone signed in may read it; proposing needs the data engineer seat, approving the architect seat
+# (never the proposer). Both seats are checked again in code.
+routes:
+  GET /api/v1/model/catalogue: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/layers: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/projects/{pid}/tables: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/tables/{name}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/script: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/versions: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/proposals: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/model/proposals/{n}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/model/proposals: {roles: [company_admin, analyst]}
+  POST /api/v1/model/proposals/{n}/approve: {roles: [company_admin, analyst]}
+  POST /api/v1/model/proposals/{n}/reject: {roles: [company_admin, analyst]}

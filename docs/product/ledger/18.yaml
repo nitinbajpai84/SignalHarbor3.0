@@ -1,0 +1,136 @@
+# Input ledger rows for spec 18: empty states and first run.
+- id: "18.opening_line"
+  spec: "18"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent (first run home: North opening line)"
+  input: "Welcome line for a company with no intents"
+  person: company_admin
+  mode: derived
+  agent: North
+  source: "the company name and a fixed sentence"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: writing onboarding copy for a new company"
+  claim: "A new company is greeted and told what to do first, with no setup guide to write"
+- id: "18.first_intents"
+  spec: "18"
+  journey: admin
+  stage: notice
+  screen: "first run home (Suggested first cards: Start this, Not for us)"
+  input: "First intents suggested from the industry pack"
+  person: company_admin
+  mode: confirm
+  agent: North
+  source: "the pack file first_intents.yaml, ordered with the company's context documents; labelled as suggestions"
+  minutes_without: 120
+  minutes_with: 5
+  basis: "estimate: deciding what to start with versus reading three suggestion cards"
+  claim: "A family office is offered three starters (a quarterly family report, a weekly operations check-in, a custodian decision); one tap prefills a draft"
+- id: "18.start_prefill"
+  spec: "18"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type> (title, purpose and areas prefilled from the card)"
+  input: "Title, purpose and areas of a first intent"
+  person: company_admin
+  mode: confirm
+  agent: North
+  source: "the pack suggestion"
+  minutes_without: 15
+  minutes_with: 2
+  basis: "estimate: writing a first project brief versus editing a prefilled one"
+  claim: "Starting from a suggestion pre-fills the title, purpose and areas; nothing is written until the person opens it"
+- id: "18.type_rows"
+  spec: "18"
+  journey: shared
+  stage: notice
+  screen: "first run home (five type rows with default time box chips)"
+  input: "The five kinds of intent with their time boxes"
+  person: any
+  mode: automatic
+  source: "the types catalogue"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: explaining the kinds of work to a new team"
+  claim: "The five kinds of intent are explained on screen from the catalogue"
+- id: "18.no_areas_request"
+  spec: "18"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent for a person with no areas (Copy request)"
+  input: "A request to the company admin to tag me to an area"
+  person: participant
+  mode: derived
+  agent: North
+  source: "the person's name and sign-in name"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a request email"
+  claim: "A new person gets a ready-made request to copy to their admin; nothing is sent for them"
+- id: "18.no_areas_note"
+  spec: "18"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent for a person with no areas (North line and explanation, company admin name)"
+  input: "Why nothing shows and who the company admin is"
+  person: participant
+  mode: derived
+  agent: North
+  source: "the person's areas and the company record"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: finding out why a screen is empty"
+  claim: "An empty screen says why it is empty and names the one thing to do"
+- id: "18.empty_panels"
+  spec: "18"
+  journey: shared
+  stage: shared
+  screen: "every empty state in the table (wall, define, brainstorm, check-in, problem, decision, closure, past, search, share)"
+  input: "Empty-state copy with a single offered action"
+  person: any
+  mode: automatic
+  source: "the fixed copy and the state of the section"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: training people on what to do from a blank screen"
+  claim: "No screen is blank: each says what is missing and offers one action"
+- id: "18.not_available"
+  spec: "18"
+  journey: shared
+  stage: shared
+  screen: "counter tiles (Not available yet plus a Missing line)"
+  input: "The reason a number is not shown"
+  person: any
+  mode: automatic
+  source: "the record the number would trace to"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: investigating a missing figure"
+  claim: "A figure with no record behind it says what is missing instead of showing zero"
+- id: "18.ask_lens"
+  spec: "18"
+  journey: initiative
+  stage: think
+  screen: "define empty panels (Ask Lens to draft)"
+  input: "Ask Lens to draft a definition panel"
+  person: analyst
+  mode: manual
+  source: "the person, once the wall has ideas to work from"
+  minutes_without: 30
+  minutes_with: 1
+  basis: "estimate: drafting definitions by hand"
+  claim: "When the prerequisite exists, one press asks Lens to draft; Lens names what it is waiting for until then"
+- id: "18.counters"
+  spec: "18"
+  journey: admin
+  stage: prove
+  screen: "company admin and control panel (companies with no intents, people with no areas)"
+  input: "Companies with no intents; people with no areas"
+  person: company_admin
+  mode: automatic
+  source: "the company intent index and the profile"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: auditing setup completeness"
+  claim: "The product counts who still has no area, so setup gaps are visible"

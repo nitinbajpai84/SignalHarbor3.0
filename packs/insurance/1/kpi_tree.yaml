@@ -1,0 +1,204 @@
+# Template insurance@1 KPI scaffold (design section 3.1 -- "KPI nodes + DRIVES edges + Lever
+# nodes, definitions and units; NO values, NO targets. Targets are a business rule and stay in
+# the Intent Center / settings/*.cmo.yaml (CLAUDE.md rule 4 -- never invent a business rule).
+#
+# V3-03: replaced the 4-KPI scaffold with all 18 KPIs from docs/signal-harbor/cmo-proof/kpis.json
+# (brief item 3). Every id is the kpis.json id (K01..K18) so problems.yaml's kpi_ids and this
+# tree's ids are the same identifier. Every "drives" edge and every lever cites either a formula
+# in kpis.json (one KPI's formula literally contains another's id/table) or a decision/chain
+# statement in kpis.json or the research note -- none is an assumed correlation, a weight or a
+# strength rating (the old scaffold's "strength: medium" is dropped: it had no source). No values,
+# no targets, no thresholds anywhere in this file.
+template: insurance@1
+status: proposed
+kpis:
+  - id: K01
+    name: New-business APE (USD)
+    tier: north_star
+    unit: currency
+    drives:
+      - kpi: K02
+        sign: "+"
+        source: "kpis.json K02 formula sums pol_policy_coverages.ape_amount x margin_rate_pct -- K01's own APE sum is the base K02's formula multiplies"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01"
+  - id: K02
+    name: New-business profit (NBP) / value proxy (USD)
+    tier: north_star
+    unit: currency
+    drives: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K02"
+  - id: K03
+    name: Policies sold (new business count)
+    tier: driver
+    unit: count
+    drives:
+      - kpi: K01
+        sign: "+"
+        source: "kpis.json K04 formula K04 = K01 / K03, so K01 = K03 x K04"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K03"
+  - id: K04
+    name: Average case size (USD APE per policy)
+    tier: driver
+    unit: currency
+    drives:
+      - kpi: K01
+        sign: "+"
+        source: "kpis.json K04 formula K04 = K01 / K03, so K01 = K03 x K04"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K04"
+  - id: K05
+    name: Leads generated (raw)
+    tier: driver
+    unit: count
+    drives:
+      - kpi: K06
+        sign: "+"
+        source: "kpis.json K06 formula: K06 = K05 minus duplicate-candidate rows"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K05"
+  - id: K06
+    name: Unique leads (de-duplicated)
+    tier: driver
+    unit: count
+    drives:
+      - kpi: K11
+        sign: "-"
+        source: "kpis.json K11 formula: K11 = SUM(spend_usd) / K06 -- more unique leads for the same spend lowers cost per lead"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K06"
+  - id: K07
+    name: Lead distribution and acceptance rate
+    tier: driver
+    unit: percent
+    drives:
+      - kpi: K08
+        sign: "+"
+        source: "kpis.json K07/K08 decision text: K07 is 'where leads are leaking before any sales conversation'; research note section 5.2 point 3 (distributed/accepted gap precedes conversion)"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K07"
+  - id: K08
+    name: Lead-to-policy conversion rate
+    tier: driver
+    unit: percent
+    drives:
+      - kpi: K03
+        sign: "+"
+        source: "kpis.json K08 formula: a lead converts if its customer_id holds a pol_policies row -- the definitional link from lead conversion to a counted policy (K03)"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K08"
+  - id: K09
+    name: CEP-attributed APE share
+    tier: driver
+    unit: percent
+    drives:
+      - kpi: K01
+        sign: "+"
+        source: "kpis.json K09 formula: K09 = CEP-attributed APE / K01 -- CEP-attributed APE is a component of K01"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K09"
+  - id: K10
+    name: Lead-source and LMS campaign APE contribution
+    tier: driver
+    unit: mixed
+    drives:
+      - kpi: K01
+        sign: "+"
+        source: "kpis.json K10 formula splits attributed APE by campaign/lead_source -- also a component of K01, as K09 is for CEP"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K10"
+  - id: K11
+    name: Cost per lead (USD)
+    tier: efficiency
+    unit: currency
+    drives:
+      - kpi: K13
+        sign: "-"
+        source: "kpis.json K11/K13 formulas share the same spend_usd source (mkt_campaign_spend, not in the monthly drops) -- lower cost per lead for the same spend improves the K13 ratio"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K11"
+  - id: K12
+    name: Cost per policy (USD)
+    tier: efficiency
+    unit: currency
+    drives:
+      - kpi: K13
+        sign: "-"
+        source: "kpis.json K12/K13 formulas share the same spend_usd source (mkt_campaign_spend, not in the monthly drops)"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K12"
+  - id: K13
+    name: Marketing ROI (NBP or APE over spend)
+    tier: efficiency
+    unit: percent
+    drives: []
+    source: "docs/signal-harbor/cmo-proof/kpis.json K13"
+  - id: K14
+    name: "Product mix: protection and health share of APE"
+    tier: mix
+    unit: percent
+    drives:
+      - kpi: K02
+        sign: "-"
+        source: "kpis.json K02's own decision text: 'Protection vs savings push: a savings-heavy mix can grow APE while value falls' -- K14 is the mix K02's decision names"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K14"
+  - id: K15
+    name: Journey and campaign performance (APE per journey)
+    tier: channel
+    unit: mixed
+    drives:
+      - kpi: K09
+        sign: "+"
+      - kpi: K10
+        sign: "+"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K15 formula reads the same attribution.cep.by_journey/by_campaign and attribution.leads.by_campaign breakdowns K09 and K10 report"
+  - id: K16
+    name: "CEP engagement: delivery, open and click rates by channel"
+    tier: channel
+    unit: percent
+    drives:
+      - kpi: K09
+        sign: "+"
+        source: "research note section 1.1: the engagement funnel (K16) is the top of the chain engagement -> leads -> policies -> profit that CEP attribution (K09) sits downstream of"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K16"
+  - id: K17
+    name: Lead follow-up speed (SLA)
+    tier: operations
+    unit: days
+    drives:
+      - kpi: K07
+        sign: "-"
+        source: "kpis.json K17 decision text ('lead follow-up SLA ... and the case for routing automation') and research note section 5.2 point 3 tie follow-up speed directly to the distributed/accepted gap K07 measures"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K17"
+  - id: K18
+    name: Early termination rate (persistency proxy)
+    tier: retention
+    unit: percent
+    drives:
+      - kpi: K01
+        sign: "-"
+        source: "research note section 1.8: 'if campaign A's policies persist worse than campaign B's, A's true economics ... are worse ... even though A and B may show identical CAC and conversion today' -- early termination erodes the realised value of APE already booked"
+    source: "docs/signal-harbor/cmo-proof/kpis.json K18"
+levers:
+  - id: lever:channel_spend_mix
+    name: Channel spend mix (CEP/digital, agency, bancassurance, other)
+    moves:
+      - kpi: K01
+        sign: "+"
+    source: "Research note section 3, Levers Q19/Q21 (what marketing can actually change: channel spend mix)"
+  - id: lever:cep_journey_spend
+    name: CEP journey spend
+    moves:
+      - kpi: K09
+        sign: "+"
+    source: "kpis.json K09 decision text: 'CEP vs agency investment mix; how much budget CEP journeys earn'"
+  - id: lever:journey_design_timing
+    name: Journey design and timing
+    moves:
+      - kpi: K16
+        sign: "+"
+    source: "Research note section 3, Levers Q19 (journey design/timing); kpis.json K16 decision text ('channel budget and message design')"
+  - id: lever:targeting_audience_selection
+    name: Targeting / audience selection
+    moves:
+      - kpi: K08
+        sign: "+"
+    source: "Research note section 3, Levers Q19 (targeting/audience selection); kpis.json K08 decision text ('which source's leads deserve agent time; lead scoring')"
+  - id: lever:renewal_outreach
+    name: Renewal outreach cadence
+    moves:
+      - kpi: K18
+        sign: "-"
+    source: "kpis.json K18 decision text: 'Retention journeys (DJRN-009 Lapse Prevention) and whether a funnel buys low-quality business'"
+open_questions:
+  - "All drives signs above are directional (same-direction vs opposite-direction), cited to a formula or an explicit decision/chain statement -- none is a weighted strength or a quantified elasticity, and none should be read as one. A practitioner should confirm the K14->K02 and K18->K01 edges in particular, since kpis.json's own margin/VNB basis (OQ5) and free-look exclusion (OQ7) are themselves still open."

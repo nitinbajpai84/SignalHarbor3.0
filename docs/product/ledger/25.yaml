@@ -1,0 +1,182 @@
+- id: 25.w.cards
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: Up to three suggestion cards per lane, drafted from documents, the person's interview and the pack
+  person: participant
+  mode: derived
+  agent: North
+  source: company documents the person may see, the person's own interview and the industry pack
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: drafted while the room opens versus thinking of what to write'
+  claim: North fills the first screen of a wall with dashed suggestions so nobody starts from a blank page
+- id: 25.w.source_line
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'Source line: Suggested by North, from a document, your interview or the pack'
+  person: participant
+  mode: automatic
+  agent: North
+  source: the source kind and document title
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: stamped on each suggestion'
+  claim: Every suggestion names where it came from
+- id: 25.w.pick_up
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: Pick it up
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: one tap against typing the card'
+  claim: A suggestion becomes the person's own card only when they pick it up
+- id: 25.w.not_this
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: Not this one (with Undo)
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A hidden suggestion is not offered again to that person
+- id: 25.w.pack_label
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'Pack label: Industry practice (suggestion)'
+  person: participant
+  mode: automatic
+  agent: null
+  source: the industry pack
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: fixed label'
+  claim: Pack content is always labelled a suggestion, never the company's own definition
+- id: 25.w.topup
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: Top-up when a new document lands
+  person: participant
+  mode: derived
+  agent: North
+  source: the new document, read for the shelves the person may see
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: suggestions added without a request'
+  claim: A new document adds fresh suggestions up to the cap, with no one asking
+- id: 25.w.topup_line
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'North panel line: I added 2 suggestions from a named document'
+  person: participant
+  mode: automatic
+  agent: North
+  source: the run of the top-up
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: written by North'
+  claim: The panel says what was added and from which file
+- id: 25.w.footer
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'Lane footer: no more suggestions, or add a document'
+  person: participant
+  mode: automatic
+  agent: North
+  source: the offered and handled counts
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: fixed wording by state'
+  claim: The lane says whether more help is available
+- id: 25.w.dedupe
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: No suggestion that repeats a card or a hidden suggestion
+  person: participant
+  mode: automatic
+  agent: null
+  source: card text and the hidden list
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: matched by the system'
+  claim: Repeats are removed by the system
+- id: 25.w.drop
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: Unhandled suggestions dropped at freeze
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the stage clock
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: done by the system'
+  claim: Unhandled suggestions are removed when the wall freezes
+- id: 25.w.counters
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'Counters: suggested, picked up, hidden, by source'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: counts kept on the intent
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counted'
+  claim: How many suggestions were used is counted, never typed
+- id: 25.h.waiting
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent (home, waiting for you)
+  input: 'Waiting for you: North has N suggestions for your wall'
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the person's offered suggestions
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: line written by Nira'
+  claim: Nira tells the person suggestions are waiting
+- id: 25.w.toast
+  spec: '25'
+  journey: shared
+  stage: think
+  screen: /centre/intent/<id>/wall (own lane view)
+  input: 'Toast after an upload: North may add suggestions to your wall'
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the upload
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: shown by the system'
+  claim: The uploader is told suggestions may follow

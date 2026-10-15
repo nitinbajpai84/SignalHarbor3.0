@@ -1,0 +1,5 @@
+# The conversations map (context map): every signed-in role reads what its own talks and the projects it may read hold; the person who had a talk
+# forgets its summary. The viewer is always the signed-in one; the logic filters, no route names another person.
+routes:
+  GET /api/v1/memory/graph: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  DELETE /api/v1/memory/summaries/{sid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

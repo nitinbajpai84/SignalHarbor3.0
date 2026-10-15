@@ -1,0 +1,318 @@
+# Template insurance@1 logical feeds (V3-03 brief item 5). Seven logical feeds (policies, agents,
+# leads, campaigns, claims, cep_sends, customers), fields named by meaning rather than by any one
+# source system's spelling (column_synonyms.yaml carries the spelling mapping). Every field's
+# required_for lists only kpis.json ids that genuinely read that field in their own formula/
+# source_tables (docs/signal-harbor/cmo-proof/kpis.json); a field required by no current KPI
+# still appears if it is named in kpis.json's data model or the research note, with
+# required_for: [].
+#
+# fallback is "not_computable" for every field below: defaulting a missing required field to any
+# other value (e.g. assuming a missing policy_status means "In Force") would itself be a business
+# rule this builder is not entitled to invent (CLAUDE.md rule 4) -- none of the sources read for
+# this pack states a safe default for any of these fields.
+template: insurance@1
+status: proposed
+feeds:
+  policies:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K01/K03/K04/K08/K14/K18 source_tables (pol_policies, pol_policy_coverages, pol_products)"
+    fields:
+      - id: policy_id
+        label: Policy identifier
+        type: string
+        required_for: [K01, K03, K04, K08, K09, K10, K12, K13, K14, K18]
+        pii: false
+        fallback: not_computable
+      - id: inception_date
+        label: Policy inception date
+        type: date
+        required_for: [K01, K03, K08, K09, K10, K18]
+        pii: false
+        fallback: not_computable
+      - id: policy_status
+        label: Policy status (e.g. In Force, Lapsed, Cancelled)
+        type: string
+        required_for: [K18]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K01/K03/K18's free-look
+        # open question is about exactly this column -- see that file's customer_decides.fields.
+        customer_decides: true
+        fallback: not_computable
+      - id: currency_code
+        label: Policy currency
+        type: string
+        required_for: [K01, K02]
+        pii: false
+        fallback: not_computable
+      - id: ape_amount
+        label: APE amount (per coverage, summed per policy)
+        type: decimal
+        required_for: [K01, K02, K04, K09, K10, K14]
+        pii: false
+        fallback: not_computable
+      - id: product_category
+        label: Product category (Investment-linked, Retirement, Savings, Protection, Health)
+        type: string
+        required_for: [K14]
+        pii: false
+        fallback: not_computable
+      - id: lbu_code
+        label: Local business unit code
+        type: string
+        required_for: [K01, K03, K04, K09, K10, K18]
+        pii: false
+        fallback: not_computable
+      - id: customer_id
+        label: Customer identifier (foreign key to customers feed)
+        type: string
+        required_for: [K04, K08]
+        pii: true
+        fallback: not_computable
+      - id: premium_amount
+        label: "Raw premium (status: proposal -- relationship to ape_amount not confirmed)"
+        type: decimal
+        required_for: []
+        pii: false
+        fallback: not_computable
+  agents:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K07/K17 source_tables (dist_agents); research note section 5.1 (Agency system)"
+    fields:
+      - id: agent_id
+        label: Agent identifier
+        type: string
+        required_for: [K07, K17]
+        pii: false
+        fallback: not_computable
+      - id: branch
+        label: Agent's distribution branch
+        type: string
+        required_for: [K07, K17]
+        pii: false
+        fallback: not_computable
+      - id: lbu_code
+        label: Local business unit code
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: tenure_start_date
+        label: "Agent tenure start date (status: proposal -- named in problems.yaml T-DIST-04 'agent tenure band' breakdown, not in kpis.json's own source_tables)"
+        type: date
+        required_for: []
+        pii: false
+        fallback: not_computable
+  leads:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K05/K06/K07/K08/K09/K10/K17 source_tables (lms_leads)"
+    fields:
+      - id: lead_id
+        label: Lead identifier
+        type: string
+        required_for: [K05, K06]
+        pii: false
+        fallback: not_computable
+      - id: lead_source
+        label: Lead source (e.g. email_marketing, agent_owned, cep_handoff, agency)
+        type: string
+        required_for: [K05, K07, K10]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K05/K10's lead-source-taxonomy
+        # open question is about exactly this column.
+        customer_decides: true
+        fallback: not_computable
+      - id: campaign_id
+        label: Campaign identifier (foreign key to campaigns feed)
+        type: string
+        required_for: [K05, K10]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K06/K10's dedupe-key/attribution
+        # open questions name this column.
+        customer_decides: true
+        fallback: not_computable
+      - id: lead_created_date
+        label: Lead creation date
+        type: date
+        required_for: [K05, K06, K08, K09, K10, K17]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K06/K08/K10's dedupe-window/
+        # attribution open questions name this column.
+        customer_decides: true
+        fallback: not_computable
+      - id: distributed_date
+        label: Date the lead was handed to an agent/channel
+        type: date
+        required_for: [K07, K17]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K17's no-SLA-exists open
+        # question is about the gap this column measures.
+        customer_decides: true
+        fallback: not_computable
+      - id: accepted_date
+        label: Date an agent accepted the distributed lead
+        type: date
+        required_for: [K07, K17]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K17's no-SLA-exists open
+        # question is about the gap this column measures.
+        customer_decides: true
+        fallback: not_computable
+      - id: customer_id
+        label: Customer identifier (foreign key to customers feed)
+        type: string
+        required_for: [K08]
+        pii: true
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K06/K08's dedupe-key/attribution
+        # open questions name this column.
+        customer_decides: true
+        fallback: not_computable
+  campaigns:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K05/K10/K11/K12/K13/K15 source_tables (mkt_campaigns, mkt_campaign_spend)"
+    fields:
+      - id: campaign_id
+        label: Campaign identifier
+        type: string
+        required_for: [K10, K15]
+        pii: false
+        fallback: not_computable
+      - id: spend_usd
+        label: "Campaign spend in USD (not present in the monthly drops -- kpis.json K11/K12/K13 data_support: no; open_questions OQ4)"
+        type: decimal
+        required_for: [K11, K12, K13]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K11/K12/K13's
+        # where-is-the-spend-feed open question is about exactly this column.
+        customer_decides: true
+        fallback: not_computable
+  claims:
+    source: "No claims feed exists in docs/signal-harbor/cmo-proof/kpis.json's 18 KPIs or source_tables; this feed is scaffolded for the existing glossary term 'Loss ratio' (templates/insurance/1/glossary.yaml) and the research note's protection/profit discussion, status: proposal pending a named source"
+    fields:
+      - id: claim_id
+        label: "Claim identifier (status: proposal -- not in kpis.json's current drops)"
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: policy_id
+        label: "Policy identifier (status: proposal -- not in kpis.json's current drops)"
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: claim_amount
+        label: "Incurred claim amount (status: proposal -- not in kpis.json's current drops)"
+        type: decimal
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: incurred_date
+        label: "Claim incurred date (status: proposal -- not in kpis.json's current drops)"
+        type: date
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: claim_status
+        label: "Claim status (status: proposal -- not in kpis.json's current drops)"
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+  cep_sends:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K09/K15/K16 source_tables (cep_send_events, cep_channels, cep_journeys, cep_journey_campaign_map)"
+    fields:
+      - id: send_id
+        label: Send event identifier
+        type: string
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: customer_id
+        label: Customer identifier (foreign key to customers feed)
+        type: string
+        required_for: [K09]
+        pii: true
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K09's attribution-rule open
+        # question names this column (the join key the touch window is measured against).
+        customer_decides: true
+        fallback: not_computable
+      - id: channel_name
+        label: Channel (Email, SMS, WhatsApp)
+        type: string
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: send_date
+        label: Send date (first send used for attribution)
+        type: date
+        required_for: [K09, K15]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K09's attribution-rule open
+        # question names this column (the touch-date the window is measured from).
+        customer_decides: true
+        fallback: not_computable
+      - id: delivered_flag
+        label: Delivered flag
+        type: boolean
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: opened_flag
+        label: "Opened flag (always false for SMS by definition, kpis.json K16)"
+        type: boolean
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: clicked_flag
+        label: Clicked flag
+        type: boolean
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: journey_id
+        label: CEP journey identifier
+        type: string
+        required_for: [K15]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K09/K15's non-commercial-send/
+        # attribution open questions name this column.
+        customer_decides: true
+        fallback: not_computable
+      - id: campaign_id
+        label: Campaign identifier (via cep_journey_campaign_map)
+        type: string
+        required_for: [K15]
+        pii: false
+        # r3 fix (V3-07 review-r2.md B2): industry_defaults.yaml K15's attribution-rule open
+        # question names this column.
+        customer_decides: true
+        fallback: not_computable
+  customers:
+    source: "docs/signal-harbor/cmo-proof/kpis.json K04/K16 source_tables (crm_customers); sh_data/workspaces/star-insurance/contracts/discovery/insurance/crm_customers.profile.json"
+    fields:
+      - id: customer_id
+        label: Customer identifier
+        type: string
+        required_for: [K04]
+        pii: true
+        fallback: not_computable
+      - id: customer_segment
+        label: "Customer segment (sample values: Mass, Emerging Affluent, Affluent)"
+        type: string
+        required_for: [K04]
+        pii: false
+        fallback: not_computable
+      - id: customer_since_date
+        label: Customer vintage date (used for the K16 customer vintage band breakdown)
+        type: date
+        required_for: [K16]
+        pii: false
+        fallback: not_computable
+      - id: lbu_code
+        label: Local business unit code
+        type: string
+        required_for: []
+        pii: false
+        fallback: not_computable
+      - id: customer_email
+        label: "Customer email (status: proposal -- only seen in sh_data/workspaces/star-insurance/contracts/discovery/insurance/v2s2_policy_ddl.profile.json, not in crm_customers.profile.json)"
+        type: string
+        required_for: []
+        pii: true
+        fallback: not_computable

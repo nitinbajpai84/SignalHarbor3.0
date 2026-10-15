@@ -1,0 +1,57 @@
+# Template asset_management@1 (design section 3.1 and section 0). Star Asset Management is
+# provisioned in `clean` mode (design section 3.2's worked example) with the `asset_management`
+# domain registered and empty (Addendum A.2, OQ-6) -- clean mode installs only role labels, skill
+# overlays and the glossary (section 3.2), never this template's kpi_tree/intent_examples, so
+# those two files exist here for a FUTURE starter/demo instantiation, not for Star Asset
+# Management's own provisioning.
+#
+# Status is `proposed`, not `approved` (OQ-5 is still open, per kpi_tree.yaml): CLAUDE.md rule 4
+# and design section 3.4 -- an unapproved template stays out of provision.list_templates()'s
+# default (approved-only) listing. provision_workspace() itself still accepts it when called
+# directly (e.g. by scripts/sh/seed_dev_users.py's caller, a human operator, per this build's
+# task), logging a warning -- the sign-off gate is the LISTING default, not a hard block on an
+# operator who already knows what they are doing.
+id: asset_management
+version: "1"
+industry: asset_management
+label: "Asset management"
+status: proposed
+provenance: "contracts/sources/asset_management, models/asset_management.model.yaml, semantics/asset_management.gold.yaml (W4)"
+domains: [asset_management]
+# V3-13: the pack was brought to parity with insurance@1 (problems, feeds, column synonyms,
+# industry defaults, process map, market briefs, pack.md; glossary and kpi_tree grown). All of it
+# is pack-default content pending practitioner review, so the status stays `proposed`.
+files:
+  - path: column_synonyms.yaml
+    sha256: 3a72a733c97709176f4ce7c2bee3b1062bccc75328302456bec4a5daf7e22398
+  - path: feeds.yaml
+    sha256: d6dcd653442d98ff5226e6f4c765989f86b63c06f2df1c211c5c8c93b310bc27
+  - path: glossary.yaml
+    sha256: 6cf7d5d74a0e1514cdaa714b7c3da6322578c7608e774eae27efeebfd632963c
+  - path: industry_defaults.yaml
+    sha256: 94dca4f047c3c1f318fd7134537bf7b43d05950c5dc806dfc461a08a2448f5da
+  - path: intent_examples.yaml
+    sha256: 50262bfa609a527064db063d6a593ee8b52ab96e4410341f10e285f382e32c74
+  - path: kpi_tree.yaml
+    sha256: 5a98a49667115495445d731d809b76f7e94ec180d5f315560ca1aefa4e43f959
+  - path: market_briefs/india.md
+    sha256: 2686b0b1b675b9e5f78ceae2922c7184f22e643a9f6f8a80ee691afffc14c15f
+  - path: market_briefs/indonesia.md
+    sha256: 9ab961e9b1f8abd89227a7a6acb4a0db4effec3cf725f5523d7bcfa7ebd53f93
+  - path: market_briefs/malaysia.md
+    sha256: ec87a89aa7c41fd6e241d6bc788f5966dc3eb3f16ce2cd0f31e3c16d3315479a
+  - path: market_briefs/singapore.md
+    sha256: 24a1e102d73333a32212e82d63eaff21be5e681f972f1661ac04278abd967f56
+  - path: pack.md
+    sha256: f2ebdef8bb314ecc005f04c4dd559cba863684bdb229fa854adab15533b6b05d
+  - path: problems.yaml
+    sha256: 8b0a46d380fef402a7e53d33d9f8b0b324d7013d247878e4d23fdc9e418f31ab
+  - path: process_map_default.yaml
+    sha256: 3435a2a4a6171bfcaf254ef82e34aebc8b36566b890ebe0bc5d6a6ef98c62d4e
+  - path: roles/role_labels.yaml
+    sha256: fd19c83fa07b970d844e0c3effa3e5950bcee2ce98f49db4ce1e1febcb132580
+  - path: skills/cmo.overlay.md
+    sha256: 510901464905d0a548c5167b98bf06b00ecdc8c59cf5866daf59e3666cd856df
+open_questions:
+  - "OQ-5: the asset management KPI scaffold contents (kpi_tree.yaml is a Proposal; V3-13 grew it to 18 pack-local KPI ids with no kpis.json catalogue behind them)."
+  - "V3-13: every new pack file is builder-authored pack-default content, not practitioner-reviewed; nine of the twelve feeds in feeds.yaml have no source contract in this repo."

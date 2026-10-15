@@ -1,0 +1,197 @@
+{
+  "id": "LUM-08",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"monthly not daily\" edits the period of the last tile.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": false,
+      "detail": "fewer than two tiles proposed"
+    }
+  ],
+  "error": null,
+  "latency_ms": 41278,
+  "cost": {
+    "calls": 9,
+    "tokens": 51346,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 9,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "period": "month"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me cash by entity over time"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Cash by entity over time (USD). It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-b2164d",
+            "title": "Cash by entity over time (USD)",
+            "kpi": "cash_usd",
+            "sql": "select date_trunc('month', \"position_date\") as \"position_date\", \"entity\", sum(\"cash_usd\") as \"cash_usd\" from \"gold_investment_report_cash_daily\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "position_date",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "cash_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "entity",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "cash_usd",
+              "when": "position_date",
+              "split": "entity",
+              "kind": "line",
+              "period": "month",
+              "table": "gold_investment_report_cash_daily"
+            }
+          }
+        ],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": []
+      },
+      "ms": 17926,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "monthly not daily"
+      },
+      "status": 200,
+      "json": {
+        "reply": "That is already how the tile looks.",
+        "proposals": [],
+        "dashboard_id": "dash-dc1f84bf",
+        "edited": false,
+        "remembered": []
+      },
+      "ms": 23352,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 1853,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:39+0800"
+    },
+    {
+      "bytes": 15721,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:33+0800"
+    },
+    {
+      "bytes": 14475,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:28+0800"
+    },
+    {
+      "bytes": 13414,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:24+0800"
+    },
+    {
+      "bytes": 12886,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:21+0800"
+    },
+    {
+      "bytes": 15231,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:15+0800"
+    },
+    {
+      "bytes": 14736,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:11+0800"
+    },
+    {
+      "bytes": 13493,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:07+0800"
+    },
+    {
+      "bytes": 12916,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:03+0800"
+    }
+  ]
+}

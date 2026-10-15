@@ -1,0 +1,203 @@
+# Input ledger rows for spec 20: linking intents.
+- id: "20.kind_proposal"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "Turn this into... menu (North suggests, first row)"
+  input: "Which kind of intent an item should become"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the item, earlier weeks of the same area, the source type and the catalogue's allowed links"
+  minutes_without: 15
+  minutes_with: 1
+  basis: "estimate: deciding what an item should become versus choosing from a proposal with its reason"
+  claim: "North proposes the next kind from the records, for example a check-in item seen three weeks running proposes a Problem"
+- id: "20.new_title"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "Turn this into... panel (new intent title)"
+  input: "Title of the new intent"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the first 80 characters of the item text"
+  minutes_without: 3
+  minutes_with: 0.3
+  basis: "estimate: titling a follow-up"
+  claim: "North drafts the new title from the item"
+- id: "20.start_prefill"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "Turn this into... panel (start questions with 'From <source>' chips)"
+  input: "Start answers of the new intent"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "a plain mapping from the source record: the chosen idea, the item text, the areas, the owner and the cost answer"
+  minutes_without: 20
+  minutes_with: 3
+  basis: "estimate: re-entering the context of a follow-up versus checking carried-over answers"
+  claim: "A follow-up starts with its questions pre-filled from the source; every answer carries where it came from and can be changed"
+- id: "20.people_carry"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "panel (People carried over)"
+  input: "People suggested for the new intent"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the source's organiser, sponsor, owner, reporter, decider and named participants"
+  minutes_without: 8
+  minutes_with: 1
+  basis: "estimate: working out who should be involved again"
+  claim: "North suggests the people from the source; nobody is invited until the creator opens the intent"
+- id: "20.areas_carry"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "panel (Areas carried over)"
+  input: "Areas of the new intent"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the source's areas"
+  minutes_without: 3
+  minutes_with: 0.3
+  basis: "estimate: choosing areas again"
+  claim: "The source's areas are carried over and checked by default"
+- id: "20.create_draft"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "panel (Create draft, Add to backlog, Hand to Build)"
+  input: "Create the follow-up draft, backlog item or Build hand-off"
+  person: organiser
+  mode: manual
+  source: "the organiser or sponsor of the source; nothing is created by an agent"
+  minutes_without: 20
+  minutes_with: 1
+  basis: "estimate: raising a follow-up ticket and linking it"
+  claim: "One press creates the draft and links both records, the log and the company map"
+- id: "20.backlog_reason"
+  spec: "20"
+  journey: shared
+  stage: decide
+  screen: "panel variant (Why this goes to the backlog)"
+  input: "One sentence on why this goes to the backlog"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: one sentence"
+  claim: "The reason for backlogging is one required sentence"
+- id: "20.build_note"
+  spec: "20"
+  journey: initiative
+  stage: build
+  screen: "Build variant (Anything Build must know, optional)"
+  input: "Note for Build"
+  person: sponsor
+  mode: manual
+  source: "the sponsor or organiser"
+  minutes_without: 5
+  minutes_with: 2
+  basis: "estimate: writing a hand-over note"
+  claim: "An optional note goes with the hand-off"
+- id: "20.handoff_list"
+  spec: "20"
+  journey: initiative
+  stage: build
+  screen: "Build variant (hand-over list and build gaps)"
+  input: "What is handed over and what is missing"
+  person: sponsor
+  mode: derived
+  agent: North
+  source: "outcome: charter, glossaries, catalogue, process map, data sources map and build_ready_gaps"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: assembling a hand-over pack"
+  claim: "The hand-over list and what Build cannot yet pick up are read from the outcome, never copied or assembled"
+- id: "20.link_entries"
+  spec: "20"
+  journey: shared
+  stage: shared
+  screen: "intent records (links.from, links.to, link_log, closure.next ref)"
+  input: "Both sides of every link, the events and the graph mark"
+  person: system
+  mode: automatic
+  source: "the link service writes the source, then the target, then marks the graph"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: cross-referencing two tickets"
+  claim: "Both ends of every link are written and kept consistent; a half-written link repairs itself"
+- id: "20.chain"
+  spec: "20"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent/past/<id>/chain and the node page (chain cards, chain sentence)"
+  input: "The chain from the first idea to what was built"
+  person: any
+  mode: automatic
+  source: "link entries and events at the viewer's tier"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: tracing back from a built thing to the original discussion"
+  claim: "Anyone who may see the intents can walk the chain from the first idea to the thing built, with who linked each step"
+- id: "20.intent_nodes"
+  spec: "20"
+  journey: admin
+  stage: shared
+  screen: "company graph (Intent nodes and led_to, came_from, built_by edges)"
+  input: "Intent nodes and edges on the company map"
+  person: system
+  mode: automatic
+  source: "intent records read by path on each graph rebuild"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: drawing a data lineage map by hand"
+  claim: "Intents appear on the company map with how they led to each other, with no one drawing it"
+- id: "20.cancel_notice"
+  spec: "20"
+  journey: shared
+  stage: run
+  screen: "Pulse lines and banner (linked intent cancelled or closed, draft waiting)"
+  input: "Notices when a source or target is cancelled or closed"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "link events"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: noticing that a related project was cancelled"
+  claim: "Nira tells the other end when a linked intent closes or is cancelled; nothing cascades without a person"
+- id: "20.checked"
+  spec: "20"
+  journey: shared
+  stage: run
+  screen: "Came from card (I have checked)"
+  input: "Confirm you have checked after the source was cancelled"
+  person: organiser
+  mode: manual
+  source: "the target's organiser"
+  minutes_without: 3
+  minutes_with: 0.2
+  basis: "estimate: a tap"
+  claim: "The organiser acknowledges a cancelled source and the banner goes"
+- id: "20.counters"
+  spec: "20"
+  journey: admin
+  stage: prove
+  screen: "centre measures (links by kind, North's proposals accepted, pre-filled answers kept, chains of three or more, handed to Build)"
+  input: "Links created, proposals accepted, pre-fill kept, chains, hand-offs"
+  person: company_admin
+  mode: automatic
+  source: "link_log and start_answers"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: analysing how work flows between projects"
+  claim: "How work flows from ideas to Build is counted from the links"

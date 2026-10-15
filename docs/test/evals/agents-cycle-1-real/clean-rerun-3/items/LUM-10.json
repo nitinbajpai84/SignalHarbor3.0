@@ -1,0 +1,361 @@
+{
+  "id": "LUM-10",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A chain of edits keeps editing the same tile (bars, then dots, then blue).",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": false,
+      "detail": "colour None, wanted blue"
+    }
+  ],
+  "error": null,
+  "latency_ms": 74456,
+  "cost": {
+    "calls": 15,
+    "tokens": 78535,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 15,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "mark": "point",
+      "color": "blue"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me holdings by status"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Holdings net worth by status (USD). It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-35b56e",
+            "title": "Holdings net worth by status (USD)",
+            "kpi": "net_worth_usd",
+            "sql": "select \"status\" as \"status\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "bar"
+              },
+              "encoding": {
+                "x": {
+                  "field": "status",
+                  "type": "nominal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": "status",
+              "kind": "bar",
+              "table": "gold_investment_report_holdings_monthly"
+            }
+          }
+        ],
+        "dashboard_id": "dash-766b5569",
+        "remembered": []
+      },
+      "ms": 24818,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "as bars"
+      },
+      "status": 200,
+      "json": {
+        "reply": "That is already how the tile looks.",
+        "proposals": [],
+        "dashboard_id": "dash-766b5569",
+        "edited": false,
+        "remembered": []
+      },
+      "ms": 15068,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "make it dots"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I changed 'Holdings net worth by status (USD)': shown as dots. This is a new version waiting for you; accept it to replace the old one, or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-5ea4fb",
+            "title": "Net worth USD by status per month",
+            "kpi": "net_worth_usd",
+            "sql": "select \"report_month\" as \"report_month\", \"status\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "point",
+                "filled": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "status",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "A new version of 'Holdings net worth by status (USD)': shown as dots.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": "status",
+              "kind": "point",
+              "table": "gold_investment_report_holdings_monthly"
+            }
+          }
+        ],
+        "dashboard_id": "dash-766b5569",
+        "edited": true,
+        "remembered": []
+      },
+      "ms": 14364,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "in blue"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I changed 'Net worth USD by status per month': by month. This is a new version waiting for you; accept it to replace the old one, or choose Not this. I will remember: you like blue for chart lines. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [
+          {
+            "id": "t-ffcf8d",
+            "title": "Net worth USD by status per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", \"status\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1, 2 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "point",
+                "filled": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                },
+                "color": {
+                  "field": "status",
+                  "type": "nominal"
+                }
+              }
+            },
+            "note": "A new version of 'Net worth USD by status per month': by month.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": "status",
+              "kind": "point",
+              "table": "gold_investment_report_holdings_monthly",
+              "period": "month"
+            }
+          }
+        ],
+        "dashboard_id": "dash-766b5569",
+        "edited": true,
+        "remembered": [
+          "you like blue for chart lines"
+        ]
+      },
+      "ms": 20205,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 13485,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:11:08+0800"
+    },
+    {
+      "bytes": 13058,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:11:02+0800"
+    },
+    {
+      "bytes": 12900,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:59+0800"
+    },
+    {
+      "bytes": 12358,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:55+0800"
+    },
+    {
+      "bytes": 13201,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:51+0800"
+    },
+    {
+      "bytes": 13201,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:48+0800"
+    },
+    {
+      "bytes": 12789,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:44+0800"
+    },
+    {
+      "bytes": 12248,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:41+0800"
+    },
+    {
+      "bytes": 1413,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:36+0800"
+    },
+    {
+      "bytes": 11823,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:32+0800"
+    },
+    {
+      "bytes": 11282,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:26+0800"
+    },
+    {
+      "bytes": 12270,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:21+0800"
+    },
+    {
+      "bytes": 12270,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:14+0800"
+    },
+    {
+      "bytes": 11770,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:08+0800"
+    },
+    {
+      "bytes": 11015,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T02:10:01+0800"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "id": "SPA-01",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Which gold table holds cash by entity - the right table name.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "180 ms",
+      "value": 180
+    },
+    {
+      "name": "cost",
+      "passed": null,
+      "detail": "no cost rows (program-only route, or log not readable)"
+    }
+  ],
+  "error": null,
+  "latency_ms": 180,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/p/{pid}/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_cash_daily"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/p/prj-84d783f2/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity?"
+      },
+      "status": 200,
+      "json": {
+        "turns": [
+          {
+            "id": "t-d3362579",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which gold table holds the cash by entity?",
+            "at": "2026-10-09T17:23:56+00:00"
+          },
+          {
+            "id": "t-cef80502",
+            "by": "span",
+            "name": "Span",
+            "text": "The dashboards read 3 gold tables: gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value); gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view); gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values).",
+            "at": "2026-10-09T17:23:56+00:00"
+          }
+        ],
+        "pending": []
+      },
+      "ms": 104,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

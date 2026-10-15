@@ -1,0 +1,73 @@
+{
+  "id": "SPA-08",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Outside any project, Span answers in words about the company model.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "1 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 1805,
+  "cost": {
+    "calls": 1,
+    "tokens": 1100,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words_any": [
+      [
+        "table"
+      ]
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What tables does the company model hold?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I can list tables by layer. The layers are bronze, silver, and gold. Which would you like to know about?",
+        "rules_only": false
+      },
+      "ms": 1805,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 4069,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T01:46:47+0800"
+    }
+  ]
+}

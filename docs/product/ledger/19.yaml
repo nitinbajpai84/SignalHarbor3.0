@@ -1,0 +1,159 @@
+# Input ledger rows for spec 19: centre counters and measures. Every measure is computed from records; none is typed.
+- id: "19.m01"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent (counter: intents opened this month; panel How the centre is doing)"
+  input: "Intents opened per type per month"
+  person: company_admin
+  mode: automatic
+  source: "state and stages[0].opened_at on every intent record"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: counting started projects by type in a spreadsheet"
+  claim: "How much the company starts, by kind, is counted from the records"
+- id: "19.m02"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "counter: closed inside the time box"
+  input: "Closed inside the time box, n of m"
+  person: company_admin
+  mode: automatic
+  source: "closure.closed_at against the final time_box.ends"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: comparing planned and actual dates across projects"
+  claim: "How many intents finish inside their time box is worked out from the dates"
+- id: "19.m03_m04"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "panel (days from open to close, extensions per intent)"
+  input: "Median working days to close and extensions per intent, by type"
+  person: company_admin
+  mode: automatic
+  source: "stages, closure and time_box.extended_by; Fewer than five below five records"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: analysing cycle times"
+  claim: "How long each kind of intent takes and how often it is extended is counted, with small groups withheld"
+- id: "19.m05_m07"
+  spec: "19"
+  journey: initiative
+  stage: prove
+  screen: "panel (people minutes, cards in the first five minutes, definitions confirmed unchanged)"
+  input: "Elapsed minutes and counters of a wall; cards per person early; definitions left as Lens drafted them"
+  person: company_admin
+  mode: automatic
+  source: "session counters, outcome signed_at and baseline confirmed parts (existing outcomes route)"
+  minutes_without: 90
+  minutes_with: 0
+  basis: "estimate: measuring the effort and the draft acceptance rate by hand"
+  claim: "How much work a wall took and how often people keep Lens's drafts is measured, never timesheeted"
+- id: "19.m08"
+  spec: "19"
+  journey: initiative
+  stage: prove
+  screen: "counter: build-ready charters"
+  input: "Build-ready charters this quarter, handed over and waiting"
+  person: company_admin
+  mode: automatic
+  source: "build_ready stage, outcome.build_ready and links.build"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: checking what is ready for the build team"
+  claim: "How many charters are ready for Build, and how many were handed over, is counted"
+- id: "19.m09_m12"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "panel (brainstorms that became initiatives, check-in items by fate, problems closed with a root cause, decisions recorded)"
+  input: "What came out, by type"
+  person: company_admin
+  mode: automatic
+  source: "closure.next, week items, outcome.root_cause, outcome.chosen"
+  minutes_without: 120
+  minutes_with: 0
+  basis: "estimate: reviewing outcomes across types"
+  claim: "Whether brainstorms lead to initiatives, check-in items to problems, problems to causes and decisions to records is counted"
+- id: "19.m13"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "counter: average rating by type"
+  input: "Average rating from three ratings, with the count"
+  person: company_admin
+  mode: automatic
+  source: "ratings[].score; anonymous included, notes never"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: collating feedback"
+  claim: "Which kinds of intent are worth the time is measured from ratings, never per person"
+- id: "19.m14_m15"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "panel (intents that led to another intent, outcomes used after one month)"
+  input: "Follow-on intents; used, partly, not used, not answered"
+  person: company_admin
+  mode: automatic
+  source: "closure.next, links and outcome_used"
+  minutes_without: 90
+  minutes_with: 0
+  basis: "estimate: checking whether decisions were acted on"
+  claim: "Whether outcomes were used a month later is counted from the organiser's answer"
+- id: "19.use_question"
+  spec: "19"
+  journey: shared
+  stage: prove
+  screen: "organiser, one month after close (outcome used question)"
+  input: "The one-month question and the organiser's answer"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "closure date; the answer is written by the organiser (file 10)"
+  minutes_without: 15
+  minutes_with: 1
+  basis: "estimate: following up on a past decision"
+  claim: "North asks the one-month question; the organiser answers once"
+- id: "19.window_csv"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "panel (window select, Download as CSV)"
+  input: "Window and CSV export of the numbers"
+  person: company_admin
+  mode: manual
+  source: "the company admin's choice"
+  minutes_without: 30
+  minutes_with: 1
+  basis: "estimate: building a monthly report"
+  claim: "A monthly review is one window choice and one download"
+- id: "19.monthly_line"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "Pulse line 'Measures for last month are ready'"
+  input: "Monthly measures line to the company admin"
+  person: company_admin
+  mode: derived
+  agent: Nira
+  source: "at least one measure with a value"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: remembering to review"
+  claim: "Nira tells the company admin when the month's measures are ready"
+- id: "19.centre_use"
+  spec: "19"
+  journey: admin
+  stage: prove
+  screen: "/centre/control/intents (Centre use: intents opened, closed, cancelled per month)"
+  input: "Counts of use per company"
+  person: super_admin
+  mode: automatic
+  source: "read through the kernel on request; counts only"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: asking a company how much it uses the product"
+  claim: "The platform owner sees whether a company is using the centre, never what is in it"

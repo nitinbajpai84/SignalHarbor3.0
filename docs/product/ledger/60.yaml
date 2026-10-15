@@ -1,0 +1,345 @@
+- id: 60.lenstile
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume (Lens tile)
+  input: 'Counts per lens: measures, outside range, briefs, building, proving, to consider'
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: feeds, briefs, intents and opportunities by lens
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: compiling a status list by hand'
+  claim: Consume opens by lens with every count worked out
+  built: missing
+- id: 60.mine
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume (My line of work)
+  input: Filter to my line of work
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: viewer areas and owned measures
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: filtering a report'
+  claim: One tap narrows to what the viewer owns
+  built: missing
+- id: 60.range
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume (outside usual range)
+  input: Measures outside their usual range
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: feeds range_break rule
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: scanning measures against history'
+  claim: Range breaks are counted by rule
+  built: missing
+- id: 60.market
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (market strip)
+  input: Outside briefs that touch the lens measures
+  person: consume reader
+  mode: derived
+  agent: Nira
+  source: briefs and measure moves
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: reading news for relevance'
+  claim: Outside material is matched to the lens
+  built: missing
+- id: 60.data
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (data strip)
+  input: Lens measures with latest value, sparkline and owner
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: gold tables and the measure list
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: building a dashboard'
+  claim: Lens measures are shown with latest values
+  built: missing
+- id: 60.building
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (building strip)
+  input: Initiatives of this lens in Build or Proving with their verdict
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: intent links.build and proving verdicts (58)
+  minutes_without: 45
+  minutes_with: 0
+  basis: 'estimate: asking what is in flight'
+  claim: What is being built for the lens is listed with its latest verdict
+  built: missing
+- id: 60.next
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (consider next)
+  input: Radar opportunities of this lens
+  person: consume reader
+  mode: derived
+  agent: North
+  source: hypotheses and opportunity states (57)
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: collecting ideas'
+  claim: The lens page shows what the radar suggests
+  built: missing
+- id: 60.lensmeasures
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (Measures in this lens)
+  input: Lens assigned to each measure
+  person: business owner
+  mode: confirm
+  agent: Lens
+  source: measure definition and pack measure tree
+  minutes_without: 30
+  minutes_with: 2
+  basis: 'estimate: classifying measures'
+  claim: Lens assigns each measure to a lens; the owner confirms or moves it
+  built: missing
+- id: 60.movelens
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/lens/<lens> (Move to another lens)
+  input: Move a measure to another lens
+  person: business owner
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: a classification choice'
+  claim: The owner can move a measure to another lens
+  built: missing
+- id: 60.whatif
+  spec: '60'
+  journey: consume
+  stage: think
+  screen: /centre/consume/what-if?lens=<lens> (Try a what-if)
+  input: Lens measures ordered first in the drivers
+  person: consume reader
+  mode: automatic
+  agent: null
+  source: lens measure list
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: hunting for drivers'
+  claim: What-if opens on the lens measures
+  built: missing
+- id: 60.cardstate
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: /centre/consume/feeds/<code> (Context card state)
+  input: 'Context card state: draft, confirmed, changed, disputed'
+  person: data owner
+  mode: automatic
+  agent: null
+  source: card record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: tracking documentation currency'
+  claim: The card says whether it is current and confirmed
+  built: missing
+- id: 60.means
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (What it means)
+  input: Business meaning in plain words
+  person: data owner
+  mode: confirm
+  agent: Lens
+  source: signed definition and business glossary
+  minutes_without: 30
+  minutes_with: 2
+  basis: 'estimate: writing a data definition'
+  claim: Lens drafts the meaning; the owner confirms
+  built: missing
+- id: 60.serves
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Measures it serves)
+  input: Measures a table serves
+  person: data owner
+  mode: derived
+  agent: Architect
+  source: blueprint lineage
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: tracing by hand'
+  claim: The Architect lists the measures a table serves from lineage
+  built: missing
+- id: 60.from
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Where it comes from)
+  input: Source, system, fields and pipeline
+  person: data owner
+  mode: derived
+  agent: Architect
+  source: the map lineage (55)
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: tracing lineage by hand'
+  claim: Lineage is read from the map
+  built: missing
+- id: 60.owner
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Owner)
+  input: Data owner of the table
+  person: data owner
+  mode: derived
+  agent: null
+  source: governed owners cell
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who owns it'
+  claim: The owner is read from governed owners
+  built: missing
+- id: 60.rules
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Quality rules)
+  input: Quality rules and the last result
+  person: data owner
+  mode: derived
+  agent: Architect
+  source: blueprint rules and runs.json
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: collecting checks'
+  claim: Rules and results are shown on the card
+  built: missing
+- id: 60.lastchange
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Last change and why)
+  input: Newest change, who and why
+  person: data owner
+  mode: derived
+  agent: Architect
+  source: graph versions.json
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: hunting a change log'
+  claim: The card names the last change and why
+  built: missing
+- id: 60.madeby
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Made or changed by)
+  input: The Initiative behind the latest change
+  person: data owner
+  mode: derived
+  agent: Architect
+  source: updates.json refs
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: asking who changed it'
+  claim: Every table shows which Initiative made or changed it
+  built: missing
+- id: 60.confirmcard
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Confirm this card)
+  input: Confirm the context card
+  person: data owner
+  mode: manual
+  agent: null
+  source: the card the Architect and Lens drafted
+  minutes_without: 60
+  minutes_with: 3
+  basis: 'estimate: writing then approving documentation'
+  claim: The owner confirms a prepared card
+  built: missing
+- id: 60.correct
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (Correct a line)
+  input: Correct a card line with a reason
+  person: data owner
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: editing a document'
+  claim: The owner can correct a line with a why
+  built: missing
+- id: 60.dispute
+  spec: '60'
+  journey: consume
+  stage: run
+  screen: measure page (This is wrong)
+  input: Dispute the card with a reason
+  person: data owner
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: reporting an error'
+  claim: The owner can dispute a card and the Architect redrafts
+  built: missing
+- id: 60.raise
+  spec: '60'
+  journey: consume
+  stage: think
+  screen: what-if (Turn this into an opportunity)
+  input: Opportunity raised from a what-if, with belief, lens, evidence and baseline prefilled
+  person: analyst
+  mode: confirm
+  agent: North
+  source: kept scenario result and the feeds route
+  minutes_without: 60
+  minutes_with: 5
+  basis: 'estimate: writing up the idea'
+  claim: A what-if becomes an opportunity with the case prefilled
+  built: missing
+- id: 60.raisetarget
+  spec: '60'
+  journey: consume
+  stage: think
+  screen: what-if (raise sheet, target)
+  input: Target for the raised opportunity
+  person: analyst
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: a judgement only a person makes'
+  claim: The target is typed by a person
+  built: missing

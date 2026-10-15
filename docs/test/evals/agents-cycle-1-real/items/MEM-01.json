@@ -1,0 +1,147 @@
+{
+  "id": "MEM-01",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "A preference told to Lumen is still there in a new session.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "1 egress lines, 1 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 1502,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 1,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures monthly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like figures by month. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": [
+          "you like figures by month"
+        ]
+      },
+      "ms": 1337,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "remember"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-82b0c2bb",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures by month",
+            "sure": "said",
+            "at": "2026-10-09T17:33:21+00:00",
+            "source": {
+              "said": "From now on show my figures monthly",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-eb557019",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures in SGD",
+            "sure": "inferred",
+            "at": "2026-10-09T17:30:27+00:00",
+            "source": {
+              "said": "in SGD",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-75131795",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T17:29:01+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 30,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "month"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-82b0c2bb",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-82b0c2bb"
+      },
+      "ms": 13,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 13249,
+      "decision": "blocked",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:33:21+0800"
+    }
+  ]
+}

@@ -1,0 +1,420 @@
+- id: 39.pulse.line
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: Pulse line "Your week for <area>"
+  input: The weekly request to answer
+  person: reporter
+  mode: automatic
+  agent: Nira
+  source: the week file in collect state
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a Friday reminder email'
+  claim: Reporters are asked in their own Pulse at the right time
+- id: 39.header
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (header)
+  input: Area, week of, close line
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the week file and the profile time zone
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: reading a request'
+  claim: The week and its deadline are on screen with no one writing them
+- id: 39.minutes
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (minutes strip)
+  input: Minutes used against about 2
+  person: reporter
+  mode: automatic
+  agent: null
+  source: active seconds between edits in the week file
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The product measures the time the check-in takes
+- id: 39.prefill.runs
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (North's help)
+  input: Draft items from this week's runs and alerts the person owns
+  person: reporter
+  mode: derived
+  agent: North
+  source: warehouse runs and alerts for the sources the person owns, this week only
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: remembering and typing what ran during the week'
+  claim: North drafts what ran well from the run log, so the person only keeps or changes it
+- id: 39.prefill.alerts
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (North's help)
+  input: Draft items for what failed or was late
+  person: reporter
+  mode: derived
+  agent: North
+  source: build alerts the person owns, this week
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: remembering what broke'
+  claim: North drafts what broke from the alerts the person owns
+- id: 39.prefill.keep
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Keep, Keep all)
+  input: Keep, change or drop each draft
+  person: reporter
+  mode: confirm
+  agent: North
+  source: the draft rows
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: keeping a line versus typing it'
+  claim: Keeping a draft is one tap
+- id: 39.prefill.sources
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Show North's sources)
+  input: Run and alert ids behind a draft
+  person: reporter
+  mode: automatic
+  agent: North
+  source: the run ids and alert ids used, never rows
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: asking where it came from'
+  claim: Every draft shows its sources and never shows rows
+- id: 39.ran.add
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (What ran well)
+  input: A line on what ran well
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's own words, with voice if wanted
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an email or a meeting remark'
+  claim: A person adds a line only when North has not already drafted it
+- id: 39.broke.add
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (What broke)
+  input: A line on what broke or nearly broke
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's own words
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an email to the manager'
+  claim: The reporter states what broke in one line
+- id: 39.mind.add
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (What is on your mind)
+  input: A thought or worry
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's own words
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an aside in a meeting'
+  claim: Worries are said in one line and can be anonymous
+- id: 39.voice
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (microphone button)
+  input: A line spoken
+  person: reporter
+  mode: derived
+  agent: North
+  source: speech turned into text for the reporter to read
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: typing on a phone'
+  claim: On a phone the check-in can be spoken
+- id: 39.severity
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (severity taps)
+  input: Slowed us, Stopped us or Cost money
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter's judgement of the impact
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Impact is one tap and can be counted later
+- id: 39.count.amount
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (count or amount)
+  input: How many times or hours, or how much
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter, optional
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: an estimate in a sentence'
+  claim: The cost of a break is captured as a number when known
+- id: 39.links.to
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Links to)
+  input: A measure or process the item is about
+  person: reporter
+  mode: confirm
+  agent: North
+  source: a catalogue and process match against the item words
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: searching the catalogue'
+  claim: North suggests the measure or process a line is about; the reporter confirms
+- id: 39.hide.name
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Hide my name)
+  input: Hide my name on this item
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter, off by default
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Anonymous items hide the author from everyone including an admin
+- id: 39.nothing.here
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Nothing to add here)
+  input: Nothing to add in this block
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Saying nothing is one tap
+- id: 39.submit
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Send my week)
+  input: Send or update the week
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: One tap sends the week and it can change until the week closes
+- id: 39.draft.save
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (saved line)
+  input: The draft saved as the person types
+  person: reporter
+  mode: automatic
+  agent: null
+  source: each field change
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: A half-finished week is never lost
+- id: 39.edit.until
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (Edit, Remove)
+  input: Edit or remove an item before the week closes
+  person: reporter
+  mode: manual
+  agent: null
+  source: the reporter
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a correction email'
+  claim: Corrections are allowed until the week closes
+- id: 39.clock.line
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week (clock line)
+  input: Closes in n days
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the stage clock
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The deadline is on screen
+- id: 39.history.row
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=mine (Your weeks)
+  input: The person's own weeks with counts and fates
+  person: reporter
+  mode: automatic
+  agent: null
+  source: the person's items across week files
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: digging through old notes'
+  claim: A person can see their own history and what happened to each line
+- id: 39.history.trend
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=mine (trend)
+  input: Weeks answered out of the last eight and minutes taken
+  person: reporter
+  mode: automatic
+  agent: null
+  source: submissions in week files
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Participation and time are shown to the person only
+- id: 39.record.counts
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=record (counts strip)
+  input: Answered, items by kind
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the week file
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting replies and notes'
+  claim: The week's counts are computed
+- id: 39.record.filters
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=record (filters)
+  input: Filter by kind, severity, linked and guessed
+  person: organiser
+  mode: automatic
+  agent: null
+  source: item fields
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: sorting by hand'
+  claim: The record filters itself
+- id: 39.record.provenance
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=record (provenance chip)
+  input: Stated, drafted and confirmed, or drafted and edited
+  person: organiser
+  mode: automatic
+  agent: null
+  source: item provenance and edits
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: knowing where a line came from'
+  claim: Every item says whether a person stated it or North drafted it
+- id: 39.record.withdrawn
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id>/week?view=record (withdrawn)
+  input: Items withdrawn by their authors, count only
+  person: organiser
+  mode: automatic
+  agent: null
+  source: withdrawn flags
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Withdrawn items are counted but not shown
+- id: 39.count.median
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id> (counters)
+  input: Median minutes per submission, fewer than five hidden
+  person: organiser
+  mode: automatic
+  agent: null
+  source: submissions minutes
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: asking how long it took'
+  claim: The product measures effort so the saving can be shown
+- id: 39.count.submissions
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id> (counters)
+  input: Submissions of participants
+  person: organiser
+  mode: automatic
+  agent: null
+  source: submission states
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counting'
+  claim: Submissions are counted by the product
+- id: 39.count.items
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id> (counters)
+  input: Items by kind, broke by severity, with count, linked, guessed share
+  person: organiser
+  mode: automatic
+  agent: null
+  source: items in the week file
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: a manual summary'
+  claim: Week counts and the guessed share are computed
+- id: 39.count.drafts
+  spec: '39'
+  journey: checkin
+  stage: run
+  screen: /centre/intent/<id> (counters)
+  input: Drafts kept, edited and dropped
+  person: organiser
+  mode: automatic
+  agent: null
+  source: provenance and edits
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: How much of North's drafting people accept is measured

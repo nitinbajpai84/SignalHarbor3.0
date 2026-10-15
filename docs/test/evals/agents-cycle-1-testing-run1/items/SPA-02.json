@@ -1,0 +1,85 @@
+{
+  "id": "SPA-02",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Which gold table holds the holdings by month.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    }
+  ],
+  "error": null,
+  "latency_ms": 114,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/p/{pid}/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "gold_investment_report_holdings_monthly"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/p/prj-84d783f2/chat",
+      "request": {
+        "text": "Which table has the holdings by month?"
+      },
+      "status": 200,
+      "json": {
+        "turns": [
+          {
+            "id": "t-d3362579",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which gold table holds the cash by entity?",
+            "at": "2026-10-09T17:23:56+00:00"
+          },
+          {
+            "id": "t-cef80502",
+            "by": "span",
+            "name": "Span",
+            "text": "The dashboards read 3 gold tables: gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value); gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view); gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values).",
+            "at": "2026-10-09T17:23:56+00:00"
+          },
+          {
+            "id": "t-41cb74e5",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which table has the holdings by month?",
+            "at": "2026-10-09T17:23:57+00:00"
+          },
+          {
+            "id": "t-0e07c3a5",
+            "by": "span",
+            "name": "Span",
+            "text": "gold_investment_report_benchmark_monthly is a gold table (ready for dashboards). Portfolio return, benchmark return and the difference for each month, from recorded values. Columns: benchmark_code, month, portfolio_return, benchmark_return, difference. It is built from valuation_observations, market_observations, benchmark_definitions, benchmark_components.",
+            "at": "2026-10-09T17:23:57+00:00"
+          }
+        ],
+        "pending": []
+      },
+      "ms": 114,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

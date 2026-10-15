@@ -1,0 +1,22 @@
+# T1 Templates and the company admin's agent context. Everyone who starts work reads the adopted templates and may ask for a change;
+# only the company admin changes templates, skills and rules (also checked again in code).
+routes:
+  GET /api/v1/templates: {roles: [company_admin, sponsor, analyst, owner]}  # ROLE1: the business owner starts an intent and reads the templates (read only)
+  POST /api/v1/templates: {roles: [company_admin]}
+  GET /api/v1/templates/examples/{eid}: {roles: [company_admin, sponsor, analyst, owner]}  # ROLE1: the business owner starts an intent and reads the templates (read only)
+  GET /api/v1/templates/{tid}: {roles: [company_admin, sponsor, analyst, owner]}  # ROLE1: the business owner starts an intent and reads the templates (read only)
+  PUT /api/v1/templates/{tid}: {roles: [company_admin]}
+  POST /api/v1/templates/{tid}/adopt: {roles: [company_admin]}
+  POST /api/v1/templates/{tid}/retire: {roles: [company_admin]}
+  PUT /api/v1/intents/{iid}/template: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/intents/{iid}/template: {roles: [company_admin, sponsor, analyst, owner]}  # ROLE1: the business owner starts an intent and reads the templates (read only)
+  PUT /api/v1/intents/{iid}/template/{kind}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/v1/template-requests: {roles: [company_admin, sponsor, analyst]}
+  GET /api/v1/admin/requests: {roles: [company_admin]}
+  POST /api/v1/admin/requests/{rid}: {roles: [company_admin]}
+  GET /api/v1/admin/skills: {roles: [company_admin]}
+  PUT /api/v1/admin/skills/{agent}/{name}: {roles: [company_admin]}
+  DELETE /api/v1/admin/skills/{agent}/{name}: {roles: [company_admin]}
+  GET /api/v1/admin/governance: {roles: [company_admin]}
+  PUT /api/v1/admin/governance: {roles: [company_admin]}
+  GET /api/v1/admin/log: {roles: [company_admin]}

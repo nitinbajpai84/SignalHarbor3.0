@@ -1,0 +1,363 @@
+{
+  "id": "LUM-12",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "A question about cash in words quotes only figures that exist in the universe (no model-written digits).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "4 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 23200,
+  "cost": {
+    "calls": 4,
+    "tokens": 15030,
+    "usd": 0.001587,
+    "estimated": false
+  },
+  "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+  "forgotten": [
+    "sponsor: summary s-328961d1"
+  ],
+  "egress_lines": 4,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "allowed_numbers": [
+      "880400",
+      "868000",
+      "12400",
+      "5000",
+      "1150000",
+      "1148200",
+      "2300000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "How much cash does Entity B hold, and does it match the administrator?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Cash on 8 Oct 2026, from the rows: accounting 880,400; operational 868,000. The program states that the cash amount for Entity B is shown above. However, the data does not specify whether this matches the administrator's figures. To investigate this, I would need to know the administrator's figures for cash.",
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "model",
+        "remembered": [],
+        "trace_id": "tr-lumen-c2bf28ad-f06e42d7"
+      },
+      "ms": 23200,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 3598,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:04+0800",
+      "trace_id": "tr-lumen-c2bf28ad-f06e42d7"
+    },
+    {
+      "bytes": 18854,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:20:03+0800",
+      "trace_id": "tr-lumen-c2bf28ad-f06e42d7"
+    },
+    {
+      "bytes": 17733,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:19:55+0800",
+      "trace_id": "tr-lumen-c2bf28ad-f06e42d7"
+    },
+    {
+      "bytes": 17419,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T10:19:48+0800",
+      "trace_id": "tr-lumen-c2bf28ad-f06e42d7"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+      "status": 200,
+      "runs": [
+        {
+          "id": "71d941c7411543259067974e92735169",
+          "agent_type": "Lumen",
+          "status": "done",
+          "started_at": "2026-10-10T02:20:04+00:00",
+          "elapsed_ms": 17828,
+          "steps": 8,
+          "tool_calls": 3,
+          "cost_usd": 0.001488,
+          "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+          "kind": "loop",
+          "worded_by": "model"
+        },
+        {
+          "id": "7a00ddc6b7c0427892bac64bd6d05856",
+          "agent_type": "Lumen summary",
+          "status": "done",
+          "started_at": "2026-10-10T02:20:09+00:00",
+          "elapsed_ms": 4906,
+          "steps": 2,
+          "tool_calls": 0,
+          "cost_usd": 9.9e-05,
+          "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+          "at": "2026-10-10T02:20:04+00:00",
+          "run_id": "71d941c7411543259067974e92735169",
+          "agent": "Lumen",
+          "status": "done",
+          "elapsed_ms": 17828,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "graph",
+                  "id": "project:prj-30b9332c"
+                },
+                {
+                  "kind": "graph",
+                  "id": "dashboard:dash-0ad2b1c7"
+                },
+                {
+                  "kind": "graph",
+                  "id": "tile:t-000003"
+                },
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 7015,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4536,
+              "tokens_out": 55,
+              "cost_usd": 0.000476
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "query_figure",
+              "arg_keys": [
+                "filters",
+                "month",
+                "group_by",
+                "table",
+                "figure"
+              ],
+              "result_chars": 124,
+              "refused": true,
+              "reason": "argument_check:filters",
+              "ms": 47,
+              "tried": {
+                "filters": {
+                  "type": "list"
+                },
+                "month": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "group_by": {
+                  "type": "str",
+                  "chars": 9
+                },
+                "table": {
+                  "type": "str",
+                  "chars": 33
+                },
+                "figure": {
+                  "type": "str",
+                  "chars": 8
+                }
+              }
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 7780,
+              "tool_calls": 2,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4611,
+              "tokens_out": 117,
+              "cost_usd": 0.000508
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "query_figure",
+              "arg_keys": [
+                "period",
+                "table",
+                "currency",
+                "figure",
+                "month",
+                "group_by",
+                "filters"
+              ],
+              "result_chars": 98,
+              "refused": true,
+              "reason": "argument_check:filters",
+              "ms": 78,
+              "tried": {
+                "period": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "table": {
+                  "type": "str",
+                  "chars": 33
+                },
+                "currency": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "figure": {
+                  "type": "str",
+                  "chars": 8
+                },
+                "month": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "group_by": {
+                  "type": "str",
+                  "chars": 0
+                },
+                "filters": {
+                  "type": "list"
+                }
+              }
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "query_figure",
+              "arg_keys": [
+                "currency",
+                "table",
+                "figure",
+                "group_by",
+                "filters",
+                "month",
+                "period"
+              ],
+              "result_chars": 433,
+              "refused": false,
+              "reason": null,
+              "ms": 77
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 2828,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 4844,
+              "tokens_out": 50,
+              "cost_usd": 0.000504
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        },
+        {
+          "trace_id": "tr-lumen-c2bf28ad-f06e42d7",
+          "at": "2026-10-10T02:20:09+00:00",
+          "run_id": "7a00ddc6b7c0427892bac64bd6d05856",
+          "agent": "Lumen summary",
+          "status": "done",
+          "elapsed_ms": 4906,
+          "steps": [
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 4906,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "fast",
+              "model": "gemini-2.5-flash-lite",
+              "mode": "testing",
+              "tokens_in": 758,
+              "tokens_out": 59,
+              "cost_usd": 9.9e-05
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.001587,
+        "tokens": 15030
+      }
+    }
+  ]
+}

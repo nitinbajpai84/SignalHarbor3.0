@@ -1,0 +1,360 @@
+- id: 59.chain
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build (The chain)
+  input: Change rows with the five steps and who holds each
+  person: head of department
+  mode: automatic
+  agent: null
+  source: change notes and the charter roles block
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: asking each person where their step stands'
+  claim: The chain shows every change and who holds it
+  built: missing
+- id: 59.step
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build (step cell)
+  input: Person for each step from the charter
+  person: head of department
+  mode: derived
+  agent: null
+  source: charter who does what
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: remembering who owns which step'
+  claim: Step owners are read from the charter
+  built: missing
+- id: 59.days
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build (days at this step)
+  input: Working days at the current step
+  person: head of department
+  mode: automatic
+  agent: null
+  source: step opened_at and the clock
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting days'
+  claim: Days at each step are counted by the system
+  built: missing
+- id: 59.archview
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (diagram)
+  input: Data, infrastructure and enterprise diagrams
+  person: architect
+  mode: derived
+  agent: Architect
+  source: blueprint, contracts, environment record and signed releases
+  minutes_without: 480
+  minutes_with: 5
+  basis: 'estimate: drawing and updating diagrams by hand after each change'
+  claim: The Architect redraws the company architecture after every signed change
+  built: missing
+- id: 59.components
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (component table)
+  input: Components with owner, version and state
+  person: architect
+  mode: derived
+  agent: Architect
+  source: blueprint model, lineage, access, schedule and infra
+  minutes_without: 240
+  minutes_with: 2
+  basis: 'estimate: keeping an inventory sheet'
+  claim: The component list is built from the signed records
+  built: missing
+- id: 59.owner
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (Owner)
+  input: Owner of a component
+  person: head of department
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 5
+  minutes_with: 5
+  basis: 'estimate: naming an owner'
+  claim: Component owners are named by a person
+  built: missing
+- id: 59.desc
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (description)
+  input: Plain-words description of an enterprise component
+  person: component owner
+  mode: confirm
+  agent: Lens
+  source: business glossary and catalogue
+  minutes_without: 20
+  minutes_with: 2
+  basis: 'estimate: writing a description'
+  claim: Lens drafts plain-words descriptions; the owner confirms
+  built: missing
+- id: 59.version
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (This version)
+  input: Version, what produced it, counts added, changed, retired
+  person: architect
+  mode: automatic
+  agent: null
+  source: architecture record regenerated
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: keeping a change log'
+  claim: Each architecture version records what changed and why
+  built: missing
+- id: 59.ownersmissing
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/architecture (Owners missing)
+  input: Components with no owner
+  person: architect
+  mode: derived
+  agent: Architect
+  source: component records
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: auditing an inventory'
+  claim: The Architect lists unowned components and can ask for owners
+  built: missing
+- id: 59.note
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/change/<id> (change note)
+  input: The change note, seven sections
+  person: architect
+  mode: confirm
+  agent: Architect
+  source: signed gap report, blueprint, hypothesis and run log
+  minutes_without: 240
+  minutes_with: 10
+  basis: 'estimate: writing a design and test note'
+  claim: The Architect drafts the change note; the person edits guessed lines
+  built: missing
+- id: 59.why
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (Why)
+  input: Why the change is made, from the frozen hypothesis
+  person: architect
+  mode: derived
+  agent: North
+  source: hypothesis frozen at charter signature
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: retyping the business case'
+  claim: The reason for the change is carried over from the charter
+  built: missing
+- id: 59.steps
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (Build steps)
+  input: Pipeline contracts, marts and rules to build, done or not done
+  person: developer
+  mode: derived
+  agent: Builder
+  source: contracts and the run log
+  minutes_without: 60
+  minutes_with: 0
+  basis: 'estimate: keeping a task list'
+  claim: Build steps tick themselves from the run log
+  built: missing
+- id: 59.totest
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (What to test)
+  input: Catalogue check and hypothesis check per measure
+  person: tester
+  mode: derived
+  agent: Prover
+  source: build/prove.json and gold tables
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: writing test cases'
+  claim: The Prover writes the checks per measure
+  built: missing
+- id: 59.runbook
+  spec: '59'
+  journey: build
+  stage: run
+  screen: change note (Run book additions)
+  input: Run book entries for new pipelines
+  person: ops manager
+  mode: derived
+  agent: Builder
+  source: pipeline contract
+  minutes_without: 45
+  minutes_with: 2
+  basis: 'estimate: writing run book entries'
+  claim: Run book entries are drafted from the contract
+  built: missing
+- id: 59.risks
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (Risks)
+  input: Accepted risks that touch this change
+  person: head of department
+  mode: derived
+  agent: Architect
+  source: signed gap report
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: scanning old reports'
+  claim: Accepted risks are pulled in from the signed gap report
+  built: missing
+- id: 59.approve
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note step 2 (Approve the design)
+  input: Approve the design, signing change note and blueprint together
+  person: head of department
+  mode: manual
+  agent: null
+  source: North's completeness line
+  minutes_without: 30
+  minutes_with: 5
+  basis: 'estimate: read and sign a design pack'
+  claim: One signature with a gap check done for them
+  built: missing
+- id: 59.built
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note step 3 (Built, ready to test)
+  input: Built, ready to test
+  person: developer
+  mode: manual
+  agent: null
+  source: 'run log: every step done and last run ok'
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: telling testers it is ready'
+  claim: Enabled only when the run log shows everything done
+  built: missing
+- id: 59.uat
+  spec: '59'
+  journey: build
+  stage: prove
+  screen: change note step 4 (Sign UAT)
+  input: UAT signature per measure
+  person: tester
+  mode: manual
+  agent: null
+  source: catalogue and hypothesis checks
+  minutes_without: 60
+  minutes_with: 10
+  basis: 'estimate: testing each figure by hand'
+  claim: The tester signs with the checks already run
+  built: missing
+- id: 59.takeover
+  spec: '59'
+  journey: build
+  stage: run
+  screen: change note step 5 (I run this from today)
+  input: Ops takeover
+  person: ops manager
+  mode: manual
+  agent: null
+  source: run book additions and first run result
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: a handover meeting'
+  claim: Ops takes over with the first run result in front of them
+  built: missing
+- id: 59.stop
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (Stop this change)
+  input: Stop the change with a reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the person
+  minutes_without: 10
+  minutes_with: 10
+  basis: 'estimate: cancel and tell everyone'
+  claim: A change can be stopped with a reason
+  built: missing
+- id: 59.sigs
+  spec: '59'
+  journey: build
+  stage: build
+  screen: change note (Signatures, Sent back)
+  input: Signatures and send-backs listed
+  person: head of department
+  mode: automatic
+  agent: null
+  source: change note signatures and returns
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: keeping an audit trail'
+  claim: Who signed and who sent back is recorded by the system
+  built: missing
+- id: 59.strip
+  spec: '59'
+  journey: build
+  stage: build
+  screen: four Build pages (hand-over strip)
+  input: Step and change note shown on each Build page
+  person: developer
+  mode: automatic
+  agent: null
+  source: open change note
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking what the current change is'
+  claim: Every Build page says which change it serves
+  built: missing
+- id: 59.hod
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/change/<id> (step 2 person)
+  input: Head of department who approves the design
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: profile people (team matches the Initiative's area, role reads Head of); the charter roles block when named
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: working out who heads the area'
+  claim: The approver of each design is drafted from the profile
+  built: derived
+- id: 59.itsigner
+  spec: '59'
+  journey: build
+  stage: build
+  screen: /centre/build/change/<id> (IT signs the infrastructure part)
+  input: Who signs the infrastructure part
+  person: company admin
+  mode: manual
+  agent: null
+  source: company setting it_signer (C26)
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: finding who owns the infrastructure'
+  claim: The IT signer is asked only when infrastructure changes
+  built: missing

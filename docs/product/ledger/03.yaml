@@ -1,0 +1,240 @@
+# Input ledger rows for spec 03: the create-intent chooser. The start questions after the hand-over are rowed in 22, 35, 38, 41, 43.
+- id: "03.free_text"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (free-text line, Ask North)"
+  input: "Say in a line what you want to do"
+  person: organiser
+  mode: manual
+  source: "the person's own words"
+  minutes_without: 3
+  minutes_with: 0.5
+  basis: "estimate: writing a request to the right person versus one line"
+  claim: "A person can say what they intend in one sentence"
+- id: "03.classify"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (North proposal panel: type, reason, confidence, drafted title)"
+  input: "Which type this is, with a reason and a drafted title"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the free-text line"
+  minutes_without: 10
+  minutes_with: 0.5
+  basis: "estimate: asking a colleague which process applies versus tapping Yes"
+  claim: "North reads one sentence and proposes the type and a title; the person taps to agree"
+- id: "03.tile_choice"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (five tiles)"
+  input: "Pick the type tile"
+  person: organiser
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 2
+  minutes_with: 0.3
+  basis: "estimate: one tap"
+  claim: "One tap starts the right workflow"
+- id: "03.draft_record"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "intent record written on the first choice"
+  input: "Draft intent record: id, type, company, created by, outcome shaped for the type"
+  person: system
+  mode: automatic
+  source: "the server on the first choice"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: opening a new tracker entry"
+  claim: "The draft record exists from the first tap; every answer is saved as the person goes"
+- id: "03.answers"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type>&draft=<id> (answer composer)"
+  input: "Answer to each start question"
+  person: organiser
+  mode: manual
+  source: "the person's own words; the questions belong to the type's file"
+  minutes_without: 20
+  minutes_with: 5
+  basis: "estimate: writing a brief versus answering questions one at a time"
+  claim: "Answers are typed or spoken one at a time, saved after each, and never lost"
+- id: "03.readback"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type>&draft=<id> (answer read-back: That is right / Let me correct it)"
+  input: "Confirm North's read-back of each answer"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the answer just given"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: re-reading what you wrote against a tap"
+  claim: "North reads each answer back in one line; the person taps to confirm or corrects"
+- id: "03.skip"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type>&draft=<id> (Skip on optional questions)"
+  input: "Skip an optional question"
+  person: organiser
+  mode: manual
+  source: "the person's choice; recorded as unknown"
+  minutes_without: 1
+  minutes_with: 0.1
+  basis: "estimate: a tap"
+  claim: "Optional questions can be skipped and are recorded as unknown, not left blank"
+- id: "03.summary_card"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type>&draft=<id> (Your intent so far)"
+  input: "Type, title, purpose and the answers so far"
+  person: organiser
+  mode: automatic
+  source: "the draft record"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: copying answers into a summary"
+  claim: "A running summary is kept by the system"
+- id: "03.discard"
+  spec: "03"
+  journey: shared
+  stage: decide
+  screen: "/centre/intent/new (Your drafts: Carry on, Discard)"
+  input: "Carry on or discard a draft"
+  person: organiser
+  mode: manual
+  source: "the person's choice; a discard is kept as cancelled with a reason"
+  minutes_without: 2
+  minutes_with: 0.2
+  basis: "estimate: tidying up unfinished work"
+  claim: "Nothing is lost: a discarded draft stays in history as cancelled"
+- id: "03.counters"
+  spec: "03"
+  journey: admin
+  stage: prove
+  screen: "centre measures (drafts waiting, from text or tile, North proposal accepted, time to open)"
+  input: "Drafts waiting, intents opened from text or tile, proposal acceptance, time from first tile to open"
+  person: company_admin
+  mode: automatic
+  source: "the intent records (north_proposal, opened_by, created_at, stages)"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: measuring adoption by hand"
+  claim: "The product measures how often North's proposal is right, from the records"
+- id: "03.proposal_accept"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new (Yes, a <type> / Pick another)"
+  input: "Accept North's proposed type or pick another"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the typed line and the classification"
+  minutes_without: 2
+  minutes_with: 0.3
+  basis: "estimate: reading a template list and choosing versus one tap on a proposal"
+  claim: "North proposes the type with a reason and a drafted title; the organiser taps to agree or picks another"
+- id: "03.change_type"
+  spec: "03"
+  journey: shared
+  stage: think
+  screen: "/centre/intent/new?type=<type> (Change type)"
+  input: "Change the type with the answers kept"
+  person: organiser
+  mode: manual
+  source: "answers already given and the keys shared by the new type"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: re-entering what was already said versus answers carried across"
+  claim: "Answers with a matching key are reused and the rest are parked, so changing the type costs nothing typed"
+- id: "03.follow_on"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent/new?type=<type>&from=<id> (Start the follow-on)"
+  input: "Start a follow-on from a closed intent or a check-in item"
+  person: organiser
+  mode: confirm
+  agent: Nira
+  source: "the closure next entry or the check-in item text"
+  minutes_without: 15
+  minutes_with: 1
+  basis: "estimate: re-briefing a new piece of work from old notes versus a prefilled start"
+  claim: "The follow-on arrives with its link back and the first answer filled in; the organiser confirms"
+- id: "03.draft_updated"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "/centre/intent (Your drafts, last touched)"
+  input: "Last touched time of a draft"
+  person: organiser
+  mode: automatic
+  source: "the draft save time"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: remembering which draft is stale versus a stamp"
+  claim: "Each draft shows when it was last touched without anyone recording it"
+- id: "03.proposal_record"
+  spec: "03"
+  journey: shared
+  stage: notice
+  screen: "intent record (north proposal)"
+  input: "What was typed, what North proposed and what was picked"
+  person: organiser
+  mode: automatic
+  agent: North
+  source: "the free text, the proposal and the tile chosen"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: auditing wrong classifications by hand versus a kept record"
+  claim: "A wrong proposal is visible and countable because the record keeps the typed line, the proposal and the choice"
+- id: "03.opened_by"
+  spec: "03"
+  journey: shared
+  stage: run
+  screen: "intent record (opened by)"
+  input: "Who pressed Open"
+  person: organiser
+  mode: automatic
+  source: "the Open press"
+  minutes_without: 1
+  minutes_with: 0
+  basis: "estimate: noting who started it versus a stamp"
+  claim: "The person who opened the intent is recorded by the press itself"
+- id: "03.voice_answer"
+  spec: "03"
+  journey: shared
+  stage: think
+  screen: "/centre/intent/new?type=<type> (voice bar)"
+  input: "Answer a start question by voice"
+  person: organiser
+  mode: manual
+  source: "the spoken answer turned into text"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: typing a paragraph versus speaking it"
+  claim: "The organiser may speak an answer instead of typing it; North reads it back for confirmation"
+- id: "03.start_measures"
+  spec: "03"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent/new (counters: free text versus tile, proposal accepted, first tile to open)"
+  input: "Free text versus tile, proposal acceptance and time from first tile to open"
+  person: company_admin
+  mode: automatic
+  source: "the proposal record, opened by and stage times"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: a manual survey of how people start work versus computed counts"
+  claim: "How people start, how often North's proposal is right and how long starting takes are computed from the records"

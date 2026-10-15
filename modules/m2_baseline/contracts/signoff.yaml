@@ -1,0 +1,61 @@
+# Review, sign-off and readiness for module 3 (M2-23, M2-25, M2-26, M2-27, X-08). Read by domain/signoff.py and
+# domain/readiness.py; a change here changes behaviour. Values marked "chosen" were not given by the spec or a
+# decision: placeholders for Nitin to confirm.
+
+# D-012 / deck slide 15: each owner confirms their own part of every KPI. `owner` is the key in kpis.json `owners`.
+parts:
+  - {id: definition, owner: business, label: Definition,                   owner_label: business owner}
+  - {id: source,     owner: data,     label: Source and catalogue rows,    owner_label: data owner}
+  - {id: process,    owner: process,  label: Process,                      owner_label: process owner}
+
+# The sponsor and the head of data sign the whole, in this order (the sponsor first), as two different accounts. `roles` picks who may fill the slot.
+# chosen: there is no head-of-data role (A-005); the person who runs the company's space (company_admin) fills it.
+countersign:
+  - {slot: sponsor,      label: Sponsor,       roles: [sponsor]}
+  - {slot: head_of_data, label: Head of data,  roles: [company_admin]}
+
+leave_out_roles: [sponsor, company_admin]   # M2-E4: who may leave a measure out of the baseline (a reason is required)
+leave_out_reason_max_chars: 500             # chosen
+sponsor_roles: [sponsor]          # who accepts "unknown for now" and names a missing owner (slide 13)
+name_max_chars: 120               # chosen: a plain size cap
+next_step_max_chars: 500          # chosen
+project_max_chars: 200            # chosen
+
+# kpis.json `tracking` values (SHARED.md), in plain words.
+tracking:
+  tracked_now: Tracked today
+  partly: Partly tracked
+  not_tracked: Not tracked today
+
+# Deck slide 15: ready for module 3 = every KPI has its three owners or is marked blocked, a stated source or
+# "unknown", and the sensing questions answered. Unknown is allowed but stays visible.
+# "Marked blocked" = the owner is recorded as unknown ("no owner"). A KPI blocked on an owner is not asked for a
+# source or sensing answers (nobody can give them).
+readiness:
+  owners:
+    label: Every measure has its three owners, or is marked blocked
+    needs: "{role} not nominated yet"
+  source:
+    label: Every measure has a stated source, or it is marked unknown
+    needs: "source not stated yet"
+    conflict: "two owners gave different sources"
+  sensing:
+    label: The sensing questions are answered
+    needs: "{field} not answered yet"
+    conflict: "{field}: two owners answered differently"
+  # answers.json fields that are the sensing questions (slide 5: tracked, source, type, timing). Source has its own rule.
+  # chosen: the three that are not the source.
+  sensing_fields:
+    - {id: tracked_today, label: Tracked today}
+    - {id: data_type,     label: Type of data}
+    - {id: arrival,       label: When it arrives}
+
+# Not required for module 3; shown so the open items stay visible (M2-23, slide 13).
+advice:
+  next_steps:
+    label: Every measure not tracked today has a next step and a sponsor's acceptance
+  confirmations:
+    label: Every owner has confirmed their part (needed before the sponsor and head of data sign)
+
+# X-08: what the trail records. `settle` is written by the package that settles a conflict (M2-24).
+audit_actions: [confirm, sign, accept, name_owner, update_review, new_version, settle, reopen, leave_out, bring_back]

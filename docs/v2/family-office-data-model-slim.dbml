@@ -1,0 +1,231 @@
+// Signal Harbor v2.0 · Slim starting data model
+// Paste into https://dbdiagram.io to see the diagram.
+// Only what phase 1 needs: one revised manager statement, one reconciliation break, one report,
+// and spreadsheets loaded safely. The full model (family-office-data-model.dbml) is where it grows to.
+//
+// The simplification: positions, valuations, cash, prices, FX rates and administrator NAV are all
+// rows in ONE table, evidence_event, told apart by `kind`. They get their own tables later, when
+// volume or queries need it. Pulse cards are computed on read, so they need no table.
+
+Project signal_harbor_v2_slim {
+  database_type: 'PostgreSQL'
+  Note: 'Runs on DuckDB on the laptop; same tables in PostgreSQL at the client.'
+}
+
+// ---------------------------------------------------------------- Who and what we report on
+
+Table entity {
+  entity_id varchar [pk]
+  name varchar
+  kind varchar [note: 'holding company, trust, foundation, SPV']
+  base_currency char(3)
+  sensitivity varchar [note: 'open, internal, restricted']
+}
+
+Table portfolio {
+  portfolio_id varchar [pk]
+  entity_id varchar [ref: > entity.entity_id]
+  name varchar
+  reporting_currency char(3)
+}
+
+Table instrument {
+  instrument_id varchar [pk]
+  kind varchar [note: 'private fund, fund share class, equity, bond, cash, derivative, other']
+  name varchar
+  currency char(3)
+  manager_name varchar
+}
+
+Table instrument_alias {
+  scheme varchar [note: 'isin, administrator id, OMS id, manager name as written']
+  value varchar
+  instrument_id varchar [ref: > instrument.instrument_id]
+  confirmed_by varchar [ref: > app_user.user_id, note: 'An alias is used only once a person confirms it']
+  indexes { (scheme, value) [pk] }
+  Note: 'How "Evergreen Growth I" in a PDF and code 4471 in an export become the same fund.'
+}
+
+// ---------------------------------------------------------------- People and access
+
+Table app_user {
+  user_id varchar [pk]
+  name varchar
+  role varchar [note: 'cio, operations, finance, risk, rule_owner, data_engineer, admin']
+}
+
+Table entitlement {
+  user_id varchar [ref: > app_user.user_id]
+  entity_id varchar [ref: > entity.entity_id]
+  level varchar [note: 'full, read, none']
+  indexes { (user_id, entity_id) [pk] }
+  Note: 'Checked on every query and before every document search.'
+}
+
+// ---------------------------------------------------------------- What arrived, and how it was loaded
+
+Table source_file {
+  file_id varchar [pk]
+  source varchar [note: 'administrator export, OMS export, manager email, spreadsheet']
+  file_name varchar
+  sha256 char(64) [note: 'Proves the original never changed']
+  received_at timestamp
+  sensitivity varchar
+}
+
+Table sheet_mapping {
+  file_pattern varchar [note: 'e.g. "Positions *.xlsx" / sheet "Holdings"']
+  source_column varchar
+  target_kind varchar [note: 'which evidence_event kind it feeds']
+  target_field varchar [note: 'subject, value, currency, effective date']
+  confirmed_by varchar [ref: > app_user.user_id]
+  indexes { (file_pattern, source_column) [pk] }
+  Note: 'Proposed by the data agent, confirmed once, reused every month.'
+}
+
+Table load_batch {
+  batch_id varchar [pk]
+  file_id varchar [ref: > source_file.file_id]
+  loaded_at timestamp
+  row_count int
+  expected_total decimal(24,6) [note: 'Read from the workbook itself']
+  loaded_total decimal(24,6)
+  status varchar [note: 'loaded, rejected: totals differ, quarantined']
+}
+
+Table document {
+  document_id varchar [pk]
+  file_id varchar [ref: > source_file.file_id]
+  doc_type varchar [note: 'statement, capital call, NAV report, policy']
+  instrument_id varchar [ref: > instrument.instrument_id]
+  period_end date
+  supersedes_document_id varchar [ref: > document.document_id]
+  Note: 'Searchable passages live in the existing search index, keyed by document_id.'
+}
+
+Table extraction {
+  extraction_id varchar [pk]
+  document_id varchar [ref: > document.document_id]
+  field varchar [note: 'value, units, valuation date']
+  value_text varchar
+  page int
+  line int
+  confidence varchar [note: 'high, medium, low']
+  verified_by varchar [ref: > app_user.user_id]
+}
+
+// ---------------------------------------------------------------- The core: versioned evidence
+
+Table evidence_event {
+  event_id varchar [pk]
+  kind varchar [note: 'valuation, position, cash_balance, nav, price, fx_rate, capital_call']
+  entity_id varchar [ref: > entity.entity_id]
+  instrument_id varchar [ref: > instrument.instrument_id, note: 'empty for cash or NAV of an entity']
+  value decimal(24,6)
+  currency char(3)
+  effective_at timestamp [note: 'true in the world, e.g. valuation date']
+  received_at timestamp [note: 'when the office learnt it']
+  processed_at timestamp [note: 'when we stored it']
+  status varchar [note: 'estimated, official, revised, stale']
+  supersedes_event_id varchar [ref: > evidence_event.event_id]
+  batch_id varchar [ref: > load_batch.batch_id, note: 'from a file or export']
+  extraction_id varchar [ref: > extraction.extraction_id, note: 'from a document']
+  Note: 'Append-only. As known at time T: latest row per subject with processed_at <= T.'
+}
+
+// ---------------------------------------------------------------- Rules
+
+Table rule_version {
+  rule_id varchar [note: 'cash_tolerance, materiality, estimate_use, fx_fixing, statement_due']
+  version int
+  definition text [note: 'plain words plus the machine form, e.g. abs(diff) <= 5000']
+  effective_from date
+  signed_by varchar [ref: > app_user.user_id]
+  indexes { (rule_id, version) [pk] }
+  Note: 'Only signed versions are used. Past reports keep the version they used.'
+}
+
+// ---------------------------------------------------------------- Reports
+
+Table report_version {
+  report_version_id varchar [pk]
+  report_name varchar
+  portfolio_id varchar [ref: > portfolio.portfolio_id]
+  period_end date
+  cutoff_at timestamp [note: 'evidence processed after this is not in the report']
+  issued_at timestamp
+  status varchar [note: 'draft, issued, superseded']
+}
+
+Table report_line {
+  report_version_id varchar [ref: > report_version.report_version_id]
+  line_key varchar [note: 'e.g. fund_a_value, total']
+  value decimal(24,6)
+  currency char(3)
+  status varchar
+  event_ids varchar [note: 'the evidence this figure used']
+  indexes { (report_version_id, line_key, currency) [pk] }
+}
+
+// ---------------------------------------------------------------- Findings and cases
+
+Table finding {
+  finding_id varchar [pk]
+  kind varchar [note: 'revision, break, missing_document']
+  entity_id varchar [ref: > entity.entity_id]
+  effect_amount decimal(20,2)
+  currency char(3)
+  materiality varchar [note: 'from the signed materiality rule']
+  event_ids varchar
+  affected_report_version_ids varchar
+  created_at timestamp
+}
+
+Table work_case {
+  case_id varchar [pk, note: 'CASE-0107']
+  finding_id varchar [ref: > finding.finding_id]
+  state varchar [note: 'open, waiting_check, resolved, dismissed']
+  maker_user_id varchar [ref: > app_user.user_id]
+  checker_user_id varchar [ref: > app_user.user_id, note: 'never the maker']
+  due_at timestamp
+  explanation text [note: 'proposed by an agent, confirmed by the maker']
+}
+
+Table case_event {
+  case_id varchar [ref: > work_case.case_id]
+  at timestamp
+  by_actor varchar [note: 'user or agent']
+  action varchar [note: 'opened, assigned, submitted, approved, sent_back, resolved, dismissed']
+  note text
+  indexes { (case_id, at) [pk] }
+}
+
+TableGroup who_and_what {
+  entity
+  portfolio
+  instrument
+  instrument_alias
+  app_user
+  entitlement
+}
+
+TableGroup arrival_and_loading {
+  source_file
+  sheet_mapping
+  load_batch
+  document
+  extraction
+}
+
+TableGroup evidence_and_rules {
+  evidence_event
+  rule_version
+}
+
+TableGroup reports_and_cases {
+  report_version
+  report_line
+  finding
+  work_case
+  case_event
+}

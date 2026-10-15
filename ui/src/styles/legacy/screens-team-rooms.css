@@ -1,0 +1,135 @@
+/* Team rooms (#/team-rooms) — SH-05. Two-column layout: standing room
+ * list on the left, selected room's detail on the right; special chat
+ * groups and the "New chat group" flow sit below, full width. */
+
+.n-tr-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .n-tr-layout { grid-template-columns: 1fr; }
+}
+
+.n-tr-room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.n-tr-room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+.n-tr-room-item:hover { border-color: var(--teal); }
+.n-tr-room-item.active { border-color: var(--teal); background: var(--bg2); box-shadow: 0 0 0 1px var(--teal) inset; }
+.n-tr-room-item:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+.n-tr-room-item-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.n-tr-room-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.n-tr-room-sub { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.n-tr-room-item-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.n-tr-presence-dot { width: 7px; height: 7px; border-radius: 50%; }
+.n-tr-presence-dot.active { background: var(--success); }
+.n-tr-presence-dot.quiet { background: var(--text-muted); }
+
+.n-tr-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--teal);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.n-tr-detail { display: flex; flex-direction: column; gap: 14px; }
+
+.n-tr-members { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.n-tr-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.n-tr-thread .n-message { position: relative; }
+.n-tr-thread .n-message .bubble { padding-right: 30px; }
+.n-tr-readaloud-slot { position: absolute; top: 8px; right: 6px; }
+
+/* V2-O2: docked for reading (js/screens/team-rooms.js openThreadDock, sh.css `.n-chat-panel`) —
+   the thread grows to fill the full-height panel instead of the page-embedded 360px cap. */
+.n-chat-scroll .n-tr-thread { max-height: none; }
+
+.n-tr-compose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.n-tr-compose input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: var(--bg2);
+  color: var(--text-primary);
+}
+.n-tr-compose-statusrow { margin-top: 6px; }
+.n-tr-compose-preview { margin-top: 6px; }
+
+.n-tr-empty-thread { font-size: 12px; color: var(--text-muted); padding: 10px 2px; }
+
+/* Special chat groups */
+.n-tr-groups-list { display: flex; flex-direction: column; gap: 8px; }
+.n-tr-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+.n-tr-group-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.n-tr-group-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.n-tr-group-members { font-size: 11.5px; color: var(--text-muted); }
+.n-tr-group-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.n-tr-group-progress { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+.n-tr-group-open-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-hairline);
+}
+
+.n-tr-newgroup-panel { display: flex; flex-direction: column; gap: 12px; }
+.n-tr-newgroup-line { display: flex; align-items: flex-start; gap: 10px; }
+.n-tr-newgroup-line .n-companion-avatar-inline { flex-shrink: 0; }
+.n-tr-newgroup-agenda { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink2); line-height: 1.6; }
+.n-tr-newgroup-actions { display: flex; gap: 8px; }

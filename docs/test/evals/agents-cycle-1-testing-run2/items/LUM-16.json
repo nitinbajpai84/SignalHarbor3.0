@@ -1,0 +1,60 @@
+{
+  "id": "LUM-16",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "The why-this-figure view on K01 gives the table and refresh time the number came from.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "212 ms",
+      "value": 212
+    }
+  ],
+  "error": null,
+  "latency_ms": 212,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000001/why"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/tiles/t-000001/why",
+      "request": null,
+      "status": 200,
+      "json": {
+        "answer": "This tile has no change over time to explain. It shows one point in time, split by entity.",
+        "evidence": [],
+        "sources": {
+          "tables": [
+            "gold_investment_report_holdings_monthly"
+          ],
+          "last_refresh": "2026-10-09T16:38:19+00:00"
+        },
+        "caveats": [],
+        "wording": "rules"
+      },
+      "ms": 212,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

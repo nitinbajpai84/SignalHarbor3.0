@@ -1,0 +1,48 @@
+id: m3_connect
+name: Assess and plan
+agent: Lens
+# One section per package; each package appends its own routes under its heading (M3 scaffold, same rule as module 2).
+routes:
+  # M3-SCAFFOLD
+  - {method: GET, path: "/api/modules/m3_connect/status", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}", roles: [company_admin, sponsor, analyst]}
+  # M3-P01 source map
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/sources", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/sources/score", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/sources/{source_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m3_connect/assessments/{assessment_id}/sources/{source_id}/override", roles: [company_admin, sponsor, analyst]}
+  # M3-P02 intake. The two /intake/link routes are guest `entry` routes: no sign-in, the handler checks the link token (api/intake.py)
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/requests", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/requests", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/remind", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/revoke", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/relink", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/sources/{source_id}/upload", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/sources/{source_id}/profile", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks/upload", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks/map", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/intake/link/form", roles: [participant, owner, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/intake/link/upload", roles: [participant, owner, company_admin, sponsor, analyst]}
+  # M3-P03 trial
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/trial/compile", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/trial/run", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/trial", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/trial/rules/{measure_id}/check", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/findings", roles: [company_admin, sponsor, analyst]}
+  # M3-P04 plan
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/plan", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/plan/draft", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m3_connect/assessments/{assessment_id}/plan/item", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/risks", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/risks/accept-all", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/risks/{risk_id}/decision", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m3_connect/assessments/{assessment_id}/plan/sign", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/next", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m3_connect/assessments/{assessment_id}/outcome", roles: [company_admin, sponsor, analyst]}
+tools: []
+pack_sections: []
+inputs: [baseline, charter]
+output: plan

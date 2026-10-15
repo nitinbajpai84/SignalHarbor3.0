@@ -1,0 +1,67 @@
+.dsrc { display: grid; gap: var(--ds-s3); color: var(--ds-ink); }
+.dsrc-top { display: flex; flex-wrap: wrap; gap: var(--ds-s3); justify-content: space-between; align-items: flex-start; }
+h2, .dsrc h3, .dsrc h4, .dsrc-top p, .dsrc-field { font-family: var(--ds-font); }
+.dsrc-chips .n-muted { margin-left: 8px; }
+.dsrc-table { overflow-x: auto; }
+.dsrc-top h2 { margin: 0 0 4px; font-size: 20px; }
+.dsrc-top p { margin: 0; color: var(--ds-ink-soft); }
+.dsrc-top h2 { font-family: var(--ds-font); }
+.dsrc-top__buttons { display: flex; gap: var(--ds-s1); flex-wrap: wrap; }
+.dsrc-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 380px); gap: var(--ds-s3); align-items: start; }
+.dsrc-grid > :nth-child(2):nth-last-child(1) { grid-column: 2 / 4; }
+.dsrc-rail { display: grid; gap: var(--ds-s2); font-size: 14px; }
+.dsrc-rail label, .dsrc-field { display: grid; gap: 4px; font-size: 14px; color: var(--ds-ink-soft); }
+.dsrc select, .dsrc input[type="text"], .dsrc input:not([type]), .dsrc input[list] { min-height: 40px; box-sizing: border-box; background: var(--ds-surface-2); color: var(--ds-ink); border: 1px solid var(--ds-line-2); border-radius: 8px; padding: 6px 10px; font: inherit; width: 100%; }
+.dsrc-main { display: grid; gap: var(--ds-s3); min-width: 0; }
+.dsrc-strip { display: grid; gap: var(--ds-s1); }
+.dsrc-chips { display: flex; gap: var(--ds-s1); flex-wrap: wrap; align-items: center; }
+.dsrc-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 8px; border: 1px solid var(--ds-ink-muted); }
+.dsrc-dot--on { background: var(--ds-teal-bright); border-color: var(--ds-teal-bright); }
+.dsrc-inline { display: flex; gap: var(--ds-s1); flex-wrap: wrap; align-items: center; }
+.dsrc-inline input[type="text"], .dsrc-inline input:not([type]), .dsrc-inline input[list], .dsrc-inline select { flex: 1 1 160px; width: auto; }
+.dsrc-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.dsrc-table th { text-align: left; color: var(--ds-ink-muted); font-weight: 600; padding: 8px; border-bottom: 1px solid var(--ds-line-2); }
+.dsrc-table td { padding: 8px; border-bottom: 1px solid var(--ds-line); vertical-align: top; }
+.dsrc-table tbody tr { cursor: pointer; }
+.dsrc-table tbody tr:hover, .dsrc-table tbody tr:focus-visible { background: var(--ds-surface-2); outline: none; }
+.dsrc-owner--business { --o: var(--ds-amber); }
+.dsrc-owner--data { --o: var(--ds-teal-bright); }
+.dsrc-owner--source { --o: var(--ds-teal-bright); }
+.dsrc-table td.dsrc-owner { border-left: 3px solid var(--o); }
+.dsrc-owner { gap: 1px; padding-left: 8px; border-left: 3px solid var(--o); font-size: 14px; }
+span.dsrc-owner { display: grid; }
+.dsrc-owner__k { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--o); }
+.dsrc-owner__none { color: var(--o); font-style: italic; }
+.dsrc-cards { display: none; list-style: none; margin: 0; padding: 0; gap: var(--ds-s2); }
+.dsrc-card__open { all: unset; display: grid; gap: 6px; width: 100%; box-sizing: border-box; padding: var(--ds-s2); cursor: pointer; color: var(--ds-ink); }
+.dsrc-shut { margin: 0; padding: var(--ds-s2); border-style: dashed; }
+.dsrc-drawer { padding: var(--ds-s3); display: grid; gap: var(--ds-s2); min-width: 0; }
+.dsrc-drawer h3, .dsrc-drawer h4 { margin: 0; }
+.dsrc-drawer ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+.dsrc-drawer fieldset { border: 1px solid var(--ds-line); border-radius: 8px; display: grid; gap: var(--ds-s1); padding: var(--ds-s2); }
+.dsrc-drawer__head { display: flex; gap: var(--ds-s2); align-items: center; }
+.dsrc-drawer__head .ds-btn { display: none; }
+.dsrc-link { background: none; border: 0; color: var(--ds-teal-bright); cursor: pointer; text-decoration: underline; padding: 0; font: inherit; margin-right: 12px; }
+.dsrc-table td:last-child, .dsrc-table th:last-child { min-width: 150px; }
+.dsrc-table td:last-child > * { white-space: normal; max-width: 100%; border-radius: 16px; }
+@media (max-width: 1440px) {  /* the side panel takes about 260px: filters become a row so the state pill is never clipped */
+  .dsrc-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); }
+  .dsrc-grid > :nth-child(2):nth-last-child(1) { grid-column: 1 / -1; }
+  .dsrc-rail { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+}
+@media (max-width: 900px) {
+  .dsrc-grid { grid-template-columns: minmax(0, 1fr); }
+  .dsrc-grid > :nth-child(2):nth-last-child(1) { grid-column: 1; }
+  .dsrc-rail { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .dsrc-table { display: none; }
+  .dsrc-cards { display: grid; }
+  .dsrc-chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .dsrc-drawer { position: fixed; inset: 0; z-index: 60; background: var(--ds-ground); overflow: auto; border-radius: 0; }
+  .dsrc-drawer__head .ds-btn { display: inline-flex; }
+  .dsrc-top__buttons .ds-btn { flex: 1 1 100%; }
+  .dsrc-rail { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 719px) { .dsrc select, .dsrc input[type="text"], .dsrc input:not([type]), .dsrc input[list] { min-height: 44px; } }

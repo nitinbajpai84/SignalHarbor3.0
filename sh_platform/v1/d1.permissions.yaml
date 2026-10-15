@@ -1,0 +1,16 @@
+# V5 D1: Delivery, step 5 of a project. Makers (company_admin, analyst) set up channels; approval is by someone else (head of data, sponsor, approver or
+# company admin, never the maker), checked again in code. Slack, Teams and webhook addresses are secrets by name, set by a company admin only.
+# Default deny: every route is listed.
+routes:
+  GET /api/v1/build/p/{pid}/delivery: {roles: [company_admin, sponsor, analyst, approver]}
+  POST /api/v1/build/p/{pid}/delivery/channels: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/delivery/channels/{cid}/submit: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/delivery/channels/{cid}/approve: {roles: [company_admin, sponsor, analyst, approver]}
+  POST /api/v1/build/p/{pid}/delivery/channels/{cid}/send-back: {roles: [company_admin, sponsor, analyst, approver]}
+  POST /api/v1/build/p/{pid}/delivery/channels/{cid}/stop: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/delivery/go-live: {roles: [company_admin, analyst]}
+  POST /api/v1/build/p/{pid}/delivery/outbox/{oid}/retry: {roles: [company_admin, analyst]}
+  GET /api/v1/build/p/{pid}/delivery/summary: {roles: [company_admin, sponsor, analyst, approver, owner]}
+  GET /api/v1/settings/delivery: {roles: [company_admin]}
+  PUT /api/v1/settings/delivery: {roles: [company_admin]}
+  GET /api/v1/consume/delivery-lines: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

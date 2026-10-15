@@ -1,0 +1,664 @@
+# Every route (method + path pattern) must be declared here. DEFAULT DENY: an undeclared route returns 403.
+# Per route: public: true | authenticated: true (any signed-in account that has a company) | roles: [any of].
+# authenticated and roles may be combined: roles then adds accounts (such as super_admin, which has no
+# company) that `authenticated` alone would refuse.
+# Key forms: "GET /path/{id}", "WEBSOCKET /path", "MOUNT /prefix/{path}" (a mounted app or static folder).
+# authenticated: true is for account-level routes only (sign-out, who am I). NEVER use it on a route that
+# reads or writes a company plane; those must list the roles that may use them.
+# A MOUNT rule applies to EVERYTHING inside the mounted app. Use mounts for static files only; include a
+# sub-app's routes with include_router so each route is declared here on its own.
+# A route type this table cannot classify (for example app.frontend) is refused; use a declared mount.
+# Later packages add their routes below.
+roles:
+  super_admin: Runs the control area; has no company and never reads company data.
+  company_admin: Manages the people and settings of one company.
+  sponsor: Backs the work and signs the charter and the baseline.
+  analyst: Prepares and reviews work for the company.
+  head_of_data: Approves the design pack, the build plan and the verified map. Held in addition to analyst; opens no route on its own.
+  approver: Approves a charter from outside; named by the organiser.
+  participant: Joins a session and adds notes.
+  owner: A nominated data owner who answers requests and signs a part of the baseline.
+routes:
+  # Span and Flow, wave 1 (orchestrator, 7 Oct)
+  GET /api/company/build/proposals: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # SF02, filtered by viewer
+  GET /api/company/build/proposals/{pid}: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}
+  POST /api/company/build/proposals/{pid}/accept: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # handler: addressee
+  POST /api/company/build/proposals/{pid}/decline: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # handler: addressee, reason
+  POST /api/company/build/proposals/{pid}/ask: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # handler: addressee
+  GET /api/company/build/dialect: {roles: [company_admin, analyst]}  # SF07
+  GET /api/company/build/dialect/download: {roles: [company_admin, analyst]}  # SF07
+  # Span and Flow, wave 2 (SF13, 7 Oct): handlers also refuse a switched-off Build centre and, where marked, anyone but the architect
+  GET /api/company/build/span/target: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # SF13, room 0
+  POST /api/company/build/span/target: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  GET /api/company/build/span/model-draft: {roles: [company_admin, analyst]}  # SF13
+  POST /api/company/build/span/model-draft: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  POST /api/company/build/span/model-draft/{draft_id}/file: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  POST /api/company/build/span/review: {roles: [company_admin, analyst, owner]}  # SF13
+  GET /api/company/build/design: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # SF13
+  GET /api/company/build/design/download: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # SF13
+  GET /api/company/build/design/spec: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # SF13
+  PUT /api/company/build/design/spec: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  PUT /api/company/build/design/lines: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  POST /api/company/build/design/redraft: {roles: [company_admin, analyst]}  # SF13, handler: architect role
+  GET /api/company/build/flow/runs/{run_id}: {roles: [company_admin, analyst, owner]}  # SF13, room 2
+  POST /api/company/build/flow/runs/{run_id}/explain: {roles: [company_admin, analyst]}  # SF13
+  GET /api/company/build/flow/incidents: {roles: [company_admin, analyst, owner]}  # SF13, room 3
+  # Intent Centre v2 (restored 7 Oct 2026 from agent transcripts after an accidental wipe)
+  GET /api/intents/{intent_id}/data-sources: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/close-incomplete: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/closure/draft: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/closure/send: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/closure/sign: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/closure/withdraw: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/areas: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/done: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/draft: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/{source_id}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/{source_id}/problems: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/data-sources/{source_id}/reassign: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/data-sources/areas/{area_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/data-sources/{source_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/types: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/hypotheses/{hyp_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  GET /api/intents/radar: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  POST /api/intents/opportunities/{opp_id}/hypothesis: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  POST /api/intents/radar/scan: {roles: [company_admin]}  # B57a, C5
+  GET /api/intents/{intent_id}/proving: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  GET /api/intents/{intent_id}/proving/reports/{week_key}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/reports/{week_key}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/reports/{week_key}/notes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/review: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/review/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  POST /api/intents/{intent_id}/proving/receipts/{receipt_id}/seen: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B58a
+  GET /api/intents/hints/{type_}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  GET /api/intents/opening-line: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  GET /api/intents/suggestions: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  POST /api/intents/suggestions/{suggestion_id}/dismiss: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  POST /api/intents/suggestions/{suggestion_id}/picked-up: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  POST /api/intents/suggestions/{suggestion_id}/restore: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # reconciled from code
+  DELETE /api/intents/{intent_id}/feel: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  DELETE /api/intents/{intent_id}/processes/{process_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  DELETE /api/intents/{intent_id}/share/{token_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/admin/counters: {roles: [company_admin]}
+  GET /api/intents/admin/list: {roles: [company_admin]}
+  GET /api/intents/admin/register: {roles: [company_admin]}
+  GET /api/intents/areas: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/backlog: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/backlog/{item_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/glossary/terms: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/glossary/terms/{term_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/home: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/knowledge-map/overview: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/knowledge-map/systems-to-connect: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/measures: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/opportunities: {roles: [owner, company_admin, sponsor, analyst]}
+  GET /api/intents/opportunities/{opp_id}: {roles: [owner, company_admin, sponsor, analyst]}
+  GET /api/intents/past: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/people: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/problem/start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/settings: {roles: [company_admin]}
+  GET /api/intents/sources/map: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/waiting: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/build-ready: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/cards: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/cards/{card_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/catalogue: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/catalogue/entry/{code}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/chain: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/charter: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/charter/catalogue: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/clock: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/closure: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/content: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/converge: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/define/lens: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/define/session: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/events: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/glossary-start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/governed: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/north: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/notes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/people: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/problem: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/processes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/processes/charter-page: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/pulse/entry: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/pulse/mine: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/pulse/prefill: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/pulse/record: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/ratings: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/roles: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/session: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/share: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/transcript/download: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/trends: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/wall: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/weeks: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/weeks/{week_key}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/weeks/{week_key}/mine: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/intents/{intent_id}/who-has-not-acted: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PATCH /api/intents/backlog/{item_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PATCH /api/intents/{intent_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PATCH /api/intents/{intent_id}/cards/{card_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PATCH /api/intents/{intent_id}/processes/{process_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PATCH /api/intents/{intent_id}/state: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/backlog/{item_id}/{action}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/classify: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/glossary/terms/{term_id}/proposals: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/glossary/terms/{term_id}/proposals/{proposal_id}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/glossary/terms/{term_id}/proposals/{proposal_id}/decline: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/knowledge-map/scan: {roles: [company_admin, analyst, owner, sponsor]}
+  POST /api/intents/knowledge-map/{node_id}/confirm: {roles: [company_admin, analyst, owner, sponsor]}
+  POST /api/intents/knowledge-map/{node_id}/reject: {roles: [company_admin, analyst, owner, sponsor]}
+  POST /api/intents/opportunities: {roles: [owner, company_admin, analyst]}
+  POST /api/intents/opportunities/{opp_id}/evidence: {roles: [owner, company_admin, analyst]}
+  POST /api/intents/opportunities/{opp_id}/state: {roles: [owner, company_admin, analyst]}
+  POST /api/intents/sources/map: {roles: [company_admin, analyst]}
+  POST /api/intents/{intent_id}/admin-cancel: {roles: [company_admin]}
+  POST /api/intents/{intent_id}/build-ready/check: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/build-ready/nudge: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/cancel: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/cards: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/cards/{card_id}/move: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/cards/{card_id}/replies: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/cards/{card_id}/withdraw: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/catalogue/measures: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/catalogue/measures/{code}/alias: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/catalogue/measures/{code}/merge: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/charter/sign: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/charter/versions: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/charter/versions/{n}/discard: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/close: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/closure/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/contributions: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/converge/back: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/converge/close: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/converge/open: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/converge/round2: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/hold: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/not-mine: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/pick: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/send-back: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/cells/{cell_key}/try-again: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/questions/{qid}/answer: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/questions/{qid}/drop: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/questions/{qid}/reassign: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/lens/run: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/session: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/shelf: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/define/vote: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/extend/{n}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/feel: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/follow: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/glossary/{term_id}/reply: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/governed/{measure}/proposal/{field}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/governed/{measure}/propose: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/governed/{measure}/withdraw: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/handoff: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/history-notes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/join-requests: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/join-requests/{request_id}/answer: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/join-requests/{request_id}/withdraw: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/late-thoughts: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/links: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/links/proposal: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/links/{lid}/checked: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/next: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/north/clock-check: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/north/drafts/{draft_id}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/north/drafts/{draft_id}/discard: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/north/proposals/{draft_id}/pick: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/north/turns: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/notes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/notes/{note_id}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/notes/{note_id}/reply: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/notes/{note_id}/seen: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/nudge/{person_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/open: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/options: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/options/{option_id}/notes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/outcome-used: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/outcome/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/outcome/draft: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/people: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/people/{person_id}/answer: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/people/{person_id}/remind: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/people/{person_id}/remove: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/people/{person_id}/role: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/cause: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/close: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/confirm-tap: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/extend: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/fix: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/note: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/owner: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/reopen: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/problem/to-initiative: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/process-questions/{question_id}/answer: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/processes: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/processes/draft: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/processes/{process_id}/confirm: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/processes/{process_id}/handover: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/pulse/entry/submit: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/rating/waive: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/ratings: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/roles/ask: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/roles/{role}/answer: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/series/{act}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/session/group: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/session/open: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/session/{act}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/share: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/share-request: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/share/notes/{note_id}/read: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/share/withdraw: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/stages/{stage_key}/close: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/stages/{stage_key}/open: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/start/open: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/suggestions/refresh: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/suggestions/{suggestion_id}/hide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/suggestions/{suggestion_id}/unhide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/time-box/extend: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/triage/accept: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/triage/assign: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/triage/pass: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/triage/refresh: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/weeks/{week_key}/answers: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/weeks/{week_key}/close: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/weeks/{week_key}/digest: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/weeks/{week_key}/items/{item_id}/fate: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  POST /api/intents/{intent_id}/weeks/{week_key}/session: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/settings: {roles: [company_admin]}
+  PUT /api/intents/{intent_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/affected-access: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/build-needed: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/build-team: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/charter: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/charter/risks: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/closure: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/outcome: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/people: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/pulse/entry: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/roles: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/series: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  PUT /api/intents/{intent_id}/state: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/health: {public: true}
+  POST /api/auth/login: {public: true}
+  POST /api/auth/logout: {authenticated: true, roles: [super_admin]}
+  GET /api/auth/me: {authenticated: true, roles: [super_admin]}
+  GET /api/modules: {authenticated: true}
+  GET /api/company: {authenticated: true}
+  GET /api/company/logo: {roles: [company_admin, sponsor, analyst, approver, participant, owner]}
+  PUT /api/admin/companies/{company_id}/modules/{module_id}: {roles: [super_admin]}
+  # Module 1 (Intent Centre). The organiser capability is company_admin, sponsor and analyst (A-025).
+  # The module loader checks these stay identical to modules/m1_intent/manifest.yaml.
+  GET /api/modules/m1_intent/lists: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/walls: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}: {roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  GET /api/modules/m1_intent/sessions/{session_id}/roles: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m1_intent/sessions/{session_id}/roles: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m1_intent/sessions/{session_id}: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/modules/m1_intent/sessions/{session_id}: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/outcomes/{outcome_id}: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/templates: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/templates: {roles: [company_admin, sponsor, analyst]}
+  # M1-P03 briefing, Nira and the stage timer (participant routes need M1-P02's guest principal)
+  GET /api/modules/m1_intent/sessions/{session_id}/briefing: {roles: [company_admin, sponsor, analyst, participant, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/briefing/confirm: {roles: [company_admin, sponsor, analyst, participant], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/briefing/send: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m1_intent/sessions/{session_id}/briefing/video: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}/briefing/video: {roles: [company_admin, sponsor, analyst, participant, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/nira: {roles: [company_admin, sponsor, analyst, participant], guest: true}
+  GET /api/modules/m1_intent/sessions/{session_id}/timer: {roles: [company_admin, sponsor, analyst, participant, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/timer/extend: {roles: [company_admin, sponsor, analyst]}
+  # M1-P04 the private room (participant routes need M1-P02's guest principal)
+  GET /api/modules/m1_intent/sessions/{session_id}/room: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/messages: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/notes: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/practice: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  GET /api/modules/m1_intent/sessions/{session_id}/room/library: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/done: {roles: [company_admin, sponsor, analyst, participant, owner, approver], guest: true}
+  # M1-P05: the note form and submitting (participant routes)
+  POST /api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/prefill: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/submit: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  # the organiser's link shown again, an admin reading a transcript and retention (company_admin only; never a guest route)
+  GET /api/modules/m1_intent/sessions/{session_id}/join-link: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/retention/purge: {roles: [company_admin]}
+  # M1-P02: the room. `guest: true` lets a person with no account but a valid X-Session-Token in as participant
+  # only (sh_platform/auth/guest.py); `entry: true` is the join route itself, reachable with no session and no
+  # token (its handler checks the join code). Guest routes need no CSRF token: the token travels in a header,
+  # never a cookie, so a page on another site cannot send it. No other route may be marked guest.
+  POST /api/modules/m1_intent/sessions/{session_id}/start: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/link: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/seats/{seat}/revoke: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/briefing: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}/lobby: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  GET /api/modules/m1_intent/sessions/{session_id}/live: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/join: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true, entry: true}
+  # M1-P06 voice: seated guests (token) may use it like the private room; each handler checks the seat
+  GET /api/modules/m1_intent/sessions/{session_id}/voice: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/voice: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/voice/transcribe: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/voice/speak: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  # M1-P09 charter and sign-off. The two approver routes are guest entry routes: no sign-in, the handler checks the link token.
+  GET /api/modules/m1_intent/sessions/{session_id}/charter: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}  # a seated guest reads it, read-only
+  POST /api/modules/m1_intent/sessions/{session_id}/charter: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m1_intent/sessions/{session_id}/charter: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/charter/sign: {roles: [company_admin, sponsor]}
+  POST /api/modules/m1_intent/sessions/{session_id}/charter/send: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/charter/withdraw: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}/charter/download: {roles: [participant, company_admin, sponsor, analyst, approver, owner], guest: true}  # same readers as the charter; only once signed
+  GET /api/modules/m1_intent/sessions/{session_id}/charter/email: {roles: [company_admin, sponsor, analyst]}  # organiser only (handler); a guest is refused; nothing is sent
+  POST /api/modules/m1_intent/approver/charter: {roles: [participant, approver, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m1_intent/approver/decision: {roles: [participant, approver, company_admin, sponsor, analyst, owner], guest: true, entry: true}
+  # M1-P07: the board and back in the room. guest: true only where a seated person may act; each handler checks the seat and the session.
+  GET /api/modules/m1_intent/sessions/{session_id}/board: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  GET /api/modules/m1_intent/sessions/{session_id}/board/counts: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/group: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/restore: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/notes/{note_id}/move: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/clusters/{cluster_id}/rename: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/clusters/{cluster_id}/split: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/board/clusters: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/rooms/close: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/together: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}/together: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/vote: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/agree: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/comments: {roles: [participant, company_admin, sponsor, analyst], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/done: {roles: [participant], guest: true}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/tick: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/shelf: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m1_intent/sessions/{session_id}/summary: {roles: [participant, company_admin, sponsor, analyst, owner, approver], guest: true}  # read-only, once the rooms have closed
+  POST /api/modules/m1_intent/sessions/{session_id}/pause: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m1_intent/sessions/{session_id}/resume: {roles: [company_admin, sponsor, analyst]}
+  # M1-CTX company context uploads (D-032): the company admin uploads, changes, deletes and decides; other members list
+  GET /api/agents/{slug}/docs: {roles: [company_admin, sponsor, analyst, approver, participant, owner]}
+  POST /api/agents/{slug}/docs: {roles: [company_admin]}
+  POST /api/agents/{slug}/docs/{doc_id}/visibility: {roles: [company_admin]}
+  POST /api/agents/{slug}/docs/{doc_id}/publish-summary: {roles: [company_admin]}
+  DELETE /api/agents/{slug}/docs/{doc_id}: {roles: [company_admin]}
+  GET /api/agents/{slug}/pending-memories: {roles: [company_admin]}
+  POST /api/agents/{slug}/pending-memories/{pending_id}/decide: {roles: [company_admin]}
+  # Module 2 (Baseline). One block per package; each package appends its own routes under its heading.
+  GET /api/modules/m2_baseline/status: {roles: [company_admin, sponsor, analyst]}
+  # M2-P01
+  GET /api/modules/m2_baseline/baselines: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/triage: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/questions/{question_id}: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/owners: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/owners/{role}/decline: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/governance: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/lens/draft: {roles: [company_admin, sponsor, analyst]}
+  # M2-P02
+  # M2-AGENTS
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/lens: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/lens/redraft: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/lens/ask: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/preread: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/preread/{kind}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/preread/documents/{doc_id}/not-personal: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/nira: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/requests: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/remind: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/revoke: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/relink: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/meeting: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/requests/{request_id}/reopen: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/answers: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/meeting-answers: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/sample: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/answer/form: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m2_baseline/answer/save: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m2_baseline/answer/submit: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m2_baseline/answer/sample: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m2_baseline/answer/confirm: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  # M2-P03
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/process-map: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/process-map/draw: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}/validate: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}: {roles: [company_admin, sponsor, analyst]}
+  DELETE /api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/steps/{step_id}: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/process-map/{kpi_id}/tracking: {roles: [company_admin, sponsor, analyst]}
+  # M2-P04
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/catalogue: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/refresh: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/{tab}/rows: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/{tab}/rows/{row_id}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/conflicts/{conflict_id}/settle: {roles: [company_admin, sponsor]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/suggest-fields: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/catalogue/export: {roles: [company_admin, sponsor, analyst]}
+  # M2-P05
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/review: {roles: [company_admin, sponsor, analyst, owner]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}: {roles: [company_admin, sponsor, analyst, owner]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/accept: {roles: [sponsor]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/owner: {roles: [sponsor]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/signoff/settle: {roles: [sponsor, company_admin]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/confirm: {roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/countersign: {roles: [sponsor, company_admin]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/versions: {roles: [sponsor, company_admin]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/audit: {roles: [company_admin, sponsor, analyst, owner]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/handoff: {roles: [company_admin, sponsor, analyst, owner]}
+  # M2-E4
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/leave-out: {roles: [sponsor, company_admin]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/review/{kpi_id}/bring-back: {roles: [sponsor, company_admin]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/signoff/bundle: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/my-parts: {roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  # IC-3c governed state
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/governed: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/governed/{measure_id}/confirm: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  # M2-E2 business glossary
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/glossary: {roles: [company_admin, sponsor, analyst, participant, owner, approver]}  # file 29: owners confirm, participants read
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/glossary/build: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/glossary/upload: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/glossary/entries/{kpi_id}: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/glossary/entries/{kpi_id}/review: {roles: [company_admin, sponsor, analyst, owner, approver]}  # file 29: the term owner and the governance lead
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/glossary/review-unchanged: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/glossary/export: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/glossary/print: {roles: [company_admin, sponsor, analyst]}
+  # M2-E3 governance view
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/governance: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/governance/fields/{field_id}: {roles: [company_admin, sponsor]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/governance/proposals/confirm: {roles: [company_admin, sponsor, analyst]}
+  # M2-E1 technical definition and open questions
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/technical: {roles: [company_admin, sponsor, analyst, owner, approver]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/ambiguities: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical/use: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/technical/confirm: {roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/measures/{kpi_id}/send-back: {roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/my-technical: {roles: [company_admin, sponsor, analyst, owner, participant, approver]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/lens/technical: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/lens/technical/redraft: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/answer: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/ask: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/kpis/{kpi_id}/ambiguities/{amb_id}/accept: {roles: [company_admin, sponsor]}
+  POST /api/modules/m2_baseline/answer/question: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m2_baseline/answer/technical/confirm: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  # Module 3 (Assess and plan). One block per package; each package appends its own routes under its heading.
+  # M3-SCAFFOLD
+  GET /api/modules/m3_connect/status: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}: {roles: [company_admin, sponsor, analyst]}
+  # M3-P01 source map
+  GET /api/modules/m3_connect/assessments/{assessment_id}/sources: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/sources/score: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/sources/{source_id}: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m3_connect/assessments/{assessment_id}/sources/{source_id}/override: {roles: [company_admin, sponsor, analyst]}
+  # M3-P02 intake. The two /intake/link routes are guest `entry` routes: no sign-in, the handler checks the link token (api/intake.py)
+  GET /api/modules/m3_connect/assessments/{assessment_id}/intake/requests: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/requests: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/remind: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/revoke: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/requests/{request_id}/relink: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/sources/{source_id}/upload: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/intake/sources/{source_id}/profile: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks/upload: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/intake/benchmarks/map: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/intake/link/form: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  POST /api/modules/m3_connect/intake/link/upload: {roles: [participant, owner, company_admin, sponsor, analyst], guest: true, entry: true}
+  # M3-P03 trial
+  POST /api/modules/m3_connect/assessments/{assessment_id}/trial/compile: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/trial/run: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/trial: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/trial/rules/{measure_id}/check: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/findings: {roles: [company_admin, sponsor, analyst]}
+  # M3-P04 plan
+  GET /api/modules/m3_connect/assessments/{assessment_id}/plan: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/plan/draft: {roles: [company_admin, sponsor, analyst]}
+  PUT /api/modules/m3_connect/assessments/{assessment_id}/plan/item: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/risks: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/risks/accept-all: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/risks/{risk_id}/decision: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/m3_connect/assessments/{assessment_id}/plan/sign: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/next: {roles: [company_admin, sponsor, analyst]}
+  GET /api/modules/m3_connect/assessments/{assessment_id}/outcome: {roles: [company_admin, sponsor, analyst]}
+  # LI-PROFILE: the company profile and "Bring what you have" (the organiser capability: company_admin, sponsor, analyst)
+  GET /api/profile: {roles: [company_admin, sponsor, analyst]}
+  GET /api/profile/readiness: {roles: [company_admin, sponsor, analyst]}
+  POST /api/profile/read: {roles: [company_admin, sponsor, analyst]}
+  POST /api/profile/inputs/{group}/upload: {roles: [company_admin, sponsor, analyst]}
+  POST /api/profile/inputs/{group}/ask: {roles: [company_admin, sponsor, analyst]}
+  # LI-LINK: link a profile person to a sign-in account of the same company (company admin only)
+  GET /api/profile/links: {roles: [company_admin]}
+  PUT /api/profile/people/{pid}/account: {roles: [company_admin]}
+  # LI-INTERVIEW: the one interview. The organiser lists, invites and starts anyone's; a person starts, answers and finishes their own (the handler checks the name).
+  # The three /api/modules/interview/guest routes are guest `entry` routes: no sign-in; the handler checks the link token and answers for that one person only.
+  GET /api/interview: {roles: [company_admin, sponsor, analyst, participant, owner]}
+  GET /api/interview/{person_id}: {roles: [company_admin, sponsor, analyst, participant, owner]}
+  POST /api/interview/{person_id}/start: {roles: [company_admin, sponsor, analyst, participant, owner]}
+  POST /api/interview/{person_id}/answer: {roles: [company_admin, sponsor, analyst, participant, owner]}
+  POST /api/interview/{person_id}/finish: {roles: [company_admin, sponsor, analyst, participant, owner]}
+  POST /api/interview/{person_id}/link: {roles: [company_admin, sponsor, analyst]}
+  POST /api/modules/interview/guest/start: {roles: [participant], guest: true, entry: true}
+  POST /api/modules/interview/guest/answer: {roles: [participant], guest: true, entry: true}
+  POST /api/modules/interview/guest/finish: {roles: [participant], guest: true, entry: true}
+  # IC-5a control panel. /api/control/*: super_admin only. /api/company/settings*, egress-log: company_admin of the session's own company.
+  GET /api/control/companies: {roles: [super_admin]}
+  POST /api/control/companies: {roles: [super_admin]}
+  PUT /api/control/companies/{company_id}/centres/{centre_id}: {roles: [super_admin]}
+  PUT /api/control/companies/{company_id}/modules/{module_id}: {roles: [super_admin]}
+  GET /api/control/providers: {roles: [super_admin]}
+  PUT /api/control/providers: {roles: [super_admin]}
+  GET /api/control/catalogue: {roles: [super_admin]}
+  GET /api/company/settings: {roles: [company_admin]}
+  PUT /api/company/settings/egress: {roles: [company_admin]}
+  GET /api/company/egress-log: {roles: [company_admin]}
+  GET /api/company/build/environment: {roles: [company_admin, analyst]}  # BC-1
+  PUT /api/company/build/environment: {roles: [company_admin]}  # BC-1: head of data role does not exist yet
+  GET /api/company/outcomes: {roles: [company_admin, sponsor, analyst, approver, owner]}  # LI-OUTCOMES: numbers only
+  GET /api/company/graph: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # A-070: the map is open to everyone in the company
+  MOUNT /{path}: {public: true}  # the built UI (sh_platform/webui.py); API routes are matched first
+  # ---- MVP wave (step 0): stubs, bodies filled by the builders ----
+  GET /api/pulse: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  GET /api/pulse/messages: {roles: [company_admin, sponsor, analyst]}  # P4: drafts for the organiser or admin
+  POST /api/pulse/messages/{message_id}/send: {roles: [company_admin, sponsor, analyst]}  # P4
+  GET /api/company/build/blueprint: {roles: [company_admin, analyst]}  # MVP wave stub
+  PUT /api/company/build/blueprint: {roles: [company_admin, analyst]}  # MVP wave stub
+  POST /api/company/build/blueprint/sign: {roles: [company_admin]}  # MVP wave stub
+  GET /api/company/build/pipelines: {roles: [company_admin, analyst]}  # MVP wave stub
+  POST /api/company/build/pipelines/{source}/run: {roles: [company_admin, analyst]}  # MVP wave stub
+  GET /api/company/build/runs: {roles: [company_admin, analyst]}  # MVP wave stub
+  GET /api/company/build/prove: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # Q10: the tester and the sponsor read the proofs to sign
+  POST /api/company/build/prove/recheck: {roles: [company_admin, sponsor, analyst, approver, owner, participant]}  # FX10: handler checks the named tester and needs a reason
+  POST /api/company/build/prove/{measure}/accept: {roles: [company_admin, analyst, owner]}  # A15: the measure's owner accepts a gap
+  POST /api/company/build/release/sign: {roles: [sponsor, company_admin]}  # MVP wave stub
+  POST /api/company/build/uat/{measure}/sign: {roles: [sponsor, approver, owner, company_admin, analyst, participant]}  # R2: the handler checks the named tester
+  GET /api/company/build/ops: {roles: [company_admin, analyst, owner]}  # MVP wave stub
+  POST /api/company/whatif: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # MVP wave stub
+  GET /api/company/feeds: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # MVP wave stub
+  GET /api/company/market: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # MVP wave stub
+  GET /api/memory/me/{agent}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  PUT /api/memory/me/{agent}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  DELETE /api/memory/me/{agent}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  GET /api/company/memory/{agent}: {roles: [company_admin]}  # MVP wave stub
+  PUT /api/company/memory/{agent}: {roles: [company_admin]}  # MVP wave stub
+  GET /api/company/graph/node/{node_id}: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  GET /api/company/graph/node/{node_id}/comments: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  POST /api/company/graph/node/{node_id}/comments: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  POST /api/company/graph/node/{node_id}/comments/{comment_id}/decide: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  GET /api/company/register: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # MVP wave stub
+  GET /api/company/build/home: {roles: [company_admin, analyst]}  # B1
+  GET /api/company/build/gap-analysis: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # N6: room 0 list; titles gated by 05
+  POST /api/company/build/gap-analysis/{intent_id}/start: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # N6: organiser or Build team, checked in code
+  POST /api/company/build/alerts/{alert_id}/ack: {roles: [company_admin, analyst, owner]}  # B5
+  POST /api/company/build/alerts/{alert_id}/close: {roles: [company_admin, analyst, owner]}  # B5
+  GET /api/company/feeds/{code}: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # C1
+  GET /api/company/consume/lenses: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  GET /api/company/consume/lenses/{lens}: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  GET /api/company/consume/cards/{table}: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  POST /api/company/consume/lenses/assign: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a, handler names the owner
+  POST /api/company/consume/cards/{table}/confirm: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  POST /api/company/consume/cards/{table}/edit: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  POST /api/company/consume/cards/{table}/dispute: {roles: [owner, company_admin, sponsor, analyst, approver]}  # B60a
+  POST /api/company/whatif/save: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # C3
+  GET /api/company/whatif/scenarios: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # C3
+  DELETE /api/company/whatif/scenarios/{scenario_id}: {roles: [owner, company_admin, sponsor, analyst, approver, participant]}  # C3
+  POST /api/company/whatif/keep: {roles: [company_admin, sponsor, analyst]}  # Q12
+  GET /api/company/whatif/kept: {roles: [company_admin, sponsor, analyst]}  # Q12
+  POST /api/company/market/briefs: {roles: [company_admin]}  # C2
+  POST /api/company/build/pipelines/{source}/upload: {roles: [company_admin, analyst]}  # B3
+  POST /api/company/build/pipelines/run-due: {roles: [company_admin, analyst]}  # B3
+  GET /api/company/build/schedule: {roles: [company_admin, analyst]}  # B3
+  GET /api/company/build/architecture: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, map readers
+  GET /api/company/build/architecture/diagram: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: architect, head of department, admin
+  PUT /api/company/build/architecture/components/{component_id}: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler checks
+  GET /api/company/build/changes: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59
+  GET /api/company/build/changes/{cid}: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59
+  POST /api/company/build/changes/{cid}/send: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/redraft: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  PUT /api/company/build/changes/{cid}/lines: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/approve: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/built: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/take-over: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/send-back: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: named person
+  POST /api/company/build/changes/{cid}/stop: {roles: [company_admin, analyst, sponsor, owner, approver, participant]}  # 59, handler: organiser
+  # ---- Intent Centre v2 (spec 14). All six company roles pass the role check; the handler's per-intent check does the rest.
+  # Guest exceptions (ruling 24): shared/view and approver/closure below; approver/charter and approver/decision are declared in the M1-P09 block above.
+  GET /api/company/areas: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # B03
+  GET /api/profile/areas/suggestions: {roles: [company_admin]}  # B03
+  POST /api/profile/areas: {roles: [company_admin]}  # B03
+  POST /api/profile/areas/accept: {roles: [company_admin]}  # B03
+  POST /api/profile/areas/teams: {roles: [company_admin]}  # B03
+  PUT /api/profile/areas/settings: {roles: [company_admin]}  # B03
+  PUT /api/profile/areas/{area_id}: {roles: [company_admin]}  # B03
+  POST /api/profile/areas/{area_id}/retire: {roles: [company_admin]}  # B03
+  POST /api/profile/areas/{area_id}/restore: {roles: [company_admin]}  # B03
+  PUT /api/profile/people/{pid}/areas: {roles: [company_admin]}  # B03
+  POST /api/modules/m1_intent/shared/view: {roles: [participant, owner, company_admin, sponsor, analyst, approver], guest: true, entry: true}
+  GET /api/control/companies/{company_id}/intents: {roles: [super_admin]}
+  GET /api/control/intents/summary: {roles: [super_admin]}
+  POST /api/modules/m1_intent/approver/closure: {roles: [participant, owner, company_admin, sponsor, analyst, approver], guest: true, entry: true}
+  # Declared in the module manifests, missing here (tests/auth undeclared list, 7 Oct)
+  POST /api/modules/m1_intent/shared/note: {roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  GET /api/modules/m2_baseline/baselines/{baseline_id}/data-sources: {roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources: {roles: [company_admin, sponsor, analyst, participant]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/draft: {roles: [company_admin, sponsor]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/done: {roles: [company_admin]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/areas: {roles: [company_admin, sponsor, analyst, participant]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/areas/{area_id}: {roles: [company_admin, sponsor, analyst, participant]}
+  PUT /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}: {roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/confirm: {roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/reassign: {roles: [company_admin, sponsor, analyst, participant, approver, owner]}
+  POST /api/modules/m2_baseline/baselines/{baseline_id}/data-sources/{source_id}/problems: {roles: [company_admin, sponsor, analyst, participant, owner]}

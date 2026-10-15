@@ -1,0 +1,35 @@
+/* V2-R (docs/signal-harbor/history/nira-platform/packages/V2-R/brief.md) -- the evidence
+ * drawer forces.js opens from a pull/friction/retention/gem signal row. Not on index.html's
+ * static <link> list (that belongs to a different package's OWNS) -- loaded lazily by
+ * js/screens/forces.js's own ensureEvidenceCss(), same idiom js/screens/knowledge-graph.js
+ * already uses for css/screens-context.css. Every colour here is one of sh.css's own CSS
+ * variables (--surface, --ink, --ink2, --border-hairline, --bg2 etc.), which already flip for
+ * [data-theme="light"]/[data-theme="dark"] (sh.css lines ~189-232) -- no new theme rule needed
+ * here for light/dark to both work.
+ */
+
+/* Wider, right-docked drawer for the records table -- css/screens-e3.css's own .n-drawer stays
+ * the default (min(420px, 92vw)) for every other drawer on this screen; this modifier widens
+ * only the one the evidence content opens into. */
+.n-drawer.n-drawer-wide { width: min(760px, 96vw); }
+
+.n-evidence-judged { font-size: 12.5px; color: var(--ink2); margin-top: 2px; }
+
+.n-evidence-note { font-size: 12px; color: var(--mute); margin-top: 6px; }
+
+.n-evidence-table-wrap { max-height: 320px; overflow-y: auto; border: 1px solid var(--border-hairline); border-radius: 8px; }
+
+.n-evidence-row-detail { background: var(--bg2); font-size: 12.5px; color: var(--ink2); }
+.n-evidence-row-detail td { padding: 8px 10px; }
+.n-evidence-row-detail ul { margin: 4px 0 0; padding-left: 16px; }
+
+.n-evidence-expand { background: none; border: none; color: var(--ink2); cursor: pointer; font-family: var(--font-mono); font-size: 12px; padding: 0; }
+.n-evidence-expand:hover { color: var(--ink); }
+
+.n-evidence-customer-link { background: none; border: none; color: var(--accent, var(--ink)); text-decoration: underline; cursor: pointer; font-size: 12.5px; padding: 0; }
+
+.n-evidence-customer-panel { margin-top: 6px; font-size: 12px; color: var(--ink2); background: var(--bg2); border-radius: 6px; padding: 8px 10px; }
+
+/* V2-T1 (ND-15): the "Judges disagree" filter checkbox and the marked row it filters to. */
+.n-evidence-disagree-filter { color: var(--ink2); font-size: 12.5px; margin: 8px 0; display: flex; align-items: center; gap: 6px; }
+tr.n-evidence-disagree { background: var(--bg2); }

@@ -1,0 +1,478 @@
+# Input ledger rows for spec 12: past intents and history.
+- id: "12.past_list"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent/past (timeline by month and area)"
+  input: "The record of everything the company has intended, by area and month"
+  person: any
+  mode: automatic
+  source: "closed and cancelled intent records the viewer may see"
+  minutes_without: 60
+  minutes_with: 0
+  basis: "estimate: searching old email, shared drives and meeting notes for what was discussed before"
+  claim: "Past work and what came of it is kept and listed; nothing is deleted and nobody keeps an archive"
+- id: "12.filters"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent/past (search, area, type, outcome, date range, only mine)"
+  input: "Search and filter the past"
+  person: any
+  mode: manual
+  source: "the person's choice"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: searching folders"
+  claim: "Past intents are searched by title, purpose, area, type and outcome"
+- id: "12.similar"
+  spec: "12"
+  journey: shared
+  stage: notice
+  screen: "chooser and Past search (Similar past intents agent line)"
+  input: "Past intents that mention the same thing"
+  person: any
+  mode: derived
+  agent: North
+  source: "titles and purposes of intents the viewer may see"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: asking colleagues whether this was discussed before"
+  claim: "Before starting, North shows similar past intents so the same ground is not covered twice"
+- id: "12.outcome_line"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "past card (outcome one-liner)"
+  input: "One-line outcome on the closed card"
+  person: organiser
+  mode: confirm
+  built: derived
+  agent: North
+  source: "the first sentence of what came out"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing an archive headline"
+  claim: "North drafts the outcome line at closure; the organiser confirms"
+- id: "12.cancel_summary"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "cancel dialog (cancel summary drafted from the reason)"
+  input: "Cancel summary"
+  person: organiser
+  mode: confirm
+  built: manual
+  agent: North
+  source: "the organiser's reason"
+  minutes_without: 3
+  minutes_with: 0.5
+  basis: "estimate: writing a cancellation note"
+  claim: "North drafts the cancel summary from the reason given"
+- id: "12.card_fields"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "past card (dates, organiser, people count, next links, rating average)"
+  input: "Dates, organiser, people count, next links and rating average on each card"
+  person: any
+  mode: automatic
+  source: "the intent record"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: compiling a project register"
+  claim: "Each past card is built from the record; nobody writes an archive entry"
+- id: "12.share_request"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "closed intent, tagged-only view (Ask the organiser to share)"
+  input: "Ask the organiser to share the thinking"
+  person: any
+  mode: manual
+  source: "the person tagged to the area"
+  minutes_without: 8
+  minutes_with: 0.5
+  basis: "estimate: emailing the organiser for access"
+  claim: "Someone who can see an intent exists asks for the thinking in one tap"
+- id: "12.share_request_line"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "Pulse line to the organiser"
+  input: "Aaron asked you to share the record"
+  person: organiser
+  mode: derived
+  agent: Nira
+  source: "the share request record"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: noticing an email request"
+  claim: "Nira tells the organiser when someone asks for access"
+- id: "12.chain"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "/centre/intent/past/<id>/chain (Where did this lead)"
+  input: "The chain of intents, build work and release an intent led to"
+  person: any
+  mode: automatic
+  source: "links.from, links.to and links.build, walked by file 20's chain route"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: reconstructing what a past meeting led to"
+  claim: "From any past intent you can see what it led to, step by step, without anyone drawing the trail"
+- id: "12.on_the_map"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "chain screen (On the map panel)"
+  input: "Measures and terms from the chain that reached the map"
+  person: any
+  mode: derived
+  agent: Lens
+  source: "the company graph, per the graph's own gating"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: tracing a definition back to the discussion that produced it"
+  claim: "The product shows which definitions and measures a past intent produced"
+- id: "12.correction_note"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "closed intent (Add a note, organiser only)"
+  input: "A correction or later fact added after closing"
+  person: organiser
+  mode: manual
+  source: "the organiser's own words; the closed record is not overwritten"
+  minutes_without: 10
+  minutes_with: 2
+  basis: "estimate: issuing a corrected document"
+  claim: "Corrections are appended as dated notes; the signed record is never changed"
+- id: "12.intents_i_was_in"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "avatar menu: Intents I was in"
+  input: "Intents the person took part in, with the role held"
+  person: any
+  mode: automatic
+  source: "the person's account in people on each intent"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: recalling past projects for a review"
+  claim: "A person's own history of intents is listed automatically, with their role"
+- id: "12.derived_keys"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "intent record (search_text, closed_month)"
+  input: "Search text and closing month"
+  person: system
+  mode: automatic
+  source: "title, purpose and closure date"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: indexing by hand"
+  claim: "Search and timeline keys are derived by the system"
+- id: "12.counters"
+  spec: "12"
+  journey: admin
+  stage: prove
+  screen: "past counters strip (per quarter, outcomes used, cancelled, closed with nothing, average rating)"
+  input: "Intents per quarter, how many led to something, cancelled, closed with nothing, average rating"
+  person: sponsor
+  mode: automatic
+  source: "closure.next, state, ratings and links"
+  minutes_without: 120
+  minutes_with: 0
+  basis: "estimate: a quarterly review of what each area intended and what was used"
+  claim: "A quarterly review of what was intended and what came of it needs no spreadsheet"
+- id: "12.pulse_month"
+  spec: "12"
+  journey: shared
+  stage: shared
+  screen: "Pulse line (four intents closed in your area)"
+  input: "Monthly closed-in-your-area line"
+  person: any
+  mode: derived
+  agent: Nira
+  source: "closed_month counts in the person's areas"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: reading round-ups"
+  claim: "Nira tells people what closed in their area this month"
+- id: "12.area_rail"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past (area rail with counts)"
+  input: "Count of past intents per area"
+  person: person
+  mode: automatic
+  source: "the intent records the viewer may see"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting records per department"
+  claim: "Area counts are computed per viewer"
+- id: "12.type_chips"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past (type and outcome chips)"
+  input: "Counts on type and outcome chips"
+  person: person
+  mode: automatic
+  source: "closure next steps and states"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: counting records by kind"
+  claim: "Chip counts are computed from the records"
+- id: "12.month_group"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past (month heading, area band)"
+  input: "Month and area grouping with counts"
+  person: person
+  mode: derived
+  source: "closing or cancellation month in the company time zone"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: filing records by month"
+  claim: "Records file themselves by month and area"
+- id: "12.date_range"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past (From and To months)"
+  input: "Date range for the past list"
+  person: person
+  mode: manual
+  source: "the person"
+  minutes_without: 1
+  minutes_with: 0.3
+  basis: "estimate: two month fields"
+  claim: "A person narrows the timeline in two taps"
+- id: "12.only_mine"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past (Only mine)"
+  input: "Only my intents switch"
+  person: person
+  mode: manual
+  source: "the person"
+  minutes_without: 1
+  minutes_with: 0.1
+  basis: "estimate: one switch"
+  claim: "One switch shows only the intents the person was in"
+- id: "12.also_in"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "closed card (also in mark)"
+  input: "Other areas an intent covers"
+  person: person
+  mode: automatic
+  source: "the intent's areas"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: cross-filing by hand"
+  claim: "An intent in several areas appears in each band once, counted once"
+- id: "12.cancel_pill"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "closed card (Cancelled mark)"
+  input: "Cancelled mark with reason"
+  person: person
+  mode: automatic
+  source: "the cancel summary"
+  minutes_without: 2
+  minutes_with: 0
+  basis: "estimate: finding why it stopped"
+  claim: "The reason shows on the card without asking"
+- id: "12.rating_avg"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "closed card (rating average)"
+  input: "Average rating from three ratings"
+  person: person
+  mode: automatic
+  source: "the ratings on the record"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: collating ratings"
+  claim: "The mean shows from three ratings, never who gave them"
+- id: "12.tab_done"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (What was done tab)"
+  input: "Stage history and links to wall, charter, baseline and assessment"
+  person: person
+  mode: derived
+  source: "the stage record and linked records"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: gathering the working papers"
+  claim: "The record of what was done is assembled for the reader"
+- id: "12.tab_said"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (What was said tab)"
+  input: "What was said, with anonymous and sealed rules"
+  person: person
+  mode: derived
+  source: "the wall, items and options through the viewer's rights"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: compiling the discussion"
+  claim: "The reader sees what was said, within their rights, with no one compiling it"
+- id: "12.tab_came_out"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (What came out tab)"
+  input: "Closure summary, why it happened, what came out, next steps"
+  person: person
+  mode: derived
+  agent: North
+  source: "the closure record"
+  minutes_without: 15
+  minutes_with: 0
+  basis: "estimate: writing a closing note"
+  claim: "The outcome is read from the closure the organiser confirmed"
+- id: "12.time_box_panel"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (Time box panel)"
+  input: "Start, end and extensions with who and why"
+  person: person
+  mode: automatic
+  source: "the time box record"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: checking the history of the date"
+  claim: "Extensions are listed from the record"
+- id: "12.versions_panel"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (Versions panel)"
+  input: "Changes since closing"
+  person: person
+  mode: automatic
+  source: "the intent events"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: reconstructing who changed what"
+  claim: "Each change shows who and when without anyone logging it"
+- id: "12.add_note_button"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (Add a note)"
+  input: "Add a note to a closed record"
+  person: organiser
+  mode: manual
+  source: "the organiser"
+  minutes_without: 3
+  minutes_with: 2
+  basis: "estimate: typing a correction"
+  claim: "A correction is appended, never overwritten"
+- id: "12.chain_step"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/past/<id>/chain (chain steps)"
+  input: "Steps from first idea to release"
+  person: person
+  mode: derived
+  source: "links between intents, build and release"
+  minutes_without: 30
+  minutes_with: 0
+  basis: "estimate: tracing what came from what"
+  claim: "The chain is read from the links; nobody draws it"
+- id: "12.chain_restricted"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "chain (restricted step)"
+  input: "Steps the viewer may not see"
+  person: person
+  mode: automatic
+  source: "the viewer's rights"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: working out what may be disclosed"
+  claim: "A restricted step shows only its type and date"
+- id: "12.branch_marker"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "chain (branch marker)"
+  input: "Number of branches from one intent"
+  person: person
+  mode: automatic
+  source: "links.to"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: counting follow-ups"
+  claim: "Branches are counted from the links"
+- id: "12.open_step"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "chain (Not yet step, Open step)"
+  input: "Running target or next step with no record yet"
+  person: person
+  mode: derived
+  source: "time box or closure next steps"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: checking what is still pending"
+  claim: "Pending steps show with their due date"
+- id: "12.avatar_count"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "avatar menu (Intents I was in)"
+  input: "Count of intents the person was in"
+  person: person
+  mode: automatic
+  source: "the people on each record"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: remembering past work"
+  claim: "The count appears without a search"
+- id: "12.role_label"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "Intents I was in (role label)"
+  input: "Role the person held"
+  person: person
+  mode: automatic
+  source: "the people on each record"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: recalling the role held"
+  claim: "The role shows on each card"
+- id: "12.tagged_only"
+  spec: "12"
+  journey: shared
+  stage: prove
+  screen: "/centre/intent/<id> (tagged-only view)"
+  input: "What a tagged person who was not in the intent sees"
+  person: person
+  mode: automatic
+  source: "the viewer's tier"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: deciding what to tell outsiders"
+  claim: "Outsiders see the header and outcome only, by rule"

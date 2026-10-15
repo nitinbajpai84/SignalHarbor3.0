@@ -1,0 +1,138 @@
+# Span and the talk box, wave 2 package SP. Offline: python tools/run_evals.py --offline --agents span_w2 --out <dir> (`replay:` is the model's
+# part, in the shapes recorded in docs/test-evidence/agents/new-uc and the 10 Oct demo guide). `live: true` = owed to the live 3-of-3 rerun once
+# the model accounts are topped up (python tools/run_evals.py --agents span_w2 --items <id>). Unit proof: tests/v1/test_span_w2.py. Synthetic data only.
+- id: SW2-NU24
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-24 (A16) - a gold name without gold_<project>_ is refused by the draft check (Approve could not register it); nothing pending, no claim.
+  replay:
+    - {call: propose_plan_change, args: {name: gold_manager_reporting_scorecard, purpose: "Statements per manager and month.", depends_on: [valuation_observations, instruments], replaces: "",
+       sql: "create table gold_manager_reporting_scorecard as select i.manager_name, date_trunc('month', v.valuation_date) as month, count(*) as statements_received from valuation_observations as v join instruments as i on v.instrument_id = i.id where i.manager_name is not null group by 1, 2"}}
+    - {say: "I have drafted gold_manager_reporting_scorecard; the data team can accept this change."}
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns:
+    - {say: "Add a gold table: count of statements by instruments.manager_name and month of valuation_date."}
+    - {method: GET, path: "/api/v1/build/p/{pid}/plan", expect: {status: 200, absent: ["gold_manager_reporting_scorecard"]}}
+  expected: {status: 200, forbidden: ["I have drafted", "can accept this change"], tools_refused: [propose_plan_change]}
+  scorers: [words, turn_expect, tool_outcome]
+
+- id: SW2-NU09
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-09 (A7) - the company's own name passed off as the fund's manager (ch-7816de54's shape) is refused; the manager is instruments.manager_name.
+  replay:
+    - {call: propose_plan_change, args: {name: gold_investment_report_statements_by_manager, purpose: "Statements per manager.", depends_on: [valuation_observations, organizations], replaces: "",
+       sql: "create table gold_investment_report_statements_by_manager as select o.name as manager_name, count(*) as n from valuation_observations as v join organizations as o on v.organization_id = o.id group by 1"}}
+    - {say: "That draft was refused; the manager comes from the fund."}
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Add a gold table with the number of statements per manager."}]
+  expected: {status: 200, tools_refused: [propose_plan_change]}
+  scorers: [tool_outcome]
+
+- id: SW2-NU13
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-13 (A16) - a draft that reads another project's gold table is told so plainly (never 'could not turn that into a table').
+  replay:
+    - {call: propose_plan_change, args: {name: gold_investment_report_holdings_copy, purpose: "Copy.", depends_on: [gold_other_project_holdings_monthly], replaces: "",
+       sql: "create table gold_investment_report_holdings_copy as select month, sum(value_amount) as v from gold_other_project_holdings_monthly group by 1"}}
+    - {say: "That table belongs to another project, so I cannot read it here; I can build from the silver tables it is built from."}
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Add a gold table built from the other project's holdings monthly gold table."}]
+  expected: {status: 200, forbidden: ["could not turn that into a table"], tools_refused: [propose_plan_change]}
+  scorers: [words, tool_outcome]
+
+- id: SW2-SPC102
+  agent: span
+  role: analyst
+  live: true
+  desc: SP-C1-02 (A2) - the fast model's silver_ prefixed table is refused with the real name, and the next draft passes (one pending change).
+  replay:
+    - {call: propose_plan_change, args: {name: gold_investment_report_valuations_by_currency, purpose: "Valuations per currency.", depends_on: [silver_valuation_observations], replaces: "",
+       sql: "create table gold_investment_report_valuations_by_currency as select currency, count(*) as n from silver_valuation_observations group by currency"}}
+    - {call: propose_plan_change, args: {name: gold_investment_report_valuations_by_currency, purpose: "Valuations per currency.", depends_on: [valuation_observations], replaces: "",
+       sql: "create table gold_investment_report_valuations_by_currency as select currency, count(*) as n from valuation_observations group by currency"}}
+    - {say: "I drafted the count of valuations per currency for the data team."}
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns:
+    - {say: "Add a count of valuations by currency."}
+    - {method: GET, path: "/api/v1/build/p/{pid}/plan", expect: {status: 200, contains: ["gold_investment_report_valuations_by_currency"]}}
+  expected: {status: 200, tools_refused: [propose_plan_change], tools_ok: [propose_plan_change]}
+  scorers: [turn_expect, tool_outcome]
+
+- id: SW2-NU15
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-15 (A2) - after a failed run Span reads the run log and proposes the fixed table in place of the failed one (replaces = its name).
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "The trial run failed. Please read the run log and fix the table that failed."}]
+  expected: {status: 200, tools_ok: [get_run_log], forbidden: ["could not turn that into a table"]}
+  scorers: [words, tool_outcome, loop_trace]
+
+- id: SW2-NU10
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-10 (A4) - 'Why that join?' after a question about a table explains that table's join, not the plan summary.
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns:
+    - {say: "Which table has the holdings by month, and what does it read?"}
+    - {say: "Why that join?", expect: {status: 200, absent: ["the plan is version"]}}
+  expected: {status: 200, words_any: [["join", "joins", "key"]]}
+  scorers: [words, turn_expect]
+
+- id: SW2-NU11-20
+  agent: span
+  role: analyst
+  live: true
+  desc: NU-11, NU-20 (A7) - the business-day late count is drafted (no 'too complex'), lateness on the first statement only (a revision is not late).
+  route: {method: POST, path: "/api/v1/build/p/{pid}/chat"}
+  turns: [{say: "Add a gold table of business days late per manager and month: due 10 weekdays after the month-end, late = weekdays after due up to received_at; a revised statement is not late."}]
+  expected: {status: 200, forbidden: ["too complex", "calendar table", "could not turn that into a table"], tools_ok: [propose_plan_change]}
+  scorers: [words, tool_outcome]
+
+- id: SW2-DG3
+  agent: span
+  role: analyst
+  live: true
+  desc: DG-3 (A2) - 'Where does the holdings monthly table come from?' on the Build landing answers with its lineage (get_lineage), not 'not a figure'.
+  route: {method: POST, path: /api/v1/build/chat}
+  turns: [{say: "Where does the holdings monthly table come from?"}]
+  expected: {status: 200, words_any: [["built from", "comes from", "reads", "valuation", "position"]], forbidden: ["not a figure", "could not use a tool"]}
+  scorers: [words, loop_trace]
+
+- id: SW2-DG1-UNTRACED
+  agent: lumen
+  role: participant
+  desc: DG-1 (A7) - a model reply carrying a figure no tool returned ('$not available yet USD') is never shown; the labelled rules answer is.
+  replay:
+    - {call: whoami_and_access, args: {}}
+    - {say: "Entity B's cash is $880,400 USD after the capital call."}
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "What is Entity B's cash?"}]
+  expected: {status: 200, forbidden: ["not available yet USD", "$not available"]}
+  scorers: [words]
+
+- id: SW2-DG1-KESTREL
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: DG-1 (A2) - 'What changed at Kestrel Ridge Advisors?' on the Consume landing is answered from manager_statements (states, late, revised).
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "What changed at Kestrel Ridge Advisors since the last meeting?"}]
+  expected: {status: 200, tools_ok: [manager_statements], forbidden: ["I cannot answer that question"]}
+  scorers: [words, tool_outcome]
+
+- id: SW2-DG1-FIGURE
+  agent: lumen
+  role: sponsor
+  live: true
+  desc: DG-1 (A1) - 'What is the net worth of Entity B?' on the Consume landing gives the figure from the accepted tile.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns: [{say: "What is the net worth of Entity B?"}]
+  expected: {status: 200, figures: ["22,875,000"], forbidden: ["I cannot answer that question"]}
+  scorers: [words, figure_match, groundedness]

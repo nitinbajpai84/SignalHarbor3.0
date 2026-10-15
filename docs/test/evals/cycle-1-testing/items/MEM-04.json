@@ -1,0 +1,125 @@
+{
+  "id": "MEM-04",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "Person A's preference never reaches person B (sponsor does not see the analyst's weekly preference).",
+  "status": "error",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 1: status 403, wanted 200"
+    }
+  ],
+  "error": "nothing saved as 'mid'",
+  "latency_ms": 64,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-bfd3c588/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures weekly"
+      },
+      "status": 403,
+      "json": {
+        "error": "not_allowed",
+        "message": "You do not have access to this dashboard."
+      },
+      "ms": 32,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-9ee8601f",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures in SGD",
+            "sure": "inferred",
+            "at": "2026-10-09T14:50:15+00:00",
+            "source": {
+              "said": "in SGD",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-02a74792",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures by month",
+            "sure": "inferred",
+            "at": "2026-10-09T14:50:15+00:00",
+            "source": {
+              "said": "monthly not daily",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-3717efef",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T14:50:14+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-bfd3c588",
+              "agent": "lumen"
+            }
+          }
+        ]
+      },
+      "ms": 26,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "weekly"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 6,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

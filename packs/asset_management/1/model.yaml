@@ -1,0 +1,58 @@
+# Industry model asset_management@1 (small). Tables are the pack's logical feeds; properties and synonyms come from column_synonyms.yaml.
+template: asset_management@1
+version: 1
+objects:
+  - name: portfolio
+    label: Portfolio
+    table: portfolios
+    properties:
+      - {name: portfolio_code, label: Portfolio code, type: string, synonyms: []}
+      - {name: portfolio_name, label: Portfolio name, type: string, synonyms: []}
+      - {name: base_currency, label: Base currency, type: string, synonyms: []}
+      - {name: portfolio_type, label: Portfolio type, type: string, synonyms: []}
+    relations: []
+  - name: instrument
+    label: Instrument
+    table: instruments
+    properties:
+      - {name: instrument_code, label: Instrument code, type: string, synonyms: []}
+      - {name: instrument_name, label: Instrument name, type: string, synonyms: []}
+      - {name: instrument_type, label: Instrument type, type: string, synonyms: []}
+    relations: []
+  - name: position
+    label: Position
+    table: positions
+    properties:
+      - {name: as_of_date, label: As of date, type: date, synonyms: []}
+      - {name: quantity, label: Quantity, type: number, synonyms: []}
+      - {name: market_value, label: Market value, type: number, synonyms: [AUM]}
+    relations:
+      - {to: portfolio, label: held in}
+      - {to: instrument, label: of}
+  - name: flow
+    label: Flow
+    table: flows
+    properties:
+      - {name: transaction_id, label: Transaction identifier, type: string, synonyms: []}
+      - {name: trade_date, label: Trade date, type: date, synonyms: []}
+      - {name: transaction_type, label: Transaction type, type: string, synonyms: [Subscriptions, Redemptions]}
+      - {name: amount, label: Amount, type: number, synonyms: [Net flows]}
+    relations:
+      - {to: portfolio, label: into or out of}
+  - name: client
+    label: Client
+    table: clients
+    properties:
+      - {name: client_id, label: Client identifier, type: string, synonyms: []}
+      - {name: client_type, label: Client type, type: string, synonyms: []}
+      - {name: client_since_date, label: Client since, type: date, synonyms: []}
+    relations: []
+  - name: fee
+    label: Fee
+    table: fees
+    properties:
+      - {name: fee_period_end_date, label: Period end, type: date, synonyms: []}
+      - {name: fee_type, label: Fee type, type: string, synonyms: []}
+      - {name: fee_amount, label: Fee amount, type: number, synonyms: [Fee yield]}
+    relations:
+      - {to: client, label: charged to}

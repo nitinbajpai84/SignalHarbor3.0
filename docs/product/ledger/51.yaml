@@ -1,0 +1,448 @@
+- id: 51.s01.type
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: /centre/intent/new (chooser)
+  input: Pick the Brainstorm type or ask North
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the line typed into 'Ask North'
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: deciding what kind of meeting versus one tap'
+  claim: North can propose the type from one typed line
+- id: 51.s02.statement
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: /centre/intent/new?type=brainstorm (q1)
+  input: The idea or problem in one line
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's own words
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: one line typed; this is the one thing only the organiser knows'
+  claim: The only thing an organiser must type to start a brainstorm is one line
+- id: 51.s02.outcome
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: q2
+  input: What a good outcome looks like
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the statement; North reads it back
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: writing an agenda goal versus confirming a read-back'
+  claim: North reads back the good outcome for the organiser to confirm
+- id: 51.s02.people
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: q3
+  input: Four to eight people to think with
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the profile and areas, labelled Suggested
+  minutes_without: 8
+  minutes_with: 1
+  basis: 'estimate: choosing and emailing people versus accepting suggestions'
+  claim: North suggests the people; the organiser picks four to eight
+- id: 51.s02.areas
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: q4
+  input: Parts of the company this touches
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the statement and the profile
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: a note to areas versus a tap'
+  claim: North suggests areas; the organiser confirms
+- id: 51.s02.session
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: q5
+  input: The live session time
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's diary
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a scheduling thread versus one date and time'
+  claim: Session time is the organiser's choice; the three-day window is derived from it
+- id: 51.s02.window
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: q5 window panel
+  input: Before, session and after dates
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the session date and the working calendar
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counting working days by hand versus a panel'
+  claim: The three-day window dates are computed from the session date
+- id: 51.s02.related
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: after q1 (branch 4)
+  input: Related work already closed or running
+  person: organiser
+  mode: derived
+  agent: North
+  source: the intent index, same areas and similar words
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: asking colleagues versus a panel that appears'
+  claim: North finds related work and says why it matches before the organiser carries on
+- id: 51.s03.title
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: review card
+  input: Title, purpose and invitation message
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the five answers
+  minutes_without: 15
+  minutes_with: 2
+  basis: 'estimate: writing a purpose and a meeting invite versus reading one'
+  claim: North drafts the title, purpose and invitation; the organiser changes any line
+- id: 51.s03.open
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: '''Open this brainstorm'''
+  input: Open the brainstorm
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's confirmation
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: sending the invite versus one confirm'
+  claim: Opening is the organiser's act; the clock starts and Pulse lines go out
+- id: 51.s04.accept
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: /centre/intent/<id> (invitation)
+  input: Accept, decline or ask for a different role
+  person: participant
+  mode: manual
+  agent: null
+  source: the invitee
+  minutes_without: 3
+  minutes_with: 1
+  basis: 'estimate: an email reply versus a tap'
+  claim: Each invitee answers in one tap from their Pulse
+- id: 51.s04.count
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: invitations panel
+  input: Invited, accepted and declined counts
+  person: organiser
+  mode: automatic
+  agent: null
+  source: invitation records
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: counting replies in a mailbox versus a line'
+  claim: Reply counts are kept by the system
+- id: 51.s05.idea
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: /centre/intent/<id> (Prepare, 390 wide)
+  input: One idea in your own words, before the session
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's own thought; voice allowed
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: an idea typed into an email versus a field on the phone'
+  claim: Pre-thinking is typed by the person alone; others see it only when the session opens
+- id: 51.s05.hide
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: Prepare, 'Hide my name'
+  input: Hide the author's name on an idea
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's choice, if the organiser allowed it
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: asking for anonymity versus one tick'
+  claim: Anonymous ideas are stored under a key with no name anywhere
+- id: 51.s05.reminder
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: Pulse line on the morning of the session
+  input: Reminder to people with no idea
+  person: participant
+  mode: automatic
+  agent: Nira
+  source: the idea counts per person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: chasing by email versus one line'
+  claim: One reminder line goes to anyone with no idea; the organiser sees counts only
+- id: 51.s06.open
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: /centre/intent/<id>/session
+  input: Open the session
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's confirmation
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: starting a meeting versus one confirm'
+  claim: Opening is the organiser's act
+- id: 51.s06.live
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: session, diverge
+  input: A live idea or a 'Build on this' reply
+  person: participant
+  mode: manual
+  agent: null
+  source: the person's own idea
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: talking and a scribe versus typing on a phone'
+  claim: Live ideas are typed by people; replies are not cards
+- id: 51.s06.group
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: session, group panel
+  input: Group the ideas and name the groups
+  person: organiser
+  mode: derived
+  agent: North
+  source: the cards, from the third card on
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: typical office: a scribe sorting sticky notes'
+  claim: North groups ideas as they land and names the groups
+- id: 51.s07.move
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: session, group phase
+  input: Move a card or rename a group
+  person: participant
+  mode: manual
+  agent: null
+  source: any seat's judgement; moves kept in history
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: re-sorting stickies versus a drag'
+  claim: Anyone may fix a grouping; North's regroup never overwrites kept moves
+- id: 51.s08.back
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: session, converge
+  input: Back up to three ideas
+  person: participant
+  mode: manual
+  agent: null
+  source: the voter's own view; counts only, never names
+  minutes_without: 10
+  minutes_with: 3
+  basis: 'estimate: dot voting versus three taps'
+  claim: Each person backs up to three; nobody sees who backed what
+- id: 51.s08.nudge
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: session, converge
+  input: Private nudge to people who have not backed
+  person: participant
+  mode: automatic
+  agent: North
+  source: the count of backers, once per person
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: chasing in the room versus a private nudge'
+  claim: Non-backers are nudged privately once; the organiser never sees who is missing
+- id: 51.s08.close
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: session, 'Close the count'
+  input: Close the count
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's confirmation
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: calling time and tallying versus one confirm'
+  claim: Closing the count drops seat keys and writes the counts
+- id: 51.s08.tie
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: converge tie dialog (branch 2)
+  input: Break a tie or run round 2
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; North never breaks a tie
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: a discussion versus a choice of free places'
+  claim: Ties are the organiser's call; North only says they are level
+- id: 51.s09.outcome
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: session, panel 'Outcome'
+  input: 'Outcome card: idea, why chosen, what it would take'
+  person: organiser
+  mode: confirm
+  agent: North
+  source: counts, cards and comments, a source per sentence
+  minutes_without: 30
+  minutes_with: 5
+  basis: 'estimate: writing a workshop summary versus editing a drafted card'
+  claim: North drafts the outcome card with a source for each sentence; the organiser confirms
+- id: 51.s09.stats
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: outcome numbers panel
+  input: Ideas added, groups, backs cast, rounds
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the session record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: counting from a flipchart versus a panel'
+  claim: Session numbers come from the record
+- id: 51.s10.closure
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/close
+  input: Closure summary and what next
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the whole session record
+  minutes_without: 20
+  minutes_with: 3
+  basis: 'estimate: a follow-up email versus a drafted closure'
+  claim: North drafts the closure and the next step; the organiser edits and closes
+- id: 51.s10.initiative
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: closure, 'Turn into an Initiative'
+  input: Initiative start answers
+  person: organiser
+  mode: derived
+  agent: North
+  source: the chosen idea, why chosen, named proposers
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: re-keying the idea into a new project versus a prefilled start'
+  claim: A chosen idea becomes an Initiative draft with answers filled in
+- id: 51.s11.rating
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: /centre/intent/<id>/review
+  input: A 1 to 5 rating and note, anonymous by default
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant's own view
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a survey link versus one tap on their page'
+  claim: Ratings are anonymous by default and never rank a person
+- id: 51.s12.late
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: closed view, 'Late thought'
+  input: A late thought of up to 300 characters
+  person: participant
+  mode: manual
+  agent: null
+  source: the participant's afterthought
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a reply-all email versus a field until the freeze'
+  claim: Late thoughts are kept without changing the confirmed outcome
+- id: 51.s12.freeze
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: closed view
+  input: Freeze the record at the end of the window
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the late window closes_at
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: someone remembering to close the doc versus a clock'
+  claim: The record freezes itself when the window ends
+- id: 51.b1.attend
+  spec: '51'
+  journey: brainstorm
+  stage: think
+  screen: session (branch 1)
+  input: Choice when too few turn up
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser; North says only who is here
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: an ad hoc decision versus three options'
+  claim: North names the attendance and the organiser picks wait, carry on or move
+- id: 51.b8.reason
+  spec: '51'
+  journey: brainstorm
+  stage: decide
+  screen: outcome (branch 8)
+  input: Why this idea when another had more backs
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's reason
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: a justification email versus a required line'
+  claim: A pick that differs from the count needs a reason, kept on the card

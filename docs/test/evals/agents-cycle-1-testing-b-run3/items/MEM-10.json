@@ -1,0 +1,1639 @@
+{
+  "id": "MEM-10",
+  "agent": "memory",
+  "role": "analyst",
+  "desc": "Context map - after a talk with Span, the Map page's conversations graph (GET /api/v1/memory/graph, MEM2a) answers with nodes and edges.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 12366,
+  "cost": {
+    "calls": 3,
+    "tokens": 8384,
+    "usd": 0.002642,
+    "estimated": false
+  },
+  "trace_id": "tr-span-3ae73a59-21b8809b",
+  "forgotten": [],
+  "egress_lines": 3,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/memory/graph"
+  },
+  "expected": {
+    "status": 200
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "Which gold table holds the cash by entity?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The `gold_investment_report_cash_daily` table holds cash by entity.",
+        "rules_only": false,
+        "trace_id": "tr-span-3ae73a59-21b8809b"
+      },
+      "ms": 11689,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "analyst",
+      "method": "GET",
+      "path": "/api/v1/memory/graph",
+      "request": null,
+      "status": 200,
+      "json": {
+        "built_at": "2026-10-10T02:46:23+00:00",
+        "nodes": [
+          {
+            "id": "person:e5b837eed55a9e44",
+            "type": "person",
+            "label": "Mei Chen"
+          },
+          {
+            "id": "agent:north",
+            "type": "agent",
+            "label": "North"
+          },
+          {
+            "id": "convo:c-2c05f30323590544",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-3942cfa7",
+            "type": "project",
+            "label": "Here is how we produce the monthly investment report today"
+          },
+          {
+            "id": "intent:ini-c85c8f53a5bdff1f16d1d947def750cb",
+            "type": "intent",
+            "label": "Intent ini-c85c8f53a5bdff1f16d1d947def750cb"
+          },
+          {
+            "id": "convo:c-8fa2233ebfe00362",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ff61fa5b",
+            "type": "project",
+            "label": "Draft the swim lane for this process"
+          },
+          {
+            "id": "intent:ini-1c989a947c13f08ae2a765b15bed0d66",
+            "type": "intent",
+            "label": "Intent ini-1c989a947c13f08ae2a765b15bed0d66"
+          },
+          {
+            "id": "convo:c-c1f2088cf7d7accc",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ec0387a1",
+            "type": "project",
+            "label": "Draft the intent from this note"
+          },
+          {
+            "id": "intent:ini-87c057b2475e43f729c0502782a7a320",
+            "type": "intent",
+            "label": "Intent ini-87c057b2475e43f729c0502782a7a320"
+          },
+          {
+            "id": "convo:c-5d58ec883199052a",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-8ddd2a76",
+            "type": "project",
+            "label": "Draft the intent and the process map"
+          },
+          {
+            "id": "intent:ini-d1f33002427b824573e6a0b7cf544182",
+            "type": "intent",
+            "label": "Intent ini-d1f33002427b824573e6a0b7cf544182"
+          },
+          {
+            "id": "convo:c-e242bdf437ef2e9d",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-78a0c85e",
+            "type": "project",
+            "label": "Draft the swim lane from this note"
+          },
+          {
+            "id": "intent:ini-894e8c44f879077027760f9209160967",
+            "type": "intent",
+            "label": "Intent ini-894e8c44f879077027760f9209160967"
+          },
+          {
+            "id": "convo:c-2784e38a1cedcf5b",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-181f38a4",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD for the CIO by the 3rd business day of "
+          },
+          {
+            "id": "intent:ini-43570ed65b2dbdb58230b4c7b47c66cc",
+            "type": "intent",
+            "label": "Intent ini-43570ed65b2dbdb58230b4c7b47c66cc"
+          },
+          {
+            "id": "convo:c-7c010d562df69809",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-0473eeb2",
+            "type": "project",
+            "label": "Better report"
+          },
+          {
+            "id": "intent:ini-ea0abe0f72cd013ac20b687130002a8c",
+            "type": "intent",
+            "label": "Intent ini-ea0abe0f72cd013ac20b687130002a8c"
+          },
+          {
+            "id": "convo:c-0990118af4b68ff8",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-99b6b1e7",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-f08618befc405fdd6ba644cd91d28492",
+            "type": "intent",
+            "label": "Intent ini-f08618befc405fdd6ba644cd91d28492"
+          },
+          {
+            "id": "person:b2d271bfd8d5a1b2",
+            "type": "person",
+            "label": "Daniel Foo"
+          },
+          {
+            "id": "convo:c-307604103ab473e1",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-56168975",
+            "type": "project",
+            "label": "Draft the intent and for each step list the control and the exception"
+          },
+          {
+            "id": "intent:ini-124e8f0cfa92c4ed33e2888b9383c6a3",
+            "type": "intent",
+            "label": "Intent ini-124e8f0cfa92c4ed33e2888b9383c6a3"
+          },
+          {
+            "id": "convo:c-4b94a0c97a01eb84",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-7f009ade",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-1e27a26c58af1f8f173af00a948d4393",
+            "type": "intent",
+            "label": "Intent ini-1e27a26c58af1f8f173af00a948d4393"
+          },
+          {
+            "id": "convo:c-81cd880daf9e2da7",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-011776f4",
+            "type": "project",
+            "label": "Here is the Kestrel Ridge newsletter"
+          },
+          {
+            "id": "intent:ini-e14e261f8cb0774ab669bfa1d3d9f46a",
+            "type": "intent",
+            "label": "Intent ini-e14e261f8cb0774ab669bfa1d3d9f46a"
+          },
+          {
+            "id": "person:86190d80deeb9f13",
+            "type": "person",
+            "label": "Sofia Reyes"
+          },
+          {
+            "id": "agent:span",
+            "type": "agent",
+            "label": "Span"
+          },
+          {
+            "id": "convo:c-2a2dc0364ce0ea9c",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "project:prj-30b9332c",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD"
+          },
+          {
+            "id": "table:gold_investment_report_cash_daily",
+            "type": "table",
+            "label": "Investment report cash daily"
+          },
+          {
+            "id": "table:gold_investment_report_holdings_monthly",
+            "type": "table",
+            "label": "Investment report holdings monthly"
+          },
+          {
+            "id": "table:bronze_administrator_positions",
+            "type": "table",
+            "label": "Administrator positions"
+          },
+          {
+            "id": "table:bronze_trading_export_positions",
+            "type": "table",
+            "label": "Trading export positions"
+          },
+          {
+            "id": "convo:c-ab156442a59314cb",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "convo:c-400b9c49279dca12",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "convo:c-43bc301e32ad4810",
+            "type": "conversation",
+            "label": "Talk with Span"
+          },
+          {
+            "id": "table:gold_side_payments",
+            "type": "table",
+            "label": "Side payments"
+          },
+          {
+            "id": "table:gold_kestrel_fee_rebate",
+            "type": "table",
+            "label": "Kestrel fee rebate"
+          },
+          {
+            "id": "table:gold_override_cash",
+            "type": "table",
+            "label": "Override cash"
+          },
+          {
+            "id": "table:gold_exfil",
+            "type": "table",
+            "label": "Exfil"
+          },
+          {
+            "id": "table:gold_investment_report_copy",
+            "type": "table",
+            "label": "Investment report copy"
+          },
+          {
+            "id": "agent:lumen",
+            "type": "agent",
+            "label": "Lumen"
+          },
+          {
+            "id": "person:c87136d17d137ab4",
+            "type": "person",
+            "label": "Raj Patel"
+          },
+          {
+            "id": "convo:c-3bb81158bf964c98",
+            "type": "conversation",
+            "label": "Talk with Lumen"
+          },
+          {
+            "id": "convo:c-4a8d263015f3183b",
+            "type": "conversation",
+            "label": "Talk with Lumen"
+          },
+          {
+            "id": "agent:tally",
+            "type": "agent",
+            "label": "Tally"
+          },
+          {
+            "id": "case:68e4f049-dee1-4764-8691-1f5089976b77",
+            "type": "case",
+            "label": "Case 68e4f049-dee1-4764-8691-1f5089976b77"
+          },
+          {
+            "id": "convo:c-c2e834fc371bf1bd",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:45e9591c-3e99-4d89-b8fc-e7f14995452b",
+            "type": "case",
+            "label": "Case 45e9591c-3e99-4d89-b8fc-e7f14995452b"
+          },
+          {
+            "id": "convo:c-ba7b9ef5c43abe44",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:1e6c4776-b028-443a-8dfc-52e73691518c",
+            "type": "case",
+            "label": "Case 1e6c4776-b028-443a-8dfc-52e73691518c"
+          },
+          {
+            "id": "convo:c-7a52180bd6dcb85b",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:42b22af4-17bf-42f1-ad01-e486ffbaf5f8",
+            "type": "case",
+            "label": "Case 42b22af4-17bf-42f1-ad01-e486ffbaf5f8"
+          },
+          {
+            "id": "convo:c-7d921edcd8663678",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "case:c0f665ef-06ba-408d-8a8c-854423b44c1a",
+            "type": "case",
+            "label": "Case c0f665ef-06ba-408d-8a8c-854423b44c1a"
+          },
+          {
+            "id": "convo:c-a90a1290132cae7c",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-b9bc5d98",
+            "type": "project",
+            "label": "What does the office already have about the monthly investment report"
+          },
+          {
+            "id": "intent:ini-838d30e7b9f6eb0aec46a4837444be7c",
+            "type": "intent",
+            "label": "Intent ini-838d30e7b9f6eb0aec46a4837444be7c"
+          },
+          {
+            "id": "convo:c-b2cb1e88d00a3bd0",
+            "type": "conversation",
+            "label": "Talk with Lumen"
+          },
+          {
+            "id": "convo:c-10220d23d1852649",
+            "type": "conversation",
+            "label": "Talk with Tally"
+          },
+          {
+            "id": "convo:c-60d10085dbebdd36",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-df6b2ed4",
+            "type": "project",
+            "label": "Here is how we produce the monthly investment report today"
+          },
+          {
+            "id": "intent:ini-8e6fdca024015df89e2b6819ad163381",
+            "type": "intent",
+            "label": "Intent ini-8e6fdca024015df89e2b6819ad163381"
+          },
+          {
+            "id": "convo:c-6ab87018318861e9",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-5bc07e86",
+            "type": "project",
+            "label": "Draft the swim lane for this process"
+          },
+          {
+            "id": "intent:ini-068ecb473d63365a5671e2ea782e731a",
+            "type": "intent",
+            "label": "Intent ini-068ecb473d63365a5671e2ea782e731a"
+          },
+          {
+            "id": "convo:c-b1f6ca2e0b03e02b",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ed96b343",
+            "type": "project",
+            "label": "Draft the intent from this note"
+          },
+          {
+            "id": "intent:ini-b8b8e296fa5a9a6e72987ab03e3e7e96",
+            "type": "intent",
+            "label": "Intent ini-b8b8e296fa5a9a6e72987ab03e3e7e96"
+          },
+          {
+            "id": "convo:c-ace163290a2c8c95",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-bee50520",
+            "type": "project",
+            "label": "Draft the intent and the process map"
+          },
+          {
+            "id": "intent:ini-5e3dfebc06064af22570e7d76cade390",
+            "type": "intent",
+            "label": "Intent ini-5e3dfebc06064af22570e7d76cade390"
+          },
+          {
+            "id": "convo:c-cb3d9b9c895067e3",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-9f9c6e75",
+            "type": "project",
+            "label": "Draft the swim lane from this note"
+          },
+          {
+            "id": "intent:ini-fff9ecd6bbb2cf1e639f6141699884ac",
+            "type": "intent",
+            "label": "Intent ini-fff9ecd6bbb2cf1e639f6141699884ac"
+          },
+          {
+            "id": "convo:c-4055b0307094ac43",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-d5e25bb0",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD for the CIO by the 3rd business day of "
+          },
+          {
+            "id": "intent:ini-d4ebbca1c1c04f78d35fdb7b1bcbfa91",
+            "type": "intent",
+            "label": "Intent ini-d4ebbca1c1c04f78d35fdb7b1bcbfa91"
+          },
+          {
+            "id": "convo:c-f8885106905eac67",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-7f3e1337",
+            "type": "project",
+            "label": "Better report"
+          },
+          {
+            "id": "intent:ini-769e182545a78847d2801d2e4b435ba5",
+            "type": "intent",
+            "label": "Intent ini-769e182545a78847d2801d2e4b435ba5"
+          },
+          {
+            "id": "convo:c-47d9aea4811ce80c",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-f695504f",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-1e505ef36bafbdb8c0154de318564d58",
+            "type": "intent",
+            "label": "Intent ini-1e505ef36bafbdb8c0154de318564d58"
+          },
+          {
+            "id": "convo:c-894da8c789dc58c9",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-d6c55d4b",
+            "type": "project",
+            "label": "Draft the intent and for each step list the control and the exception"
+          },
+          {
+            "id": "intent:ini-7a49d39ce78e3d07ae27fd2efa5830ac",
+            "type": "intent",
+            "label": "Intent ini-7a49d39ce78e3d07ae27fd2efa5830ac"
+          },
+          {
+            "id": "convo:c-2138300b799accbe",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-5be82543",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-afbd945607d305bc79244a0d6d5f4074",
+            "type": "intent",
+            "label": "Intent ini-afbd945607d305bc79244a0d6d5f4074"
+          },
+          {
+            "id": "convo:c-807d5c685dafc7f1",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-c8044926",
+            "type": "project",
+            "label": "Here is the Kestrel Ridge newsletter"
+          },
+          {
+            "id": "intent:ini-932c3b32e14f393e1676c5be26d408fc",
+            "type": "intent",
+            "label": "Intent ini-932c3b32e14f393e1676c5be26d408fc"
+          },
+          {
+            "id": "table:gold_investment_report_benchmark_monthly",
+            "type": "table",
+            "label": "Investment report benchmark monthly"
+          },
+          {
+            "id": "convo:c-a9f5c48aa9b2103c",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-cc1b9152",
+            "type": "project",
+            "label": "What does the office already have about the monthly investment report"
+          },
+          {
+            "id": "intent:ini-7c721287ab21586f6f2c83bb31b8bd9b",
+            "type": "intent",
+            "label": "Intent ini-7c721287ab21586f6f2c83bb31b8bd9b"
+          },
+          {
+            "id": "convo:c-01684da37f54a34b",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-ba68d70b",
+            "type": "project",
+            "label": "Here is how we produce the monthly investment report today"
+          },
+          {
+            "id": "intent:ini-676a42d486f9f4555ce323b7e195f1f7",
+            "type": "intent",
+            "label": "Intent ini-676a42d486f9f4555ce323b7e195f1f7"
+          },
+          {
+            "id": "convo:c-9f9540cb4ed2fc45",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-26fe1cf3",
+            "type": "project",
+            "label": "Draft the swim lane for this process"
+          },
+          {
+            "id": "intent:ini-e9f61d06e835bba49549b55d97e13d3c",
+            "type": "intent",
+            "label": "Intent ini-e9f61d06e835bba49549b55d97e13d3c"
+          },
+          {
+            "id": "convo:c-3875724b4204ed17",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-8ae06e46",
+            "type": "project",
+            "label": "Draft the intent from this note"
+          },
+          {
+            "id": "intent:ini-cbd62c5511c39bfbe29869490b12af73",
+            "type": "intent",
+            "label": "Intent ini-cbd62c5511c39bfbe29869490b12af73"
+          },
+          {
+            "id": "convo:c-bf6f04e305ccc028",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-5a22b401",
+            "type": "project",
+            "label": "Draft the intent and the process map"
+          },
+          {
+            "id": "intent:ini-ef051e5d9bdbbde18c30d35f7ad61356",
+            "type": "intent",
+            "label": "Intent ini-ef051e5d9bdbbde18c30d35f7ad61356"
+          },
+          {
+            "id": "convo:c-64ed05329a94d03f",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-675b0848",
+            "type": "project",
+            "label": "Draft the swim lane from this note"
+          },
+          {
+            "id": "intent:ini-02886fee96bdc1565d2a8e2157632450",
+            "type": "intent",
+            "label": "Intent ini-02886fee96bdc1565d2a8e2157632450"
+          },
+          {
+            "id": "convo:c-de477387da6c75e0",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-b229e95a",
+            "type": "project",
+            "label": "Monthly investment report in USD and SGD for the CIO by the 3rd business day of "
+          },
+          {
+            "id": "intent:ini-557753d050148affb0c9d633e737f273",
+            "type": "intent",
+            "label": "Intent ini-557753d050148affb0c9d633e737f273"
+          },
+          {
+            "id": "convo:c-fe4b6b1d7296d6be",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-12be6547",
+            "type": "project",
+            "label": "Better report"
+          },
+          {
+            "id": "intent:ini-e6a004fbb28ab7ce49e561657cb2463d",
+            "type": "intent",
+            "label": "Intent ini-e6a004fbb28ab7ce49e561657cb2463d"
+          },
+          {
+            "id": "convo:c-0d592856709cf20a",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-06604e34",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-6e58e215a759dc95e6b876fa4fa27577",
+            "type": "intent",
+            "label": "Intent ini-6e58e215a759dc95e6b876fa4fa27577"
+          },
+          {
+            "id": "convo:c-f48c4962546f7d03",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-964c686b",
+            "type": "project",
+            "label": "Draft the intent and for each step list the control and the exception"
+          },
+          {
+            "id": "intent:ini-071b15082449aadb417c4ba9529cf6a1",
+            "type": "intent",
+            "label": "Intent ini-071b15082449aadb417c4ba9529cf6a1"
+          },
+          {
+            "id": "convo:c-f4a1e49dddb77347",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-be96611d",
+            "type": "project",
+            "label": "Draft the intent from the process note"
+          },
+          {
+            "id": "intent:ini-7ed26316633833b9a961fd5b7c902054",
+            "type": "intent",
+            "label": "Intent ini-7ed26316633833b9a961fd5b7c902054"
+          },
+          {
+            "id": "convo:c-e00676f88f1f008f",
+            "type": "conversation",
+            "label": "Talk with North"
+          },
+          {
+            "id": "project:prj-a2ebe6b4",
+            "type": "project",
+            "label": "Here is the Kestrel Ridge newsletter"
+          },
+          {
+            "id": "intent:ini-d0854ae10177dbdbbbe64806f1e7f477",
+            "type": "intent",
+            "label": "Intent ini-d0854ae10177dbdbbbe64806f1e7f477"
+          }
+        ],
+        "edges": [
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2c05f30323590544",
+            "to": "project:prj-3942cfa7",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2c05f30323590544",
+            "to": "intent:ini-c85c8f53a5bdff1f16d1d947def750cb",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-8fa2233ebfe00362",
+            "to": "project:prj-ff61fa5b",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-8fa2233ebfe00362",
+            "to": "intent:ini-1c989a947c13f08ae2a765b15bed0d66",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-c1f2088cf7d7accc",
+            "to": "project:prj-ec0387a1",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-c1f2088cf7d7accc",
+            "to": "intent:ini-87c057b2475e43f729c0502782a7a320",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-5d58ec883199052a",
+            "to": "project:prj-8ddd2a76",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-5d58ec883199052a",
+            "to": "intent:ini-d1f33002427b824573e6a0b7cf544182",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-e242bdf437ef2e9d",
+            "to": "project:prj-78a0c85e",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-e242bdf437ef2e9d",
+            "to": "intent:ini-894e8c44f879077027760f9209160967",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2784e38a1cedcf5b",
+            "to": "project:prj-181f38a4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2784e38a1cedcf5b",
+            "to": "intent:ini-43570ed65b2dbdb58230b4c7b47c66cc",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7c010d562df69809",
+            "to": "project:prj-0473eeb2",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-7c010d562df69809",
+            "to": "intent:ini-ea0abe0f72cd013ac20b687130002a8c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-0990118af4b68ff8",
+            "to": "project:prj-99b6b1e7",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-0990118af4b68ff8",
+            "to": "intent:ini-f08618befc405fdd6ba644cd91d28492",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-307604103ab473e1",
+            "to": "project:prj-56168975",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-307604103ab473e1",
+            "to": "intent:ini-124e8f0cfa92c4ed33e2888b9383c6a3",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-4b94a0c97a01eb84",
+            "to": "project:prj-7f009ade",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-4b94a0c97a01eb84",
+            "to": "intent:ini-1e27a26c58af1f8f173af00a948d4393",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-81cd880daf9e2da7",
+            "to": "project:prj-011776f4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-81cd880daf9e2da7",
+            "to": "intent:ini-e14e261f8cb0774ab669bfa1d3d9f46a",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_holdings_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:bronze_administrator_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:bronze_trading_export_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "person:86190d80deeb9f13",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-ab156442a59314cb",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:bronze_administrator_positions",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_investment_report_holdings_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "person:b2d271bfd8d5a1b2",
+            "to": "agent:span",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-43bc301e32ad4810",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-43bc301e32ad4810",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_side_payments",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_kestrel_fee_rebate",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-ab156442a59314cb",
+            "to": "table:gold_override_cash",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_investment_report_cash_daily",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_exfil",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_copy",
+            "type": "mentions"
+          },
+          {
+            "from": "person:b2d271bfd8d5a1b2",
+            "to": "agent:lumen",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-3bb81158bf964c98",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:c87136d17d137ab4",
+            "to": "agent:lumen",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-4a8d263015f3183b",
+            "to": "project:prj-30b9332c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-c2e834fc371bf1bd",
+            "to": "case:45e9591c-3e99-4d89-b8fc-e7f14995452b",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-ba7b9ef5c43abe44",
+            "to": "case:1e6c4776-b028-443a-8dfc-52e73691518c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7a52180bd6dcb85b",
+            "to": "case:42b22af4-17bf-42f1-ad01-e486ffbaf5f8",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-7d921edcd8663678",
+            "to": "case:c0f665ef-06ba-408d-8a8c-854423b44c1a",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-a90a1290132cae7c",
+            "to": "project:prj-b9bc5d98",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-a90a1290132cae7c",
+            "to": "intent:ini-838d30e7b9f6eb0aec46a4837444be7c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:lumen",
+            "type": "talked_with"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:tally",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-10220d23d1852649",
+            "to": "case:68e4f049-dee1-4764-8691-1f5089976b77",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-60d10085dbebdd36",
+            "to": "project:prj-df6b2ed4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-60d10085dbebdd36",
+            "to": "intent:ini-8e6fdca024015df89e2b6819ad163381",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-6ab87018318861e9",
+            "to": "project:prj-5bc07e86",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-6ab87018318861e9",
+            "to": "intent:ini-068ecb473d63365a5671e2ea782e731a",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-b1f6ca2e0b03e02b",
+            "to": "project:prj-ed96b343",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-b1f6ca2e0b03e02b",
+            "to": "intent:ini-b8b8e296fa5a9a6e72987ab03e3e7e96",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-ace163290a2c8c95",
+            "to": "project:prj-bee50520",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-ace163290a2c8c95",
+            "to": "intent:ini-5e3dfebc06064af22570e7d76cade390",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-cb3d9b9c895067e3",
+            "to": "project:prj-9f9c6e75",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-cb3d9b9c895067e3",
+            "to": "intent:ini-fff9ecd6bbb2cf1e639f6141699884ac",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-4055b0307094ac43",
+            "to": "project:prj-d5e25bb0",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-4055b0307094ac43",
+            "to": "intent:ini-d4ebbca1c1c04f78d35fdb7b1bcbfa91",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-f8885106905eac67",
+            "to": "project:prj-7f3e1337",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-f8885106905eac67",
+            "to": "intent:ini-769e182545a78847d2801d2e4b435ba5",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-47d9aea4811ce80c",
+            "to": "project:prj-f695504f",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-47d9aea4811ce80c",
+            "to": "intent:ini-1e505ef36bafbdb8c0154de318564d58",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-894da8c789dc58c9",
+            "to": "project:prj-d6c55d4b",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-894da8c789dc58c9",
+            "to": "intent:ini-7a49d39ce78e3d07ae27fd2efa5830ac",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-2138300b799accbe",
+            "to": "project:prj-5be82543",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2138300b799accbe",
+            "to": "intent:ini-afbd945607d305bc79244a0d6d5f4074",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-807d5c685dafc7f1",
+            "to": "project:prj-c8044926",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-807d5c685dafc7f1",
+            "to": "intent:ini-932c3b32e14f393e1676c5be26d408fc",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-2a2dc0364ce0ea9c",
+            "to": "table:gold_investment_report_benchmark_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "convo:c-400b9c49279dca12",
+            "to": "table:gold_investment_report_benchmark_monthly",
+            "type": "mentions"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-a9f5c48aa9b2103c",
+            "to": "project:prj-cc1b9152",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-a9f5c48aa9b2103c",
+            "to": "intent:ini-7c721287ab21586f6f2c83bb31b8bd9b",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-01684da37f54a34b",
+            "to": "project:prj-ba68d70b",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-01684da37f54a34b",
+            "to": "intent:ini-676a42d486f9f4555ce323b7e195f1f7",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-9f9540cb4ed2fc45",
+            "to": "project:prj-26fe1cf3",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-9f9540cb4ed2fc45",
+            "to": "intent:ini-e9f61d06e835bba49549b55d97e13d3c",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-3875724b4204ed17",
+            "to": "project:prj-8ae06e46",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-3875724b4204ed17",
+            "to": "intent:ini-cbd62c5511c39bfbe29869490b12af73",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-bf6f04e305ccc028",
+            "to": "project:prj-5a22b401",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-bf6f04e305ccc028",
+            "to": "intent:ini-ef051e5d9bdbbde18c30d35f7ad61356",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-64ed05329a94d03f",
+            "to": "project:prj-675b0848",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-64ed05329a94d03f",
+            "to": "intent:ini-02886fee96bdc1565d2a8e2157632450",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-de477387da6c75e0",
+            "to": "project:prj-b229e95a",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-de477387da6c75e0",
+            "to": "intent:ini-557753d050148affb0c9d633e737f273",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-fe4b6b1d7296d6be",
+            "to": "project:prj-12be6547",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-fe4b6b1d7296d6be",
+            "to": "intent:ini-e6a004fbb28ab7ce49e561657cb2463d",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-0d592856709cf20a",
+            "to": "project:prj-06604e34",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-0d592856709cf20a",
+            "to": "intent:ini-6e58e215a759dc95e6b876fa4fa27577",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-f48c4962546f7d03",
+            "to": "project:prj-964c686b",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-f48c4962546f7d03",
+            "to": "intent:ini-071b15082449aadb417c4ba9529cf6a1",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-f4a1e49dddb77347",
+            "to": "project:prj-be96611d",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-f4a1e49dddb77347",
+            "to": "intent:ini-7ed26316633833b9a961fd5b7c902054",
+            "type": "about"
+          },
+          {
+            "from": "person:e5b837eed55a9e44",
+            "to": "agent:north",
+            "type": "talked_with"
+          },
+          {
+            "from": "convo:c-e00676f88f1f008f",
+            "to": "project:prj-a2ebe6b4",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-e00676f88f1f008f",
+            "to": "intent:ini-d0854ae10177dbdbbbe64806f1e7f477",
+            "type": "about"
+          },
+          {
+            "from": "convo:c-ab156442a59314cb",
+            "to": "table:gold_investment_report_holdings_monthly",
+            "type": "mentions"
+          }
+        ]
+      },
+      "ms": 676,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "\"conversation\"",
+          "\"edges\""
+        ]
+      },
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 10972,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:46:21+0800",
+      "trace_id": "tr-span-3ae73a59-21b8809b"
+    },
+    {
+      "bytes": 10510,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:46:16+0800",
+      "trace_id": "tr-span-3ae73a59-21b8809b"
+    },
+    {
+      "bytes": 10294,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:46:13+0800",
+      "trace_id": "tr-span-3ae73a59-21b8809b"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-3ae73a59-21b8809b",
+      "status": 200,
+      "runs": [
+        {
+          "id": "bb607eebed714c1995dd4de16db08313",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:46:23+00:00",
+          "elapsed_ms": 10875,
+          "steps": 6,
+          "tool_calls": 1,
+          "cost_usd": 0.002642,
+          "trace_id": "tr-span-3ae73a59-21b8809b",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-3ae73a59-21b8809b",
+          "at": "2026-10-10T02:46:23+00:00",
+          "run_id": "bb607eebed714c1995dd4de16db08313",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 10875,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3015,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2717,
+              "tokens_out": 18,
+              "cost_usd": 0.00086,
+              "nudged": "tool_required"
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 3702,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2758,
+              "tokens_out": 22,
+              "cost_usd": 0.000882
+            },
+            {
+              "kind": "tool",
+              "n": 2,
+              "tool": "list_tables",
+              "arg_keys": [
+                "layer",
+                "starts_with"
+              ],
+              "result_chars": 225,
+              "refused": false,
+              "reason": null,
+              "ms": 1422
+            },
+            {
+              "kind": "model",
+              "n": 3,
+              "ok": true,
+              "ms": 2734,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2851,
+              "tokens_out": 18,
+              "cost_usd": 0.0009
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.0026420000000000003,
+        "tokens": 8384
+      }
+    }
+  ]
+}

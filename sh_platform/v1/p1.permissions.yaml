@@ -1,0 +1,11 @@
+# Card P1: projects, artefacts, comments. Every seat reads and comments; the handler checks who answers and who resolves.
+routes:
+  GET /api/v1/projects: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/intents/{iid}/project: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/artefacts/{kind}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/artefacts/{kind}/export: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/comments/{cid}/answer: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/comments/{cid}/resolve: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

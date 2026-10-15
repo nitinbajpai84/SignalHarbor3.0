@@ -1,0 +1,39 @@
+{
+  "id": "TAL-07",
+  "agent": "tally",
+  "role": "participant",
+  "desc": "P18 breach caused by stale valuations - Cedarpoint Ventures 56.50% against 55%, over by 343,750, cause stale data.",
+  "status": "error",
+  "scores": [],
+  "error": "no case matching 'Cedarpoint|type=limit_breach' visible to participant",
+  "latency_ms": 65,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Cedarpoint|type=limit_breach}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "56.5",
+      "55",
+      "343750",
+      "12925000",
+      "22875000"
+    ],
+    "words_any": [
+      [
+        "stale",
+        "older than 90 days"
+      ]
+    ]
+  },
+  "turns": [],
+  "rows_seen": 0,
+  "egress": []
+}

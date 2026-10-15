@@ -1,0 +1,703 @@
+version: 1
+tabs:
+  sources:
+    sheet: 1 Sources
+    tab_color: 000E9AA7
+    title: '1 Sources: where the data comes from'
+    blurb: 'One row per source: a database, a file drop, an email, a document store, a manual workbook. Write descriptions only. Never type a password or a key here.'
+    freeze:
+      x: 2
+      y: 4
+    conditional_column: T
+    columns:
+    - letter: A
+      header: Source ID
+      guidance: S01, S02 ...
+      width: 11.0
+    - letter: B
+      header: Source name
+      guidance: What people call it
+      width: 26.0
+    - letter: C
+      header: Source type
+      guidance: Pick one
+      width: 26.0
+      validation: Lists!$A$2:$A$10
+    - letter: D
+      header: Structured or unstructured
+      guidance: Pick one
+      width: 18.0
+      validation: Lists!$B$2:$B$4
+    - letter: E
+      header: Where it lands or lives
+      guidance: Folder, mailbox, server, portal
+      width: 30.0
+    - letter: F
+      header: Data owner
+      guidance: A named person
+      width: 18.0
+    - letter: G
+      header: Connection method
+      guidance: How we would reach it
+      width: 26.0
+      validation: Lists!$C$2:$C$7
+    - letter: H
+      header: Connection details (no passwords)
+      guidance: Host, schema, path, address
+      width: 34.0
+    - letter: I
+      header: Secret reference (name only)
+      guidance: For example env:PORTAL_KEY. Never the secret itself
+      width: 26.0
+    - letter: J
+      header: Contains personal data?
+      guidance: Pick one
+      width: 16.0
+      validation: Lists!$D$2:$D$4
+    - letter: K
+      header: Who may see it
+      guidance: Names or roles
+      width: 24.0
+    - letter: L
+      header: How often it arrives
+      guidance: Pick one
+      width: 14.0
+      validation: Lists!$E$2:$E$7
+    - letter: M
+      header: Expected arrival time or SLA
+      guidance: For example by noon on working days
+      width: 28.0
+    - letter: N
+      header: Availability
+      guidance: Can we get to it?
+      width: 22.0
+      validation: Lists!$F$2:$F$5
+    - letter: O
+      header: Tentative date if not available now
+      guidance: A date, or leave blank
+      width: 20.0
+    - letter: P
+      header: Next step or project
+      guidance: System to onboard, program running, who is doing it
+      width: 34.0
+    - letter: Q
+      header: How sure are we
+      guidance: Stated, guessed or unknown
+      width: 24.0
+      validation: Lists!$G$2:$G$4
+    - letter: R
+      header: Confirmed by
+      guidance: Name
+      width: 16.0
+    - letter: S
+      header: Date confirmed
+      guidance: Date
+      width: 14.0
+    - letter: T
+      header: Complete?
+      guidance: Filled in for you
+      width: 18.0
+      formula: IF(A{r}="","",IF(COUNTBLANK(B{r}:D{r})+COUNTBLANK(F{r}:G{r})+COUNTBLANK(L{r})+COUNTBLANK(Q{r})=0,"Complete","Missing "&(COUNTBLANK(B{r}:D{r})+COUNTBLANK(F{r}:G{r})+COUNTBLANK(L{r})+COUNTBLANK(Q{r}))&"
+        required"))
+    - letter: U
+      header: Notes
+      guidance: Anything else
+      width: 36.0
+  tables:
+    sheet: 2 Tables
+    tab_color: 000E9AA7
+    title: '2 Tables: what arrives from each source'
+    blurb: One row per table, file or document type that comes from a source; one source can have many. Say which KPIs each one relates to. For a document (a contract, a notice), name the document type
+      here and say what to take out of it on tab 4.
+    freeze:
+      x: 2
+      y: 4
+    conditional_column: S
+    columns:
+    - letter: A
+      header: Item ID
+      guidance: T01, T02 ...
+      width: 11.0
+    - letter: B
+      header: Source ID
+      guidance: From tab 1
+      width: 11.0
+      validation: '''1 Sources''!$A$5:$A$204'
+    - letter: C
+      header: Kind
+      guidance: Pick one
+      width: 16.0
+      validation: Lists!$H$2:$H$5
+    - letter: D
+      header: Name of table, file or document type
+      guidance: As people know it
+      width: 32.0
+    - letter: E
+      header: Related KPIs
+      guidance: KPI IDs from tab 5, separated by commas. Write Unknown if you do not know
+      width: 30.0
+    - letter: F
+      header: What one row or record means
+      guidance: For example one row per account per day
+      width: 34.0
+    - letter: G
+      header: How often it arrives
+      guidance: Pick one
+      width: 14.0
+      validation: Lists!$E$2:$E$7
+    - letter: H
+      header: Expected arrival time or SLA
+      guidance: For example by noon
+      width: 24.0
+    - letter: I
+      header: Update pattern
+      guidance: Pick one
+      width: 16.0
+      validation: Lists!$I$2:$I$5
+    - letter: J
+      header: History available
+      guidance: For example 24 months
+      width: 18.0
+    - letter: K
+      header: Connection detail for this item
+      guidance: Schema, path, folder. No passwords
+      width: 32.0
+    - letter: L
+      header: Cut-off, exceptions or time bounds
+      guidance: For example not available on public holidays
+      width: 36.0
+    - letter: M
+      header: Availability
+      guidance: Can we get to it?
+      width: 22.0
+      validation: Lists!$F$2:$F$5
+    - letter: N
+      header: Tentative date if not available now
+      guidance: A date, or leave blank
+      width: 20.0
+    - letter: O
+      header: Next step or project
+      guidance: What is being done about it
+      width: 34.0
+    - letter: P
+      header: How sure are we
+      guidance: Stated, guessed or unknown
+      width: 24.0
+      validation: Lists!$G$2:$G$4
+    - letter: Q
+      header: Confirmed by
+      guidance: Name
+      width: 16.0
+    - letter: R
+      header: Date confirmed
+      guidance: Date
+      width: 14.0
+    - letter: S
+      header: Complete?
+      guidance: Filled in for you
+      width: 18.0
+      formula: IF(A{r}="","",IF(COUNTBLANK(B{r}:E{r})+COUNTBLANK(G{r})+COUNTBLANK(P{r})=0,"Complete","Missing "&(COUNTBLANK(B{r}:E{r})+COUNTBLANK(G{r})+COUNTBLANK(P{r}))&" required"))
+    - letter: T
+      header: Notes
+      guidance: Anything else
+      width: 36.0
+  fields:
+    sheet: 3 Fields
+    tab_color: 00B4642A
+    title: '3 Fields: what to track inside each table'
+    blurb: One row per field that matters, taken from a table on tab 2. Say which KPI it feeds, and write down any time bound or exception, so the later check for gaps can match it.
+    freeze:
+      x: 2
+      y: 4
+    conditional_column: S
+    columns:
+    - letter: A
+      header: Field ID
+      guidance: F001, F002 ...
+      width: 11.0
+    - letter: B
+      header: Item ID
+      guidance: From tab 2
+      width: 11.0
+      validation: '''2 Tables''!$A$5:$A$204'
+    - letter: C
+      header: Field name as in the source
+      guidance: Exactly as written there
+      width: 26.0
+    - letter: D
+      header: Business meaning
+      guidance: In your words
+      width: 34.0
+    - letter: E
+      header: Data type
+      guidance: Pick one
+      width: 14.0
+      validation: Lists!$J$2:$J$7
+    - letter: F
+      header: Format or unit
+      guidance: For example YYYY-MM-DD, SGD
+      width: 22.0
+    - letter: G
+      header: Allowed values or range
+      guidance: A list or a minimum and maximum
+      width: 28.0
+    - letter: H
+      header: Feeds KPI
+      guidance: KPI ID from tab 5. If a field feeds more than one KPI, add a row for each
+      width: 12.0
+      validation: '''5 KPIs''!$A$5:$A$204'
+    - letter: I
+      header: Role in the KPI
+      guidance: Pick one
+      width: 14.0
+      validation: Lists!$K$2:$K$7
+    - letter: J
+      header: Personal data class
+      guidance: Pick one
+      width: 24.0
+      validation: Lists!$L$2:$L$5
+    - letter: K
+      header: Required?
+      guidance: Pick one
+      width: 11.0
+      validation: Lists!$M$2:$M$3
+    - letter: L
+      header: Valid from
+      guidance: 'Time bound: start date'
+      width: 14.0
+    - letter: M
+      header: Valid to
+      guidance: 'Time bound: end date'
+      width: 14.0
+    - letter: N
+      header: Exception or special case
+      guidance: When it is wrong or missing
+      width: 36.0
+    - letter: O
+      header: How the exception is handled
+      guidance: What people do about it
+      width: 34.0
+    - letter: P
+      header: How sure are we
+      guidance: Stated, guessed or unknown
+      width: 24.0
+      validation: Lists!$G$2:$G$4
+    - letter: Q
+      header: Confirmed by
+      guidance: Name
+      width: 16.0
+    - letter: R
+      header: Date confirmed
+      guidance: Date
+      width: 14.0
+    - letter: S
+      header: Complete?
+      guidance: Filled in for you
+      width: 18.0
+      formula: IF(A{r}="","",IF(COUNTBLANK(B{r}:E{r})+COUNTBLANK(H{r})+COUNTBLANK(J{r})+COUNTBLANK(P{r})=0,"Complete","Missing "&(COUNTBLANK(B{r}:E{r})+COUNTBLANK(H{r})+COUNTBLANK(J{r})+COUNTBLANK(P{r}))&"
+        required"))
+    - letter: T
+      header: Notes
+      guidance: Anything else
+      width: 36.0
+  extractions:
+    sheet: 4 Extractions
+    tab_color: 00B4642A
+    title: '4 Extractions: what to take out of a document'
+    blurb: 'For unstructured data, such as a contract or a notice: the key things to read out of each document type listed on tab 2. These are what the later check for gaps will look for.'
+    freeze:
+      x: 2
+      y: 4
+    conditional_column: Q
+    columns:
+    - letter: A
+      header: Extract ID
+      guidance: X001, X002 ...
+      width: 11.0
+    - letter: B
+      header: Item ID (document type)
+      guidance: From tab 2
+      width: 14.0
+      validation: '''2 Tables''!$A$5:$A$204'
+    - letter: C
+      header: What to extract
+      guidance: For example due date, amount, counterparty
+      width: 32.0
+    - letter: D
+      header: Why it matters
+      guidance: The decision it supports
+      width: 34.0
+    - letter: E
+      header: Feeds KPI
+      guidance: KPI ID from tab 5
+      width: 12.0
+      validation: '''5 KPIs''!$A$5:$A$204'
+    - letter: F
+      header: Where in the document
+      guidance: For example first page, table of terms
+      width: 28.0
+    - letter: G
+      header: Expected format
+      guidance: For example a date, a number with currency
+      width: 28.0
+    - letter: H
+      header: Required?
+      guidance: Pick one
+      width: 11.0
+      validation: Lists!$M$2:$M$3
+    - letter: I
+      header: Personal data class
+      guidance: Pick one
+      width: 24.0
+      validation: Lists!$L$2:$L$5
+    - letter: J
+      header: Valid from
+      guidance: 'Time bound: start date'
+      width: 14.0
+    - letter: K
+      header: Valid to
+      guidance: 'Time bound: end date'
+      width: 14.0
+    - letter: L
+      header: Exception or special case
+      guidance: When it is missing or unclear
+      width: 36.0
+    - letter: M
+      header: How the exception is handled
+      guidance: What people do about it
+      width: 34.0
+    - letter: N
+      header: How sure are we
+      guidance: Stated, guessed or unknown
+      width: 24.0
+      validation: Lists!$G$2:$G$4
+    - letter: O
+      header: Confirmed by
+      guidance: Name
+      width: 16.0
+    - letter: P
+      header: Date confirmed
+      guidance: Date
+      width: 14.0
+    - letter: Q
+      header: Complete?
+      guidance: Filled in for you
+      width: 18.0
+      formula: IF(A{r}="","",IF(COUNTBLANK(B{r}:C{r})+COUNTBLANK(E{r})+COUNTBLANK(H{r}:I{r})+COUNTBLANK(N{r})=0,"Complete","Missing "&(COUNTBLANK(B{r}:C{r})+COUNTBLANK(E{r})+COUNTBLANK(H{r}:I{r})+COUNTBLANK(N{r}))&"
+        required"))
+    - letter: R
+      header: Notes
+      guidance: Anything else
+      width: 36.0
+  kpis:
+    sheet: 5 KPIs
+    tab_color: 00052A52
+    title: '5 KPIs: owners, tracking status and readiness'
+    blurb: One row per KPI from the signed charter. Each owner signs their own part. If a KPI cannot be tracked today, say when it might be and what is being done, and a sponsor accepts that it is unknown
+      for now.
+    freeze:
+      x: 2
+      y: 4
+    conditional_column: T
+    columns:
+    - letter: A
+      header: KPI ID
+      guidance: K01, K02 ...
+      width: 10.0
+    - letter: B
+      header: KPI name
+      guidance: From the charter
+      width: 28.0
+    - letter: C
+      header: Definition
+      guidance: What it means, in your words
+      width: 40.0
+    - letter: D
+      header: Priority
+      guidance: From the charter
+      width: 14.0
+      validation: Lists!$N$2:$N$5
+    - letter: E
+      header: Problem it serves
+      guidance: From the charter
+      width: 30.0
+    - letter: F
+      header: Business owner
+      guidance: A named person
+      width: 18.0
+    - letter: G
+      header: Data owner
+      guidance: A named person
+      width: 18.0
+    - letter: H
+      header: Process owner
+      guidance: A named person
+      width: 18.0
+    - letter: I
+      header: Tracking status
+      guidance: Pick one
+      width: 26.0
+      validation: Lists!$O$2:$O$5
+    - letter: J
+      header: Tentative date
+      guidance: When it could be tracked
+      width: 16.0
+    - letter: K
+      header: Next steps or project
+      guidance: Systems to onboard, programs running, who
+      width: 40.0
+    - letter: L
+      header: Unknown accepted by (sponsor)
+      guidance: A sponsor, if not tracked today
+      width: 24.0
+    - letter: M
+      header: Date accepted
+      guidance: Date
+      width: 14.0
+    - letter: N
+      header: Business owner signed
+      guidance: Date
+      width: 16.0
+    - letter: O
+      header: Data owner signed
+      guidance: Date
+      width: 16.0
+    - letter: P
+      header: Process owner signed
+      guidance: Date
+      width: 16.0
+    - letter: Q
+      header: Tables mapped
+      guidance: Counted for you from tab 2
+      width: 14.0
+      formula: IF(A{r}="","",COUNTIF('2 Tables'!$E$5:$E$204,"*"&A{r}&"*"))
+    - letter: R
+      header: Fields mapped
+      guidance: Counted for you from tab 3
+      width: 14.0
+      formula: IF(A{r}="","",COUNTIF('3 Fields'!$H$5:$H$204,A{r}))
+    - letter: S
+      header: Extractions mapped
+      guidance: Counted for you from tab 4
+      width: 16.0
+      formula: IF(A{r}="","",COUNTIF('4 Extractions'!$E$5:$E$204,A{r}))
+    - letter: T
+      header: Ready for module 3?
+      guidance: Filled in for you
+      width: 20.0
+      formula: IF(A{r}="","",IF(AND(F{r}<>"",G{r}<>"",H{r}<>"",I{r}<>"",N{r}<>"",O{r}<>"",P{r}<>"",OR(I{r}="Tracked today",I{r}="Can be tracked now",AND(K{r}<>"",L{r}<>""))),"Ready","Not ready"))
+    - letter: U
+      header: Notes
+      guidance: Anything else
+      width: 36.0
+    - letter: V
+      header: Quality rules (proposed by Lens)
+      guidance: From the scan of the data; a proposal beside what was signed
+      width: 60.0
+read_me:
+  tab_color: 00052A52
+  widths:
+  - 24
+  - 120
+  rows:
+  - row: 1
+    a: 'Signal Harbor: data catalogue template'
+    b: null
+  - row: 3
+    a: What this is
+    b: The output of module 2 (Baseline). It describes where the data for each KPI comes from, so module 3 can check what exists against what the KPIs need.
+  - row: 4
+    a: What it is not
+    b: It holds descriptions only. Never put client data, personal data, passwords or keys in this file.
+  - row: 5
+    a: Order of work
+    b: Start from the signed charter. Fill tab 5 (KPIs) first, then tab 1 (Sources), then tab 2 (Tables), then tab 3 (Fields) or tab 4 (Extractions).
+  - row: 6
+    a: Tab 1 Sources
+    b: 'Where data comes from: database, file drop, email, document store, manual workbook. Includes how we would connect, who owns it, and when it arrives.'
+  - row: 7
+    a: Tab 2 Tables
+    b: The tables, files or document types each source provides (one source can have many), the KPIs each relates to, arrival time, SLA, cut-offs and connection detail.
+  - row: 8
+    a: Tab 3 Fields
+    b: The fields to track inside each table, which KPI each feeds, and any time bound or exception.
+  - row: 9
+    a: Tab 4 Extractions
+    b: 'For documents: the key things to read out of each document type, with the same time bounds and exceptions.'
+  - row: 10
+    a: Tab 5 KPIs
+    b: Owners, tracking status, signatures, how many tables, fields and extractions are mapped to the KPI, and whether it is ready for module 3.
+  - row: 11
+    a: The mapping
+    b: Source > table > field, and each table and field points to the KPI it serves. Tab 5 counts them, so a KPI with nothing mapped is visible straight away.
+  - row: 12
+    a: How sure are we
+    b: 'Every row says: Stated by a named person, Guessed, or Unknown. A guess is fine. A blank that looks complete is not.'
+  - row: 13
+    a: Not tracked today
+    b: If a KPI cannot be tracked now, set its tracking status, give a tentative date if there is one, name the next step or project, and have a sponsor accept it as unknown for now.
+  - row: 14
+    a: Example rows
+    b: The blank template carries two invented example rows on each tab. This file has none; every row comes from the baseline.
+  - row: 15
+    a: Dropdowns
+    b: Cells with a small arrow offer a list. You can type another value; you will get a warning, not a block.
+  - row: 16
+    a: Complete? and Ready?
+    b: These columns fill themselves in. They only count the required columns.
+  - row: 18
+    a: Version
+    b: Template v1, 3 October 2026. Draft for discussion; the columns may change after review.
+lists:
+  tab_color: 006A7179
+  width: 28
+  columns:
+    SourceType:
+    - 'Database: Postgres'
+    - 'Database: other'
+    - Data warehouse
+    - 'File drop: CSV or Excel'
+    - Email with attachment
+    - 'Document store: unstructured'
+    - Third-party portal or API
+    - Manual workbook (Excel)
+    - Other
+    Structure:
+    - Structured
+    - Unstructured
+    - Both
+    ConnectionMethod:
+    - Direct database connection
+    - Scheduled file drop
+    - File uploaded by the owner
+    - Email forwarded to us
+    - API
+    - Manual, not yet decided
+    YesNoNotSure:
+    - 'Yes'
+    - 'No'
+    - Not sure
+    Frequency:
+    - Real time
+    - Daily
+    - Weekly
+    - Monthly
+    - Quarterly
+    - Ad hoc
+    Availability:
+    - Available now
+    - Can be made available
+    - Planned
+    - Not available
+    Provenance:
+    - Stated by a named person
+    - Guessed
+    - Unknown
+    Kind:
+    - Table
+    - File
+    - Document type
+    - Email type
+    UpdatePattern:
+    - Full replace
+    - Append only
+    - Changes only
+    - Not sure
+    DataType:
+    - Text
+    - Number
+    - Date
+    - Date and time
+    - Yes or No
+    - Other
+    FieldRole:
+    - Measure
+    - Dimension
+    - Date
+    - Key
+    - Filter
+    - Other
+    PersonalClass:
+    - Personal data
+    - Sensitive to the business
+    - Neither
+    - Not sure
+    Required:
+    - 'Yes'
+    - 'No'
+    Priority:
+    - Must
+    - Should
+    - Could
+    - Not this time
+    TrackingStatus:
+    - Tracked today
+    - Can be tracked now
+    - Will be tracked in future
+    - Cannot be tracked
+
+# ---- Everything below is M2-P04's own; the sections above are read from the template, not typed.
+# The shape of catalogue.json is in SHARED.md. This file is the template's layout (tabs, columns, guidance, dropdown
+# lists and formulas) plus the rules that fill and guard it. Descriptions only; never data.
+ids:                     # stable ids, assigned once and never reused (M2-16)
+  sources: {prefix: S, width: 2}
+  tables: {prefix: T, width: 2}
+  fields: {prefix: F, width: 3}
+  extractions: {prefix: X, width: 3}    # the template numbers these X001, X002
+quality_rules:          # IC-0d: data-quality facts module 3's scan found, a proposal beside a measure's signed entry (never an edit of it)
+  file: quality_rules.json   # intents/m2_baseline/<baseline_id>/quality_rules.json = {rules: {kpi_id: [rule]}}; written by module 3, read here
+  header: Quality rules (proposed by Lens)   # the KPI tab column that carries them: a cell {value: [text, ...], rules: [rule, ...], by: Lens, mark: guessed}
+  rule:                  # one rule
+    id: text             # stable per source, kind and column, so a scan again replaces the same rule
+    source_id: text      # the catalogue Source ID it came from; null for a rule that belongs to no source (a missing benchmark). Who may see that source may see the rule
+    kind: fill_rate | period_gap | missing_field | missing_benchmark
+    column: text         # the column or field it is about
+    text: text           # plain words
+    figure: object       # the number found, e.g. {fill, empty, of} or {data_to, period_to}
+    state: proposal | edited   # Lens writes proposal; a person's edit is never replaced by a scan again
+    by: text             # Lens, or the person who edited it
+    provenance: {from: text, at: text}   # the scan of that file, and when
+export:
+  last_row: 204          # the template's formulas and dropdowns run to this row
+provenance_columns:      # filled from each row's provenance when read or exported, never typed
+  how_sure: How sure are we
+  by: Confirmed by
+  at: Date confirmed
+how_sure_words: {stated: Stated by a named person, guessed: Guessed, unknown: Unknown}
+from_words:              # the "from" a cell carries, so a rebuild knows what a person already settled
+  edited: edited in the catalogue
+  settled: settled by a named person
+  conflict: two owners answered differently
+mapping:                 # kpis.json and answers.json words, to the template's dropdown words
+  tracking: {tracked_now: Tracked today, partly: Will be tracked in future, not_tracked: Cannot be tracked}
+  tracking_if_could_track: Can be tracked now
+  structure: {structured: Structured, unstructured: Unstructured, both: Both}
+  personal: {"yes": "Yes", "no": "No", not_sure: Not sure}
+  kind:                  # the questionnaire's kind of system, to the template's Source type words
+    excel: Manual workbook (Excel)
+    email: Email with attachment
+    database: "Database: other"
+    file_drop: "File drop: CSV or Excel"
+    portal: Third-party portal or API
+    api: Third-party portal or API
+    document_store: "Document store: unstructured"
+    other: Other
+  connection:            # only answers that ARE a dropdown word; "I download it" and "Typed in by hand" stay the owner's own words
+    email_forward: Email forwarded to us
+    api: API
+    file_drop: Scheduled file drop
+    database: Direct database connection
+  table_kind: {email: Email type, document: Document type, file: File, table: Table}
+governance:              # M2-05: only these answers are open; "Not sure", blank and anything unknown count as personal until someone confirms
+  open_yes_no: ["No"]
+  open_classes: [Neither]
+conflict_cells:          # a key of a `sources` row of an answer (an old single answer reads as one row), to the cell two owners can disagree about, found by system
+  - {row_key: structure, column: Structured or unstructured}
+  - {row_key: frequency, column: How often it arrives}
+  - {row_key: sla, column: Expected arrival time or SLA}
+  - {row_key: connection, column: Connection method}
+column_words:            # words a column name and a KPI may use for one thing (generic, not an industry's): used to suggest which KPI a column feeds
+  - [pay, salary, bonus, compensation, wage, payroll, remuneration]
+  - [return, performance, alpha]
+  - [benchmark, index]
+

@@ -1,0 +1,24 @@
+# M3-P01 source map scoring. Weights are shares of 1.0 inside each axis; score = 2 * (weighted share) - 1, so the line sits at zero (D-036).
+impact:
+  weights: {priority: 0.5, breadth: 0.15, pain_points: 0.15, future_signals: 0.1, levers: 0.1}
+  priority_points: {Must: 1.0, Should: 0.6, Could: 0.3, "Not this time": 0.0}
+  full_at: {breadth: 3, pain_points: 3, future_signals: 2, levers: 2}   # how many linked items give the factor its full weight
+readiness:
+  weights: {connection: 0.2, owner: 0.2, sample: 0.15, structure: 0.1, personal: 0.15, arrival: 0.1, agreed: 0.1}
+  structure_points: {structured: 1.0, both: 0.6, unstructured: 0.2, unknown: 0.0}
+raises_at: 0.5          # a factor at or above this share is said to raise the score, below it to lower it
+source_kind:            # prefix of the catalogue's "Source type" -> kind
+  - {starts: "Manual workbook", kind: spreadsheet}
+  - {starts: "File drop", kind: spreadsheet}
+  - {starts: "Email", kind: email}
+  - {starts: "Third-party", kind: outside feed}
+  - {starts: "Database", kind: system}
+  - {starts: "Data warehouse", kind: system}
+  - {starts: "Document store", kind: system}
+default_kind: system
+effort:                 # kind -> effort when structured; unstructured or both is one step larger (capped at large)
+  spreadsheet: small
+  email: medium
+  "outside feed": medium
+  system: medium
+effort_order: [small, medium, large]

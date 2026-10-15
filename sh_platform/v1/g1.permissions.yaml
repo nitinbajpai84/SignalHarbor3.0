@@ -1,0 +1,10 @@
+# Card G1: project folder and project-level access. Every seat may ask; the handlers decide with g1_access.may_see_project.
+routes:
+  GET /api/v1/projects/{pid}/access: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PUT /api/v1/projects/{pid}/access: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/access/request: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/access/grants: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  DELETE /api/v1/projects/{pid}/access/grants/{account_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/access/answer/{request_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/projects/{pid}/files: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/projects/{pid}/files: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

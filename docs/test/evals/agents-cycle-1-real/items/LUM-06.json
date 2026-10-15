@@ -1,0 +1,215 @@
+{
+  "id": "LUM-06",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "Follow-up \"make it dots\" edits the last tile (mark becomes point).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "follow_up_edit",
+      "passed": true,
+      "detail": "tile edited as asked"
+    },
+    {
+      "name": "latency_ms",
+      "passed": true,
+      "detail": "28753 ms",
+      "value": 28753
+    }
+  ],
+  "error": null,
+  "latency_ms": 28753,
+  "cost": {
+    "calls": 7,
+    "tokens": 35764,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 7,
+  "egress_blocked": 0,
+  "mode": "real",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "status": 200,
+    "edit": {
+      "mark": "point"
+    }
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by month"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I have proposed one tile, Net worth by month (USD). It is waiting for you: accept it or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-68e50d",
+            "title": "Net worth by month (USD)",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "line",
+                "point": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "Proposed by fixed rules.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "line",
+              "period": "month",
+              "table": "gold_investment_report_holdings_monthly"
+            }
+          }
+        ],
+        "dashboard_id": "dash-dc1f84bf",
+        "remembered": []
+      },
+      "ms": 12917,
+      "expect": null,
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "make it dots"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I changed 'Net worth by month (USD)': shown as dots. This is a new version waiting for you; accept it to replace the old one, or choose Not this.",
+        "proposals": [
+          {
+            "id": "t-d78b9c",
+            "title": "Net worth USD per month",
+            "kpi": "net_worth_usd",
+            "sql": "select date_trunc('month', \"report_month\") as \"report_month\", sum(\"net_worth_usd\") as \"net_worth_usd\" from \"gold_investment_report_holdings_monthly\" group by 1 order by 1",
+            "spec": {
+              "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+              "mark": {
+                "type": "point",
+                "filled": true
+              },
+              "encoding": {
+                "x": {
+                  "field": "report_month",
+                  "type": "temporal"
+                },
+                "y": {
+                  "field": "net_worth_usd",
+                  "type": "quantitative"
+                }
+              }
+            },
+            "note": "A new version of 'Net worth by month (USD)': shown as dots.",
+            "state": "proposed",
+            "recipe": {
+              "fig": "net_worth_usd",
+              "when": "report_month",
+              "split": null,
+              "kind": "point",
+              "period": "month",
+              "table": "gold_investment_report_holdings_monthly"
+            }
+          }
+        ],
+        "dashboard_id": "dash-dc1f84bf",
+        "edited": true,
+        "remembered": []
+      },
+      "ms": 15835,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 1612,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m1_intent",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:29+0800"
+    },
+    {
+      "bytes": 13420,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:26+0800"
+    },
+    {
+      "bytes": 13008,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:22+0800"
+    },
+    {
+      "bytes": 12477,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:17+0800"
+    },
+    {
+      "bytes": 14411,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:13+0800"
+    },
+    {
+      "bytes": 13921,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:09+0800"
+    },
+    {
+      "bytes": 12260,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "",
+      "time": "2026-10-10T01:28:04+0800"
+    }
+  ]
+}

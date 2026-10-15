@@ -1,0 +1,179 @@
+# ILLUSTRATIVE: invented for demonstration. Read by tools/seed_demo_journey.py; see README.md in this folder.
+# Every name is from the demo company's own illustrative people list. Every fact follows ../demo_story/. No real client data.
+
+cast:
+  organiser: Janet Shaw          # company admin: runs the walls, drafts and names the roles
+  sponsor: Daniel Kerr           # signs the charter, the baseline and the plan first
+  head_of_data: Marcus Todd      # architect, steward of the map, signs the blueprint (no account: the profile marks him head of data)
+  tester: Marcus Todd            # the head of data is also the named tester; he uses the analyst account
+  ops: Harvey Rowley             # runs the files every day
+  developer: null               # the people list names no data engineer: left for the organiser to name, never made up
+  governance: Grace Ward        # the approver: confirms classification and who may see
+
+walls:
+  - key: treasury
+    topic: "Treasury: capital calls"
+    purpose: Find what stops Treasury funding capital calls with time to spare
+    outcome: A signed charter for the capital-call problems
+    seats: 8
+    close: true
+    people:                      # seat order; a person with an account takes the seat as that account
+      - {name: Janet Shaw, role: Head of Strategy and Operations}
+      - {name: Daniel Kerr, role: Chief Investment Officer}
+      - {name: Ethan Ng, role: Treasurer}
+      - {name: Harvey Rowley, role: Fund Operations Manager}
+      - {name: Aaron Lyle, role: Risk Analyst}
+      - {name: Katie Menon, role: Investment Analyst}
+      - {name: Priya Nair, role: Finance Controller}
+      - {name: Vivian Chua, role: HR Lead}
+    clusters:
+      - {key: notice, name: Call notices reach Treasury too late}
+      - {key: fx, name: Funding a call in time}
+      - {key: view, name: One view of commitments and headroom}
+      - {key: watch, name: What to watch before the next calls}
+      - {key: levers, name: Levers on the funding position}
+    split: {from: fx, key: release, name: Releasing the payment without the call schedule}
+    votes:                       # one vote per seat, in seat order
+      notice: [must, must, must, must, should, must, must, should]
+      fx: [must, must, must, should, must, should, must, could]
+      release: [should, must, should, should, could, should, must, should]
+      view: [must, must, must, must, must, should, must, must]
+      watch: [should, should, must, could, should, should, could, should]
+      levers: [should, must, should, could, must, could, should, could]
+    shelves: {levers: good_to_have}
+    so_that:
+      notice: So that every call notice is logged the day it arrives and Treasury hears the same day, with at least five working days to fund.
+      fx: So that USD for a call is bought with a day to spare, not on the morning the payment is due.
+      release: So that whoever releases a payment can see the call schedule and every call is released one working day before its due date.
+      view: So that the committee sees unfunded commitments, known calls and the six-month headroom against the reserve in one place.
+      watch: So that we see a cluster of calls coming before it squeezes the reserve.
+      levers: So that we know what each lever (reserve, money-market timing, an FX line) does to headroom before we pull it.
+    cards:
+      # lane: tracking (we intend to do now) | missing (hurts today) | watch (keep an eye on) | levers (we change)
+      - {by: Ethan Ng, lane: missing, cluster: notice, q1: "We find out about a capital call a week before it is due, sometimes less.", q2: "Treasury, every call; 34 notices last year, median five working days left when the email lands.", q3: "Not tracked. The notice is an email in the calls mailbox; the tracker gets it later."}
+      - {by: Harvey Rowley, lane: missing, cluster: notice, q1: "A notice sits in the calls mailbox two working days before it is logged.", q2: "Fund Operations and Treasury; median two days, eleven of 34 took three or more.", q3: "The capital-call tracker has a notice date and a logged date, typed by hand."}
+      - {by: Harvey Rowley, lane: missing, cluster: notice, q1: "Some managers still write to a contact who left, so the notice comes twice or late.", q2: "The September Harborview IV notice first went to an old address; the resend came a week later.", q3: "Nothing records which address a notice was sent to."}
+      - {by: Aaron Lyle, anonymous: true, lane: missing, cluster: notice, q1: "When the mailbox owner is away nobody reads the calls mailbox.", q2: "Every holiday; there is no named deputy.", q3: "Not tracked."}
+      - {by: Daniel Kerr, lane: tracking, cluster: notice, q1: "Log every call notice the day it arrives and tell Treasury in writing.", q2: "Investments and Treasury; the procedure says one working day, practice is two.", q3: "The tracker, if the logged date were kept.", q4: "Working days from mailbox receipt to logged date, per notice."}
+      - {by: Katie Menon, anonymous: true, lane: missing, cluster: notice, q1: "Notices are dated earlier than the email that carries them, so the ten days are already gone.", q2: "Several managers; it eats the notice period before we see it.", q3: "The notice PDF has its own date; the email has another."}
+      - {by: Ethan Ng, lane: missing, cluster: fx, q1: "If the FX deal had slipped a day we would have paid interest on the Harborview call.", q2: "USD 1.5 million on 15 September; USD settles T+2, so we bought on the Friday for the Tuesday.", q3: "The FX deal ticket and the bank file.", q4: "Due date minus FX settlement date, in working days, per USD call."}
+      - {by: Ethan Ng, lane: missing, cluster: fx, q1: "Money-market redemptions need a working day; we often ask for them the day before.", q2: "Treasury, most calls.", q3: "The treasury cash plan, by hand."}
+      - {by: Priya Nair, lane: missing, cluster: fx, q1: "Finance releases on the due date itself, just before the 15:00 cut-off.", q2: "Finance and Treasury; the procedure says one working day early.", q3: "Release time is in the custody portal, not in the tracker."}
+      - {by: Ethan Ng, anonymous: true, lane: missing, cluster: fx, q1: "Nobody can say how much cash is free once the reserve is held back.", q2: "Treasury and Investments; the SGD 5 million reserve is a threshold, not a payment.", q3: "The treasury cash plan has it, as of whenever it was last updated."}
+      - {by: Vivian Chua, lane: missing, cluster: fx, sealed: true, q1: "The funding-discipline share of the bonus is scored in the pay workbook from a late-call count nobody checks.", q2: "HR and the investment team, once a quarter; it is a fifth of the pool.", q3: "Pay workbook, typed from an email.", q4: "Count of calls paid after the release deadline, per quarter."}
+      - {by: Vivian Chua, anonymous: true, lane: missing, cluster: fx, sealed: true, q1: "Treasury's line in the pay workbook still uses last year's call count.", q2: "HR, each bonus round.", q3: "Pay workbook."}
+      - {by: Priya Nair, lane: missing, cluster: fx, split: true, q1: "Whoever releases a payment cannot see the call schedule.", q2: "Finance, on every call; the release officer finds out from the request itself.", q3: "The tracker is not shared with Finance."}
+      - {by: Harvey Rowley, lane: missing, cluster: fx, split: true, q1: "Corrected notices are marked superseded by typing, sometimes not at all.", q2: "Known obligations can be counted twice.", q3: "Tracker, a free-text column."}
+      - {by: Priya Nair, anonymous: true, lane: tracking, cluster: fx, split: true, q1: "Release every call one working day before it is due, co-signed, with the schedule in front of us.", q2: "Finance and Treasury.", q3: "Custody portal release log."}
+      - {by: Daniel Kerr, lane: tracking, cluster: view, q1: "One view of unfunded commitments, calls known and headroom for six months.", q2: "The committee every month; today it is built by hand for the pack.", q3: "Tracker, cash plan and the administrator's statements.", q4: "Minimum of six month-end headrooms after known obligations and the reserve."}
+      - {by: Katie Menon, lane: tracking, cluster: view, q1: "Know the unfunded commitment per fund without opening three files.", q2: "Investments; USD 29 million unfunded across seven commitments.", q3: "Commitment schedule in the tracker, distributions tab for recallables."}
+      - {by: Aaron Lyle, lane: tracking, cluster: view, q1: "See known obligations by month, in SGD, with the FX basis written down.", q2: "Risk and Treasury, monthly.", q3: "Tracker plus the month-end rate.", q4: "Sum of unpaid current notices due in the month, converted at the approved rate."}
+      - {by: Harvey Rowley, anonymous: true, lane: tracking, cluster: view, q1: "Stop building the funding page by hand every month.", q2: "Fund Operations and Treasury, about three hours a pack.", q3: "Not logged."}
+      - {by: Janet Shaw, lane: tracking, cluster: view, q1: "Know how long the committee pack really takes us to prepare.", q2: "Everyone who touches the pack; the estimate is 38 hours.", q3: "Nobody logs the hours."}
+      - {by: Ethan Ng, lane: watch, cluster: watch, q1: "Watch the call calendar of the private funds for clusters in the same month.", q2: "Treasury; two calls in one week would breach the reserve.", q3: "Manager notices and the vintage pacing in the manager list."}
+      - {by: Aaron Lyle, lane: watch, cluster: watch, q1: "Watch USD rates and the cost of carrying a standing FX line.", q2: "Risk and Treasury.", q3: "Outside: the bank's daily rates."}
+      - {by: Daniel Kerr, anonymous: true, lane: watch, cluster: watch, q1: "Watch the stress case: what if two funds call their maximum in one quarter?", q2: "Treasury, quarterly.", q3: "The stress tab in the cash plan."}
+      - {by: Katie Menon, lane: watch, cluster: watch, q1: "Watch how stale the private valuations are when we plan headroom.", q2: "Investments; statements come 30 to 60 days after quarter end.", q3: "Administrator statements."}
+      - {by: Daniel Kerr, lane: watch, cluster: watch, q1: "Watch the private-market share as calls are paid.", q2: "Investments and the committee.", q3: "Exposure workbook."}
+      - {by: Ethan Ng, lane: levers, cluster: levers, q1: "The size of the SGD 5 million reserve.", q2: "Treasury and the committee.", q3: "Investment policy.", q4: "Moves the six-month headroom one for one."}
+      - {by: Janet Shaw, anonymous: true, lane: levers, cluster: levers, q1: "When we redeem money-market funds ahead of a call.", q2: "Treasury.", q3: "Cash plan."}
+      - {by: Priya Nair, lane: levers, cluster: levers, q1: "A standing FX line so USD is there before the notice.", q2: "Finance and Treasury.", q3: "Bank facility letter.", q4: "Moves the FX settlement days per call."}
+      - {by: Harvey Rowley, lane: levers, cluster: levers, q1: "Name a deputy for the calls mailbox.", q2: "Fund Operations.", q3: "Org chart.", q4: "Moves the days from receipt to logging."}
+      - {by: Aaron Lyle, anonymous: true, lane: levers, cluster: levers, q1: "Ask managers to send notices to one shared address only.", q2: "Every manager, at the next side letter.", q3: "Manager list contact column."}
+
+  - key: performance
+    topic: "Performance: manager benchmarks"
+    purpose: Agree how we know whether our managers beat their benchmarks
+    outcome: A charter for performance against benchmark
+    seats: 8
+    close: false                 # left open in the private rooms: a live invite on the pulse
+    people:
+      - {name: Daniel Kerr, role: Chief Investment Officer}
+      - {name: Aaron Lyle, role: Risk Analyst}
+      - {name: Katie Menon, role: Investment Analyst}
+      - {name: Samuel Ong, role: "Portfolio Manager, Public Markets"}
+    cards:
+      - {by: Daniel Kerr, lane: tracking, q1: "Are our managers beating their benchmarks? I only find out in Excel, months late.", q2: "Investments and the committee, every quarter.", q3: "The performance workbook."}
+      - {by: Samuel Ong, lane: missing, q1: "The benchmark for a fund is picked in three places and they disagree.", q2: "Public funds; one switch would turn ahead into behind.", q3: "Workbook, slide and the manager's own report."}
+      - {by: Katie Menon, lane: missing, q1: "Index levels are pasted by hand and nobody knows which day's close was used.", q2: "Every quarter.", q3: "A vendor download kept on a desktop."}
+      - {by: Katie Menon, anonymous: true, lane: missing, q1: "Return has three versions and they do not compare.", q2: "Time-weighted, IRR and a simple change in value.", q3: "Workbook tabs."}
+      - {by: Aaron Lyle, lane: tracking, q1: "Know which holdings have no benchmark at all.", q2: "Five of eight holdings have none.", q3: "Exposure workbook plus the benchmark list."}
+      - {by: Katie Menon, lane: watch, q1: "Watch private statements that arrive a quarter late.", q2: "Private funds; 30 to 60 days after quarter end.", q3: "Statements as PDF attachments."}
+      - {by: Samuel Ong, anonymous: true, lane: watch, q1: "Watch the young growth fund's curve before calling it behind.", q2: "One private fund, early years.", q3: "Manager statements."}
+      - {by: Samuel Ong, lane: levers, q1: "Choosing the benchmark is a lever: write the rule down once.", q2: "Investments.", q3: "Nobody owns it today."}
+      - {by: Daniel Kerr, lane: levers, q1: "How many periods behind counts as lagging.", q2: "The committee.", q3: "No rule agreed."}
+
+# The signed baseline: twelve measures (the pack's codes that have demo gold tables). Names and business definitions are read from
+# ../kpi_tree.yaml. Owners are people from the people list. Two are restricted to a named list. `team` resolves it (the business
+# owner's team in the people list) by ISO week `week` of 2026 (a demo choice, stated by the sponsor).
+measures:
+  - {code: K01, team: Treasury, week: 44, problems: [view, fx], owners: [Ethan Ng, Harvey Rowley, Ethan Ng], tables: [T06], calc: "For each of the next six month ends: opening cash plus approved inflows minus known obligations minus proposed funding minus the reserve; take the minimum.", grain: one row per month end, period: monthly, tracked: partly}
+  - {code: K02, team: Investments, week: 46, problems: [view], owners: [Daniel Kerr, Harvey Rowley, Jun Wei Chia], tables: [T02, T08], calc: "Carrying value of holdings with an approved statement or custody record divided by all included carrying value.", grain: one row per reporting date, period: monthly, tracked: not_tracked}
+  - {code: K03, team: Strategy and Operations, week: 48, problems: [view], owners: [Janet Shaw, Janet Shaw, Janet Shaw], tables: [T07], calc: "Sum of the hours each person logs against the pack, from collecting inputs to issue.", grain: one row per meeting pack, period: monthly, tracked: not_tracked}
+  - {code: K04, team: Investments, week: 44, problems: [notice, view], owners: [Daniel Kerr, Harvey Rowley, Harvey Rowley], tables: [T03], calc: "Sum of amt where status is open and notice_ref is not replaced by a later notice, by due month, in SGD at the month-end rate.", grain: one row per due month, period: monthly, tracked: tracked_now}
+  - {code: K05, team: Investments, week: 45, problems: [view], owners: [Daniel Kerr, Harvey Rowley, Harvey Rowley], tables: [T08], calc: "Opening unfunded plus approved commitment changes plus recallable distributions minus funded calls, per vehicle.", grain: one row per vehicle per month, period: monthly, tracked: partly}
+  - {code: K06, team: Treasury, week: 45, problems: [fx], owners: [Ethan Ng, Priya Nair, Ethan Ng], may_see: [Daniel Kerr, Ethan Ng, Janet Shaw, Priya Nair, Marcus Todd], tables: [T06], calc: "Scenario-only call outflows over six months beyond known obligations, with their month.", grain: one row per month, period: monthly, tracked: partly}
+  - {code: K09, team: Investments, week: 47, problems: [watch], owners: [Daniel Kerr, Aaron Lyle, Aaron Lyle], tables: [T05], calc: "Largest single-issuer Exposure Value (SGD) divided by included asset value.", grain: one row per reporting date, period: monthly, tracked: tracked_now}
+  - {code: K10, team: Investments, week: 47, problems: [watch], owners: [Daniel Kerr, Aaron Lyle, Aaron Lyle], tables: [T01], calc: "Closing Value (SGD) of private equity and venture rows divided by all included Closing Value (SGD).", grain: one row per reporting date, period: monthly, tracked: tracked_now}
+  - {code: K12, team: Investments, week: 46, problems: [view], owners: [Daniel Kerr, Harvey Rowley, Harvey Rowley], tables: [T02], calc: "Mkt Value of positions whose Val Date is older than the asset-class threshold divided by all Mkt Value.", grain: one row per reporting date, period: monthly, tracked: partly}
+  - {code: K15, team: Investments, week: 49, problems: [], owners: [Daniel Kerr, Marcus Todd, Jun Wei Chia], tables: [T01], calc: "Net-of-fee period return per manager from Opening Value, Closing Value, Net Flows and Fees Charged, set beside the agreed benchmark.", grain: one row per manager per month, period: monthly, tracked: partly}
+  - {code: K16, team: Investments, week: 49, problems: [], owners: [Daniel Kerr, Marcus Todd, Jun Wei Chia], may_see: [Daniel Kerr, Marcus Todd, Janet Shaw, Jun Wei Chia], tables: [T01, T04], calc: "Period Return % of the fund minus the change in the agreed index Level over the same dates.", grain: one row per manager per month, period: monthly, tracked: partly}
+  - {code: K17, team: Investments, week: 50, problems: [], owners: [Daniel Kerr, Nadia Hassan, Aaron Lyle], tables: [T05], calc: "Exposure Value (SGD) of holdings with an agreed benchmark divided by all included Exposure Value (SGD).", grain: one row per reporting date, period: monthly, tracked: not_tracked}
+
+# The catalogue the measures point at. S01 to S05 are the module 3 demo files (../demo_module3/), with the columns as the office writes them.
+catalogue:
+  sources:
+    - {key: S01, name: Performance workbook, file: performance_workbook.xlsx, owner: Jun Wei Chia, kind: Spreadsheet, arrives: Monthly}
+    - {key: S02, name: Custodian daily file, file: custody_daily_positions.csv, owner: Harvey Rowley, kind: File drop, arrives: Daily}
+    - {key: S03, name: Capital-calls mailbox, file: capital_calls_export.json, owner: Harvey Rowley, kind: Email, arrives: As notices come}
+    - {key: S04, name: Index provider feed, file: index_levels.csv, owner: Marcus Todd, kind: API, arrives: Daily}
+    - {key: S05, name: Exposure workbook, file: exposure_workbook.csv, owner: Aaron Lyle, kind: Spreadsheet, arrives: Monthly}
+    - {key: S06, name: Treasury cash plan, owner: Ethan Ng, kind: Spreadsheet, arrives: Weekly}
+    - {key: S07, name: Committee pack effort log, owner: Janet Shaw, kind: Spreadsheet, arrives: Monthly}
+    - {key: S08, name: Fund administrator statements, owner: Harvey Rowley, kind: File drop, arrives: Monthly}
+  tables:
+    T01: {source: S01, name: Performance workbook table, fields: [[Fund / Manager, "K10, K15"], [Asset Cls, K10], [Opening Value (SGD), K15], [Closing Value (SGD), "K10, K15"], [Net Flows, K15], [Fees Charged, K15], [Period Return %, K16]]}
+    T02: {source: S02, name: Custodian positions, fields: [[Val Date, "K02, K12"], [Acct, K12], [Security, K12], [Mkt Value, "K02, K12"]]}
+    T03: {source: S03, name: Call notices, fields: [[notice_ref, K04], [amt, K04], [status, K04], [replaces, K04]]}
+    T04: {source: S04, name: Index levels, fields: [[Date, K16], [Index, K16], [Level, K16]]}
+    T05: {source: S05, name: Exposure by issuer, fields: [[Issuer, "K09, K17"], [Exposure Value (SGD), "K09, K17"]]}
+    T06: {source: S06, name: Cash plan by month, fields: [[Month end, "K01, K06"], [Opening cash, K01], [Known obligations, K01], [Scenario calls, K06]]}
+    T07: {source: S07, name: Pack hours, fields: [[Pack date, K03], [Person, K03], [Hours, K03]]}
+    T08: {source: S08, name: Statements by vehicle, fields: [[Vehicle, "K02, K05"], [Unfunded commitment, K05], [Statement date, K02]]}
+
+benchmarks_file: benchmarks_monthly_pack.csv     # the reported figures the trial compares with (../demo_module3/)
+plan_reason: The office takes all twelve into the first build band; the trial gaps are known risks, accepted with their owners.
+
+environment:                   # the five stated answers of the build centre's environment check, by the head of data
+  warehouse_location: Inside this company's plane, on this machine
+  warehouse_today: None; the pack is built in spreadsheets
+  scheduler: None today; the built-in runner
+  arrival: A shared landing folder; the custodian file daily by 12:00, the administrator report by working day 8
+  alerts: Email to Fund Operations and the head of data
+
+blueprint_signed_at: "2026-06-12T10:00:00+00:00"   # the demo story: the blueprint was signed in June
+runs_at: "2026-03-31T07:00:00+00:00"                # the first two loads, before the six months of history (tools/seed_demo_history.py)
+
+runs:                          # two runs in the run log (shape 4), written as the runner writes them
+  - {source: capital_calls_mailbox, owner: Harvey Rowley, status: ok, rows: 34, rules: [[K04, "notice_ref is unique", true, 0]], on_time: true}
+  - {source: custodian_daily_file, owner: Harvey Rowley, status: late, rows: 412, rules: [[K12, "Val Date is not older than 30 days", false, 9]], on_time: false}
+
+prove:
+  uat_skip: [K06]               # its September figure is not in the mart yet: not ready for sign-off
+  accept_gap: {measure: K12, by: Janet Shaw, reason: "The custodian file ends on 22 September; the reported figure is at 30 September. Accepted until the late file arrives."}
+  reported_extra:               # K02 and K06 have no figure in the reported list; K06's September mart figure is left blank on purpose (not yet)
+    - {measure: Reported-value evidence coverage, unit: ratio, figures: {"2026-07-31": 0.9, "2026-08-31": 0.91, "2026-09-30": 0.38}}
+    - {measure: Stress funding requirement, unit: SGD, figures: {"2026-07-31": 7900000, "2026-08-31": 8100000, "2026-09-30": 8000000}}
+
+comments:
+  - {node: K09, kind: ambiguity, by: Aaron Lyle, text: "Does single-issuer concentration include look-through exposure through the funds, or direct holdings only?"}
+  - {node: K17, kind: suggestion, by: Harvey Rowley, anonymous: true, text: "List the holdings with no agreed benchmark under the coverage figure, so nobody hides them.", decide: accepted, answer: "Agreed: the list goes under the figure."}
+
+whatif: {by: Daniel Kerr, change_pct: -20, note: "If calls arrive 20 per cent faster than we fund them, what moves?"}
+
+messages:
+  invite: {purpose: "Performance: manager benchmarks", organiser: Janet Shaw, closes: in five working days, to: [Samuel Ong]}
+  reminder: {purpose: "Performance: manager benchmarks", organiser: Janet Shaw, closes: in five working days, to: [Nadia Hassan]}
+  sponsor_ask: {sponsor: Daniel Kerr, organiser: Janet Shaw, ask: "Please put the late call notices first in the build plan.", to: [Janet Shaw]}
+  ops_report: {to: [Harvey Rowley, Marcus Todd]}
+  owner_ask: {owner: Harvey Rowley, source: Custodian daily file, expected: "by 12:00 on the working day", to: [Harvey Rowley]}

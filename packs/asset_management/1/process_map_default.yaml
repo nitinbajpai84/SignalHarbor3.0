@@ -1,0 +1,81 @@
+# Template asset_management@1 process map default (V3-13), same schema as insurance@1's
+# process_map_default.yaml. The as-is swimlane from a client order to the board report, drawn
+# from general asset-management practice by a builder agent. Every step here is a PROPOSAL
+# (source: pack) until a person validates it -- nothing here is a business rule or a company
+# fact, and no step carries a time, a volume or a threshold.
+template: asset_management@1
+lanes:
+  - Distribution Office
+  - Client Engagement
+  - Distributors
+  - Transfer Agency
+  - Fund Accounting
+  - Investment Team
+  - Finance
+steps:
+  - step_id: pm-01
+    lane: Client Engagement
+    col: 0
+    name: "New client onboarded (identity and suitability checks)"
+    body: "Documents are collected and checked before the first order."
+    manual: true
+  - step_id: pm-02
+    lane: Distributors
+    col: 1
+    name: "Client places a subscription or redemption order"
+    body: "Orders arrive through banks, platforms and advisers, often pooled in one account per distributor -- the end client is not always visible."
+    manual: false
+  - step_id: pm-03
+    lane: Transfer Agency
+    col: 2
+    name: "Order booked on the register at the dealing cut-off"
+    body: "The transfer agent's register is the system of record for who holds what, and for flows."
+    manual: false
+  - step_id: pm-04
+    lane: Fund Accounting
+    col: 3
+    name: "Positions valued and the fund price struck"
+    body: "Fund accounting values the positions and strikes the price the orders are dealt at."
+    manual: false
+  - step_id: pm-05
+    lane: Investment Team
+    col: 3
+    name: "Portfolio invested or sold down to meet the flow"
+    body: "The investment team places trades for the net flow -- large redemptions can force sales."
+    manual: false
+  - step_id: pm-06
+    lane: Fund Accounting
+    col: 4
+    name: "Performance calculated against the benchmark"
+    body: "Portfolio returns are set against benchmark returns for the same period."
+    manual: false
+  - step_id: pm-07
+    lane: Finance
+    col: 5
+    name: "Fees accrued and distributor payments calculated"
+    body: "Fee sharing depends on each distributor's agreement."
+    manual: true
+  - step_id: pm-08
+    lane: Client Engagement
+    col: 5
+    name: "Match flows to clients and distributors"
+    body: "Joins register accounts to the client and distributor lists."
+    manual: true
+  - step_id: pm-09
+    lane: Finance
+    col: 6
+    name: "Compile costs and income for the period"
+    body: "Refreshed after the books close -- slower than the flow and position data."
+    manual: true
+  - step_id: pm-10
+    lane: Client Engagement
+    col: 7
+    name: "Compile the flows and assets report"
+    body: "Pulls register, accounting, performance and finance extracts into one workbook by hand."
+    manual: true
+  - step_id: pm-11
+    lane: Distribution Office
+    col: 8
+    name: "Review report, ask questions"
+    body: "The sponsor's starting point -- and the report Signal Harbor must reconcile to."
+    manual: false

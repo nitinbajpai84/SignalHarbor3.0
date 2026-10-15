@@ -1,0 +1,10 @@
+# Agent memory: every signed-in role reads, corrects and forgets its OWN items and reads the company's; only the company administrator and
+# analysts write the company's (the logic checks that too). The person is the signed-in one: no route names another person.
+routes:
+  GET /api/v1/memory/me: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  PATCH /api/v1/memory/me/{item_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  DELETE /api/v1/memory/me/{item_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/memory/company: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/memory/company: {roles: [company_admin, analyst]}
+  PATCH /api/v1/memory/company/{item_id}: {roles: [company_admin, analyst]}
+  DELETE /api/v1/memory/company/{item_id}: {roles: [company_admin, analyst]}

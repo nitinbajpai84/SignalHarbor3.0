@@ -1,0 +1,230 @@
+{
+  "id": "MEM-11",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "Shared memory - Span answers from what Lumen was told (context_for, MEM2), so the blue-lines preference is recalled.",
+  "status": "fail",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": false,
+      "detail": "turn 2: missing 'blue'"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "2 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 6940,
+  "cost": {
+    "calls": 2,
+    "tokens": 5333,
+    "usd": 0.001662,
+    "estimated": false
+  },
+  "trace_id": "tr-span-c2bf28ad-8504ff38",
+  "forgotten": [
+    "sponsor: memory m-0d4f69cb",
+    "sponsor: summary s-5073edc0"
+  ],
+  "egress_lines": 2,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/chat"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "I prefer blue lines"
+      },
+      "status": 200,
+      "json": {
+        "reply": "Dashboards are built in Build \u203a Dashboard studio. Ask the project's analyst to build or change it.",
+        "link": null,
+        "proposals": [],
+        "dashboard_id": "dash-0ad2b1c7",
+        "worded_by": "rules"
+      },
+      "ms": 61,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/build/chat",
+      "request": {
+        "text": "What do you remember about how I like my charts?"
+      },
+      "status": 200,
+      "json": {
+        "reply": "I don't remember anything about your chart preferences yet.",
+        "rules_only": false,
+        "trace_id": "tr-span-c2bf28ad-8504ff38"
+      },
+      "ms": 6859,
+      "expect": {
+        "status": 200,
+        "contains": [
+          "blue"
+        ]
+      },
+      "cleanup": false,
+      "reply": true
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-0d4f69cb",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "preference",
+            "text": "What do you remember about how you like your charts?",
+            "sure": "said",
+            "at": "2026-10-10T02:46:33+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          }
+        ]
+      },
+      "ms": 19,
+      "expect": null,
+      "cleanup": true,
+      "reply": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 10381,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:46:31+0800",
+      "trace_id": "tr-span-c2bf28ad-8504ff38"
+    },
+    {
+      "bytes": 10049,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_build",
+      "reason_code": "",
+      "time": "2026-10-10T10:46:28+0800",
+      "trace_id": "tr-span-c2bf28ad-8504ff38"
+    }
+  ],
+  "traces": [
+    {
+      "trace_id": "tr-span-c2bf28ad-8504ff38",
+      "status": 200,
+      "runs": [
+        {
+          "id": "82e9e91e12b44e33836357d92a7489b6",
+          "agent_type": "Span",
+          "status": "done",
+          "started_at": "2026-10-10T02:46:33+00:00",
+          "elapsed_ms": 5750,
+          "steps": 5,
+          "tool_calls": 1,
+          "cost_usd": 0.001662,
+          "trace_id": "tr-span-c2bf28ad-8504ff38",
+          "kind": "loop",
+          "worded_by": "model"
+        }
+      ],
+      "steps": [
+        {
+          "trace_id": "tr-span-c2bf28ad-8504ff38",
+          "at": "2026-10-10T02:46:33+00:00",
+          "run_id": "82e9e91e12b44e33836357d92a7489b6",
+          "agent": "Span",
+          "status": "done",
+          "elapsed_ms": 5750,
+          "steps": [
+            {
+              "kind": "context",
+              "items": [
+                {
+                  "kind": "turns",
+                  "id": "6"
+                }
+              ]
+            },
+            {
+              "kind": "model",
+              "n": 1,
+              "ok": true,
+              "ms": 3093,
+              "tool_calls": 1,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2623,
+              "tokens_out": 16,
+              "cost_usd": 0.000827
+            },
+            {
+              "kind": "tool",
+              "n": 1,
+              "tool": "recall_memory",
+              "arg_keys": [
+                "topic"
+              ],
+              "result_chars": 103,
+              "refused": false,
+              "reason": null,
+              "ms": 16
+            },
+            {
+              "kind": "model",
+              "n": 2,
+              "ok": true,
+              "ms": 2639,
+              "tool_calls": 0,
+              "tries": 1,
+              "tier": "specialist",
+              "model": "gemini-2.5-flash",
+              "mode": "testing",
+              "tokens_in": 2682,
+              "tokens_out": 12,
+              "cost_usd": 0.000835
+            },
+            {
+              "kind": "guard",
+              "numbers_replaced": 0
+            }
+          ]
+        }
+      ],
+      "total": {
+        "cost_usd": 0.001662,
+        "tokens": 5333
+      }
+    }
+  ]
+}

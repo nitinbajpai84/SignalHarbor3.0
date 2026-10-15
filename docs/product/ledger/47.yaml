@@ -1,0 +1,464 @@
+- id: 47.tag.areas
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: Intent record on open (people.affected)
+  input: Everyone tagged to the intent's areas becomes an affected person
+  person: affected person
+  mode: automatic
+  agent: null
+  source: the areas on the intent and the company profile people
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: working out who is touched and telling each one'
+  claim: Everyone tagged to the areas is placed as affected without the organiser listing them
+- id: 47.a1.opening
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /pulse (A1 Opening line)
+  input: An intent touches your area
+  person: affected person
+  mode: automatic
+  agent: Nira
+  source: the intent opening and the person's area tags
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: an announcement email to every affected area'
+  claim: Each affected person gets one quiet line when an intent opens
+- id: 47.a2.closing
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /pulse (A2 Closing line)
+  input: What came out of the intent, first lines of the summary
+  person: affected person
+  mode: derived
+  agent: Nira
+  source: closure.summary or the cancel reason
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: a closing email to everyone who was told at the start'
+  claim: Everyone who was told at the start is told what came out
+- id: 47.a5.reply
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /pulse (A5 Reply line)
+  input: Janet answered your request
+  person: affected person
+  mode: automatic
+  agent: Nira
+  source: the join request answer
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: a reply email'
+  claim: The person who asked hears the answer on Pulse
+- id: 47.follow.line
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /pulse (Follow this intent effect)
+  input: One line per stage change
+  person: affected person
+  mode: automatic
+  agent: Nira
+  source: stage changes for people who switched Follow on
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: forwarded status updates'
+  claim: People who chose to follow get a line per stage change
+- id: 47.follow.switch
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Follow this intent)
+  input: Tell me when it changes stage
+  person: affected person
+  mode: manual
+  agent: null
+  source: the person's choice, default off
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Following is a person's own choice
+- id: 47.chip.affects
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent (Affects you chip)
+  input: The Affects you chip on cards in the person's area
+  person: affected person
+  mode: automatic
+  agent: null
+  source: people.affected and the area tags
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: noticing that something touches your team'
+  claim: Cards touching your area carry a chip that says why
+- id: 47.view.header
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (affected view header and purpose)
+  input: Title, type, state, purpose
+  person: affected person
+  mode: automatic
+  agent: null
+  source: the intent record filtered per viewer
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: reading a project page'
+  claim: An affected person sees title, purpose, stage and clock without asking
+- id: 47.view.clock
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Stage and clock)
+  input: Stage label and days left
+  person: affected person
+  mode: automatic
+  agent: null
+  source: time_box and stages in the company time zone
+  minutes_without: 2
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The days left are counted by the system
+- id: 47.view.people
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (People list)
+  input: Names and roles, affected people as counts by area
+  person: affected person
+  mode: automatic
+  agent: null
+  source: people_detail grouped by area
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Affected people are shown as a count by area, not named
+- id: 47.view.content
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Content panel)
+  input: Wall, answers or thread read-only when the organiser allows
+  person: affected person
+  mode: automatic
+  agent: null
+  source: affected_access.read_content and the share list
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking for access to a document'
+  claim: Content is visible only if the organiser switched it on; sealed cards stay silhouettes and anonymous authors stay hidden
+- id: 47.view.outcome
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>#outcome (Outcome panel)
+  input: Summary, what came out, next steps, charter link
+  person: affected person
+  mode: automatic
+  agent: null
+  source: the closure record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking what was decided'
+  claim: The outcome appears for everyone affected when the intent closes
+- id: 47.feel.tap
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (I feel this)
+  input: One tap saying this hurts me too
+  person: affected person
+  mode: manual
+  agent: null
+  source: the affected person's own experience
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: replying to a survey or sending a note'
+  claim: One tap adds a voice to a problem or a card
+- id: 47.feel.sign
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (sign choice popover)
+  input: Count me without my name or add my name
+  person: affected person
+  mode: manual
+  agent: null
+  source: the tapper's choice, default without name
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one choice'
+  claim: The person decides whether their tap is named
+- id: 47.feel.takeback
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Take it back)
+  input: Remove my tap
+  person: affected person
+  mode: manual
+  agent: null
+  source: the tapper
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A tap can be withdrawn
+- id: 47.note.text
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (A note to the organiser)
+  input: What I know or what worries me
+  person: affected person
+  mode: manual
+  agent: null
+  source: the affected person's words
+  minutes_without: 5
+  minutes_with: 3
+  basis: 'estimate: an email to the organiser'
+  claim: The affected person tells the organiser something without joining
+- id: 47.note.anonymous
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Send without my name)
+  input: Send without my name
+  person: affected person
+  mode: manual
+  agent: null
+  source: the person's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: A note can be sent without a name
+- id: 47.join.role
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Ask to join, role choice)
+  input: Take part or read along
+  person: affected person
+  mode: manual
+  agent: null
+  source: the asker's choice of two
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: The person chooses a seat in one tap
+- id: 47.join.reason
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Ask to join, reason)
+  input: Why would you like to join
+  person: affected person
+  mode: manual
+  agent: null
+  source: the asker, one line
+  minutes_without: 3
+  minutes_with: 2
+  basis: 'estimate: an email asking to be included'
+  claim: A request to join carries a reason
+- id: 47.join.send
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Send request)
+  input: Send the request
+  person: affected person
+  mode: manual
+  agent: null
+  source: the asker presses the button
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one press'
+  claim: Asking is one press
+- id: 47.observer.note
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (Role note)
+  input: You are watching this intent
+  person: observer
+  mode: automatic
+  agent: null
+  source: the person's role
+  minutes_without: 1
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: The product says what an observer can and cannot do
+- id: 47.observer.content
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id> (observer content)
+  input: Everything a participant reads, read-only
+  person: observer
+  mode: automatic
+  agent: null
+  source: the record filtered per viewer
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: forwarding updates to the observer'
+  claim: An observer reads along without being forwarded anything
+- id: 47.org.switch
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Affected people may read)
+  input: The organiser's switch for content, default off
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one decision, one toggle'
+  claim: Opening content to affected people is the organiser's explicit choice
+- id: 47.org.feel
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Feel this tab)
+  input: Counts of taps, split affected and participating, and signed names
+  person: organiser
+  mode: automatic
+  agent: null
+  source: feel_taps per card
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: collecting reactions in a meeting'
+  claim: The organiser sees how many people feel a problem without collecting replies
+- id: 47.org.notes
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Notes tab)
+  input: Notes from affected people with Seen mark
+  person: organiser
+  mode: automatic
+  agent: null
+  source: notes_to_organiser
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: reading and filing emails'
+  claim: Notes from affected people arrive in one place
+- id: 47.org.notes_seen
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Mark seen)
+  input: Mark a note seen
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 1
+  minutes_with: 1
+  basis: 'estimate: one tap'
+  claim: Seen is one tap
+- id: 47.org.reply_draft
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Draft a reply)
+  input: Short reply in the organiser's voice
+  person: organiser
+  mode: confirm
+  agent: North
+  source: the note text and the intent
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: writing a reply'
+  claim: North drafts the reply; the organiser edits and presses Reply
+  built: manual
+- id: 47.org.asks
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Asks to join tab)
+  input: Name, area, asked role, reason, date
+  person: organiser
+  mode: automatic
+  agent: null
+  source: join_requests
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Join requests are listed with the reason
+- id: 47.org.accept
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Accept)
+  input: Accept a request with a role
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: replying and updating the list'
+  claim: Accepting is one pick and the person is moved to that role
+- id: 47.org.decline
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/people (Decline with reason)
+  input: Decline with a short reason
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser
+  minutes_without: 3
+  minutes_with: 3
+  basis: 'estimate: one line'
+  claim: A decline carries a reason that the person sees
+- id: 47.org.pulse
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /pulse of the organiser (A3 and A4 lines)
+  input: n things from affected people, name asks to join
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: notes_to_organiser and join_requests
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking the inbox'
+  claim: The organiser is told when notes or requests arrive
+- id: 47.close.notes
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre/intent/<id>/close (closure draft)
+  input: Summary of affected people's notes and counts in the closure draft
+  person: organiser
+  mode: derived
+  agent: North
+  source: notes_to_organiser and feel_taps counts
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: reading all the notes before writing the closure'
+  claim: North summarises what affected people said into the closure draft
+  built: missing
+- id: 47.count.affected
+  spec: '47'
+  journey: shared
+  stage: notice
+  screen: /centre (counters)
+  input: Affected people reached, notes, taps, join requests
+  person: company admin
+  mode: automatic
+  agent: null
+  source: intent records
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: none'
+  claim: Counts of affected-person activity come from the records

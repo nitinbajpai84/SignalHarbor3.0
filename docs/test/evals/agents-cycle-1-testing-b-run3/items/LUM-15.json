@@ -1,0 +1,60 @@
+{
+  "id": "LUM-15",
+  "agent": "lumen",
+  "role": "participant",
+  "desc": "A participant (Sofia Reyes), not in the dashboard's audience, asks on it - refused (403, P33) or answered without anything of the sponsor's.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "access",
+      "passed": true,
+      "detail": "refused with status 403"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 16,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {
+    "limited": true,
+    "forbidden": [
+      "Traceback",
+      "Daniel Foo"
+    ]
+  },
+  "turns": [
+    {
+      "role": "participant",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "Show me net worth by entity"
+      },
+      "status": 403,
+      "json": {
+        "error": "not_allowed",
+        "message": "You do not have access to this dashboard."
+      },
+      "ms": 16,
+      "expect": null,
+      "cleanup": false,
+      "reply": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [],
+  "traces": []
+}

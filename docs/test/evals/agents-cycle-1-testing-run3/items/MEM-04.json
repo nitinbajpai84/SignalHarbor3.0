@@ -1,0 +1,212 @@
+{
+  "id": "MEM-04",
+  "agent": "memory",
+  "role": "sponsor",
+  "desc": "Person A's preference never reaches person B (the approver does not see the sponsor's weekly preference).",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "turn_expect",
+      "passed": true,
+      "detail": "ok"
+    }
+  ],
+  "error": null,
+  "latency_ms": 1936,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 1,
+  "egress_blocked": 1,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/ask"
+  },
+  "expected": {},
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "POST",
+      "path": "/api/v1/consume/p/prj-84d783f2/dashboards/dash-0ad2b1c7/ask",
+      "request": {
+        "text": "From now on show my figures weekly"
+      },
+      "status": 200,
+      "json": {
+        "reply": "The data behind this project is 3 gold tables, each ready for dashboards: gold_investment_report_benchmark_monthly (Portfolio return, benchmark return and the difference for each month, from recorded values.), with columns benchmark_code, month, portfolio_return, benchmark_return, difference; gold_investment_report_cash_daily (Cash per entity per day, administrator view next to the trading view.), with columns position_date, entity, view_type, cash_usd, status; gold_investment_report_holdings_monthly (Month-end holdings by entity in USD and SGD with the status of each value.), with columns report_month, entity, holding, net_worth_usd, net_worth_sgd, status. You can see 2 dashboards: Monthly investment report in USD and SGD, My dashboard. For the model underneath, how the tables are built and what feeds what, open Build and ask Span. To get a tile, name one of these figures: benchmark_return, cash_usd, difference, net_worth_sgd, net_worth_usd, portfolio_return. I will remember: you like figures by week. You can change or remove this under Settings, What the agents remember about you.",
+        "proposals": [],
+        "dashboard_id": "dash-7398c035",
+        "remembered": [
+          "you like figures by week"
+        ]
+      },
+      "ms": 1883,
+      "expect": {
+        "status": 200
+      },
+      "cleanup": false
+    },
+    {
+      "role": "approver",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": []
+      },
+      "ms": 14,
+      "expect": {
+        "status": 200,
+        "absent": [
+          "weekly"
+        ]
+      },
+      "cleanup": false
+    },
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/memory/me",
+      "request": null,
+      "status": 200,
+      "json": {
+        "items": [
+          {
+            "id": "m-d3ae7b37",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: figures by week",
+            "sure": "said",
+            "at": "2026-10-09T17:51:30+00:00",
+            "source": {
+              "said": "From now on show my figures weekly",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-529bbfb4",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes.",
+            "sure": "model",
+            "at": "2026-10-09T17:45:30+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-0fc4a595a78939c13ed6e4604771f1bc",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-44a73302",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: blue for chart lines",
+            "sure": "inferred",
+            "at": "2026-10-09T17:38:29+00:00",
+            "source": {
+              "said": "line in blue",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-36ab9c1b",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Needs to see month-end status and changes since last month.",
+            "sure": "model",
+            "at": "2026-10-09T17:36:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-5c5a07045e56a641370383856386a6ba",
+              "agent": "north"
+            }
+          },
+          {
+            "id": "m-4ead95a1",
+            "scope": "person",
+            "agent": "span",
+            "agent_name": "Span",
+            "kind": "fact",
+            "text": "What do you remember about how I like my charts?",
+            "sure": "said",
+            "at": "2026-10-09T17:33:46+00:00",
+            "source": {
+              "said": "What do you remember about how I like my charts?",
+              "convo": "company",
+              "agent": "span"
+            }
+          },
+          {
+            "id": "m-b6f60a38",
+            "scope": "person",
+            "agent": "lumen",
+            "agent_name": "Lumen",
+            "kind": "preference",
+            "text": "Prefers: lines for charts",
+            "sure": "said",
+            "at": "2026-10-09T17:33:26+00:00",
+            "source": {
+              "said": "I prefer blue lines",
+              "convo": "prj-84d783f2",
+              "agent": "lumen"
+            }
+          },
+          {
+            "id": "m-dcc5f3a0",
+            "scope": "person",
+            "agent": "north",
+            "agent_name": "North",
+            "kind": "preference",
+            "text": "Wants to track progress on the month-end report.",
+            "sure": "model",
+            "at": "2026-10-09T17:22:45+00:00",
+            "source": {
+              "said": "I need to see where the month-end report stands, and what changed since the last one.",
+              "convo": "ini-e18424b01941488f7a2714db02c65c39",
+              "agent": "north"
+            }
+          }
+        ]
+      },
+      "ms": 26,
+      "expect": null,
+      "cleanup": true
+    },
+    {
+      "role": "sponsor",
+      "method": "DELETE",
+      "path": "/api/v1/memory/me/m-d3ae7b37",
+      "request": null,
+      "status": 200,
+      "json": {
+        "forgotten": "m-d3ae7b37"
+      },
+      "ms": 13,
+      "expect": null,
+      "cleanup": true
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 13384,
+      "decision": "blocked",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "consume",
+      "reason_code": "vault_name",
+      "time": "2026-10-10T01:51:30+0800"
+    }
+  ]
+}

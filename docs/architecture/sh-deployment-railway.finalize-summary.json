@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-deployment-railway.json",
+    "sha256": "f4542c9fb71b3246fed7dfb9e5da4eb43e5f4e990df89f6f65c8b5549320bfd9",
+    "bytes": 6273
+  },
+  "artifact": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-deployment-railway.html",
+    "sha256": "964622fb750c77215e6c5bcdd8b3c786f5487646531e08cd965450206b10e9b3",
+    "bytes": 773085
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-deployment-railway.finalize.json",
+    "summaryReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-deployment-railway.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-deployment-railway.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 13172,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 2
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "mode_web",
+            "from": "mode",
+            "to": "web",
+            "label": "read at start",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "web_egress",
+            "from": "web",
+            "to": "egress",
+            "label": "agent calls",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "point": [
+            600,
+            221.27272727272728
+          ],
+          "sharedNode": "web"
+        },
+        {
+          "left": {
+            "id": "worker_vol",
+            "from": "worker",
+            "to": "vol",
+            "label": "DuckDB, files",
+            "collectionIndex": 8,
+            "artifactIndex": 9
+          },
+          "right": {
+            "id": "web_egress",
+            "from": "web",
+            "to": "egress",
+            "label": "agent calls",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "point": [
+            976.2,
+            229
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "worker_pg",
+            "from": "worker",
+            "to": "pg",
+            "label": "state and outbox",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "bends": 3,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "web_egress",
+            "from": "web",
+            "to": "egress",
+            "label": "agent calls",
+            "collectionIndex": 9,
+            "artifactIndex": 10
+          },
+          "bends": 5,
+          "stretch": 1.156
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "mode → web and web → egress cross next to web: move node mode or egress so the two reach web from different sides (for example one level with it, one directly above or below it).",
+      "worker → vol crosses web → egress: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "worker → pg needs 3 bends: move node worker or pg so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "web → egress needs 5 bends: move node web or egress so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

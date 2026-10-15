@@ -1,0 +1,204 @@
+# Input ledger rows for spec 21: backlog.
+- id: "21.item_create"
+  spec: "21"
+  journey: shared
+  stage: notice
+  screen: "backlog (item written after a source intent closes: title, kind, area, why it matters, review date)"
+  input: "A backlog item: title, kind, area, why it matters, review date"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the closure next list (kind backlog) or a check-in item with the backlog fate, plus the source records"
+  minutes_without: 15
+  minutes_with: 1
+  basis: "estimate: logging an idea in a tracker with its context"
+  claim: "North writes the backlog item with its source, area and reason at closure; the organiser or lead edits it"
+- id: "21.why_it_matters"
+  spec: "21"
+  journey: shared
+  stage: notice
+  screen: "item drawer (Why it matters)"
+  input: "One line on why it matters"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the source records and the thinking kept"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: writing a justification"
+  claim: "North drafts one line on why an item matters; a person's edit is never overwritten"
+- id: "21.review_date"
+  spec: "21"
+  journey: shared
+  stage: notice
+  screen: "item card and drawer (review date)"
+  input: "Review date, default one quarter ahead"
+  person: system
+  mode: automatic
+  source: "the same rule as the Future shelf: today plus three months"
+  minutes_without: 3
+  minutes_with: 0
+  basis: "estimate: setting a reminder"
+  claim: "Every open or parked item has a review date set by the system"
+- id: "21.review_date_change"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "item drawer (Review date field)"
+  input: "Change the review date"
+  person: organiser
+  mode: manual
+  source: "the organiser or area lead"
+  minutes_without: 2
+  minutes_with: 0.3
+  basis: "estimate: moving a reminder"
+  claim: "A person can move the date; the change is logged"
+- id: "21.new_item_line"
+  spec: "21"
+  journey: shared
+  stage: notice
+  screen: "Pulse line to the area lead (New in the backlog)"
+  input: "Notice to the area lead"
+  person: owner
+  mode: derived
+  agent: Nira
+  source: "the new item and the area's lead"
+  minutes_without: 5
+  minutes_with: 0
+  basis: "estimate: telling the area lead"
+  claim: "Nira tells the area lead when an item arrives"
+- id: "21.tap"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "item card (I feel this)"
+  input: "Say you feel this too"
+  person: participant
+  mode: manual
+  source: "the person tagged to the item's area; one tap each"
+  minutes_without: 10
+  minutes_with: 0.1
+  basis: "estimate: raising a +1 in a meeting or thread"
+  claim: "One tap shows how many people in the area feel an item; it is a signal and never decides anything"
+- id: "21.same_thing"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "item drawer (Looks like the same thing strip)"
+  input: "Which two items say the same thing"
+  person: owner
+  mode: derived
+  agent: North
+  source: "titles and lines of open items in the same area"
+  minutes_without: 30
+  minutes_with: 1
+  basis: "estimate: spotting duplicates in a long list"
+  claim: "North spots two items that say the same thing and offers a merge; it never merges by itself"
+- id: "21.merge"
+  spec: "21"
+  journey: shared
+  stage: decide
+  screen: "merge dialog (keep this or other title, combined why it matters, Merge)"
+  input: "Merge two items, with the surviving title"
+  person: owner
+  mode: confirm
+  agent: North
+  source: "both items; North drafts the combined line"
+  minutes_without: 15
+  minutes_with: 2
+  basis: "estimate: combining two tickets by hand"
+  claim: "A merge keeps both sources and taps, with one line combined by North and confirmed by the person"
+- id: "21.open_intent"
+  spec: "21"
+  journey: shared
+  stage: decide
+  screen: "Open an intent dialog (type picker, pre-filled start questions, Open it)"
+  input: "Open an intent from an item"
+  person: owner
+  mode: confirm
+  agent: North
+  source: "the item: kind suggests the type; title, purpose, areas and the raiser as participant pre-fill"
+  minutes_without: 30
+  minutes_with: 3
+  basis: "estimate: turning a backlog entry into a project brief"
+  claim: "One click opens an intent from an item; North suggests the type and pre-fills the start questions"
+- id: "21.park_drop"
+  spec: "21"
+  journey: shared
+  stage: decide
+  screen: "park or drop dialog (reason required, review date for a park)"
+  input: "Park or drop with a reason"
+  person: owner
+  mode: manual
+  source: "the organiser, area lead or company admin"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: deciding and explaining in a triage meeting"
+  claim: "Nothing is deleted: parked and dropped items keep their reason, and can be brought back"
+- id: "21.bring_back"
+  spec: "21"
+  journey: shared
+  stage: decide
+  screen: "item drawer (Bring back)"
+  input: "Bring a parked or dropped item back"
+  person: owner
+  mode: manual
+  source: "the area lead or company admin"
+  minutes_without: 5
+  minutes_with: 0.3
+  basis: "estimate: reopening a ticket"
+  claim: "A parked or dropped item returns to open with its history intact"
+- id: "21.review_reminder"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "Pulse line to the area lead at the review date"
+  input: "Review reminder: open an intent, park it again, or drop it"
+  person: owner
+  mode: derived
+  agent: Nira
+  source: "review_date and the number of taps"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: running a backlog grooming round"
+  claim: "North reminds the area lead on the review date, so nothing on the backlog is forgotten"
+- id: "21.cancelled_proposal"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "Pulse line (Bring the backlog item back?)"
+  input: "Bring a backlog item back after the intent it started is cancelled"
+  person: owner
+  mode: confirm
+  agent: North
+  source: "the cancelled intent and its backlog_ref"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: noticing and reopening"
+  claim: "North proposes bringing the item back when the intent it started is cancelled; a person decides"
+- id: "21.edit_item"
+  spec: "21"
+  journey: shared
+  stage: run
+  screen: "item drawer (title, kind, area edit)"
+  input: "Edit title, kind or area"
+  person: owner
+  mode: manual
+  source: "the organiser, lead or company admin"
+  minutes_without: 3
+  minutes_with: 1
+  basis: "estimate: editing a ticket"
+  claim: "Every edit is written to the item's history"
+- id: "21.numbers"
+  spec: "21"
+  journey: admin
+  stage: prove
+  screen: "/centre/intent/backlog#numbers (open and parked per area, age, due, became intents, days to open)"
+  input: "Backlog numbers per area"
+  person: owner
+  mode: automatic
+  source: "intents/backlog.json; medians shown from five items"
+  minutes_without: 45
+  minutes_with: 0
+  basis: "estimate: preparing a backlog report"
+  claim: "How many items wait, how old they are and how many became intents is counted from the records"

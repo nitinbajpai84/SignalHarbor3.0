@@ -1,0 +1,189 @@
+# Input ledger rows for spec 08: North as workflow runner.
+- id: "08.missing_question"
+  spec: "08"
+  journey: shared
+  stage: notice
+  screen: "North panel (Asking now)"
+  input: "The one missing start or stage question"
+  person: organiser
+  mode: derived
+  agent: North
+  source: "the type's start questions against north.asked"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: working out what information is still missing"
+  claim: "North compares the type's questions to what is known and asks only the one that is missing"
+- id: "08.answer"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (answer box, Answer)"
+  input: "Answer to North's question"
+  person: participant
+  mode: manual
+  source: "the person's own words, kept as said"
+  minutes_without: 10
+  minutes_with: 3
+  basis: "estimate: replying to an email request versus answering in the panel"
+  claim: "North asks one question at a time and never rewrites the answer"
+- id: "08.opening_msg"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (draft card: Send to the group)"
+  input: "Opening message for each stage"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the stage purpose, who is asked and the due date from the clock"
+  minutes_without: 15
+  minutes_with: 1
+  basis: "estimate: writing a kick-off message each stage"
+  claim: "North drafts the stage opening message; the organiser edits and sends"
+- id: "08.turn"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (turn strip: whose turn)"
+  input: "Whose turn it is and what is asked"
+  person: any
+  mode: automatic
+  source: "north.turn, set by North from the stage"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: working out who needs to act next"
+  claim: "North records whose turn it is at every step"
+- id: "08.nudge"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "Pulse line and in-screen nudge strip"
+  input: "Nudge to the person whose turn it is"
+  person: participant
+  mode: derived
+  agent: North
+  source: "the clock and the turn holder"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: chasing people for their part"
+  claim: "North nudges the person whose turn it is; the product does not message outside by itself"
+- id: "08.confirm_draft"
+  spec: "08"
+  journey: shared
+  stage: decide
+  screen: "North panel (Confirm, Edit, Discard on a draft card)"
+  input: "Confirm, edit or discard a North draft"
+  person: organiser
+  mode: manual
+  source: "the named person; every North text stays a draft until then"
+  minutes_without: 5
+  minutes_with: 1
+  basis: "estimate: reviewing a written text"
+  claim: "Every North draft is marked a draft until a named person confirms it"
+- id: "08.pick_proposal"
+  spec: "08"
+  journey: shared
+  stage: decide
+  screen: "North panel (Pick row: extend, close with what we have, cancel)"
+  input: "Pick an option on a North proposal, with a reason"
+  person: organiser
+  mode: manual
+  source: "the person named on the proposal"
+  minutes_without: 20
+  minutes_with: 2
+  basis: "estimate: discussing a slipping project"
+  claim: "North proposes; a person picks with a reason; the record changes only on the pick"
+- id: "08.closure_draft"
+  spec: "08"
+  journey: shared
+  stage: prove
+  screen: "North panel and closure screen (Use as summary)"
+  input: "Closure summary and next proposals"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the intent record, the stage outcomes and the clock"
+  minutes_without: 45
+  minutes_with: 5
+  basis: "estimate: writing a wrap-up and follow-ups from memory"
+  claim: "North writes the closure summary and the next proposals from the record; the organiser confirms"
+- id: "08.check_fates"
+  spec: "08"
+  journey: checkin
+  stage: run
+  screen: "weekly check-in (North drafts a fate per item)"
+  input: "Fate and reason for each check-in item"
+  person: organiser
+  mode: confirm
+  agent: North
+  source: "the item text, kind and severity"
+  minutes_without: 30
+  minutes_with: 5
+  basis: "estimate: sorting a week's items in a meeting"
+  claim: "North drafts a fate and reason for each item; the organiser decides"
+- id: "08.ask_north"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (Ask North something about this intent)"
+  input: "A question about the intent"
+  person: participant
+  mode: manual
+  source: "the person; North answers from the intent record only"
+  minutes_without: 10
+  minutes_with: 1
+  basis: "estimate: asking the organiser"
+  claim: "Anyone with a seat can ask North where an intent stands; the answer comes from the record"
+- id: "08.wrong_line"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (Tell the organiser North got this wrong)"
+  input: "Flag a North draft as wrong"
+  person: participant
+  mode: manual
+  source: "the person"
+  minutes_without: 5
+  minutes_with: 0.5
+  basis: "estimate: messaging the organiser"
+  claim: "A wrong draft can be flagged in one tap without changing the record"
+- id: "08.clock_check"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel (clock check on open and daily)"
+  input: "Clock check and nudge raising"
+  person: system
+  mode: automatic
+  source: "the time box and nudge window"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: daily progress checking"
+  claim: "The clock is checked by the system each time the intent is opened and once a day"
+- id: "08.memory"
+  spec: "08"
+  journey: shared
+  stage: prove
+  screen: "after closure (memory summary)"
+  input: "Memory entry written after closure"
+  person: system
+  mode: derived
+  agent: North
+  source: "the conversation and the closed intent, through the existing filters"
+  minutes_without: 20
+  minutes_with: 0
+  basis: "estimate: writing lessons learned"
+  claim: "North keeps what it learned for next time; a person can read and edit their own memory"
+- id: "08.counters"
+  spec: "08"
+  journey: shared
+  stage: run
+  screen: "North panel pill and footer (open drafts, nudges sent, drafts confirmed, edited, discarded)"
+  input: "Open drafts and questions for this person, nudges sent, draft outcomes"
+  person: organiser
+  mode: automatic
+  source: "north.drafts, north.turn and north.nudges"
+  minutes_without: 10
+  minutes_with: 0
+  basis: "estimate: counting open items"
+  claim: "What is waiting for you, and how often North's drafts are accepted, is counted from the record"

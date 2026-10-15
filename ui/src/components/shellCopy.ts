@@ -1,0 +1,41 @@
+// Wording for the shared shell pieces (rail, agent chips, crumbs). Plain words; agents are named with their role.
+export const shellCopy = {
+  tagline: "Signal to foresight.",
+  menuOpen: "Open the menu",
+  menuClose: "Close the menu",
+  nav: "Modules",
+  navAll: "All modules",
+  navGroup: "Your modules",
+  navIntentGroup: "Intent",
+  navSessions: "Sessions",
+  navNew: "New session",
+  navCompanyGroup: "Your company",
+  navContext: "Company context",
+  navBring: "Bring what you have",
+  navInterviews: "Interviews",
+  signedInAs: "Signed in as",
+  crumbs: "You are here",
+  agent: {
+    roles: { North: "the industry expert", Span: "the build agent", Lumen: "the consume agent", Nira: "the guide", Lens: "the business analyst" },
+    status: {
+      thinking: "Thinking",
+      working: "Working",
+      waiting: "Waiting for you",
+      idle: "Ready",
+      blocked: "Not available",
+    },
+  },
+  // The docked companion's own controls (the earlier js/companion.js labels, in plain words)
+  dock: {
+    role: "your companion",
+    region: (name: string, role: string) => `${name}, ${role}`,
+    pill: (name: string, role: string) => `${name}, ${role}. Open for guidance (Ctrl or Cmd and J)`,
+    collapse: (name: string) => `Collapse ${name}`,
+    expand: (name: string) => `Expand ${name} for reading`,
+    exitExpand: "Exit expanded reading view",
+    sub: "Your single point of contact",
+  },
+  stepOf:(n: number, total: number) => `Step ${n} of ${total}`,
+  illustrative: "Illustrative",
+  suggestion: "Suggestion",
+} as const;

@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-aws-target-architecture.json",
+    "sha256": "7f0e320bcf9d3f44803ae42956f88d437e7de9f7266b039af57857fdbdb7e300",
+    "bytes": 10901
+  },
+  "artifact": {
+    "path": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-aws-target-architecture.html",
+    "sha256": "1b656cb3373409be442af5ee1cd09cbb5f06759c12b25d4ced2344e5a7bd858d",
+    "bytes": 802625
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-aws-target-architecture.finalize.json",
+    "summaryReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-aws-target-architecture.finalize-summary.json",
+    "browserCheckReceipt": "D:\\Projects\\01-Project Signal Harbor\\Repo 1.0\\docs\\architecture\\sh-aws-target-architecture.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4499,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 3
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "guards-egress",
+            "from": "guards",
+            "to": "egress",
+            "label": "tokens only",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "right": {
+            "id": "spec-index",
+            "from": "specialists",
+            "to": "index",
+            "label": "passages",
+            "collectionIndex": 15,
+            "artifactIndex": 16
+          },
+          "point": [
+            1038,
+            500
+          ]
+        },
+        {
+          "left": {
+            "id": "worker-queue",
+            "from": "worker",
+            "to": "queue",
+            "label": "jobs",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "right": {
+            "id": "spec-index",
+            "from": "specialists",
+            "to": "index",
+            "label": "passages",
+            "collectionIndex": 15,
+            "artifactIndex": 16
+          },
+          "point": [
+            1038,
+            724
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "spec-index",
+            "from": "specialists",
+            "to": "index",
+            "label": "passages",
+            "collectionIndex": 15,
+            "artifactIndex": 16
+          },
+          "bends": 4,
+          "stretch": 1
+        },
+        {
+          "relationship": {
+            "id": "reg-api",
+            "from": "registry",
+            "to": "api",
+            "label": "images, packs",
+            "collectionIndex": 18,
+            "artifactIndex": 19
+          },
+          "bends": 4,
+          "stretch": 1.152
+        },
+        {
+          "relationship": {
+            "id": "evals-reg",
+            "from": "evals",
+            "to": "registry",
+            "label": "gates a release",
+            "collectionIndex": 20,
+            "artifactIndex": 21
+          },
+          "bends": 4,
+          "stretch": 1.2,
+          "directCorridorBlockers": [
+            {
+              "id": "router",
+              "label": "Model router",
+              "box": [
+                865,
+                40,
+                170,
+                60
+              ]
+            }
+          ]
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "guards → egress crosses specialists → index: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "worker → queue crosses specialists → index: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "specialists → index needs 4 bends: move node specialists or index so they share a row or column with matching centers, or sit diagonally with a clear corner.",
+      "registry → api needs 4 bends: move node registry or api so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

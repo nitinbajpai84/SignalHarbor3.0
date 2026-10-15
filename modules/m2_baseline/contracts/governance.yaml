@@ -1,0 +1,52 @@
+# M2-E3: the words Lens reads in a field's name to guess whether it holds personal data. General words, no industry's:
+# an industry's own knowledge comes from its pack (feeds with a personal-data flag, column spellings, document fields).
+# Each pattern is matched against the field name written lower case with underscores. A match is a guess, never a decision.
+kinds:
+  name:
+    - '(^|_)(first|last|given|family|full|sur|middle)_?name($|_)'
+    - 'surname'
+    - '(^|_)(employee|person|staff|client|customer|beneficiary|member)_?name($|_)'
+  contact:
+    - 'e_?mail'
+    - '(^|_)(phone|mobile|telephone)($|_)'
+    - '(^|_)(home|street|postal|mailing)_?address($|_)'
+    - 'postcode'
+  pay:
+    - '(^|_)(pay|salary|bonus|compensation|wage|payroll|remuneration)($|_)'
+  identifier:
+    - 'passport'
+    - '(^|_)(nric|ssn)($|_)'
+    - '(^|_)national_?id($|_)'
+    - '(^|_)tax_?id($|_)'
+    - '(^|_)(dob|date_of_birth|birth_?date)($|_)'
+    - 'driver_?licen[cs]e'
+kind_words:        # how a kind reads on screen
+  name: a person's name
+  contact: contact details
+  pay: pay
+  identifier: a personal identifier
+
+# What makes a DOCUMENT wait for the organiser (domain/preread.py): words that point at personal data about people. The text is read as
+# runs of one to three words joined with "_". A channel word (email, mailbox, phone line), a role or a bare "personal" never flags a document.
+document_kinds:
+  pay:
+    - '(^|_)(salary|salaries|bonus|bonuses|compensation|payroll|remuneration|emolument|emoluments|wage|wages|incentive|incentives)($|_)'
+    - '(^|_)variable_pay($|_)'
+    - '(^|_)comp_plan($|_)'
+    - '(^|_)(pay|salary|compensation|remuneration|reward|benefits)_package($|_)'
+    - '(^|_)pay_(band|bands|grade|grades|scale|scales|column|columns|amount|amounts|slip|slips)($|_)'
+  identifier:
+    - 'passport'
+    - '(^|_)(nric|ssn)($|_)'
+    - '(^|_)national_?id($|_)'
+    - '(^|_)tax_?id($|_)'
+    - '(^|_)(dob|date_of_birth|birth_?date)($|_)'
+    - 'driver_?licen[cs]e'
+  address:
+    - '(^|_)home_?address($|_)'
+  health:
+    - '(^|_)(medical|health)_(record|records|condition|conditions|data|history|cover)($|_)'
+    - '(^|_)(diagnosis|sick_leave)($|_)'
+  bank:
+    - '(^|_)bank_account($|_)'
+    - '(^|_)iban($|_)'

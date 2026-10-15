@@ -1,0 +1,32 @@
+{
+  "id": "TAL-08",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P02 revision - Fund A 10,000,000 issued, 10,180,000 known now, +180,000, over the 100,000 materiality.",
+  "status": "error",
+  "scores": [],
+  "error": "no case matching 'Evergreen Growth I|type=revision' visible to analyst",
+  "latency_ms": 62,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Evergreen Growth I|type=revision}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "180000",
+      "10180000",
+      "10000000",
+      "100000"
+    ]
+  },
+  "turns": [],
+  "rows_seen": 0,
+  "egress": []
+}

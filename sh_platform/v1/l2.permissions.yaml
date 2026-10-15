@@ -1,0 +1,6 @@
+# L2 Proposed changes. Any company role may list them (the project's access check decides whose intent); accepting or turning one down
+# needs the project's team (G1, "full") and a role that may write that document (checked again by the handler).
+routes:
+  GET /api/v1/intents/{iid}/proposals: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/intents/{iid}/proposals/{pid}/accept: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/intents/{iid}/proposals/{pid}/reject: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

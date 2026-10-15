@@ -1,0 +1,336 @@
+- id: 34.draft
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what)
+  input: Draft the six Build roles from the people list
+  person: organiser
+  mode: derived
+  agent: Lens
+  source: the company people list and the wall
+  minutes_without: 45
+  minutes_with: 3
+  basis: 'estimate: deciding roles in a meeting'
+  claim: Lens drafts six roles, each marked guessed with its reason
+- id: 34.architect
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (architect)
+  input: Architect
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: people list roles
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking around versus a tap'
+  claim: The architect is drafted and confirmed with one button
+- id: 34.developer
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (developer)
+  input: Developer
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: people list roles
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking around versus a tap'
+  claim: The developer is drafted and confirmed with one button
+- id: 34.tester
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (tester)
+  input: Tester
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: people list roles
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking around versus a tap'
+  claim: The tester is drafted and confirmed with one button
+- id: 34.sponsor_role
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (sponsor)
+  input: Sponsor
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the intent's sponsor
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: typing a name'
+  claim: The sponsor is read from the intent, not picked
+- id: 34.ops
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (operations)
+  input: Operations
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: people list roles
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: asking around versus a tap'
+  claim: Operations is drafted and confirmed with one button
+- id: 34.informed
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (kept informed)
+  input: Kept informed
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: the people on the wall and in the areas
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a distribution list'
+  claim: The kept-informed list is drafted from the wall and areas
+- id: 34.duty
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (will be asked to line)
+  input: What this person will be asked to do
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the role table
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: writing a duty per role'
+  claim: Each role carries a fixed one-line duty
+- id: 34.edit
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (Edit, picker)
+  input: Pick a different person for a role
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 5
+  minutes_with: 2
+  basis: 'estimate: a conversation'
+  claim: Changing a name is one pick from the people list
+- id: 34.clear
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (Clear)
+  input: Leave a role open
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: a note'
+  claim: A role can be left open on purpose
+- id: 34.ask
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (Ask them, Ask everyone named)
+  input: Ask the named people
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 20
+  minutes_with: 1
+  basis: 'estimate: one email per person'
+  claim: One button asks everyone named
+- id: 34.pulse_ask
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /pulse (role request line)
+  input: Role request on the person's list
+  person: named person
+  mode: automatic
+  agent: Nira
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: an email per person'
+  claim: Each named person is told on their own list
+- id: 34.accept
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter?role=<role> (Accept)
+  input: Accept a role
+  person: named person
+  mode: manual
+  agent: null
+  source: the named person's availability
+  minutes_without: 10
+  minutes_with: 1
+  basis: 'estimate: a reply email'
+  claim: Accepting is one button
+- id: 34.decline
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter?role=<role> (Decline with reason)
+  input: Decline a role, with a reason
+  person: named person
+  mode: manual
+  agent: null
+  source: the named person's reason
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: a reply email'
+  claim: A decline goes back to the organiser with its reason
+- id: 34.change_answer
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter?role=<role> (Change your answer)
+  input: Change your answer
+  person: named person
+  mode: manual
+  agent: null
+  source: the named person's availability
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: another email'
+  claim: An answer can change until hand-over
+- id: 34.got_it
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter?role=<role> (Got it)
+  input: Acknowledge being kept informed
+  person: named person
+  mode: manual
+  agent: null
+  source: the named person
+  minutes_without: 2
+  minutes_with: 1
+  basis: 'estimate: reading an email'
+  claim: Kept informed is one acknowledgement
+- id: 34.who_else
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter?role=<role> (who else is named)
+  input: Who else is named
+  person: named person
+  mode: automatic
+  agent: null
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking who else'
+  claim: The list of others is shown from the record
+- id: 34.name_else
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (Name someone else)
+  input: Name someone else after a decline
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: starting again by email'
+  claim: A decline reopens the role with one pick
+- id: 34.counts
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (roles counts line)
+  input: Roles named and accepted counts
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: counted by hand'
+  claim: Named, accepted, waiting and declined are counted
+- id: 34.gap
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (gap line)
+  input: What Build still needs by role
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking by hand'
+  claim: North names the missing roles
+- id: 34.organiser_pulse
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /pulse (declined line for the organiser)
+  input: Told when a role is declined
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: hearing by chance'
+  claim: The organiser hears at once when a role is declined
+- id: 34.ready_read
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (roles line)
+  input: Roles named and accepted feed the check
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the roles record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: checking names'
+  claim: The build-ready check reads accepted roles
+- id: 34.history
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (Who does what) (answer history)
+  input: Answer history
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the roles record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: kept by hand'
+  claim: Earlier answers are kept when a role changes hands
+- id: 34.freeze
+  spec: '34'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/charter (hand-over stamp)
+  input: Roles frozen at hand-over
+  person: build team
+  mode: automatic
+  agent: null
+  source: hand-over event
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: copying names into a hand-over note'
+  claim: The roles block is frozen into the record Build reads

@@ -1,0 +1,202 @@
+{
+  "id": "TAL-05",
+  "agent": "tally",
+  "role": "analyst",
+  "desc": "P30 FX forward - SGD 4,027,500.00 against 4,035,600.00, SGD 8,100 = USD 6,050.19, over the 5,000 tolerance.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "groundedness",
+      "passed": true,
+      "detail": "every number is program-filled"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 25510,
+  "cost": {
+    "calls": 6,
+    "tokens": 21607,
+    "usd": null,
+    "estimated": false
+  },
+  "trace_id": null,
+  "egress_lines": 6,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/cases/{case:Trade differs|FXF-2026-002}/ask",
+    "field": "question"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "8100",
+      "6050.19",
+      "4035600",
+      "4027500"
+    ],
+    "tolerance": 0.01
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/cases/8e779bf8-76b9-4734-838a-39f6c7574c95/ask",
+      "request": {
+        "question": "Explain the difference in dollars."
+      },
+      "status": 200,
+      "json": {
+        "case_id": "8e779bf8-76b9-4734-838a-39f6c7574c95",
+        "kind": "trade_break",
+        "summary": "Rate: trading export 1.3425, administrator 1.3452 (SGD per USD), a difference of 0.0027. Amount: trading export 4,027,500 SGD, administrator 4,035,600 SGD, a difference of 8,100 SGD. The money at stake is 8,100 SGD (6,050.19 USD at the signed rate); the signed tolerance is 5,000 USD, so it is 1,050.19 USD over it.",
+        "findings": [
+          {
+            "key": "field",
+            "text": "Rate: trading export 1.3425, administrator 1.3452 (SGD per USD), a difference of 0.0027.",
+            "figure": null,
+            "chips": [
+              {
+                "label": "Trading system export \u00b7 trading_export_20261005.csv \u00b7 Sheet1 row 2",
+                "kind": "transaction",
+                "id": "cdc125a7-a865-4d06-8b08-33641c9bb1f5"
+              },
+              {
+                "label": "Fund administrator \u00b7 administrator_trades_20261005.xlsx \u00b7 Sheet1 row 2",
+                "kind": "transaction",
+                "id": "f58c2bac-8fdd-41e5-9fe8-0af728f56c0c"
+              }
+            ]
+          },
+          {
+            "key": "field",
+            "text": "Amount: trading export 4,027,500 SGD, administrator 4,035,600 SGD, a difference of 8,100 SGD.",
+            "figure": null,
+            "chips": [
+              {
+                "label": "Trading system export \u00b7 trading_export_20261005.csv \u00b7 Sheet1 row 2",
+                "kind": "transaction",
+                "id": "cdc125a7-a865-4d06-8b08-33641c9bb1f5"
+              },
+              {
+                "label": "Fund administrator \u00b7 administrator_trades_20261005.xlsx \u00b7 Sheet1 row 2",
+                "kind": "transaction",
+                "id": "f58c2bac-8fdd-41e5-9fe8-0af728f56c0c"
+              }
+            ]
+          },
+          {
+            "key": "impact",
+            "text": "The money at stake is 8,100 SGD (6,050.19 USD at the signed rate); the signed tolerance is 5,000 USD, so it is 1,050.19 USD over it.",
+            "figure": "8,100 SGD",
+            "chips": []
+          }
+        ],
+        "next_steps": [
+          {
+            "who": "Operations",
+            "text": "Ask the administrator and the trading desk which rate and amount is right, and get the booking corrected at the wrong side."
+          },
+          {
+            "who": "Case owner",
+            "text": "Record the cause on the case and send it for check by another person."
+          }
+        ],
+        "missing": [],
+        "sources": [
+          "Trading system export \u00b7 trading_export_20261005.csv \u00b7 Sheet1 row 2",
+          "Fund administrator \u00b7 administrator_trades_20261005.xlsx \u00b7 Sheet1 row 2"
+        ],
+        "worded_by": "model",
+        "question": "Explain the difference in dollars.",
+        "answer": "The rate and amount differ between the two rows. The money at stake is 8,100 SGD (6,050.19 USD at the signed rate); the signed tolerance is 5,000 USD, so it is 1,050.19 USD over it.",
+        "answer_worded_by": "model",
+        "event_id": null,
+        "saved": null,
+        "proposals": [
+          {
+            "kind": "explanation",
+            "case_id": "8e779bf8-76b9-4734-838a-39f6c7574c95",
+            "cause": "field_differs",
+            "item_ref": "",
+            "text": "Cause proposed: a field that differs between the two rows. The rate and amount differ between the two rows. The money at stake is 8,100 SGD (6,050.19 USD at the signed rate); the signed tolerance is 5,000 USD, so it is 1,050.19 USD over it.",
+            "note": "The rate and amount differ between the two rows. The money at stake is 8,100 SGD (6,050.19 USD at the signed rate); the signed tolerance is 5,000 USD, so it is 1,050.19 USD over it.",
+            "sources": []
+          }
+        ],
+        "remembered": []
+      },
+      "ms": 25338,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": [
+    {
+      "bytes": 12344,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:11+0800"
+    },
+    {
+      "bytes": 11577,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:07+0800"
+    },
+    {
+      "bytes": 12710,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:04+0800"
+    },
+    {
+      "bytes": 12164,
+      "decision": "sent",
+      "host": "openrouter.ai",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:30:00+0800"
+    },
+    {
+      "bytes": 12164,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:54+0800"
+    },
+    {
+      "bytes": 11397,
+      "decision": "sent",
+      "host": "generativelanguage.googleapis.com",
+      "kind": "model",
+      "module": "m4_action",
+      "reason_code": "",
+      "time": "2026-10-10T01:29:51+0800"
+    }
+  ]
+}

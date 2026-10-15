@@ -1,0 +1,100 @@
+{
+  "id": "SPA-03",
+  "agent": "span",
+  "role": "analyst",
+  "desc": "Which bronze tables feed the plan.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "words",
+      "passed": true,
+      "detail": "ok"
+    },
+    {
+      "name": "egress_clean",
+      "passed": true,
+      "detail": "0 egress lines, 0 blocked, no names"
+    }
+  ],
+  "error": null,
+  "latency_ms": 100,
+  "cost": null,
+  "trace_id": null,
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "POST",
+    "path": "/api/v1/build/p/{pid}/chat"
+  },
+  "expected": {
+    "status": 200,
+    "words": [
+      "bronze_administrator_positions",
+      "bronze_trading_export_positions"
+    ]
+  },
+  "turns": [
+    {
+      "role": "analyst",
+      "method": "POST",
+      "path": "/api/v1/build/p/prj-bfd3c588/chat",
+      "request": {
+        "text": "What are the source tables of this plan?"
+      },
+      "status": 200,
+      "json": {
+        "turns": [
+          {
+            "id": "t-564d4d78",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which gold table holds the cash by entity?",
+            "at": "2026-10-09T14:49:52+00:00"
+          },
+          {
+            "id": "t-39c919ea",
+            "by": "span",
+            "name": "Span",
+            "text": "gold_investment_report_holdings_monthly is a gold table (ready for dashboards). Month-end holdings by entity in USD and SGD with the status of each value. Columns: report_month, entity, holding, net_worth_usd, net_worth_sgd, status. It is built from position_snapshots, valuation_observations, portfolios, legal_entities, instruments, market_observations. gold_investment_report_cash_daily is a gold table (ready for dashboards). Cash per entity per day, administrator view next to the trading view. Columns: position_date, entity, view_type, cash_usd, status. It is built from position_snapshots, portfolios, legal_entities, instruments.",
+            "at": "2026-10-09T14:49:52+00:00"
+          },
+          {
+            "id": "t-2acc9475",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "Which table has the holdings by month?",
+            "at": "2026-10-09T14:49:53+00:00"
+          },
+          {
+            "id": "t-17c196ce",
+            "by": "span",
+            "name": "Span",
+            "text": "The plan is version 1 and is live. Data comes in from administrator, trading_export, manager_email. Raw landing (bronze, 2): bronze_administrator_positions, bronze_trading_export_positions. Core model (silver, 0), the clean tables every project shares: none. Dashboard tables (gold, 2): gold_investment_report_holdings_monthly, Month-end holdings by entity in USD and SGD with the status of each value., built from position_snapshots, valuation_observations, portfolios, legal_entities, instruments, market_observations; gold_investment_report_cash_daily, Cash per entity per day, administrator view next to the trading view., built from position_snapshots, portfolios, legal_entities, instruments. Ask about any table or column by name for more.",
+            "at": "2026-10-09T14:49:53+00:00"
+          },
+          {
+            "id": "t-de4e3f1d",
+            "by": "person",
+            "name": "Mei Chen",
+            "text": "What are the source tables of this plan?",
+            "at": "2026-10-09T14:49:53+00:00"
+          },
+          {
+            "id": "t-514adca5",
+            "by": "span",
+            "name": "Span",
+            "text": "The plan is version 1 and is live. Data comes in from administrator, trading_export, manager_email. Raw landing (bronze, 2): bronze_administrator_positions, bronze_trading_export_positions. Core model (silver, 0), the clean tables every project shares: none. Dashboard tables (gold, 2): gold_investment_report_holdings_monthly, Month-end holdings by entity in USD and SGD with the status of each value., built from position_snapshots, valuation_observations, portfolios, legal_entities, instruments, market_observations; gold_investment_report_cash_daily, Cash per entity per day, administrator view next to the trading view., built from position_snapshots, portfolios, legal_entities, instruments. Ask about any table or column by name for more.",
+            "at": "2026-10-09T14:49:53+00:00"
+          }
+        ],
+        "pending": []
+      },
+      "ms": 100,
+      "expect": null,
+      "cleanup": false
+    }
+  ],
+  "rows_seen": 0,
+  "egress": []
+}

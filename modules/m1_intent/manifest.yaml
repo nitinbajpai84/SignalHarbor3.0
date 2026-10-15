@@ -1,0 +1,96 @@
+id: m1_intent
+name: Intent
+agent: North
+# Organiser capability (A-025): company_admin, sponsor, analyst. participant and approver routes come with later packages.
+routes:
+  - {method: GET, path: "/api/modules/m1_intent/lists", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/walls", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/roles", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m1_intent/sessions/{session_id}/roles", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m1_intent/sessions/{session_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: DELETE, path: "/api/modules/m1_intent/sessions/{session_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/outcomes/{outcome_id}", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/templates", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/templates", roles: [company_admin, sponsor, analyst]}
+  # M1-P03 briefing, Nira and the stage timer. `participant` routes need the guest principal of M1-P02 (a seat id).
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/briefing", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/briefing/confirm", roles: [company_admin, sponsor, analyst, participant]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/briefing/send", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m1_intent/sessions/{session_id}/briefing/video", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/briefing/video", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/nira", roles: [company_admin, sponsor, analyst, participant]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/timer", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/timer/extend", roles: [company_admin, sponsor, analyst]}
+  # M1-P04: the private room. participant is listed so the orchestrator can wire the guest principal (M1-P02);
+  # until then only the organiser holds a seat and everyone else gets "not found".
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/room", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/messages", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/notes", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/practice", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/room/library", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/done", roles: [company_admin, sponsor, analyst, participant, owner, approver]}
+  # M1-P05: the note form and submitting (participant routes, guests included), the organiser's link shown again,
+  # an admin reading a transcript (D-016, A-031) and retention (D-017), the last two company_admin only.
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/prefill", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/room/notes/{note_id}/submit", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/join-link", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/retention/purge", roles: [company_admin]}
+  # M1-P02: the room. Organiser routes first, then the routes a joined person (token or account) also uses.
+  # Which of them a token holder may use is decided in route_permissions.yaml (`guest`), not here.
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/start", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/link", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/seats/{seat}/revoke", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/briefing", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/lobby", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/live", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/join", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  # M1-P06 voice: speech in (private rooms stage only), spoken replies, the person's own mute. Only the seat's own person.
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/voice", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/voice", roles: [participant, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/voice/transcribe", roles: [participant, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/voice/speak", roles: [participant, company_admin, sponsor, analyst]}
+  # M1-P09 charter and sign-off. Read: the organiser or a seated person of the company. Sign: sponsors and company admins only.
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/charter", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/charter", roles: [company_admin, sponsor, analyst]}
+  - {method: PUT, path: "/api/modules/m1_intent/sessions/{session_id}/charter", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/charter/sign", roles: [company_admin, sponsor]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/charter/send", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/charter/withdraw", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/charter/download", roles: [participant, company_admin, sponsor, analyst, approver, owner]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/charter/email", roles: [company_admin, sponsor, analyst]}
+  # M1-P09 the approver, who has no account: `entry` routes that check their own link token (api/approver.py)
+  - {method: POST, path: "/api/modules/m1_intent/approver/charter", roles: [participant, approver, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/approver/decision", roles: [participant, approver, company_admin, sponsor, analyst, owner]}
+  # IC v2 spec 11: the share visitor routes (sign-in needed; api/shared.py)
+  - {method: POST, path: "/api/modules/m1_intent/shared/view", roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/shared/note", roles: [participant, owner, company_admin, sponsor, analyst, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/approver/closure", roles: [participant, owner, company_admin, sponsor, analyst, approver]}  # IC v2 spec 09: the closure by approver link (api/closure_approver.py)
+  # M1-P07: the board (organiser: counts, close the rooms, group, edit) and back in the room (everyone seated: read, vote, agree, comment; organiser: start, tick, pause, resume)
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/board", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/board/counts", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/group", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/restore", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/notes/{note_id}/move", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/clusters/{cluster_id}/rename", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/clusters/{cluster_id}/split", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/board/clusters", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/rooms/close", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/together", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/vote", roles: [participant, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/agree", roles: [participant, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/comments", roles: [participant, company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/done", roles: [participant]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/tick", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/together/clusters/{cluster_id}/shelf", roles: [company_admin, sponsor, analyst]}
+  - {method: GET, path: "/api/modules/m1_intent/sessions/{session_id}/summary", roles: [participant, company_admin, sponsor, analyst, owner, approver]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/pause", roles: [company_admin, sponsor, analyst]}
+  - {method: POST, path: "/api/modules/m1_intent/sessions/{session_id}/resume", roles: [company_admin, sponsor, analyst]}
+tools: [industry_practice, problem_library]  # M1-P04: North's read-only tools (registered per session in the kernel registry)
+pack_sections: [problems]
+inputs: []
+output: charter

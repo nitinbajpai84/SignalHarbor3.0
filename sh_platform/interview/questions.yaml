@@ -1,0 +1,26 @@
+# The one interview (docs/specs/CUSTOMER-STANDARD-INPUTS.md, "The one interview"). Wording is the spec's, word for word.
+# kinds: which questions each kind of person is asked. A person is one kind: sponsor, else owner (owns a source), else participant.
+#        "participant" covers leaders and participants. Q14 closes every interview.
+# agent: who asks it (North for Q1-Q6, Lens for Q7-Q12; Q13 is North's; Q14 is the closing question: North, or Lens for an owner).
+# minutes: the time estimate per kind for the whole interview (spec: about 10, 15 and 5 minutes).
+# feeds: what the answer becomes in the outputs.
+# prefill: which profile section drafts the answer before it is asked; none = ask from scratch.
+minutes: {participant: 10, owner: 15, sponsor: 5}
+kinds: {participant: [Q1, Q2, Q3, Q4, Q5, Q6, Q14], owner: [Q7, Q8, Q9, Q10, Q11, Q12, Q14], sponsor: [Q13, Q14]}
+follow_up_limit: 2
+questions:
+  - {id: Q1,  agent: north, prefill: none, text: "Which decisions do you make each month that need better information?", feeds: "charter problems (M1)"}
+  - {id: Q2,  agent: north, prefill: none, text: "What slows you down or goes wrong today? Who is affected, and how often?", feeds: "pain points (M1), with severity"}
+  - {id: Q3,  agent: north, prefill: reported_figures, text: "Which numbers tell you it is going well, and where do you see them today?", feeds: "measures (M1/M2), the report that holds them (M2 source), and the reported figure as the benchmark (M3)"}
+  - {id: Q4,  agent: north, prefill: none, text: "What would you like to see coming before it happens?", feeds: "future signals (M1), outside feeds to consider (M3)"}
+  - {id: Q5,  agent: north, prefill: none, text: "If you could change one thing, what would you change, and which number should move?", feeds: "what-if levers (M1)"}
+  - {id: Q6,  agent: north, prefill: none, text: "What matters now, and what can wait?", feeds: "priority Must/Should/Could (M1), impact score (M3)"}
+  - {id: Q7,  agent: lens,  prefill: systems, text: "Where does this number come from, who produces it, and when does it arrive?", feeds: "source, owner, arrival and SLA (M2 catalogue)"}
+  - {id: Q8,  agent: lens,  prefill: definitions, text: "How is it worked out today?", feeds: "business and technical definition (M2 glossary and technical definition), the rule for the trial (M3)"}
+  - {id: Q9,  agent: lens,  prefill: governance, text: "Who may see it? Does it hold personal data?", feeds: "governance per field (M2), restricted handling (M3)"}
+  - {id: Q10, agent: lens,  prefill: none, text: "Who do you get inputs from, and who uses your output?", feeds: "process map lanes and hand-offs (M2)"}
+  - {id: Q11, agent: lens,  prefill: none, text: "Can you share one recent full period of the data, and the figure you reported for it?", feeds: "sample (M3 scan and trial), benchmark (M3)"}
+  - {id: Q12, agent: lens,  prefill: none, text: "Is anything blocking access: licences, systems, or work already under way?", feeds: "blockers and running programmes (M3 plan bands)"}
+  - {id: Q13, agent: north, prefill: none, text: "What should be true in three months, who signs each result, and by when?", feeds: "success criteria, sign-off names, deadlines (all modules)"}
+  - {id: Q14, agent: closing, prefill: none, text: "Is there anything else you would like us to know, anything we did not ask?", feeds: "a note in the person's own words, filed by Lens and North as an extra pain point, signal, lever, risk or context; it also asks whether it may be shared, named or anonymous"}
+triggers: [vague, contradicts, new_name, pain, benchmark, dependency, restricted]

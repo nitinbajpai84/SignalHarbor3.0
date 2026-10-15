@@ -1,0 +1,7 @@
+# M1 The company map: every company role reads it and may say "this looks wrong"; the handler lets only the decision maker mark a note seen.
+routes:
+  GET /api/v1/map: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/ask: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v1/map/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/node/{node_id}/comments: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v1/map/comments/{cid}/seen: {roles: [company_admin, sponsor]}

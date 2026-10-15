@@ -1,0 +1,258 @@
+/* Shell styles that the legacy sh.css does not have. Legacy tokens only: no colour literals here. */
+
+.page { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; }
+.page.ds-screen { max-width: none; margin: 0; padding: 0; }  /* design-system pages are fluid */
+/* inside the shell (legacy .n-body > .n-nav + .n-main) the page scrolls as a whole and the content fills the width */
+.n-main { height: auto; overflow: visible; padding: 24px 28px 64px; }
+.n-main > .page { max-width: 1120px; margin: 0; padding: 0; }
+.n-body { align-items: flex-start; }
+.n-nav-who { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--teal); margin-bottom: 5px; font-weight: 700; }
+.n-menu-btn { display: none; min-height: 34px; }
+@media (max-width: 900px) { .n-menu-btn { display: flex; } .n-main { padding: 16px 16px 48px; } }
+.narrow { max-width: 420px; margin: 8vh auto 0; width: calc(100% - 32px); padding: 24px; }
+
+/* top bar: wraps on a phone instead of scrolling sideways */
+.n-topbar { height: auto; min-height: var(--header-h); flex-wrap: wrap; padding: 8px 16px; gap: 8px 14px; }
+.n-brand strong { overflow-wrap: anywhere; white-space: normal; }
+.brand-mark { display: block; flex: none; }
+.n-company-logo { height: 28px; width: auto; max-width: 120px; vertical-align: middle; margin-right: 8px; }
+.n-company { color: var(--ink2); font-size: 14px; padding-left: 12px; margin-left: 4px; border-left: 1px solid var(--mute); overflow-wrap: anywhere; }
+.narrow .brand-mark { margin-bottom: 8px; }
+
+/* buttons: legacy .n-btn at a comfortable touch size */
+.n-btn { min-height: 44px; justify-content: center; font-family: inherit; }
+.n-btn:disabled { opacity: .6; cursor: not-allowed; }
+.n-btn.primary:hover:not(:disabled) { border-color: var(--teal); }
+
+/* form fields: the legacy file leaves inputs unstyled. The border uses --mute so it holds 3:1 on the card. */
+label { display: block; margin-bottom: 16px; font-weight: 600; color: var(--ink); }
+input[type="email"], input[type="password"], input[type="text"], input[type="number"], textarea, select {
+  display: block; width: 100%; margin-top: 4px; padding: 8px 12px; min-height: 44px;
+  background: var(--card); color: var(--ink);
+  border: 1px solid var(--mute); border-radius: var(--radius-md);
+}
+
+textarea { min-height: 88px; font-family: inherit; resize: vertical; }
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+/* module 1 screens (Intent Centre): home list and the Prepare wizard */
+.m1-list { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 12px; }
+.m1-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.m1-row-main { display: flex; align-items: center; gap: 10px; flex: 1 1 280px; min-width: 0; overflow-wrap: anywhere; }
+.m1-row .n-muted { flex: 1 1 200px; }
+.m1-fieldset { margin: 0 0 16px; padding: 0; border: 0; min-width: 0; }
+.m1-fieldset legend { padding: 0; margin-bottom: 8px; font-weight: 600; color: var(--ink); }
+.m1-choice { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-weight: 400; min-height: 32px; }
+.m1-choice input { margin-top: 4px; flex: none; width: 18px; height: 18px; }
+.m1-choice strong { display: block; }
+.m1-help { display: block; font-weight: 400; font-size: 14px; color: var(--ink2); margin-top: 2px; }
+.m1-split { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.m1-review { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 6px 16px; margin: 0 0 16px; }
+.m1-review dt { color: var(--ink2); font-weight: 600; }
+.m1-review dd { margin: 0; overflow-wrap: anywhere; }
+.m1-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.m1-template { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 16px 0; }
+.m1-template label { margin: 0; flex: 1 1 240px; }
+a.n-btn { display: inline-flex; align-items: center; text-decoration: none; }
+@media (max-width: 480px) { .m1-review { grid-template-columns: 1fr; } }
+
+/* theme control: three segments, native radios kept for the keyboard */
+.theme-control { display: flex; margin: 0; padding: 0; border: 0; min-width: 0; }
+.theme-choice { display: block; margin: 0; font-weight: 600; }
+.theme-choice span {
+  display: flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; cursor: pointer;
+  background: var(--card); color: var(--ink2);
+  border: 1px solid var(--mute); margin-left: -1px;
+}
+.theme-choice:first-child span { margin-left: 0; border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.theme-choice:last-child span { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.theme-choice input:checked + span { background: var(--teal-tint); color: var(--ink); border-color: var(--teal2); box-shadow: 0 0 0 1px var(--teal2) inset; position: relative; }
+.theme-choice input:focus-visible + span { outline: 2px solid var(--teal); outline-offset: 2px; position: relative; }
+.login-theme { margin-top: 24px; display: flex; justify-content: center; }
+
+/* states: errors use the semantic danger token, not the readiness colours */
+.state { margin: 12px 0; }
+.state-error { color: var(--danger); background: var(--danger-soft); border-radius: var(--radius-md); padding: 8px 12px; font-weight: 600; }
+
+/* tiles on the home page */
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.tile { display: flex; flex-direction: column; gap: 6px; height: 100%; color: var(--ink); }
+.tile:hover { border-color: var(--teal); text-decoration: none; }
+.tile-number { color: var(--mute); font-size: 12.5px; }
+.tile-name { font-family: var(--font-heading); font-size: 18px; font-weight: 700; }
+.tile-agent { color: var(--teal2); font-size: 14px; font-weight: 600; margin-top: auto; } /* teal marks agent presence */
+
+/* wizard frame */
+.wizard-steps { list-style: none; margin: 0; padding: 0; row-gap: 6px; }
+.wizard-journey { justify-content: flex-start; }
+.wizard-nav { display: flex; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.wizard-body > * + * { margin-top: 12px; }
+.wizard-body .n-agent-chip { padding-left: 0; }
+.wizard-suggestion p { margin: 0; color: var(--ink); } /* true copper (the legacy "you decide" block) marks suggestions */
+.tag { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--suggest2); }
+
+/* sticky notes laid out as the earlier board does: a wrapping row of cards, one column on a phone */
+.n-sticky-board { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.m1-list.n-sticky-board { display: flex; }
+.n-sticky > * + * { margin-top: 6px; }
+@media (max-width: 480px) { .n-sticky-board > li, .n-sticky-board .n-sticky { flex: 1 1 100%; max-width: none; min-width: 0; } }
+
+/* panel titles are real headings inside the legacy .n-panel-title block */
+.n-panel-title > h2, .n-panel-title > h3 { font: inherit; margin: 0; }
+.n-panel-body > :last-child { margin-bottom: 0; }
+.n-panel + .n-panel, .n-panel + section, section + .n-panel { margin-top: 16px; }
+
+@media (max-width: 480px) {
+  .tiles { grid-template-columns: 1fr; }
+  .n-topbar-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .narrow { margin-top: 24px; }
+}
+
+
+/* M1-P02: join page, lobby and organiser's room. Navy buttons and plain radios lose their edge on the dark cards:
+   in the dark theme they get a teal edge, and the seat radios are drawn with a visible ring. Theme tokens only. */
+.m1-room .m1-choice input[type="radio"], .m1-join .m1-choice input[type="radio"] {
+  appearance: none; border: 2px solid var(--ink2); border-radius: 50%; background: var(--card);
+}
+.m1-room .m1-choice input[type="radio"]:checked, .m1-join .m1-choice input[type="radio"]:checked {
+  border-color: var(--teal); background: radial-gradient(circle, var(--teal) 0 40%, var(--card) 45%);
+}
+.m1-room .m1-choice input[type="radio"]:focus-visible, .m1-join .m1-choice input[type="radio"]:focus-visible {
+  outline: 2px solid var(--teal); outline-offset: 2px;
+}
+.m1-room .m1-choice input[type="radio"]:disabled, .m1-join .m1-choice input[type="radio"]:disabled { border-color: var(--mute); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .m1-room .n-btn.primary,
+  :root:not([data-theme="light"]) .m1-join .n-btn.primary { border-color: var(--teal); }
+}
+:root[data-theme="dark"] .m1-room .n-btn.primary, :root[data-theme="dark"] .m1-join .n-btn.primary { border-color: var(--teal); }
+
+/* ---- M1-UI1: the module 1 screens, laid out with the earlier prototype's classes. Legacy tokens only. ---- */
+
+/* page head: the eyebrow above a title, the same teal label the panels use */
+.n-page-head .eyebrow { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--teal2); margin-bottom: 3px; }
+.n-crumb a { color: var(--text-muted); }
+.n-crumb a:hover { color: var(--teal2); }
+.n-panel-head { flex-wrap: wrap; }
+/* D12: a panel in a grid may shrink below its content, and its header buttons wrap instead of being cut off at the edge */
+.n-panel, .m1-cluster-grid > * { min-width: 0; }
+.n-panel-actions { flex-wrap: wrap; justify-content: flex-end; }
+.n-roster-card { background: var(--card); border-radius: var(--radius-lg); }
+.n-roster-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.m1-help-panel { margin-top: 24px; }
+
+/* seats: the earlier room's participants (person chips in small cards) */
+.m1-seats { list-style: none; margin: 12px 0 16px; padding: 0; }
+.m1-seat { display: flex; flex-direction: column; gap: 8px; flex: 1 1 200px; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.m1-room .n-room-purpose, .m1-room .n-room-progress { margin-bottom: 14px; }
+.m1-room h3 { font-size: 14px; margin: 16px 0 6px; }
+.n-person-chip .avatar { background: var(--teal-tint); color: var(--teal2); border-color: transparent; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.m1-join .n-room-purpose { margin-bottom: 12px; }
+.m1-join .m1-choice { padding: 8px 10px; border: 1px solid var(--border-hairline); border-radius: var(--radius-md); background: var(--bg2); }
+.m1-join .m1-choice:has(input:checked) { border-color: var(--teal2); background: var(--teal-tint); }
+
+/* the stage timer */
+.m1-timer { margin: 0 0 16px; }
+.m1-timer-body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.m1-timer-body.warning { border-color: var(--warning); background: var(--warning-soft); }
+.m1-timer-body.over { border-color: var(--danger); }
+.m1-timer-clock { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.m1-timer-icon { display: flex; color: var(--teal2); }
+.m1-timer-digits { font-family: var(--font-heading); font-size: 28px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.m1-timer-body.warning .m1-timer-digits, .m1-timer-body.over .m1-timer-digits { color: var(--warning-text); }
+.m1-timer-bar { flex: 1 1 160px; min-width: 120px; }
+.m1-timer-flag { margin: 0; font-weight: 600; color: var(--warning-text); }
+.m1-timer-extend { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 220px; justify-content: flex-end; }
+
+/* briefing: video and room rules side by side, wrapping to one column on a phone */
+.m1-brief-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: start; margin-bottom: 16px; }
+.m1-brief-grid > .n-panel { margin: 0; }
+.m1-video { width: 100%; max-height: 360px; border-radius: var(--radius-md); background: var(--night); }
+.m1-video-placeholder { min-height: 180px; border: 1px dashed var(--border-hairline); border-radius: var(--radius-md); padding: 16px; }
+.m1-rules .n-sticky-board { margin: 12px 0; }
+.m1-rules .n-sticky { flex: 1 1 220px; }
+.m1-your-part, .m1-nira { margin-top: 16px; }
+.m1-organiser-part { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-hairline); display: grid; gap: 8px; justify-items: start; }
+.m1-nira-head { border-bottom: 0; padding: 0 0 8px; flex-wrap: wrap; }
+.m1-nira-name { font: inherit; margin: 0; }
+.m1-nira-answer { margin-top: 12px; overflow-wrap: anywhere; }
+.m1-nira-answer p { margin: 4px 0 0; color: var(--ink); }
+.m1-nira textarea { margin: 6px 0 10px; }
+
+/* the private room: transcript and your turn on the left, notes and the problem library on the right */
+.n-e1-studio-grid.m1-room-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.m1-room-main, .m1-room-side { display: grid; gap: 16px; min-width: 0; align-content: start; }
+.m1-room-main > .n-panel, .m1-room-side > .n-panel { margin: 0; }
+.m1-turns { list-style: none; margin: 12px 0 0; padding: 0; }
+.m1-turn { margin: 0; overflow-wrap: anywhere; }
+.m1-turn .n-message .bubble { flex: 1 1 auto; max-width: none; }
+.n-message.from-human .bubble { margin-left: 0; }
+.n-message.is-muted .text { color: var(--text-muted); }
+.m1-quote { margin: 6px 0; padding: 6px 10px; border-left: 3px solid var(--mute); color: var(--ink); font-style: normal; }
+.m1-correcting { margin: 0 0 12px; overflow-wrap: anywhere; }
+.m1-note-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; }
+.m1-note-sticky { max-width: none; min-width: 0; overflow-wrap: anywhere; }
+.m1-note-meta { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.m1-priority { margin: 0; font-weight: 400; flex: 1 1 140px; }
+.m1-practice { margin-top: 10px; }
+.m1-lib-form { margin-top: 12px; }
+.n-message .reason { font-style: normal; }
+/* the lobby reads like a game lobby: each seat is a tile with a round badge, the name and the role; an empty seat is dashed */
+.m1-seat .n-person-chip { flex-direction: column; align-items: flex-start; gap: 6px; }
+.m1-seat .n-person-chip .avatar { width: 44px; height: 44px; font-size: 15px; }
+.m1-seat .n-person-chip .name { font-size: 14px; }
+.m1-seat .n-person-chip .role { font-size: 14px; color: var(--ink); font-weight: 600; }
+.m1-seat[data-state="free"] { border-style: dashed; background: transparent; }
+.m1-seat[data-state="free"] .avatar { background: transparent; border: 1px dashed var(--mute); color: var(--mute); }
+.m1-seat[data-state="revoked"] { opacity: .7; }
+.m1-ask { margin-top: 12px; }
+.m1-charter { margin-top: 16px; }
+.m1-charter .n-e1-signature { align-self: start; }
+.m1-charter .n-e1-def-row { display: block; }
+@media (max-width: 480px) { .m1-timer-extend { justify-content: flex-start; } .n-brand { min-width: 0; flex-wrap: wrap; white-space: normal; } }
+
+/* ---- M1-UI2: Nira docked on every module 1 screen (the earlier companion's classes, in legacy sh.css) ---- */
+.n-chat-section-body .n-companion-explainer-body { display: block; }
+.n-chat-section-body .n-companion-explainer-body + .n-companion-intro, .n-chat-section-body .n-companion-intro + .n-companion-explainer-body { margin-top: 8px; }
+.n-companion-panel-head .n-btn { min-height: 30px; padding: 2px 8px; font-size: 12px; gap: 4px; }
+.n-companion-panel-head .n-icon-btn { min-width: 30px; min-height: 30px; }
+.n-companion-ask .n-icon-btn { min-width: 30px; min-height: 30px; }
+.n-companion-ask-input { margin: 0; min-height: 0; padding: 4px 0; border: 0; }
+.n-companion-actions .n-btn { min-height: 32px; font-size: 12.5px; gap: 6px; }
+.n-companion-footer .n-muted, .n-companion-privacy-note { font-size: 11px; color: var(--text-muted); }
+.n-companion-footer .m1-actions .n-btn { min-height: 32px; font-size: 12.5px; }
+.n-companion-scroll .state { margin: 0; }
+.m1-finish { margin-top: 0; }
+.n-companion-flow-link { margin-top: auto; }
+.n-chat-section-toggle .n-chat-section-label { flex: 1; text-align: left; }
+
+/* Intent Centre v2: a view with North's dock beside it (file 08); the dock becomes a sheet under 720px (file 17). */
+.ic-with-north { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+.ic-north-dock { position: sticky; top: 72px; }
+@media (max-width: 720px) {
+  .ic-with-north { grid-template-columns: minmax(0, 1fr); }
+  .ic-north-dock { position: static; }
+}
+
+/* phone tap targets for the top bar (spec 17): padding only */
+@media (max-width: 719px) {
+  .cs-bar .cs-burger { min-width: 44px; min-height: 44px; justify-content: center; align-items: center; font-size: 14px; }
+  .cs-bar .cs-avatar { width: 44px; height: 44px; }
+  .cs-menu a, .cs-menu button.cs-item { min-height: 44px; display: inline-flex; align-items: center; }
+}
+
+/* spec 17 on the phone: the Bring companion panel meets the 14 px text and 44 px touch floors */
+@media (max-width: 720px) {
+  .n-companion-panel-head .n-btn, .n-companion-actions .n-btn, .n-companion-footer .m1-actions .n-btn { min-height: 44px; font-size: 14px; }
+  .n-companion-panel-head .n-icon-btn, .n-companion-ask .n-icon-btn { min-width: 44px; min-height: 44px; }
+  .n-companion-footer .n-muted, .n-companion-privacy-note, .n-companion-panel li, .n-companion-panel .n-muted { font-size: 14px; }
+}
+
+/* OB-9: Span's chat in Build (the workbench and the Architecture room) sits on a design-system card. The legacy bubble ground
+   (--bg2) showed there as a highlighted band behind each line; on these cards the bubble keeps only its edge. Tokens only. */
+.wb-log .n-message .bubble, .b8-split .n-message .bubble { background: transparent; border-color: var(--ds-line-2); color: var(--ds-ink); }
+.wb-log .n-message.from-agent .bubble, .b8-split .n-message.from-agent .bubble { border-color: var(--ds-teal-bright); }
+.wb-log .n-message .text, .b8-split .n-message .text { color: var(--ds-ink); }
+
+/* V6: page titles are serif, as on the V5 artboards (the design-system pages use .ds-frame__title) */
+.n-page-title { font-family: var(--ds-font-serif, Georgia, serif); font-weight: 600; }

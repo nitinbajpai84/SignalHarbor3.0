@@ -1,0 +1,44 @@
+.pv { display: grid; gap: var(--ds-s3); padding: var(--ds-s2) var(--ds-s3); }
+.pv h2, .pv h3 { margin: 0; }
+.pv h2 { font-size: 18px; }
+.pv h3 { font-size: 16px; }
+.pv__cols { display: grid; gap: var(--ds-s3); grid-template-columns: minmax(0, 1fr); }
+.pv__main, .pv__aside { display: grid; gap: var(--ds-s3); align-content: start; min-width: 0; }
+.pv__card { padding: var(--ds-s3); display: grid; gap: var(--ds-s2); }
+.pv__row { display: flex; flex-wrap: wrap; gap: var(--ds-s2); align-items: center; }
+.pv__stats { display: grid; gap: var(--ds-s2); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pv__stat { display: grid; gap: 4px; padding: var(--ds-s2); border: 1px solid var(--ds-line); border-radius: var(--ds-radius); min-width: 0; }
+.pv__stat strong { font-size: 20px; overflow-wrap: anywhere; }
+.pv__soft { font-size: 14px; color: var(--ds-ink-soft); margin: 0; }
+.pv__err { font-size: 14px; color: var(--ds-red); margin: 0; }
+.pv__field { display: grid; gap: 4px; font-size: 14px; }
+.pv__field input, .pv__field textarea, .pv__field select { font: inherit; padding: 8px 10px; min-height: 44px; border: 1px solid var(--ds-line-2); border-radius: var(--ds-radius); background: var(--ds-ground); color: var(--ds-ink); }
+.pv__field textarea { min-height: 88px; }
+.pv__list { list-style: none; margin: 0; padding: 0; display: grid; }
+.pv__list li { padding: 10px 0; border-top: 1px solid var(--ds-line); font-size: 14px; }
+.pv__list a, .pv__link { display: inline-flex; align-items: center; min-height: 44px; color: var(--ds-teal-bright); }
+.pv__chart { width: 100%; height: auto; display: block; }
+.pv__chart .band { fill: color-mix(in srgb, var(--ds-teal) 18%, transparent); }
+.pv__chart .tgt { stroke: var(--ds-amber); stroke-dasharray: 5 4; fill: none; }
+.pv__chart .ln { stroke: var(--ds-teal-bright); fill: none; stroke-width: 2; }
+.pv__chart .dot { fill: var(--ds-teal-bright); }
+.pv__chart .st { stroke: var(--ds-ink-soft); stroke-dasharray: 2 3; }
+.pv__chart text { fill: var(--ds-ink-soft); font-size: 11px; }
+.pv__radio { display: grid; gap: var(--ds-s1); padding: var(--ds-s2); border: 1px solid var(--ds-line); border-radius: var(--ds-radius); }
+.pv__radio label { display: flex; gap: 8px; align-items: center; min-height: 44px; font-size: 14px; }
+.pv__bar { display: flex; flex-wrap: wrap; gap: var(--ds-s2); align-items: center; }
+.pv__table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pv__table th, .pv__table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--ds-line); }
+.pv__chip { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--ds-line-2); font-size: 14px; background: none; color: var(--ds-ink); cursor: pointer; }
+.pv__chip--static { min-height: 0; padding: 4px 12px; cursor: default; }
+.pv__chip[data-state="proved"] { border-color: var(--ds-teal-bright); }
+.pv__chip[data-state="stopped"] { color: var(--ds-ink-soft); }
+@media (min-width: 900px) {
+  .pv__cols { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .pv__stats { grid-template-columns: minmax(0, 1fr); }
+  .pv__bar--sticky { position: sticky; bottom: 0; background: var(--ds-ground); padding: var(--ds-s2) 0; border-top: 1px solid var(--ds-line); z-index: 5; }
+  .pv__bar--sticky .ds-btn { flex: 1 1 100%; min-height: 44px; }
+  .pv .ds-btn { min-height: 44px; }
+}

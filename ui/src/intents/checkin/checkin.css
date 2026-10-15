@@ -1,0 +1,43 @@
+/* Weekly check-in screens (38, 39). Tokens only; phone first. */
+.ck { display: flex; flex-direction: column; gap: var(--ds-s3); color: var(--ds-ink); max-width: 100%; box-sizing: border-box; }
+.ck p { margin: 0; }
+.ck-muted { color: var(--ds-ink-muted); font-size: 14px; }
+.ck-panel { padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s2); }
+.ck-panel h2, .ck-panel h3 { margin: 0; font-size: 16px; }
+.ck-row { display: flex; flex-wrap: wrap; gap: var(--ds-s1); align-items: center; }
+.ck-grid { display: grid; grid-template-columns: minmax(0, 640px) minmax(0, 280px); gap: var(--ds-s5); align-items: start; }
+.ck-grid--home { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ck-field { display: flex; flex-direction: column; gap: 6px; }
+.ck-field label, .ck-label { font-size: 14px; color: var(--ds-ink-soft); }
+.ck input[type="text"], .ck input[type="number"], .ck select, .ck textarea { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ds-line-2); background: var(--ds-ground); color: var(--ds-ink); font: inherit; font-size: 16px; }
+.ck textarea { min-height: 76px; resize: vertical; }
+.ck-card { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 10px 16px; border: 1px solid var(--ds-line); border-left: 6px solid var(--ds-line-2); border-radius: var(--ds-radius); background: var(--ds-surface-2); cursor: pointer; text-align: left; color: var(--ds-ink); font: inherit; width: 100%; box-sizing: border-box; }
+.ck-card--ran { border-left-color: var(--ds-teal); }
+.ck-card--broke { border-left-color: var(--ds-amber); }
+.ck-card--thought { border-left-color: var(--ds-teal-bright); }
+.ck-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ds-line-2); font-size: 14px; color: var(--ds-ink-soft); }
+.ck-tag--guess { border-style: dashed; color: var(--ds-amber); border-color: var(--ds-amber); }
+.ck-seg { display: flex; gap: var(--ds-s1); flex-wrap: wrap; }
+.ck-seg .ds-btn { flex: 1 1 100px; }
+.ck-seg .ds-btn[aria-pressed="true"] { background: var(--ds-teal); border-color: var(--ds-teal); color: var(--ds-on-teal); font-weight: 600; }
+.ck-block > button.ck-head { all: unset; box-sizing: border-box; width: 100%; display: flex; justify-content: space-between; gap: var(--ds-s2); font-weight: 600; font-size: 15px; cursor: pointer; min-height: 44px; align-items: center; }
+.ck-sheet { border: 1px solid var(--ds-teal); border-radius: var(--ds-radius); padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s2); background: var(--ds-surface); }
+.ck-ask { border: 1px solid var(--ds-amber); border-radius: var(--ds-radius); padding: var(--ds-s3); display: flex; flex-direction: column; gap: var(--ds-s2); }
+.ck-err { color: var(--ds-amber); font-size: 14px; }
+.ck-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--ds-s1); }
+.ck-draft { border: 1px dashed var(--ds-amber); border-radius: var(--ds-radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.ck-strip { display: flex; gap: var(--ds-s3); flex-wrap: wrap; }
+.ck-strip > div { min-width: 120px; }
+.ck-strip strong { display: block; font-size: 22px; }
+.ck-dialog { position: fixed; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: var(--ds-scrim); }
+.ck-dialog > div { width: 480px; max-width: 100%; box-sizing: border-box; padding: var(--ds-s4); border-radius: var(--ds-radius); background: var(--ds-surface); border: 1px solid var(--ds-line-2); display: flex; flex-direction: column; gap: var(--ds-s2); }
+@media (max-width: 900px) { .ck-grid, .ck-grid--home { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .ck-dialog { align-items: flex-end; }
+  .ck-dialog > div { width: 100%; border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0; }
+  .ck-sheet { position: fixed; left: 0; right: 0; bottom: 56px; z-index: 20; max-height: 70vh; overflow-y: auto; border-radius: var(--ds-radius-lg) var(--ds-radius-lg) 0 0; }
+  .ck .ds-btn, .ck .ds-chip { min-height: 44px; }
+}
+.ck .ds-chip { white-space: normal; text-align: left; max-width: 100%; box-sizing: border-box; }
+.ck-grid > * { min-width: 0; }
+.ck-block > button.ck-head:focus-visible { outline: 2px solid var(--ds-teal-bright); outline-offset: 2px; }

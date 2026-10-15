@@ -1,0 +1,6 @@
+# E2c Identity matching. Waiting matches are read by the people who decide them; the seat (Operations or data engineer) is checked again in code.
+routes:
+  GET /api/v1/evidence/aliases: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/aliases/approve-exact: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/aliases/{identifier_id}/approve: {roles: [company_admin, analyst]}
+  POST /api/v1/evidence/aliases/{identifier_id}/reject: {roles: [company_admin, analyst]}

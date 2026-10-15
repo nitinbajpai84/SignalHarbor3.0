@@ -1,0 +1,154 @@
+{
+  "id": "LUM-02",
+  "agent": "lumen",
+  "role": "sponsor",
+  "desc": "K02 Cash by entity on 8 Oct - administrator and trading export for each entity.",
+  "status": "pass",
+  "scores": [
+    {
+      "name": "figure_match",
+      "passed": true,
+      "detail": "all figures found"
+    },
+    {
+      "name": "citation_present",
+      "passed": true,
+      "detail": "sources or trace id present"
+    }
+  ],
+  "error": null,
+  "latency_ms": 45,
+  "cost": null,
+  "trace_id": null,
+  "forgotten": [],
+  "egress_lines": 0,
+  "egress_blocked": 0,
+  "mode": "testing",
+  "route": {
+    "method": "GET",
+    "path": "/api/v1/consume/p/{pid}/dashboards/{did}/tiles/t-000002/data"
+  },
+  "expected": {
+    "status": 200,
+    "figures": [
+      "880400",
+      "868000",
+      "1150000",
+      "1148200",
+      "2300000"
+    ]
+  },
+  "turns": [
+    {
+      "role": "sponsor",
+      "method": "GET",
+      "path": "/api/v1/consume/p/prj-30b9332c/dashboards/dash-0ad2b1c7/tiles/t-000002/data",
+      "request": null,
+      "status": 200,
+      "json": {
+        "tile": {
+          "id": "t-000002",
+          "title": "Cash by entity",
+          "kpi": "K02",
+          "sql": "select entity, view_type, cash_usd from gold_investment_report_cash_daily where position_date = (select max(position_date) from gold_investment_report_cash_daily) order by entity, view_type",
+          "spec": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "mark": "bar",
+            "encoding": {
+              "x": {
+                "field": "entity",
+                "type": "nominal"
+              },
+              "y": {
+                "field": "cash_usd",
+                "type": "quantitative"
+              },
+              "color": {
+                "field": "view_type",
+                "type": "nominal"
+              },
+              "xOffset": {
+                "field": "view_type"
+              }
+            }
+          },
+          "note": "Administrator view next to the trading view.",
+          "state": "accepted"
+        },
+        "spec": {
+          "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+          "mark": "bar",
+          "encoding": {
+            "x": {
+              "field": "entity",
+              "type": "nominal"
+            },
+            "y": {
+              "field": "cash_usd",
+              "type": "quantitative"
+            },
+            "color": {
+              "field": "view_type",
+              "type": "nominal"
+            },
+            "xOffset": {
+              "field": "view_type"
+            }
+          }
+        },
+        "columns": [
+          "entity",
+          "view_type",
+          "cash_usd"
+        ],
+        "rows": [
+          {
+            "entity": "Entity B",
+            "view_type": "accounting",
+            "cash_usd": 880400.0
+          },
+          {
+            "entity": "Entity B",
+            "view_type": "operational",
+            "cash_usd": 868000.0
+          },
+          {
+            "entity": "Evergreen Family Trust",
+            "view_type": "accounting",
+            "cash_usd": 1150000.0
+          },
+          {
+            "entity": "Evergreen Family Trust",
+            "view_type": "operational",
+            "cash_usd": 1148200.0
+          },
+          {
+            "entity": "Evergreen Holdings",
+            "view_type": "accounting",
+            "cash_usd": 2300000.0
+          },
+          {
+            "entity": "Evergreen Holdings",
+            "view_type": "operational",
+            "cash_usd": 2300000.0
+          }
+        ],
+        "capped": false,
+        "row_cap": 5000,
+        "data_used": {
+          "tables": [
+            "gold_investment_report_cash_daily"
+          ],
+          "last_refresh": "2026-10-09T22:36:06+00:00"
+        }
+      },
+      "ms": 44,
+      "expect": null,
+      "cleanup": false,
+      "reply": false
+    }
+  ],
+  "rows_seen": 18,
+  "egress": [],
+  "traces": []
+}

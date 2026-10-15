@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Signal Harbor: Ideal-State Platform Architecture",
+    "subtitle": "Three planes: control and knowledge, shared modules, and one isolated data plane per company",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-sh-platform-20261003-100000/sh-platform.html"
+  },
+  "components": [
+    {"id": "super_admin", "type": "external", "label": "Super admin", "sublabel": "runs the platform", "pos": [40, 70], "size": [150, 64]},
+    {"id": "control", "type": "backend", "label": "Control plane", "sublabel": "create company, pick industry", "tag": "no company data", "pos": [285, 70], "size": [150, 64]},
+    {"id": "registry", "type": "database", "label": "Module registry", "sublabel": "six modules, on or off", "pos": [530, 70], "size": [150, 64]},
+    {"id": "packs", "type": "database", "label": "Industry packs", "sublabel": "problems, glossary, measures", "tag": "one per industry", "pos": [775, 70], "size": [150, 64]},
+    {"id": "domain_ctx", "type": "database", "label": "Domain context", "sublabel": "patterns across companies", "tag": "no names, no figures", "pos": [1020, 70], "size": [150, 64]},
+    {"id": "distill", "type": "security", "label": "Distillation gate", "sublabel": "structure only, reviewed", "tag": "opt-in, minimum companies", "pos": [1265, 70], "size": [150, 64]},
+
+    {"id": "users", "type": "external", "label": "Company users", "sublabel": "sponsors, analysts, data team", "pos": [40, 250], "size": [150, 64]},
+    {"id": "auth", "type": "security", "label": "Sign-in gate", "sublabel": "session, role, company", "pos": [285, 250], "size": [150, 64]},
+    {"id": "modules", "type": "frontend", "label": "Six modules", "sublabel": "intent through day two", "pos": [530, 250], "size": [150, 64]},
+    {"id": "agents", "type": "backend", "label": "Module agents", "sublabel": "one per module, Nira across", "pos": [775, 250], "size": [150, 64]},
+    {"id": "gateway", "type": "cloud", "label": "Model gateway", "sublabel": "allowance, guards, evals", "pos": [1020, 250], "size": [150, 64]},
+    {"id": "internet", "type": "external", "label": "Market data", "sublabel": "internet, third party", "pos": [1265, 250], "size": [150, 64]},
+
+    {"id": "sources", "type": "external", "label": "Company systems", "sublabel": "files, databases, platforms", "pos": [40, 430], "size": [150, 64]},
+    {"id": "landing", "type": "database", "label": "Landing zone", "sublabel": "connections, files as landed", "pos": [285, 430], "size": [150, 64]},
+    {"id": "warehouse", "type": "database", "label": "Warehouse", "sublabel": "bronze, silver, gold", "tag": "local first", "pos": [530, 430], "size": [150, 64]},
+    {"id": "intents", "type": "database", "label": "Intents and baseline", "sublabel": "charter, catalogue, sign-offs", "pos": [775, 430], "size": [150, 64]},
+    {"id": "cctx", "type": "database", "label": "Company context", "sublabel": "documents, agent memory", "pos": [1020, 430], "size": [150, 64]},
+    {"id": "cgraph", "type": "database", "label": "Company graph", "sublabel": "ontology, lineage", "pos": [1265, 430], "size": [150, 64]},
+
+    {"id": "target", "type": "external", "label": "Customer platform", "sublabel": "Databricks, Snowflake", "pos": [40, 610], "size": [150, 64]},
+    {"id": "push", "type": "security", "label": "Push gate", "sublabel": "two people approve", "tag": "kill switch", "pos": [285, 610], "size": [150, 64]},
+    {"id": "runs", "type": "database", "label": "Run registry", "sublabel": "every run, evidence", "pos": [530, 610], "size": [150, 64]}
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "Company data plane: one per company, data sits here only", "wraps": ["landing", "warehouse", "intents", "cctx", "cgraph", "push", "runs"], "pad": 18}
+  ],
+  "connections": [
+    {"id": "a1", "from": "super_admin", "to": "control", "label": "creates", "variant": "emphasis"},
+    {"id": "a2", "from": "control", "to": "registry", "label": "switches on"},
+    {"id": "a3", "from": "registry", "to": "packs", "label": "overlay"},
+    {"id": "a4", "from": "domain_ctx", "to": "packs", "label": "enriches", "variant": "emphasis"},
+    {"id": "a5", "from": "distill", "to": "domain_ctx", "label": "patterns", "variant": "emphasis"},
+
+    {"id": "b1", "from": "users", "to": "auth", "label": "sign in", "variant": "emphasis"},
+    {"id": "b2", "from": "auth", "to": "modules", "label": "role+company", "variant": "security"},
+    {"id": "b3", "from": "modules", "to": "agents", "label": "ask"},
+    {"id": "b4", "from": "agents", "to": "gateway", "label": "model calls"},
+    {"id": "b5", "from": "gateway", "to": "internet", "label": "market pulse", "variant": "dashed"},
+
+    {"id": "v1", "from": "control", "to": "auth", "label": "company, roles"},
+    {"id": "v2", "from": "registry", "to": "modules", "label": "enabled"},
+    {"id": "v3", "from": "packs", "to": "agents", "label": "industry knowledge", "variant": "emphasis"},
+    {"id": "v4", "from": "modules", "to": "warehouse", "label": "build, signals", "variant": "emphasis"},
+    {"id": "v5", "from": "agents", "to": "intents", "label": "draft, record"},
+
+    {"id": "d1", "from": "sources", "to": "landing", "label": "connect or drop", "variant": "emphasis"},
+    {"id": "d2", "from": "landing", "to": "warehouse", "label": "build"},
+    {"id": "d3", "from": "intents", "to": "cctx", "label": "glossary"},
+    {"id": "d4", "from": "cctx", "to": "cgraph", "label": "ontology"},
+    {"id": "d5", "from": "warehouse", "to": "runs", "label": "every run"},
+    {"id": "d6", "from": "warehouse", "to": "push", "label": "push request", "variant": "security"},
+    {"id": "d7", "from": "push", "to": "target", "label": "approved push", "variant": "dashed"},
+
+    {"id": "x1", "from": "cgraph", "to": "distill", "label": "structure only", "variant": "security", "fromSide": "right", "toSide": "right", "via": [[1445, 462], [1445, 102]]}
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Three planes",
+      "items": [
+        "Control and knowledge plane: the super admin, the module registry, the industry packs and the domain context. It holds no company data",
+        "Module plane: the six modules and their agents, the same code for every company",
+        "Company data plane: one per company, with its own landing zone, warehouse, intents, context and graph. Company data sits here and nowhere else"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "How a company is created",
+      "items": [
+        "The super admin creates the company, which makes an empty data plane with its own storage and keys",
+        "The super admin picks the industry, which decides the pack the agents start from, and switches on the modules that company bought",
+        "The company's own users then load their intents, connections and documents; the pack is only ever a suggestion they correct"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "What may cross the company boundary",
+      "items": [
+        "Only structure: which measure links to which process and which kind of source, and how they were joined",
+        "Never names, figures, rows, documents or wording that could identify the company",
+        "A pattern is kept only when seen in a minimum number of companies, after a person has reviewed it, and only for companies that opted in by contract",
+        "The domain context flows back through the industry pack, so every agent starts the next company knowing how it is usually done"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Repeating it for many companies",
+      "items": [
+        "Every request carries the company; every path, table and graph is resolved inside that company's plane, and a cross-company read fails closed",
+        "Modules are stateless: all state lives in the company plane, so adding a company adds storage, not code",
+        "The same split as Databricks and Snowflake: a vendor-run control plane and a per-customer data plane, which can later run inside the customer's own cloud"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "The six modules",
+      "items": [
+        "1 Intent room, 2 Baseline and sensing, 3 Connect, scan and gap, 4 Build, 5 Foresight and advanced modelling, 6 Ops, daily feed and market pulse",
+        "One agent per module, Nira across all; every model call goes through one gateway with allowance, guards and evals",
+        "Market data enters through the gateway into the module plane; it is never mixed into another company's plane"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Built today and not yet",
+      "items": [
+        "Built: one workspace per company with isolated storage, super admin, industry packs per domain, sign-in and role gate, model gateway, run registry, two-person push gate",
+        "Not built: a module registry that switches modules on per company, the distillation gate, the domain context store",
+        "Not built: running a company's data plane inside the customer's own cloud"
+      ]
+    }
+  ]
+}

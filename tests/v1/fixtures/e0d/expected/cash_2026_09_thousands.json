@@ -1,0 +1,47 @@
+{
+  "columns": {
+    "Amount (USD 000)": {
+      "target": "cash_movements.amount",
+      "transform": {
+        "multiply": 1000
+      }
+    },
+    "Currency": {
+      "target": "cash_movements.currency"
+    },
+    "Date": {
+      "target": "cash_movements.effective_date"
+    },
+    "Fund": {
+      "target": "instruments.canonical_name"
+    },
+    "Portfolio": {
+      "target": "portfolios.portfolio_code"
+    },
+    "Type": {
+      "target": "cash_movements.movement_type"
+    }
+  },
+  "control_totals": {
+    "row_count": 6,
+    "stated_matches_rows": true,
+    "stated_totals_row": 10,
+    "sums": {
+      "cash_movements.amount": 2655000
+    }
+  },
+  "domain": "cash",
+  "exclude_rows": [
+    10
+  ],
+  "first_data_row": 4,
+  "header_row": 3,
+  "last_data_row": 9,
+  "sheet": "Cash",
+  "status": "final",
+  "traps": [
+    "thousands",
+    "totals_row"
+  ],
+  "workbook": "cash_2026_09_thousands.xlsx"
+}

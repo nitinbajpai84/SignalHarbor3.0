@@ -1,0 +1,336 @@
+- id: 33.check
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: '/centre/intent/<id>/build-ready (chip: n of 7)'
+  input: The seven build-ready lines
+  person: organiser
+  mode: automatic
+  agent: North
+  source: charter, glossary, catalogue, governed state, processes, sources and roles records
+  minutes_without: 90
+  minutes_with: 0
+  basis: 'estimate: checking each record by hand'
+  claim: North recomputes seven lines after every relevant write
+- id: 33.l1
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 1)
+  input: Charter signed
+  person: sponsor
+  mode: automatic
+  agent: North
+  source: the charter outcome
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking a signature'
+  claim: Line 1 reads the signature
+- id: 33.l2
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 2)
+  input: Every Must and Should measure has a confirmed business definition
+  person: analyst
+  mode: automatic
+  agent: North
+  source: the glossary
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: checking each measure'
+  claim: Line 2 counts confirmed business definitions
+- id: 33.l3
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 3)
+  input: Technical definition, catalogue entry and governed state confirmed
+  person: analyst
+  mode: automatic
+  agent: North
+  source: technical, catalogue and governed records
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: checking three records per measure'
+  claim: Line 3 counts three parts per measure
+- id: 33.l4
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 4)
+  input: Every process has a confirmed business owner
+  person: analyst
+  mode: automatic
+  agent: North
+  source: the process map
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: checking each process'
+  claim: Line 4 reads process status and owners
+- id: 33.l5
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 5)
+  input: Every source has a confirmed source owner
+  person: analyst
+  mode: automatic
+  agent: North
+  source: the data sources map
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: checking each source'
+  claim: Line 5 reads source owner confirmations
+- id: 33.l6
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 6)
+  input: Architect, developer and tester named
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the roles record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: checking names'
+  claim: Line 6 reads the roles record
+- id: 33.l7
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (line 7)
+  input: Build needed answered yes
+  person: organiser
+  mode: automatic
+  agent: North
+  source: the build-needed answer
+  minutes_without: 3
+  minutes_with: 0
+  basis: 'estimate: checking a note'
+  claim: Line 7 reads the answer
+- id: 33.todo
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (North's to-do)
+  input: What is missing, with who and since when
+  person: organiser
+  mode: derived
+  agent: North
+  source: the seven lines and the event log
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: writing a chase list'
+  claim: North writes the to-do with a named person against each item
+- id: 33.nudge
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Nudge)
+  input: Nudge the person whose turn it is
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's choice
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: an email chase'
+  claim: A nudge is one click and a line on that person's list
+- id: 33.fix_it
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Fix it link)
+  input: Go to the record that needs fixing
+  person: organiser
+  mode: automatic
+  agent: null
+  source: the failing line's record
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: finding the right screen'
+  claim: Each failing line links straight to its record
+- id: 33.missing_def
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Lens drafts missing definitions)
+  input: Draft the missing definition for a failing line
+  person: analyst
+  mode: derived
+  agent: Lens
+  source: documents and Define records
+  minutes_without: 60
+  minutes_with: 2
+  basis: 'estimate: writing the definition'
+  claim: Lens drafts what a failing line needs; a named owner confirms
+- id: 33.build_needed
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Do we need a build?)
+  input: 'Answer: do we need a build, with a reason for no'
+  person: sponsor
+  mode: manual
+  agent: null
+  source: the sponsor's or organiser's decision
+  minutes_without: 15
+  minutes_with: 1
+  basis: 'estimate: a meeting decision'
+  claim: Build needed is one answer; a no carries a reason and skips lines 4 and 5
+- id: 33.change_answer
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Change answer)
+  input: Change the build-needed answer
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision
+  minutes_without: 5
+  minutes_with: 1
+  basis: 'estimate: a re-opened discussion'
+  claim: The answer can change while the intent is open
+- id: 33.recheck
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Recheck now)
+  input: Recheck now
+  person: organiser
+  mode: automatic
+  agent: North
+  source: all records read
+  minutes_without: 20
+  minutes_with: 0
+  basis: 'estimate: re-running a checklist'
+  claim: One button recomputes the check
+- id: 33.evidence
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (row evidence line)
+  input: 'Evidence line: record, id, time read'
+  person: organiser
+  mode: automatic
+  agent: null
+  source: each line's record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: noting where each fact came from'
+  claim: Every line shows the record and the time it was read
+- id: 33.handoff
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Hand to Build)
+  input: Hand to Build
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision; North prepared the seven lines
+  minutes_without: 60
+  minutes_with: 3
+  basis: 'estimate: writing a hand-over pack and briefing a team'
+  claim: The organiser hands over with one confirm; the record carries the baseline and sources
+- id: 33.handoff_record
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (hand-over record)
+  input: Frozen hand-over record
+  person: build team
+  mode: automatic
+  agent: null
+  source: the check at hand-over
+  minutes_without: 30
+  minutes_with: 0
+  basis: 'estimate: writing a hand-over note'
+  claim: The hand-over record freezes the check result and baseline version
+- id: 33.banner
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/build/gap-analysis?from=<id> (hand-over banner)
+  input: Hand-over banner in Build
+  person: build team
+  mode: automatic
+  agent: null
+  source: build_handoff record
+  minutes_without: 10
+  minutes_with: 0
+  basis: 'estimate: re-explaining the hand-over'
+  claim: Build opens already knowing the charter, measures and sources handed over
+- id: 33.go_closure
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Go to closure)
+  input: Close without a build
+  person: organiser
+  mode: manual
+  agent: null
+  source: the organiser's decision
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: a closing email'
+  claim: A no-build Initiative closes with the charter and glossary as its outcome
+- id: 33.pulse_ready
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /pulse (Build-ready line)
+  input: Pulse line when build-ready
+  person: organiser
+  mode: automatic
+  agent: Nira
+  source: the check verdict
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: a status email'
+  claim: The organiser and sponsor are told the moment it is build-ready
+- id: 33.chip
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id> (header chip)
+  input: 'Header chip: build-ready n of 7'
+  person: affected person
+  mode: automatic
+  agent: null
+  source: the check verdict
+  minutes_without: 5
+  minutes_with: 0
+  basis: 'estimate: asking for status'
+  claim: Anyone may see the verdict without opening the content
+- id: 33.events
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (event lines)
+  input: Event lines for verdict changes
+  person: organiser
+  mode: automatic
+  agent: null
+  source: events.jsonl
+  minutes_without: 15
+  minutes_with: 0
+  basis: 'estimate: kept by hand'
+  claim: Every change in the verdict leaves a dated line
+- id: 33.team
+  spec: '33'
+  journey: initiative
+  stage: decide
+  screen: /centre/intent/<id>/build-ready (Name them)
+  input: Name the build team
+  person: organiser
+  mode: confirm
+  agent: Lens
+  source: the people list
+  minutes_without: 10
+  minutes_with: 2
+  basis: 'estimate: asking around'
+  claim: The team is drafted from the people list and confirmed by the organiser

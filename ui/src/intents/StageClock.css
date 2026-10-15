@@ -1,0 +1,47 @@
+.sc { padding: var(--ds-s2) var(--ds-s3); display: grid; gap: var(--ds-s2); }
+.sc__row { display: flex; flex-wrap: wrap; gap: var(--ds-s2); align-items: center; }
+.sc__steps { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; flex: 1 1 auto; }
+.sc__short { display: none; margin: 0; font-size: 14px; color: var(--ds-ink-soft); }
+.sc__bar { display: none; height: 3px; background: var(--ds-line); border-radius: 2px; }
+.sc__bar > span { display: block; height: 100%; background: var(--ds-teal); border-radius: 2px; }
+.sc__clocks { display: flex; gap: var(--ds-s2); flex-wrap: wrap; }
+.sc__chip { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--ds-line-2); font-size: 14px; color: var(--ds-ink-soft); cursor: help; }
+.sc__chip--amber { border-color: var(--ds-amber); color: var(--ds-amber); }
+.sc__chip--red { border-color: var(--ds-red); background: color-mix(in srgb, var(--ds-red) 16%, transparent); color: var(--ds-ink); }
+.sc__chip--over { border-color: var(--ds-red); background: var(--ds-red); color: var(--ds-ground); font-weight: 600; }
+.sc__note { margin: 0; font-size: 14px; color: var(--ds-ink-soft); }
+.sc__note--when.sc__note--late { color: var(--ds-red); }
+.sc__all { margin: 0; padding: 0 0 0 18px; font-size: 14px; color: var(--ds-ink-soft); }
+.sc__link { background: none; border: 0; color: var(--ds-teal-bright); cursor: pointer; font-size: 14px; padding: 0 4px; text-decoration: underline; }
+.sc__sure { display: flex; gap: var(--ds-s1); align-items: center; font-size: 14px; }
+.sc__err { margin: 0; font-size: 14px; color: var(--ds-amber); }
+.scx-back { position: fixed; inset: 0; background: var(--ds-scrim); display: grid; place-items: center; z-index: 50; }
+.scx { width: 480px; max-width: 100%; max-height: 100%; overflow: auto; padding: var(--ds-s4); display: grid; align-content: start; gap: var(--ds-s3); }
+.scx h2 { margin: 0; font-size: 18px; }
+.scx__days { display: flex; gap: var(--ds-s1); flex-wrap: wrap; border: 0; padding: 0; margin: 0; }
+.scx textarea { width: 100%; min-height: 80px; box-sizing: border-box; background: var(--ds-surface-2); color: var(--ds-ink); border: 1px solid var(--ds-line-2); border-radius: 8px; padding: 8px; font: inherit; }
+.scx__buttons { display: flex; gap: var(--ds-s1); flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .sc__steps { display: none; }
+  .sc__short, .sc__bar { display: block; }
+  .sc__clocks { flex-direction: column; align-items: flex-start; }
+  .sc__row > .ds-btn, .sc > .ds-btn { width: 100%; }
+  .scx-back { place-items: stretch; }
+  .scx { width: 100%; border-radius: 0; height: 100%; }
+}
+/* the page gutter of .ds-frame (40 px, 20 px on a phone), which the stage bar sits outside of */
+.sc-wrap { display: grid; gap: var(--ds-s2); padding: var(--ds-s3) 40px 0; }
+@media (min-width: 1600px) { .sc-wrap { padding-left: 56px; padding-right: 56px; } }
+@media (max-width: 720px) { .sc-wrap { padding: var(--ds-s1) 20px 0; } }
+/* on a phone the pieces that sit outside a frame (nudge strip, Other views, wall note, back chip) take the same 20 px gutter */
+@media (max-width: 720px) { .ic-gutter > :not(.sc-wrap):not(.ds-screen):not(.ds-frame):not(.ds-wall) { padding-left: 20px; padding-right: 20px; box-sizing: border-box; } }
+.tc { border-color: var(--ds-teal); display: grid; gap: var(--ds-s2); padding: var(--ds-s3); }
+.tc__line, .tc__picks { margin: 0; font-size: 14px; }
+.tc__picks { color: var(--ds-ink-soft); }
+.tc__buttons { display: flex; gap: var(--ds-s1); flex-wrap: wrap; }
+.tc__cancel { display: grid; gap: var(--ds-s1); }
+.tc__cancel textarea { width: 100%; min-height: 64px; box-sizing: border-box; background: var(--ds-surface-2); color: var(--ds-ink); border: 1px solid var(--ds-line-2); border-radius: 8px; padding: 8px; font: inherit; }
+@media (max-width: 600px) {
+  .tc__buttons { flex-direction: column; }
+  .tc__buttons > * { width: 100%; justify-content: center; min-height: 44px; }
+}

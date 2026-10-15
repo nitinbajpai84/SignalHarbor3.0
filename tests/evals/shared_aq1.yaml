@@ -1,0 +1,130 @@
+# Shared runtime, AQ1 package S (cycle 1 fixes): egress vault and names, the loop, the number guard, router prices, the trace, memory and the
+# shared tools. One item per fix, through the product's own routes. Run: tools/run_evals.py --agents shared_aq1 ... Synthetic data only.
+- id: SAQ-ER01
+  agent: tally
+  role: analyst
+  desc: ER-01 (A13) - after Tally has talked about Entity B and the September investment report, Span still reaches the model (no vault_name block).
+  route: {method: POST, path: "/api/v1/cases/{case:Cash differs|Entity B}/ask", field: question}
+  turns:
+    - {say: "Why does cash for Entity B differ in the September investment report?", expect: {status: 200}}
+    - {say: "Which gold tables hold the investment report, and how many rows has each?", path: /api/v1/build/chat, field: text, expect: {status: 200, absent: ["rules-only", "could not reach the model"]}}
+  expected: {}
+  scorers: [turn_expect, egress_clean, loop_trace]
+
+- id: SAQ-ER02
+  agent: lumen
+  role: sponsor
+  desc: ER-02 (A13) - manager, fund and entity names reach the model as tokens; none is in the egress log or refused.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns:
+    - {say: "What did Kestrel Ridge Advisors and Cedarpoint Ventures say about Evergreen Growth I and Entity B?", expect: {status: 200}}
+  expected: {}
+  scorers: [turn_expect, egress_clean]
+
+- id: SAQ-ER07
+  agent: span
+  role: analyst
+  desc: ER-07 / SPM-3 / SS-5 (A15) - counts, load times and ids from describe_layers come through; nothing reads "not available yet".
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns:
+    - {say: "How many tables are in each layer, and when was the monthly holdings gold table last loaded?", expect: {status: 200, absent: ["not available yet", "prj-"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace, trace_complete]
+
+- id: SAQ-NAV2
+  agent: north
+  role: analyst
+  desc: NAV-2 / RC-3 (A2 A9) - a figure question ends with an answer, never "could not reach the model"; the last step offers no tool.
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "We need a monthly performance report for the family council. What was net worth at the end of September?", expect: {status: 200, absent: ["could not reach the model", "rules-only"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace]
+
+- id: SAQ-EVT15
+  agent: lumen
+  role: sponsor
+  desc: EVT-15 (A2) - a data question is answered after at least one tool call.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns:
+    - {say: "Which dashboards can I see, and what does each show?", expect: {status: 200}}
+  expected: {tool_required: true}
+  scorers: [turn_expect, loop_trace]
+
+- id: SAQ-OB7
+  agent: lumen
+  role: participant
+  desc: OB-7 / LQ-3 (A11 A16) - Sofia is told no dashboard is shared with her and who can share one; no dashboard title is offered as hers.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns:
+    - {say: "Which dashboards can I see?", expect: {status: 200, contains: ["shared"]}}
+  expected: {words_any: [["no dashboard", "none", "not shared", "has not been shared", "hasn't been shared"]]}
+  scorers: [turn_expect, words]
+
+- id: SAQ-SPANCH03
+  agent: span
+  role: sponsor
+  desc: SPAN-CH-03 (A1) - outside a project, "the gold tables of the monthly investment report" lists the three gold tables (contains match).
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns:
+    - {say: "Which gold tables make up the monthly investment report?", expect: {status: 200, contains: ["holdings_monthly", "cash_daily", "benchmark_monthly"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace]
+
+- id: SAQ-OB6
+  agent: span
+  role: analyst
+  desc: OB-6 (A3) - "the monthly holdings gold table" is resolved to gold_investment_report_holdings_monthly and its feeds are named.
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns:
+    - {say: "What feeds the monthly holdings gold table?", expect: {status: 200, contains: ["holdings_monthly"], absent: ["can't find", "cannot find"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace]
+
+- id: SAQ-LQ5
+  agent: lumen
+  role: sponsor
+  desc: LQ-5 (A6) - "where does net worth come from" is answered from the trail of the Net worth tile, never by asking for an item id.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns:
+    - {say: "Where does the net worth figure come from?", expect: {status: 200, absent: ["item id", "item_id"]}}
+  expected: {}
+  scorers: [turn_expect, loop_trace]
+
+- id: SAQ-NM1
+  agent: memory
+  role: sponsor
+  desc: NM-1 (A5) - a fact the person states about themselves is remembered and said back in the second person.
+  route: {method: POST, path: /api/v1/intents/chat}
+  turns:
+    - {say: "I look after the Singapore entities and sign off every report.", expect: {status: 200, contains: ["I will remember", "You look after"]}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~Singapore].id"}, expect: {status: 200, contains: ["Singapore"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: SAQ-LM02
+  agent: memory
+  role: sponsor
+  desc: lumen-memory-02 (A5) - "I prefer SGD" is remembered as a currency preference, and "blue lines" is a colour, not a line-chart preference.
+  route: {method: POST, path: /api/v1/consume/chat}
+  turns:
+    - {say: "Please remember: I prefer SGD and blue lines.", expect: {status: 200}}
+    - {method: GET, path: /api/v1/memory/me, save: {mid: "items[text~SGD].id"}, expect: {status: 200, contains: ["SGD", "blue"], absent: ["lines for charts"]}}
+    - {method: DELETE, path: "/api/v1/memory/me/{saved.mid}", cleanup: true}
+  expected: {}
+  scorers: [turn_expect]
+
+- id: SAQ-TRACE
+  agent: span
+  role: analyst
+  desc: ER-09 / RC-5 / RC-7 / RC-9 / NM-7 (A9 A14) - the answer carries its trace id; every model step has tier, model, mode, tokens and a cost.
+  route: {method: POST, path: /api/v1/build/chat}
+  field: text
+  turns:
+    - {say: "What do bronze, silver and gold mean for us?", expect: {status: 200}}
+  expected: {}
+  scorers: [turn_expect, trace_complete]
