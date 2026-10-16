@@ -1,0 +1,222 @@
+# Figure recipes for the family-office pack (assumptions A7 and A8, docs/v3/ASSUMPTIONS.md).
+# A recipe is a SUGGESTION: the pack's usual way of building a common figure, which the office can edit or replace. Span builds a figure from its
+# recipe before it asks the model, so the same data gives the same number on every build.
+#   names / words_all  what the figure is called in a brief (a phrase, or one word from each group)
+#   may_read           the only tables the figure's SQL may read (the model's own names); never_read: tables it must not read, with the reason in `why`
+#   dims               what the figure may be split by: name -> [expression, column]; default_dims is used when the brief names none
+#   sql                'create table {name} as ...' over the company model. {positions} is the snippet below; {dims} is the chosen dimensions
+#   tie_out            one query that returns (the ready table's number, the number it must equal); label says it in words
+#   needs              inputs the figure cannot be right without: a query that counts their rows; none means the figure is held, `why` says so
+suggestion: true
+snippets:
+  # the position snapshots as they stand: a snapshot that a later one supersedes is out, and a carried-forward row is out when a real row of the same
+  # portfolio, instrument, date and currency exists
+  positions: >-
+    positions as (select s.* from (select s.*, row_number() over (partition by s.portfolio_id, s.instrument_id, s.position_date, s.currency
+    order by coalesce(s.data_status = 'Carried forward', false), s.recorded_at desc, s.id) as rn from position_snapshots as s
+    where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id)) as s where s.rn = 1)
+  positions_check: >-
+    select s.portfolio_id, s.instrument_id, s.position_date, s.currency,
+    coalesce(max(s.source_market_value) filter (where s.data_status is distinct from 'Carried forward'), max(s.source_market_value)) as v
+    from position_snapshots as s where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id) group by all
+recipes:
+  - id: net_worth
+    label: Net worth
+    names: [net worth, networth, worth, total worth, nav, net asset value, assets under management, aum]
+    may_read: [position_snapshots, valuation_observations, portfolios, legal_entities, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: "Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding."
+    formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.
+    grain: By portfolio (or entity) and position date
+    always_dims: true   # one split on every build, so the table is the same whatever the brief says it is split by (an entity total is the sum of its portfolios)
+    default_dims: [portfolio]
+    dims:
+      entity: [e.entity_name, entity]
+      portfolio: [p.portfolio_name, portfolio]
+    sql: >-
+      create table {name} as with {positions} select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as net_worth
+      from positions as l join portfolios as p on p.id = l.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id group by all
+    measure: net_worth
+    columns:
+      net_worth: The market value of everything held at the position date, in the currency shown.
+      position_date: The date the positions are as at.
+    tie_out:
+      label: Net worth equals the sum of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(net_worth), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+
+  - id: cash_by_entity
+    label: Cash by entity
+    names: [cash by entity, cash position, cash balance, closing cash, cash on hand, cash]
+    may_read: [position_snapshots, instruments, portfolios, legal_entities]
+    never_read: [commitments, transactions, cash_movements]
+    why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.
+    formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.
+    grain: By entity and position date
+    sql: >-
+      create table {name} as with {positions} select e.entity_name as entity, l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as cash
+      from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      join legal_entities as e on e.id = p.legal_entity_id group by all
+    measure: cash
+    columns:
+      cash: The cash the administrator reports at the end of the day.
+    tie_out:
+      label: Cash equals the cash positions of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(cash), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c join instruments as i on i.id = c.instrument_id
+        and i.instrument_type = 'cash' join portfolios as p on p.id = c.portfolio_id join legal_entities as e on e.id = p.legal_entity_id)
+
+  - id: cash_break
+    label: Cash break
+    names: [cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break]
+    words_all: [[cash], [break, breaks, variance, difference, differences, differs, mismatch]]
+    may_read: [position_snapshots, cash_movements, instruments, portfolios, legal_entities]
+    never_read: [commitments, transactions]
+    why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.
+    formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.
+    grain: By entity and day
+    sql: >-
+      create table {name} as with {positions},
+      bal as (select p.legal_entity_id as entity_id, e.entity_name as entity, l.position_date, l.currency, sum(l.source_market_value) as closing_cash
+      from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      join legal_entities as e on e.id = p.legal_entity_id group by all),
+      first_day as (select entity_id, currency, min(position_date) as start_date from bal group by all),
+      held as (select distinct l.portfolio_id from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash'),
+      mv as (select p.legal_entity_id as entity_id, m.currency, m.effective_date, sum(m.amount) as moved from cash_movements as m
+      join portfolios as p on p.id = m.portfolio_id where m.portfolio_id in (select portfolio_id from held)
+      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) group by all),
+      moved as (select b.entity_id, b.currency, b.position_date, coalesce(sum(mv.moved), 0) as moved from bal as b
+      join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
+      left join mv on mv.entity_id = b.entity_id and mv.currency = b.currency and mv.effective_date > f.start_date and mv.effective_date <= b.position_date group by all)
+      select b.entity, b.position_date as day, b.currency, cast(b.closing_cash as decimal(18,2)) as closing_cash,
+      cast(b.closing_cash - o.closing_cash as decimal(18,2)) as cash_change, cast(m.moved as decimal(18,2)) as movements,
+      cast(b.closing_cash - o.closing_cash - m.moved as decimal(18,2)) as cash_break
+      from bal as b join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
+      join bal as o on o.entity_id = f.entity_id and o.currency = f.currency and o.position_date = f.start_date
+      join moved as m on m.entity_id = b.entity_id and m.currency = b.currency and m.position_date = b.position_date
+    measure: cash_break
+    columns:
+      closing_cash: The administrator's closing cash of the day.
+      cash_change: The administrator's closing cash less the cash at the start of the period.
+      movements: The cash movements recorded on the same portfolios after the period start, up to the day.
+      cash_break: The cash change less the movements. Zero when the two sources agree.
+    tie_out:
+      label: The administrator cash in the break equals the cash positions of the position snapshots for the same days
+      sql: >-
+        select (select coalesce(sum(closing_cash), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c join instruments as i on i.id = c.instrument_id
+        and i.instrument_type = 'cash' join portfolios as p on p.id = c.portfolio_id where p.legal_entity_id is not null)
+    needs:   # an input with no rows: the figure is held at Decision 3, never stated (c6 ops_lead: with no movements the break was the plain change in cash)
+      - why: No cash movements are loaded for the portfolios whose cash the administrator reports, so the break would only be the change in that cash, not a break.
+        sql: >-
+          select count(*) from cash_movements as m where m.portfolio_id in (select s.portfolio_id from position_snapshots as s
+          join instruments as i on i.id = s.instrument_id and i.instrument_type = 'cash')
+          and m.effective_date > (select min(s.position_date) from position_snapshots as s join instruments as i on i.id = s.instrument_id and i.instrument_type = 'cash')
+
+  - id: missing_statements
+    label: Missing statements
+    names: [missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements]
+    words_all: [[statement, statements], [missing, late, overdue, expected, received, outstanding]]
+    may_read: [expected_statements, documents, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.
+    formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.
+    grain: By fund and month
+    sql: >-
+      create table {name} as with due as (select e.* from expected_statements as e where not exists
+      (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
+      asat as (select coalesce(max(cast(received_at as date)), current_date) as d from documents)
+      select i.canonical_name as fund, cast(date_trunc('month', e.period_end) as date) as month, e.period_end, e.due_date,
+      cast(count(d.id) as integer) as received_statements, cast(case when count(d.id) = 0 then 1 else 0 end as integer) as missing_statements,
+      case when count(d.id) = 0 and e.due_date is not null then greatest(date_diff('day', e.due_date, (select d from asat)), 0) end as days_overdue
+      from due as e join instruments as i on i.id = e.instrument_id left join documents as d on d.instrument_id = e.instrument_id
+      and d.document_type = 'manager_statement' and date_trunc('month', coalesce(d.valuation_date, cast(d.received_at as date))) = date_trunc('month', e.period_end)
+      group by all
+    measure: missing_statements
+    columns:
+      received_statements: Manager statements received for the fund and month.
+      missing_statements: 1 when the statement was expected and none was received.
+      days_overdue: Days from the due date to the latest date a document was received; empty when no due date is on file.
+    tie_out:
+      label: Expected statements equal the expected_statements rows that are not replaced
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from expected_statements as e where not exists
+        (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id))
+
+  - id: concentration
+    label: Single-issuer concentration
+    names: [single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position]
+    may_read: [position_snapshots, instruments, portfolios]
+    never_read: [commitments, cash_movements, transactions]
+    why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.
+    formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.
+    grain: By portfolio, issuer and position date
+    sql: >-
+      create table {name} as with {positions}, tot as (select portfolio_id, position_date, currency, sum(source_market_value) as total from positions group by all)
+      select p.portfolio_name as portfolio, i.canonical_name as issuer, l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as exposure,
+      cast(100 * sum(l.source_market_value) / nullif(max(t.total), 0) as decimal(9,2)) as concentration_pct
+      from positions as l join instruments as i on i.id = l.instrument_id left join portfolios as p on p.id = l.portfolio_id
+      join tot as t on t.portfolio_id is not distinct from l.portfolio_id and t.position_date = l.position_date and t.currency = l.currency group by all
+    measure: concentration_pct
+    columns:
+      exposure: The market value held in the issuer.
+      concentration_pct: The issuer's share of everything the portfolio holds on the date, in percent.
+    tie_out:
+      label: The exposures add up to the total of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(exposure), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+
+  - id: change_since_report
+    label: Change since the issued report
+    names: [change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value]
+    words_all: [[change, changed, revision, revised, amended, amendment, restated], [since, issued, report, original, earlier, previous]]
+    may_read: [valuation_observations, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.
+    formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.
+    grain: By fund and valuation date
+    sql: >-
+      create table {name} as select i.canonical_name as fund, a.valuation_date, a.currency, cast(o.value_amount as decimal(18,2)) as original_value,
+      cast(a.value_amount as decimal(18,2)) as amended_value, cast(a.value_amount - o.value_amount as decimal(18,2)) as change_since_report
+      from valuation_observations as a join valuation_observations as o on o.id = a.supersedes_valuation_id join instruments as i on i.id = a.instrument_id
+      where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id)
+    measure: change_since_report
+    columns:
+      original_value: The valuation in the issued report, the one the amendment replaces.
+      amended_value: The amended valuation.
+      change_since_report: The amended value less the original value.
+    tie_out:
+      label: Every amended valuation that is not itself replaced appears once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from valuation_observations as a where a.supersedes_valuation_id is not null
+        and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id))
+
+  - id: fx_confirmation_variance
+    label: FX forward confirmation variance
+    names: [fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs]
+    words_all: [[fx, forward, forwards], [confirmation, confirmations, confirm], [differ, differs, difference, variance, mismatch, match]]
+    may_read: [fx_confirmations, transactions, instruments, instrument_identifiers]
+    never_read: [commitments, cash_movements, position_snapshots]
+    why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it.
+    formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.
+    grain: By trade reference
+    sql: >-
+      create table {name} as with conf as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)),
+      trade as (select t.id, t.external_trade_id, t.trade_date, t.currency, abs(t.cash_amount) as trade_amount, t.instrument_id from transactions as t
+      where t.supersedes_transaction_id is null and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      ref as (select t.id as trade_id, t.external_trade_id as ref from trade as t union select t.id, x.identifier_value from trade as t
+      join instrument_identifiers as x on x.instrument_id = t.instrument_id)
+      select c.trade_reference, c.trade_date, c.counterparty, t.currency, cast(case when c.currency_bought = t.currency then c.amount_bought
+      when c.currency_sold = t.currency then c.amount_sold end as decimal(18,2)) as confirmed_amount, cast(t.trade_amount as decimal(18,2)) as trade_amount,
+      cast(case when c.currency_bought = t.currency then c.amount_bought when c.currency_sold = t.currency then c.amount_sold end - t.trade_amount as decimal(18,2)) as variance
+      from conf as c join ref as r on r.ref = c.trade_reference join trade as t on t.id = r.trade_id
+    measure: variance
+    columns:
+      confirmed_amount: The confirmation's amount in the currency of the desk's trade.
+      trade_amount: The desk's trade amount, as a positive number.
+      variance: The confirmed amount less the trade amount. Zero when they agree.
+    tie_out:
+      label: Every confirmation is compared once with a trade
+      sql: >-
+        select (select count(distinct trade_reference) from {name}), (select count(distinct c.trade_reference) from fx_confirmations as c
+        where exists (select 1 from transactions as t where t.external_trade_id = c.trade_reference)
+        or exists (select 1 from transactions as t join instrument_identifiers as x on x.instrument_id = t.instrument_id where x.identifier_value = c.trade_reference))

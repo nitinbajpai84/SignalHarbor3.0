@@ -152,6 +152,9 @@ def _scope(rec: dict, parsed: dict, trades: list[dict]) -> set[date]:
 def _signed(itype: str | None, side: str, q: Decimal, amt: Decimal) -> tuple[Decimal, Decimal] | None:
     if itype == "fx_forward":
         return -q, amt
+    fx = re.fullmatch(r"(buy|sell)\s+[a-z]{3}\s*/\s*(buy|sell)\s+[a-z]{3}", side)  # "sell usd / buy sgd": a currency trade, quantity = the first leg, amount = the second
+    if fx and fx[1] != fx[2]:
+        return (-q, amt) if fx[1] == "sell" else (q, -amt)
     s = {"buy": 1, "sell": -1}.get(side)
     return None if s is None else (s * q, -s * amt)
 
@@ -284,7 +287,7 @@ def _load(plane, rec: dict, path: Path, sheet: str, grid: list[list], layout: st
                 else:
                     src_status = _text(r.get("status")).lower()
                     row = dict(portfolio_id=pf[code], instrument_id=iid, external_trade_id=tid,
-                               transaction_type="fx_forward" if itype.get(iid) == "fx_forward" else side, trade_date=r["_date"], effective_date=r["_date"],
+                               transaction_type="fx_forward" if itype.get(iid) == "fx_forward" or "/" in side else side, trade_date=r["_date"], effective_date=r["_date"],
                                settlement_date=r["_settle"], quantity_delta=signed[0], cash_amount=signed[1], currency=_text(r["ccy"]).upper(),
                                status="booked" if src_status in ("executed", "booked", "") else src_status)
             rid = record(r["r"], ext, r["_date"], r["raw"], reason, cells)

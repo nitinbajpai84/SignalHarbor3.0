@@ -21,7 +21,7 @@ from sh_platform.v1.e0b_mappings import col_key
 
 log = logging.getLogger(__name__)
 MONEY = {"source_market_value", "value_amount", "amount", "debit", "credit", "nav_amount", "commitment_amount"}
-DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "observed_at", "weight_effective_from", "committed_on"}
+DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "observed_at", "weight_effective_from", "committed_on", "trade_date", "value_date"}
 IGNORE = "ignore"
 DEBIT_CREDIT = {"cash_movements.debit", "cash_movements.credit"}
 _UNIT_WORDS = {"usd", "eur", "gbp", "sgd", "000", "thousand", "thousands", "k"}
@@ -70,6 +70,19 @@ DOMAINS: dict[str, dict] = {
                         ("call amount|amount called|capital call", "cash_movements.amount"),
                         ("ccy|currency", "cash_movements.currency"),
                         ("due|due date|payment due|pay by", IGNORE)),
+    # an FX forward confirmation (v3 A1): both legs on one row. Page and quote columns are the PDF reader's own, kept in the review record.
+    "fx_confirmations": _d(("trade reference|trade ref|our ref|client ref|deal ref|deal reference|confirmation reference|reference", "fx_confirmations.trade_reference"),
+                           ("trade date|deal date|dealt on", "fx_confirmations.trade_date"),
+                           ("value date|settlement date|delivery date|maturity date", "fx_confirmations.value_date"),
+                           ("currency bought|bought currency|buy currency|buy ccy|ccy bought", "fx_confirmations.currency_bought"),
+                           ("amount bought|bought amount|buy amount|bought", "fx_confirmations.amount_bought"),
+                           ("currency sold|sold currency|sell currency|sell ccy|ccy sold", "fx_confirmations.currency_sold"),
+                           ("amount sold|sold amount|sell amount|sold", "fx_confirmations.amount_sold"),
+                           ("rate|forward rate|fx rate|deal rate|contract rate", "fx_confirmations.rate"),
+                           ("counterparty|bank|dealer", "fx_confirmations.counterparty"),
+                           ("source document|document id|source document id", "fx_confirmations.source_document_id"),
+                           ("source page|page", "fx_confirmations.source_page"),
+                           ("file|layout|pdf reading", IGNORE)),
     "nav": _d(("period end|nav date|period|as at", "nav_snapshots.nav_period_end"),
               ("portfolio|account|entity|portfolio code", "portfolios.portfolio_code"),
               ("nav|net asset value|nav amount", "nav_snapshots.nav_amount"),
@@ -91,7 +104,7 @@ DOMAINS: dict[str, dict] = {
                     ("effective to|to", "benchmark_components.weight_effective_to")),
 }
 SHEET_HINTS = {"positions": "position", "valuations": "valuation", "cash": "cash", "capital_calls": "call", "nav": "nav", "commitments": "commitment",
-               "market_data": "level", "benchmark": "benchmark"}
+               "market_data": "level", "benchmark": "benchmark", "fx_confirmations": "confirmation"}
 
 
 def norm_header(name) -> str:
@@ -266,7 +279,7 @@ def _model_targets(plane, model, profile: dict, left: list[str], examples: list[
     from sh_platform.v1.egress_fit import fit
     from sh_platform.v1.router import route
     table = {"commitments": "commitments", "positions": "position_snapshots", "valuations": "valuation_observations", "cash": "cash_movements", "capital_calls": "cash_movements",
-             "nav": "nav_snapshots", "market_data": "market_observations", "benchmark": "benchmark_components"}.get(profile.get("purpose"), "")
+             "nav": "nav_snapshots", "market_data": "market_observations", "benchmark": "benchmark_components", "fx_confirmations": "fx_confirmations"}.get(profile.get("purpose"), "")
     fields = {n: cols for n in (table, "instruments", "instrument_identifiers", "portfolios")
               if n and (cols := e0a_catalogue.columns_of(plane, n))}  # tables() lists names only; columns_of has the fields
     shape = {i["name"]: i["kind"] for i in profile["column_info"] if i["name"] in left}

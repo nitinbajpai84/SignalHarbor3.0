@@ -1,6 +1,8 @@
 """Harbor 3.0 PDFs (v3_pdf): a PDF is read by layout, a new layout costs one question, the answer is remembered, every value keeps its page and
 quote, a value that fails the layout's checks is never loaded, a layout marked twice becomes an office skill. The 2.0 calls are stubbed; the
 files are the synthetic 10uc statements and confirmations."""
+import csv
+import io
 import json
 import re
 import sys
@@ -172,14 +174,19 @@ def test_a_value_that_fails_a_check_is_never_loaded(office, monkeypatch):
     assert rec["status"] == "review" and "confirmed_by" not in rec
 
 
-def test_a_layout_with_no_table_is_read_and_said_so(office):
+def test_an_fx_confirmation_goes_to_the_fx_rows_file_with_both_legs_and_its_page(office):
     name = "FXF-2026-002_confirmation_2026-10-05.pdf"
     x, fake = run_a(office, "t-1", [name])
     q = V.questions(x)[0]
     assert q["options"][:2] == ["Client sells (USD): USD 3,000,000.00", "Client buys (SGD): SGD 4,035,600.00"]
     V.answer(x, q["id"].split(":", 1)[1], q["options"][1])
     got, aside = V.load(x)
-    assert got == 1 and not fake.rows and "not in a table" in aside[0]["title"]
+    assert got == 1 and not aside
+    (text,) = fake.rows.values()  # one row per confirmation, both legs, the document and the page of the reference
+    row = next(csv.DictReader(io.StringIO(text)))
+    assert [row[k] for k in ("trade reference", "trade date", "value date", "currency bought", "amount bought", "currency sold", "amount sold", "rate", "counterparty", "source page")] == [
+        "FXF-2026-002", "2026-10-05", "2027-01-05", "SGD", "4035600.00", "USD", "3000000.00", "1.3452", "Harbour Bank (synthetic)", "1"]
+    assert json.loads(row["pdf reading"])["trade date"]["page"] == 1 and "Trade date" in json.loads(row["pdf reading"])["trade date"]["quote"]
 
 
 def test_a_layout_marked_twice_becomes_an_office_skill(office, monkeypatch):

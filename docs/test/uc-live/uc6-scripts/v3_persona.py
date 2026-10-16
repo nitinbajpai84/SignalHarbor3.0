@@ -159,6 +159,14 @@ def run(role: dict, build: dict, n: int) -> None:
                         p.shot(f"/v3/thread/{tid}", f"team-{rid}-sent-to-signer")
                     return so["signer"]["name"].split()[0].lower()  # Playwright can't nest: the caller confirms as the signer
                 else:
+                    # a brief that keeps coming back is a finding, not something to confirm forever
+                    s["confirms"] = s.get("confirms", 0) + 1
+                    if s["confirms"] > 4:
+                        s["stuck_at"] = f"decision1 loop: confirmed {s['confirms'] - 1} times; gaps {[g if isinstance(g, str) else g.get('label') for g in d.get('gaps') or []]}"[:300]
+                        save()
+                        print("STUCK", s["stuck_at"])
+                        report(th, stage, False)
+                        return None
                     p.post(f"/api/v3/threads/{tid}/decide", {"n": 1, "answer": "confirm"})
                 time.sleep(3)
             elif stage == "decision2":

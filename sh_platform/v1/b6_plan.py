@@ -169,7 +169,9 @@ def _bind(name: str, sel, schema: dict[str, dict[str, str]]) -> None:
             con.execute(("" if typed else "explain ") + sel.sql(dialect="duckdb"))
         except (duckdb.BinderException, duckdb.ConversionException) as e:
             msg = " ".join(str(e).split())
-            if isinstance(e, duckdb.ConversionException) or not re.search(r"No function matches|Cannot compare|cannot be cast|Cannot mix|type", msg, re.I):
+            if isinstance(e, duckdb.ConversionException) or not re.search(r"No function matches|Cannot compare|cannot be cast|Cannot mix values|\btype\b", msg, re.I):
+                # c4 principal: "Cannot mix aggregates with non-aggregated columns" (a window over an aggregate, group by all) and a column named
+                # like observation_type were swallowed as type mismatches; only a value-type clash is the guessed types' to forgive
                 raise Refused(400, f"The SQL for {name} does not run in the warehouse (DuckDB): {msg[:300]}") from None
         except duckdb.Error:  # noqa: S110 - anything else (a type, a cast) is the run's to report with the data in hand
             pass

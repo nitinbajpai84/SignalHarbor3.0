@@ -520,6 +520,58 @@ Table cash_movements {
 }
 
 /*
+  An FX forward confirmation from a counterparty (v3, assumption A1): one row per confirmation, both legs on the row, so it can be
+  matched against the trading desk's trade (transactions) by trade reference. Amounts are positive; the legs are named, not signed.
+*/
+Table fx_confirmations {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+
+  trade_reference varchar(200) [not null, note: 'The reference the trading desk uses for the trade']
+  trade_date date [not null]
+  value_date date
+  currency_bought char(3)
+  amount_bought numeric(28,8)
+  currency_sold char(3)
+  amount_sold numeric(28,8)
+  rate numeric(28,10)
+  counterparty varchar(200)
+  source_document_id varchar(100) [note: 'The confirmation document in Evidence']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_fx_confirmation_id uuid [ref: > fx_confirmations.id]
+
+  indexes {
+    (trade_reference, recorded_at)
+  }
+}
+
+/*
+  Which statement the office expects from each fund each period (v3, assumption A2). Filled from the fund's stated frequency,
+  else from the cadence of statements already received, else from a schedule a person confirms. due_date is null when no terms are on file.
+*/
+Table expected_statements {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+  source_record_id uuid [ref: > source_records.id]
+
+  period_end date [not null]
+  due_date date [note: 'period_end plus the days the fund terms state; null when no terms are on file']
+  frequency varchar(20) [not null, note: 'monthly, quarterly, semi_annual, annual']
+  source varchar(200) [not null, note: 'how it was decided: fund terms, cadence of received statements, confirmed by a person']
+  due_reason varchar(200) [note: 'why due_date is empty']
+  recorded_at timestamptz [not null]
+  supersedes_expected_statement_id uuid [ref: > expected_statements.id]
+
+  indexes {
+    (instrument_id, period_end, recorded_at)
+  }
+}
+
+/*
   Covers licensed prices, index levels, rates and FX observations.
   series_key is the provider's identifier; mapping/entitlement
   must be checked before use in a report.
@@ -987,6 +1039,8 @@ TableGroup observations {
   valuation_observations
   commitments
   cash_movements
+  fx_confirmations
+  expected_statements
   market_observations
   nav_snapshots
 }

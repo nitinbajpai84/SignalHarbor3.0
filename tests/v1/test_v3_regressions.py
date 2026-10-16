@@ -115,3 +115,263 @@ def test_after_the_load_a_figure_with_only_null_values_gets_a_ready_table_design
                         api=lambda who, m, path, body=None, soft=False: {"pack": {"target": {"gold": GOLD}, "state": "approved"}})
     F.cover(x, "loaded")
     assert asked == ["Net worth by portfolio"]
+
+
+# ---- cycle 4: go-live with no starter dashboard; a window over an aggregate; which statement is missing -------------------------
+
+def test_go_live_does_not_stop_when_there_is_no_starter_dashboard_yet():
+    """c4 ops_lead, ops_clerk: no figure had a ready table, the studio answered 409 and the chain stopped at go-live with a question."""
+    def api(who, method, path, body=None, soft=False):
+        if path.endswith("/starter"):
+            if not soft:
+                raise H.Q("There are no figures to build a starter dashboard from yet. It appears when the pipeline has run.")
+            return {}
+        raise AssertionError(f"nothing else is called: {method} {path}")
+    got = H.c_lumen(SimpleNamespace(th={"pid": "prj-1", "iid": "ini-1"}, api=api))
+    assert got.startswith("no starter board yet")
+
+
+def test_the_bind_check_refuses_a_window_over_an_aggregate():
+    """c4 principal: 'Cannot mix aggregates with non-aggregated columns' was forgiven as a type clash and stopped the run on the copy."""
+    import pytest
+    import sqlglot
+    from sh_platform.v1 import b6_plan as B
+    from sh_platform.v1.i2_north import Refused
+    schema = {"position_snapshots": {"as_of_date": "date", "portfolio_id": "integer", "balance_amount": "decimal(18,2)", "observation_type": "varchar"}}
+    bad = ("select as_of_date as day, portfolio_id, sum(balance_amount) - lag(sum(balance_amount)) over (partition by portfolio_id order by as_of_date) as change "
+           "from position_snapshots group by all")
+    with pytest.raises(Refused, match="Cannot mix aggregates"):
+        B._bind("gold_x", sqlglot.parse_one(bad, dialect="duckdb"), schema)
+    with pytest.raises(Refused, match="GROUP BY"):  # a column whose name holds 'type' is not a type clash
+        B._bind("gold_x", sqlglot.parse_one("select observation_type, sum(balance_amount) from position_snapshots", dialect="duckdb"), schema)
+    B._bind("gold_x", sqlglot.parse_one("select as_of_date, sum(balance_amount) from position_snapshots group by 1", dialect="duckdb"), schema)
+
+
+def test_which_statement_is_missing_names_the_fund_and_its_business_days_overdue(monkeypatch):
+    """c4 fund_accountant answered 'Missing statements in September 2026: 6' (a count of statements received). The answer key's 63 is P11: Cedarpoint
+    Opportunities II, 30 Jun 2026, due 14 Jul (10 business days), 63 business days overdue at 9 Oct. Its one March statement must not read as monthly."""
+    from datetime import date as d
+    from sh_platform.profile.view import Viewer
+    from sh_platform.v1 import k5_managers as K5
+    docs = {f: [{"valuation_date": v, "supersedes_document_id": None, "received_at": v}] for f, v in (("C", "2026-06-30"), ("D", "2026-03-31"))}
+    monkeypatch.setattr(K5, "_statements", lambda plane: docs)
+    due_n, as_of = 10, d(2026, 10, 9)
+    funds = [K5._fund_row({"fund_id": f, "fund_name": n, "manager": "Cedarpoint Ventures", "first_valued": None}, docs[f], [], {}, as_of, due_n, None)
+             for f, n in (("C", "Cedarpoint Ventures III"), ("D", "Cedarpoint Opportunities II"))]
+    assert len(funds[1]["earlier_missing"]) == 5  # one statement date alone reads as monthly in the inbox
+    monkeypatch.setattr(K5, "inbox", lambda plane, viewer, as_of=None: {"as_of": "2026-10-09", "due_rule_signed": True, "rule_note": None,
+                                                                       "managers": [{"name": "Cedarpoint Ventures", "funds": funds}]})
+    got = F.missing_statements(None, Viewer("Helen Foo", frozenset({"company_admin"})), "Which statement is missing and how overdue is it?")
+    assert got["answer"] == "Missing statement at 9 Oct 2026: Cedarpoint Opportunities II, period 30 Jun 2026, due 14 Jul 2026, 63 business days overdue."
+    assert F.missing_statements(None, None, "What is our net worth?") is None
+
+
+def test_a_missing_figure_is_never_read_from_a_count_of_what_arrived():
+    t = {"name": "gold_statements", "columns": [{"name": "month", "type": "date"}, {"name": "statements_received_on_time", "type": "bigint"}]}
+    assert F._read(None, t, {"name": "Missing statements"}, "Which statement is missing?", {}) is None
+
+
+# ---- round 5 (cycle 6 fixes) ------------------------------------------------------------------------------------------------------
+
+def test_a_declared_column_name_that_differs_from_the_sql_alias_never_takes_a_guessed_formula():
+    """c5 ops_clerk: the design named the column 'trade match rate', the SQL 'Trade match rate'; the pack took the design's 'from' (f.id, t.id) as the
+    formula, the plan could not be drawn, and the run on a copy said only 'This project has no build plan yet.'."""
+    from sh_platform.v1 import b10_pack as K
+    sql = ("create table gold_m as select t.organization_id, 100.0 * count(distinct t.id) filter (where f.id is not null) as \"Trade match rate\", "
+           "count(distinct t.id) as total_trades from transactions t left join fx_confirmations f on t.external_trade_id = f.trade_reference group by t.organization_id")
+    t = {"layer": "gold", "name": "gold_m", "sql": sql, "depends_on": ["transactions"], "keys": ["organization_id"],
+         "columns": [{"name": "organization_id", "type": "uuid"}, {"name": "trade match rate", "type": "varchar", "from": "f.id, t.id"}, {"name": "total_trades", "type": "bigint"}]}
+    g = K._gold(None, {}, {"tables": [t]}, {}, "", [])[0]
+    assert g["columns"][1]["expr"].startswith("100.0 * COUNT(DISTINCT t.id)")
+    assert "f.id, t.id" not in K._build_sql("gold_m", g)
+    t["columns"].append({"name": "not_in_the_sql", "type": "bigint", "from": "f.id, t.id"})
+    g = K._gold(None, {}, {"tables": [t]}, {}, "", [])[0]
+    assert g["base_sql"] is None and K._build_sql("gold_m", g) == sql  # a column the SQL does not name: the SQL as written
+
+
+def test_no_build_plan_after_an_approved_pack_asks_naming_the_step_that_failed(monkeypatch):
+    import pytest
+    from sh_platform.v1 import b10_pack as K, b6_run, v3_plan_guard as PG
+    why = "The formula for a column of gold_m cannot be read: Invalid expression / Unexpected token."
+    monkeypatch.setattr(b6_run, "latest_plan", lambda plane, pid, live=False: None)
+    monkeypatch.setattr(K, "latest_approved", lambda plane, pid: {"version": 1, "plan_error": why})
+    calls = []
+
+    def api(who, method, path, body=None, soft=False):
+        calls.append(path)
+        raise H.Q(why)
+    with pytest.raises(H.Q) as e:
+        PG.ensure_plan(SimpleNamespace(th={"pid": "prj-1"}, plane=None, api=api))
+    assert calls == ["/api/v1/build/p/prj-1/architecture/pack/plan/approve"]  # the head of data's retry first
+    assert "could not draw the build plan" in e.value.text and why in e.value.text and "no build plan yet" not in e.value.text
+
+
+def _conc_rows():
+    from datetime import date
+    from decimal import Decimal
+    return [{"portfolio": "Evergreen Liquid portfolio", "issuer": n, "position_date": date(2026, 9, 30), "currency": "USD", "concentration_pct": Decimal(v)}
+            for n, v in (("Harborview Semiconductor", "5.75"), ("Northwind Logistics", "5.08"))]
+
+
+def test_the_concentration_recipe_is_a_share_of_the_portfolio():
+    """c5 risk_officer: the answer key is Harborview 2,368,000 of the EG-LIQUID portfolio's 41,200,000 = 5.75%; the recipe divided by everything held."""
+    from decimal import Decimal
+    from sh_platform.v1 import v3_recipes as R
+    con = duckdb.connect()
+    con.execute("create table portfolios (id int, portfolio_name varchar)")
+    con.execute("create table instruments (id int, canonical_name varchar)")
+    con.execute("create table position_snapshots (id int, portfolio_id int, instrument_id int, position_date date, currency varchar, data_status varchar, "
+                "recorded_at timestamp, supersedes_position_id int, source_market_value decimal(18,2))")
+    con.execute("insert into portfolios values (1, 'Liquid'), (2, 'Growth')")
+    con.execute("insert into instruments values (1, 'Harborview Semiconductor'), (2, 'Rest'), (3, 'Fund')")
+    con.execute("insert into position_snapshots values (1, 1, 1, '2026-09-30', 'USD', 'official', now(), null, 2368000), "
+                "(2, 1, 2, '2026-09-30', 'USD', 'official', now(), null, 38832000), (3, 2, 3, '2026-09-30', 'USD', 'official', now(), null, 26650000)")
+    r = R.recipe("concentration")
+    con.execute(R.render(r, "gold_c"))
+    assert con.execute("select concentration_pct from gold_c where issuer = 'Harborview Semiconductor'").fetchone()[0] == Decimal("5.75")
+    assert R.tie_out(con, r, "gold_c")["ok"]
+
+
+def test_which_holding_is_over_its_single_name_limit_names_it_with_its_share(monkeypatch):
+    from decimal import Decimal
+    from sh_platform.v1 import cx_dash, v3_rule_checks as RC
+    k = {"name": "Single-issuer concentration"}
+    monkeypatch.setattr(RC, "_signed_limits", lambda plane, on: [{"words": "The Harborview Semiconductor share of the Evergreen Liquid portfolio must be at most 5%.",
+                                                                  "max": Decimal(5), "bucket": "harborview semiconductor", "portfolio": "Evergreen Liquid portfolio"}])
+    got = RC._over_limit(None, k, _conc_rows(), "Which holding is over its single-name limit?", {})
+    assert got["answer"].startswith("Over the single-name limit: Harborview Semiconductor, Evergreen Liquid portfolio, 5.75% on 30 September 2026 against a maximum of 5%.")
+    monkeypatch.setattr(RC, "_signed_limits", lambda plane, on: [])  # no signed rule: the limit the signed brief states, for every holding
+    got = RC._over_limit(None, k, _conc_rows(), "Which holding is over its limit?", {"brief": {"question": "no single name over 5 percent, listed equity between 60 and 90"}})
+    assert "Harborview Semiconductor" in got["answer"] and "Northwind Logistics" in got["answer"] and "signed brief" in got["answer"]
+    got = RC._over_limit(None, k, _conc_rows(), "Which holding is over its limit?", {"brief": {"question": "test the liquid book"}})
+    assert got["answer"].startswith("The single-name limit is not on record") and "5.75%" in got["answer"]  # never an invented limit
+    t = {"name": "gold_c", "columns": [{"name": "issuer", "type": "varchar"}, {"name": "concentration_pct", "type": "decimal(9,2)"}]}  # 'which holding': the issuer
+    monkeypatch.setattr(cx_dash, "run_sql", lambda plane, sql: ([], [{"issuer": "A", "concentration_pct": Decimal(1)}, {"issuer": "B", "concentration_pct": Decimal(2)}], False))
+    monkeypatch.setattr(F, "coverage", lambda plane, vals: "")
+    got = F._read(None, t, k, "Which holding has the largest concentration?", {})
+    assert got and "no split by" not in got["answer"]
+
+
+def test_a_cash_break_is_read_for_the_day_asked_against_the_signed_tolerance(monkeypatch):
+    """c5 ops_lead: 'Cash break over not available yetk in October 2026: ... Evergreen Family Trust 1,800.00'. The label was blanked by the number guard,
+    the day asked was said as the month, and the Trust's 1,800 (one custody charge, inside the 5,000 USD tolerance) was listed as a break."""
+    from datetime import date
+    from decimal import Decimal
+    from sh_platform.agents.guard import check_numbers
+    from sh_platform.v1 import e3_rules, v3_recipes as R, v3_rule_checks as RC
+    assert check_numbers('{"name": "Cash break over 5k", "definition": "over 7"}', [], "Anything over 5,000").text == \
+        '{"name": "Cash break over 5k", "definition": "over not available yet"}'  # the label stays; a stated figure is still checked
+    rows = [{"entity": e, "day": date(2026, 10, d), "currency": "USD", "cash_break": Decimal(v)}
+            for e, d, v in (("Entity B", 8, "12400"), ("Evergreen Family Trust", 8, "1800"), ("Evergreen Holdings", 8, "0"), ("Entity B", 7, "0"))]
+    monkeypatch.setattr(e3_rules, "current", lambda plane, code, on: {"parameters": {"abs_amount": 5000, "currency": "USD", "per": "entity_day"}} if code == "cash_tolerance" else None)
+    got = RC._breaks(None, R.recipe("cash_break"), rows, "Which entity has a cash break on 8 October and by how much?")
+    assert got["answer"] == ("Cash break on 8 October 2026, over the signed cash tolerance of 5,000 USD per entity per day: Entity B 12,400.00 USD. "
+                             "Within the tolerance, not a break: Evergreen Family Trust 1,800.00 USD. Agree: Evergreen Holdings.")
+    monkeypatch.setattr(e3_rules, "current", lambda plane, code, on: None)
+    assert RC._breaks(None, R.recipe("cash_break"), rows, "Which entity has a cash break?") is None  # no tolerance on record: the plain figures answer
+
+
+def test_a_break_named_by_its_threshold_is_the_cash_break_and_the_question_finds_it():
+    """c6 ops_lead: North called the break 'Variance over 5,000'; no recipe matched, no break table was built, and 'which entity has a cash break'
+    was answered from Cash balance per entity."""
+    from sh_platform.v1 import v3_recipes as R, v3_rule_checks as RC
+    var = {"name": "Variance over 5,000", "definition": "Absolute difference between summed cash sources and expected cash, filtered for amounts > 5,000"}
+    assert R.match({"name": "Cash break over 5k"})["id"] == R.match(var)["id"] == "cash_break"
+    assert R.match({"name": "Number of breaks"}) is None and R.match({"name": "Timing-only variance", "definition": "Differences that resolve"}) is None
+    kpis = [{"name": "Cash balance per entity", "definition": "Cash on hand"}, var]
+    assert RC.kpi_by_recipe("Which entity has a cash break on 8 October and by how much?", kpis) is var
+    assert RC.kpi_by_recipe("What is the weather?", kpis) is None
+    assert RC._day("2026-10-08") == __import__("datetime").date(2026, 10, 8)
+
+
+def test_a_rule_check_on_any_ready_table_comes_before_a_plain_read(monkeypatch):
+    """c6 ops_lead: cash by entity and the cash break both had 24 rows; the plain read of cash by entity answered first with closing balances."""
+    from sh_platform.v1 import b10_pack as P, cx_dash as CD, talk, v3_rule_checks as RC
+    k = {"name": "Cash breaks > 5,000"}
+    tabs = [{"name": "gold_cash_by_entity", "rows": 24, "columns": []}, {"name": "gold_cash_break", "rows": 24, "columns": []}]
+    monkeypatch.setattr(F, "kpis_of", lambda plane, iid: [k])
+    monkeypatch.setattr(talk, "reachable", lambda plane, viewer: ([{"id": "prj-1"}], None))
+    monkeypatch.setattr(P, "latest_approved", lambda plane, pid: {"target": {"gold": [{"name": t["name"]} for t in tabs]}})
+    monkeypatch.setattr(CD, "gold_tables", lambda plane, pid: tabs)
+    monkeypatch.setattr(F, "covering", lambda k, gold: gold)
+    monkeypatch.setattr(F, "aliases", lambda plane: {})
+    monkeypatch.setattr(RC, "answer", lambda plane, k, t, text, th: {"answer": "break"} if t["name"] == "gold_cash_break" else None)
+    monkeypatch.setattr(F, "_read", lambda plane, t, k, text, names, th=None, measure=None: {"answer": "balance"})
+    assert F._answer(None, None, "Which entity has a cash break on 8 October?", "prj-1", {"iid": "ini-1"})["answer"] == "break"
+
+
+# ---- c6 follow-ups: recipe column, a brief with no figures, a rate that never divides, recipe matching ------------------------------------
+
+def test_a_recipe_built_figure_is_answered_from_its_recipe_table_and_measure_column(monkeypatch):
+    """c6 ops_clerk: 'FX forward match status' answered 991,000.00 from another table; the recipe table held FXF-2026-002 with variance 8,100."""
+    from sh_platform.v1 import b10_pack as PK, cx_dash as CD, talk
+    con = duckdb.connect()
+    con.execute("create table gold_fx (trade_reference varchar, trade_date date, counterparty varchar, currency varchar, confirmed_amount decimal(18,2), "
+                "trade_amount decimal(18,2), variance decimal(18,2))")
+    con.execute("insert into gold_fx values ('FXF-2026-001', '2026-09-15', 'Bank A', 'USD', 500000, 500000, 0), "
+                "('FXF-2026-002', '2026-10-05', 'Bank A', 'USD', 991000, 982900, 8100)")
+    con.execute("create table gold_stats (trade_date date, matched_trade_count bigint, mismatch_total_amount decimal(18,2))")
+    con.execute("insert into gold_stats select date '2026-10-01' + cast(i as integer), i, 991000 from range(5) as t(i)")
+
+    def cols(t):
+        return [{"name": n, "type": str(ty)} for n, ty in con.execute(f"select column_name, data_type from information_schema.columns where table_name = '{t}'").fetchall()]
+    k = {"name": "FX forward match status", "definition": "FX forward confirmations against the desk's trades; the difference in amount"}
+    gold = [{"name": "gold_fx", "kpis": [k["name"]], "purpose": "Recipe fx_confirmation_variance: FX forward confirmation variance"},
+            {"name": "gold_stats", "kpis": ["Matched trade count"], "purpose": "Daily statistics of how many desk trades matched (FX forward status)"}]
+    monkeypatch.setattr(F, "kpis_of", lambda plane, iid: [k])
+    monkeypatch.setattr(talk, "reachable", lambda plane, viewer: ([{"id": "prj-1"}], None))
+    monkeypatch.setattr(PK, "latest_approved", lambda plane, pid: {"target": {"gold": gold}})
+    monkeypatch.setattr(CD, "gold_tables", lambda plane, pid: [{"name": t, "rows": n, "columns": cols(t)} for t, n in (("gold_fx", 2), ("gold_stats", 5))])
+    def run_sql(plane, sql):
+        c = con.execute(sql)
+        return None, [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()], None
+    monkeypatch.setattr(CD, "run_sql", run_sql)
+    monkeypatch.setattr(F, "covering", lambda k, gold: gold)
+    monkeypatch.setattr(F, "aliases", lambda plane: {})
+    monkeypatch.setattr(F, "coverage", lambda plane, members: "")
+    monkeypatch.setattr(F, "report_total", lambda plane, text: None)
+    monkeypatch.setattr(F, "missing_statements", lambda plane, viewer, text: None)
+    assert F.recipe_measures(k, gold) == {"gold_fx": "variance"}
+    got = F._answer(None, None, "How much does the FX forward confirmation differ from our record?", "prj-1", {"iid": "ini-1"})
+    assert "8,100" in got["answer"] and "991,000" not in got["answer"] and got["source"].startswith("fx")
+
+
+def test_a_data_brief_with_no_figures_is_a_gap_at_decision_1_and_a_process_brief_is_exempt(tmp_path, monkeypatch):
+    from sh_platform.v1 import i4_sow as S, v3_plan_guard as PG
+    plane = _office(tmp_path)
+    briefs = {"ini-d": {"intent_id": "ini-d", "title": "Trades against the administrator", "goal": {"line": "Match our trades with the administrator"}, "kpis": []},
+              "ini-k": {"intent_id": "ini-k", "title": "Trades", "goal": {"line": "Match our trades"}, "kpis": [{"name": "Breaks"}]},
+              "ini-p": {"intent_id": "ini-p", "title": "Month-end", "goal": {"line": ASK}, "kpis": []}}
+    monkeypatch.setattr(S, "read", lambda plane, iid: briefs[iid])
+    th = {"id": "t-1"}
+    assert PG.figures_gap(plane, th, "ini-d") == ["Which figures do you want?"]
+    assert PG.figures_gap(plane, th, "ini-k") == [] and PG.figures_gap(plane, th, "ini-p") == [] and PG.figures_gap(plane, th, None) == []
+    from sh_platform.v1 import i6_chat as I6, v3_signoff as SO
+    monkeypatch.setattr(SO, "accept_drafts", lambda x, iid: None)
+    monkeypatch.setattr(I6, "_sign_gaps", lambda plane, iid: "")
+    assert H._gaps(SimpleNamespace(plane=plane, th=th), "ini-d") == ["Which figures do you want?"]  # shown on Decision 1, and filled by the usual practice
+
+
+def test_a_rate_that_never_divides_is_refused_with_the_reason_and_one_that_divides_passes():
+    from sh_platform.v1 import v3_plan_guard as PG
+    bad = {"kpis": ["Trade match rate"], "sql": "create table g as select trade_date, 100 * count(*) filter (where matched) as trade_match_rate from t group by all"}
+    why = PG.rate_without_division(bad)
+    assert why and "Trade match rate" in why and "never divides" in why
+    ok = {"kpis": ["Trade match rate"], "sql": "create table g as select 100.0 * count(*) filter (where matched) / count(*) as trade_match_rate from t"}
+    assert PG.rate_without_division(ok) is None
+    assert PG.rate_without_division({"kpis": ["Match share"], "sql": "create table g as select avg(case when matched then 1 else 0 end) as s from t"}) is None
+    assert PG.rate_without_division({"kpis": ["FX rate"], "sql": "create table g as select trade_reference, rate from fx_confirmations"}) is None  # read as it is
+    assert PG.rate_without_division({"kpis": ["Net worth"], "sql": "create table g as select sum(v) as net_worth from p"}) is None
+    from sh_platform.v1 import b6_span as SP
+    notes = []
+    assert SP.keep_valid(None, {"tables": [], "project_slug": "t"}, [{"name": "gold_t_rate", "layer": "gold", **bad}], notes) == [] and "never divides" in notes[0]
+
+
+def test_a_one_word_recipe_name_is_the_figure_only_when_it_is_the_whole_name():
+    """c6 fixc: 'Distributions incoming cash' and 'Cash after calls by entity' were built as the cash balance, 'Net break in USD' as the cash break."""
+    from sh_platform.v1 import v3_recipes as R
+    ids = {n: (R.match({"name": n}) or {}).get("id") for n in ["Distributions incoming cash", "Cash after calls by entity", "Net break in USD", "Cash",
+                                                                "Cash by entity", "Available cash by entity", "NAV", "Cash balance per entity"]}
+    assert ids == {"Distributions incoming cash": None, "Cash after calls by entity": None, "Net break in USD": None, "Cash": "cash_by_entity",
+                   "Cash by entity": "cash_by_entity", "Available cash by entity": "cash_by_entity", "NAV": "net_worth", "Cash balance per entity": "cash_by_entity"}
+    assert R.match({"name": "How much cash does Entity B hold?"}, strict=False)["id"] == "cash_by_entity"  # a question's words still find it

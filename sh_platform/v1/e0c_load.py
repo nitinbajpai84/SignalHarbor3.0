@@ -41,13 +41,14 @@ _TABLES = {
     "nav_snapshots": (("portfolio_id", "nav_period_end"), "supersedes_nav_id"),
     "market_observations": (("series_key", "observed_at"), "supersedes_observation_id"),
     "commitments": (("legal_entity_id", "instrument_id"), "supersedes_commitment_id"),
+    "fx_confirmations": (("trade_reference",), "supersedes_fx_confirmation_id"),  # v3 A1: a re-issued confirmation supersedes the one before
 }
-_REQUIRED_DATE = {"position_snapshots": "position_date", "valuation_observations": "valuation_date", "cash_movements": "effective_date", "nav_snapshots": "nav_period_end"}
+_REQUIRED_DATE = {"position_snapshots": "position_date", "valuation_observations": "valuation_date", "cash_movements": "effective_date", "nav_snapshots": "nav_period_end", "fx_confirmations": "trade_date"}
 _NEEDS_PORTFOLIO = {"position_snapshots", "cash_movements", "nav_snapshots"}
 _NEEDS_INSTRUMENT = {"position_snapshots", "valuation_observations", "commitments"}
-_DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "committed_on"}
+_DATE_FIELDS = {"position_date", "valuation_date", "effective_date", "nav_period_end", "committed_on", "trade_date", "value_date"}
 _STAMP_FIELDS = {"observed_at", "as_of_at"}
-_NUMERIC = {"quantity", "source_market_value", "value_amount", "amount", "nav_amount", "value", "commitment_amount", "debit", "credit"}
+_NUMERIC = {"quantity", "source_market_value", "value_amount", "amount", "nav_amount", "value", "commitment_amount", "debit", "credit", "amount_bought", "amount_sold", "rate"}
 _SIDE = {("instruments", "canonical_name"), ("instrument_identifiers", "identifier_value"), ("portfolios", "portfolio_code"), ("legal_entities", "entity_code")}
 
 

@@ -144,8 +144,8 @@ def asks_figure(text: str, kpis: list[dict]) -> bool:
 
 def honest_line(text: str, th: dict, kpis: list[dict]) -> str:
     """"Not available yet: <figure> ... <what is missing>", from the thread's own record: the figure's reason and the files that did not load."""
-    from sh_platform.v1 import v3_figures as F
-    k = F.kpi_for(text, kpis)
+    from sh_platform.v1 import v3_figures as F, v3_rule_checks as RC
+    k = RC.kpi_by_recipe(text, kpis) or F.kpi_for(text, kpis)  # the figure bound to the recipe the question names
     if k:
         f = next((f for f in th.get("figures") or [] if f.get("kpi") == k["name"]), {})
         why = str(f.get("reason") or (th.get("figure_notes") or {}).get(k["name"]) or "")

@@ -482,7 +482,9 @@ def keep_valid(plane, plan: dict, extra: list[dict], notes: list[str], drops: tu
         try:
             if t.get("layer") == "gold" and (bad := gold_name_problem(plan, t.get("name"))):
                 raise Refused(400, bad)  # NU-24: Approve would refuse it later with no cause on the screen
-            if t.get("layer") == "gold" and (bad := org_only_join(t.get("sql") or "") or reads_nothing_loaded(plane, plan, t.get("sql") or "")):
+            from sh_platform.v1.v3_plan_guard import rate_without_division
+            if t.get("layer") == "gold" and (bad := org_only_join(t.get("sql") or "") or reads_nothing_loaded(plane, plan, t.get("sql") or "")
+                                             or rate_without_division(t)):
                 raise Refused(400, bad)
             B.validate(plane, {**plan, "tables": base + ok + [t]}, {t.get("name")})
             ok.append(t)

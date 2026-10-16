@@ -30,7 +30,8 @@ MAX_FIELDS = 14
 MANAGER = "manager_email"
 FUND_LABEL = re.compile(r"^(fund|fund name|name of fund|partnership)$", re.I)
 DATE_LABEL = re.compile(r"period|valuation|as (at|of)|nav date|statement date", re.I)
-LETTER = re.compile(r"(news)?letter", re.I)  # the kind of document named in its layout (x5_extract's type words)
+REF_LABEL = re.compile(r"\bref(erence)?\b", re.I)  # a trade reference is text; it is a field only on an FX confirmation
+LETTER = re.compile(r"\b(news)?letter\b", re.I)  # the kind of document named in its layout (x5_extract's type words)
 
 
 def is_pdf(name: str) -> bool:
@@ -129,14 +130,22 @@ def _fmt(value: str) -> str:
     return "text" if re.fullmatch(r"[A-Za-z]+[-_]?[\w-]*\d[\w-]*", value.strip()) else X5._fmt_of(value)
 
 
+def _is_fx(pairs: list[dict]) -> bool:
+    """An FX confirmation: a trade date, a value date, and a line for what the client sells and a line for what it buys."""
+    labels = [p["label"].lower() for p in pairs]
+    return all(any(re.search(w, lb) for lb in labels) for w in (r"^trade date", r"^value date", r"\bsells?\b", r"\bbuys?\b"))
+
+
 def propose(pairs: list[dict]) -> list[dict]:
-    """Fields of a layout from the first file: every pair of a table block, and colon pairs that hold a date or a number."""
+    """Fields of a layout from the first file: every pair of a table block, and colon pairs that hold a date or a number.
+    On an FX confirmation the colon pairs that hold a reference are fields too (the trade reference is what the desk's trade is matched on)."""
     from sh_platform.v1 import x5_extract as X5
-    fields, seen = [], set()
+    fields, seen, fx = [], set(), _is_fx(pairs)
     for p in pairs:
         fmt = _fmt(p["value"])
         label = re.sub(r"\s+", " ", p["label"]).strip()
-        if _norm(label) in seen or len(fields) >= MAX_FIELDS or (p.get("colon") and (fmt == "text" or len(p["value"]) > 40)) or not X5.parse(fmt, p["value"]):
+        ref = fx and p.get("colon") and REF_LABEL.search(label) and len(p["value"]) <= 40
+        if _norm(label) in seen or len(fields) >= MAX_FIELDS or (p.get("colon") and not ref and (fmt == "text" or len(p["value"]) > 40)) or not X5.parse(fmt, p["value"]):
             continue
         seen.add(_norm(label))
         fields.append({"name": label.lower(), "meaning": "", "format": fmt, "where_usually": label, "required": fmt == "date" and not p.get("colon")})
@@ -280,7 +289,8 @@ def intake(x) -> None:
 
 def questions(x) -> list[dict]:
     """d2: one plain question per new layout, the fields it read as one-click options."""
-    out = []
+    from sh_platform.v1 import v3_expected as EX
+    out = EX.questions(x)  # "How often does <fund> send statements?" for a fund nothing on file can tell
     for slug, a in ((x.th.get("pdf") or {}).get("ask") or {}).items():
         if a.get("done"):
             continue
@@ -291,6 +301,11 @@ def questions(x) -> list[dict]:
         out.append({"id": f"pdf:{slug}", "text": f"{why} In the first one I read: {saw}. Which line holds the amount to load? Every file with this layout will be read the same way.",
                     "options": [*opts, LEAVE], "assumed": opts[0]})
     return out
+
+
+def _goes_to(fields: list[dict]) -> str:
+    lay = {"fields": fields}
+    return "FX confirmations" if _fx_roles(lay) else "valuations" if _roles(lay, "?") else "kept with page and quote"
 
 
 def d2_files(x) -> list[dict]:
@@ -306,7 +321,7 @@ def d2_files(x) -> list[dict]:
         else:
             lay = mem.get(f["sig"]) or {}
             rows.append({"name": n, "read_as": (lay.get("name") or ((x.th["pdf"]["ask"].get(f.get("ask") or "") or {}).get("name")) or "a PDF layout"),
-                         "goes_to": "valuations" if _roles({"fields": lay.get("fields") or (x.th["pdf"]["ask"].get(f.get("ask") or "") or {}).get("fields") or []}, "?") else "kept with page and quote",
+                         "goes_to": _goes_to(lay.get("fields") or (x.th["pdf"]["ask"].get(f.get("ask") or "") or {}).get("fields") or []),
                          "state": "reused" if f["status"] == "read" else "new", "confidence": "high" if f["status"] == "read" else "medium"})
     return rows
 
@@ -314,6 +329,9 @@ def d2_files(x) -> list[dict]:
 def answer(x, slug: str, val: str) -> str:
     """b_answers: the person's pick for a new layout is remembered; a pick made a second time for the same layout becomes an office skill."""
     from sh_platform.v1 import v3_harbor as H
+    if slug.startswith("freq-"):
+        from sh_platform.v1 import v3_expected as EX
+        return EX.answer(x, slug[5:], val)
     st = x.th.get("pdf") or {}
     a = (st.get("ask") or {}).get(slug)
     if not a or a.get("done"):
@@ -386,6 +404,43 @@ def _csv(layout: dict, rows: list[dict]) -> tuple[str, str]:
                                for f in rest}, ensure_ascii=False))
         w.writerow(row)
     return buf.getvalue(), f"{slug_of(layout['name'].lower())}_{'valuation_' if roles else ''}rows.csv"
+
+
+def _fx_roles(layout: dict) -> dict | None:
+    """The fields of an FX confirmation layout (trade reference, dates, the two legs, rate, counterparty), or None when it is not one."""
+    names = [f["name"] for f in layout["fields"]]
+
+    def pick(*pats):
+        return next((n for pat in pats for n in names if re.search(pat, n)), None)
+    r = {"ref": pick(r"\b(our|client|trade|deal|your) ref", r"\bref(erence)?\b"), "trade": pick(r"^trade date", r"^deal date"),
+         "value": pick(r"^value date", r"^settlement date", r"maturity"), "sold": pick(r"\bsells?\b"), "bought": pick(r"\bbuys?\b"),
+         "rate": pick(r"\brate\b"), "cp": pick(r"^counterparty")}
+    return r if all(r[k] for k in ("ref", "trade", "sold", "bought")) else None
+
+
+def _leg(v: dict, name: str) -> tuple[str, str]:
+    """(currency, amount) of a leg: the code written before the amount, else the code in the line's label, e.g. 'Client sells (USD)'."""
+    m = re.match(r"([A-Z]{3})\b", v["raw"]) or re.search(r"\(([A-Za-z]{3})\)", name)
+    return (m.group(1).upper() if m else ""), _cell(v)
+
+
+def _fx_csv(layout: dict, fx: dict, rows: list[dict], docs: dict) -> tuple[str, str]:
+    """One row per confirmation, both legs, the document id and the page of the reference; every value with its page and quote in `pdf reading`."""
+    cols = ["file", "layout", "trade reference", "trade date", "value date", "currency bought", "amount bought", "currency sold", "amount sold", "rate",
+            "counterparty", "source document", "source page", "pdf reading"]
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(cols)
+    for r in rows:
+        v = r["values"]
+        cb, ab = _leg(v[fx["bought"]], fx["bought"])
+        cs, a_s = _leg(v[fx["sold"]], fx["sold"])
+        get = lambda k: _cell(v[fx[k]]) if fx.get(k) else ""  # noqa: E731
+        w.writerow([r["file"], layout["name"], get("ref"), get("trade"), get("value"), cb, ab, cs, a_s, get("rate"), get("cp"), docs.get(r["file"]) or "",
+                    v[fx["ref"]].get("page") or "",
+                    json.dumps({f["name"]: {"value": _cell(v[f["name"]]), "page": v[f["name"]].get("page"), "quote": v[f["name"]].get("quote", "").replace(chr(10), " / ")}
+                                for f in layout["fields"]}, ensure_ascii=False)])
+    return buf.getvalue(), f"{slug_of(layout['name'].lower())}_fx_rows.csv"
 
 
 def _into_rows(x, name: str, text: str) -> None:
@@ -473,6 +528,14 @@ def load_files(x, names: list[str], monthly: bool = False) -> tuple[int, list[di
             done.append(n)
         for sig, rows in by_layout.items():
             lay = mem[sig]
+            fx = _fx_roles(lay)
+            if fx:  # an FX confirmation: one row per confirmation into fx_confirmations
+                text, name = _fx_csv(lay, fx, rows, {n: (st["files"].get(n) or {}).get("doc_id") for n in done})
+                try:
+                    _into_rows(x, name, text)
+                except Exception as e:  # noqa: BLE001 - the documents and their values are kept; the person is told the rows did not reach a table
+                    aside.append({"file": None, "title": f"Rows from {lay['name']} did not reach a table", "text": str(getattr(e, "text", e))[:200]})
+                continue
             if not _roles(lay):  # the model has no table for this kind of document: the values stay in the review records, and the person is told
                 aside.append({"file": None, "title": f"{lay['name']}: read, but not in a table", "text": f"{len(rows)} file(s) read, each value with its page and quote. The model has no table for this kind of document yet; ask your data engineer to add one."})
                 continue
@@ -492,6 +555,8 @@ def load_files(x, names: list[str], monthly: bool = False) -> tuple[int, list[di
     for a in aside:
         if a["file"]:
             H.set_status(x.plane, a["file"], "question")
+    from sh_platform.v1 import v3_expected as EX
+    EX.fill(x)  # every load, monthly ones too: the schedule of expected statements follows what is now in the warehouse
     return len(done), aside
 
 

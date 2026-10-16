@@ -563,7 +563,10 @@ def _gold(plane, sow: dict, plan: dict, answers: dict, raiser: str, hist: list[s
         if t["layer"] != "gold":
             continue
         base, parts = _sql_parts(t["sql"])
-        exprs = dict(parts)
+        exprs = {**{k.lower(): v for k, v in parts}, **dict(parts)}  # a declared name may differ from the SQL's alias only in case
+        if base and any(c["name"] not in exprs and c["name"].lower() not in exprs for c in t["columns"]):
+            base = None  # a declared column the SQL does not name: build from the SQL as written, never from a guessed formula
+        exprs.update({c["name"]: exprs[c["name"].lower()] for c in t["columns"] if c["name"] not in exprs and c["name"].lower() in exprs})
         try:
             q = sqlglot.parse_one(t["sql"], read="duckdb").expression
             gb = [int(x.name) - 1 for x in (q.args.get("group").expressions if q.args.get("group") else []) if isinstance(x, exp.Literal) and x.name.isdigit()]

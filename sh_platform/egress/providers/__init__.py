@@ -13,6 +13,7 @@ Settings (names only; values are never printed, logged or returned):
   SH_MODEL_<TIER>_PROVIDER  per tier provider (R1b); wins over SH_MODEL_PROVIDER, except that SH_MODEL_PROVIDER=off stays off
   GOOGLE_API_KEY / OPENROUTER_API_KEY   read by name at call time by the transport, nowhere else
 """
+import contextvars
 import json
 import os
 import re
@@ -91,6 +92,9 @@ def usage(raw: str) -> dict | None:
     return {"tokens_in": got[0], "tokens_out": got[1] or 0} if isinstance(got[0], int) else None
 
 
+TEMPERATURE: contextvars.ContextVar = contextvars.ContextVar("model_temperature", default=None)
+
+
 def model_transport(choice: Choice, *, client=None, final_check: Callable[[str], bool] | None = None,
                     timeout: float = 60.0, env: Mapping[str, str] | None = None):
     """The gateway's model transport for one provider. `client` is an httpx client (tests pass a MockTransport
@@ -105,6 +109,8 @@ def model_transport(choice: Choice, *, client=None, final_check: Callable[[str],
             raise EgressBlocked("destination_not_allowed")
         envelope = json.loads(body)  # the gateway's own, already guarded JSON; only messages and tools are mapped
         path, wire = a.format_request(choice.model, envelope.get("messages", []), envelope.get("tools"))
+        if TEMPERATURE.get() is not None:  # a call that must repeat (Span's figure designs) asks for the least variation the provider allows
+            (wire["generationConfig"] if "generationConfig" in wire else wire)["temperature"] = TEMPERATURE.get()
         wire_bytes = json.dumps(wire, ensure_ascii=False, allow_nan=False).encode("utf-8")
         if final_check is not None and final_check(wire_bytes.decode("utf-8")):
             raise EgressBlocked("vault_name")

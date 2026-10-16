@@ -162,7 +162,8 @@ def test_a_draft_pack_is_edited_in_place_and_a_figure_that_is_covered_costs_no_d
     monkeypatch.setattr(F, "kpis_of", lambda plane, iid: [NW])
     monkeypatch.setattr(F, "table_rows", lambda plane, copy=False: {})
     monkeypatch.setattr(F, "design", lambda *a: pytest.fail("a covered figure is not designed again"))
-    x, calls = _x(plane, pack_state="draft")
+    built = [GOLD[0], {**GOLD[1], "purpose": "Recipe net_worth: Net worth from the pack's recipe"}, GOLD[2]]  # a figure with a recipe is covered once its table is the recipe's
+    x, calls = _x(plane, pack_state="draft", gold=built)
     assert F.cover(x, "draft") == "all 1 figures have a ready table"
     monkeypatch.setattr(F, "design", lambda x, todo, filled: ([], {"Breaks over 5,000": "it is a count under a condition"}))
     monkeypatch.setattr(F, "kpis_of", lambda plane, iid: [BREAKS])

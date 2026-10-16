@@ -1639,6 +1639,13 @@ def propose_starter(plane, pid: str, tables: list[dict] | None = None) -> dict:
                     and col["name"] != when_col(t) and _mentions(text, col["name"]):
                 seen.add(col["name"])
                 add(build(t, {"fig": c["name"], "when": when_col(t), "split": col["name"], "kind": "bar"}), name, t, 2, 6 * (len(seen) - 1), "medium")
+    taken = {(1, c) for c in range(9, 12)}  # the checks line sits at row 1, column 9
+    for t in out:  # two tiles never share a slot (a wide bar for a share beside the number tiles did, and the studio refused the grid): the later one moves down a row
+        p = t["place"]
+        cols = range(p["col"], p["col"] + D.SIZES[p["size"]])
+        while any((p["row"], c) in taken for c in cols):
+            p["row"] += 1
+        taken |= {(p["row"], c) for c in cols}
     checks = None
     if plan:
         run = next((r for r in R.runs(plane, pid, 50) if r.get("mode") == "live"), None)

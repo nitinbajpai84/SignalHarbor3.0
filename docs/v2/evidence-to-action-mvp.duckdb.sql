@@ -598,3 +598,37 @@ CREATE TABLE IF NOT EXISTS agent_runs (
   output_artifact_uri VARCHAR,
   human_review_status VARCHAR
 );
+
+CREATE TABLE IF NOT EXISTS fx_confirmations (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  trade_reference VARCHAR NOT NULL,
+  trade_date DATE NOT NULL,
+  value_date DATE,
+  currency_bought VARCHAR,
+  amount_bought DECIMAL(28,8),
+  currency_sold VARCHAR,
+  amount_sold DECIMAL(28,8),
+  rate DECIMAL(28,10),
+  counterparty VARCHAR,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_fx_confirmation_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS expected_statements (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  instrument_id VARCHAR NOT NULL,
+  source_record_id VARCHAR,
+  period_end DATE NOT NULL,
+  due_date DATE,
+  frequency VARCHAR NOT NULL,
+  source VARCHAR NOT NULL,
+  due_reason VARCHAR,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_expected_statement_id VARCHAR
+);

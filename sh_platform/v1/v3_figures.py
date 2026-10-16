@@ -96,7 +96,12 @@ def covers(kpi: dict, g: dict) -> bool:
 
 
 def covering(kpi: dict, gold: list[dict]) -> list[dict]:
-    return [g for g in gold if covers(kpi, g)]
+    """The tables that hold the figure. A figure bound to a recipe is held by its recipe's table only, once there is one (c7: "Cash variance per entity"
+    was read from the cash-by-entity table, whose words cover it)."""
+    from sh_platform.v1 import v3_recipes as R
+    r = R.bound(kpi) if "built_from" in kpi else None
+    mine = [g for g in gold if r and str(g.get("purpose") or "").startswith(f"{R.MARK}{r['id']}:")]
+    return mine or [g for g in gold if covers(kpi, g)]
 
 
 def sources_of(g: dict, gold: list[dict], seen: set | None = None) -> set[str]:
@@ -243,7 +248,7 @@ def cover(x, phase: str = "draft") -> str:
     """Make sure each figure of the brief has a ready table in the design pack. phase "draft" (chain A, the pack not yet submitted): a figure with no table
     gets one designed. phase "loaded" (chain B, after the load): also a figure whose table reads only empty tables while the load filled others. The pack
     gets the new tables (a new version when it was approved: submitted and approved as the head of data), and x.th["figures"] says what was done."""
-    from sh_platform.v1 import v3_skills as SK
+    from sh_platform.v1 import v3_recipes, v3_skills as SK
     th, A = x.th, f"/api/v1/build/p/{x.th['pid']}/architecture"
     kpis = kpis_of(x.plane, th.get("iid"))
     if not kpis:
@@ -254,7 +259,7 @@ def cover(x, phase: str = "draft") -> str:
     todo, notes = [], {}
     for k in kpis:
         cov = covering(k, gold)
-        if not cov:
+        if not cov or v3_recipes.stale(k, cov):  # A7: a figure with a recipe is built from it, also when the rules' table already covers it
             todo.append(k)
         elif phase == "loaded" and filled and not valued(x.plane, k, cov):  # built on the copy with the loaded data, and still no value for it
             todo.append(k)
@@ -405,6 +410,8 @@ def install(H) -> None:
                 d["summary"] = (d.get("summary") or "") + f" {len(bad)} of {len(lines)} figures have no numbers yet: {', '.join(bad)}."
         return d
     H.DECISIONS["decision3"] = decision3
+    from sh_platform.v1 import v3_recipes
+    v3_recipes.install(H)  # A7: the tie-out lines of the figures built from a recipe, and the model designs that worked are kept
 
 
 def fresh(x) -> None:
@@ -807,6 +814,51 @@ def report_total(plane, text: str) -> dict | None:
             "trace": [{"kind": "tool", "label": "Read the totals stored from the latest report"}, {"kind": "guard", "label": "Every figure comes from the report's fields"}]}
 
 
+HOLDING = _tokens("holding holdings position positions security securities issuer instrument fund")
+NOT_WORDS = "missing overdue outstanding unpaid unmatched unreconciled failed breach"  # stemmed by _tokens where used
+MISSING_Q = re.compile(r"\b(?:missing|overdue|never (?:came|arrived)|not (?:yet )?(?:received|arrived))\b.*\bstatements?\b"
+                       r"|\bstatements?\b.*\b(?:missing|overdue|never (?:came|arrived)|not (?:yet )?(?:received|arrived))\b", re.I)
+
+
+def missing_statements(plane, viewer, text: str) -> dict | None:
+    """"Which statement is missing and how overdue is it?": each fund's statements that never arrived, named, with business days overdue, from the
+    Managers inbox (k5_managers: the signed statement_due rule, weekdays). A fund with fewer than two statement dates of its own takes the cadence of
+    its manager's statements together (Cedarpoint: one fund's March and the other's June make quarterly), else one March statement reads as monthly and
+    April to August all show as missing. A viewer who may see every portfolio sees every fund, also one whose loaded values carry no portfolio."""
+    if not MISSING_Q.search(text):
+        return None
+    from sh_platform.profile.view import Viewer
+    from sh_platform.v1 import e1_access, k5_managers as K5, wh
+    if not e1_access.is_admin(viewer):
+        seen = {str(p) for p in e1_access.visible_portfolios(plane, viewer)}
+        with wh.connect(plane, read_only=True) as con:
+            every = {str(r[0]) for r in con.execute("select id from portfolios").fetchall()}
+        if every and every <= seen:
+            viewer = Viewer(viewer.name, frozenset(viewer.roles) | {"company_admin"}, False, getattr(viewer, "account_id", None))
+    box = K5.inbox(plane, viewer, None)
+    if not box["due_rule_signed"]:
+        return {"answer": "Not available yet: " + box["rule_note"], "figure": None, "rows": [], "source": "Managers inbox", "used": [], "trace": []}
+    docs = K5._statements(plane)
+    out = []
+    for m in box["managers"]:
+        dates = lambda f: {K5._day(d["valuation_date"]) for d in docs.get(f["fund_id"], []) if d["valuation_date"]}  # noqa: E731
+        mgr = K5._cadence([d for f in m["funds"] for d in dates(f)])
+        for f in m["funds"]:
+            cad = f["cadence"] if len(dates(f)) > 1 else mgr
+            due = f["earlier_missing"] + ([{"period_end": f["period_end"], "due": f["due"], "days_late": f["days_late"]}] if f["state"] == "late" else [])
+            out += [(f["fund_name"], e) for e in due if cad == "monthly" or date.fromisoformat(e["period_end"]).month in (3, 6, 9, 12)]
+    trace = [{"kind": "tool", "label": "Read the managers' statements against the signed due rule"}, {"kind": "guard", "label": "Every date comes from the statements received"}]
+    if not out:
+        return {"answer": f"No statement is missing: every statement due by {K5._pretty(box['as_of'])} has arrived.", "figure": None, "rows": [],
+                "source": "Managers inbox", "used": [], "trace": trace}
+    out.sort(key=lambda p: -p[1]["days_late"])
+    lines = [f"{n}, period {K5._pretty(e['period_end'])}, due {K5._pretty(e['due'])}, {e['days_late']} business days overdue" for n, e in out]
+    return {"answer": f"Missing statement{'s' if len(out) > 1 else ''} at {K5._pretty(box['as_of'])}: " + "; ".join(lines) + ".",
+            "figure": {"label": f"Missing statement · {out[0][0]}", "value": f"{out[0][1]['days_late']} business days overdue", "change": ""},
+            "rows": [{"label": f"{n} · {K5._pretty(e['period_end'])}", "value": f"{e['days_late']} business days overdue"} for n, e in out][:12],
+            "source": "Managers inbox · the signed statement due rule", "used": [], "trace": trace}
+
+
 def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     from sh_platform.v1 import b10_pack as P, cx_dash as CD, talk
     kpis = kpis_of(plane, th.get("iid"))
@@ -821,9 +873,16 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
             return hit
     if hit := report_total(plane, text):  # the report's own total, ahead of a ready table that may hold only part of it
         return hit
-    k = kpi_for(text, kpis)
+    if hit := missing_statements(plane, viewer, text):  # c4 fund_accountant: a count of statements received is not which one is missing
+        return hit
+    from sh_platform.v1 import v3_rule_checks as RC
+    k = RC.kpi_by_recipe(text, kpis) or kpi_for(text, kpis)  # the question's words name a recipe: the brief's figure built from it, whatever North called it
     if k is None:
         return None
+    from sh_platform.v1 import v3_recipes as R
+    if h := R.held(th, k["name"]):  # Decision 3 held it (a failed tie-out, a missing input): never stated as fact
+        return {"answer": f"Not available yet: {k['name']}: {h['reason']}", "figure": None, "rows": [], "source": f"{k['name']} is held at Decision 3", "used": [],
+                "trace": [{"kind": "guard", "label": "A figure held at Decision 3 is not stated"}]}
     pack = P.latest_approved(plane, pid) or {}
     gold = (pack.get("target") or {}).get("gold") or []
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
@@ -835,8 +894,10 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         why = next((f["reason"] for f in th.get("figures") or [] if f.get("kpi") == k["name"] and f.get("reason")), "") if tabs or gold else ""
         say = f"Not available yet: {k['name']} has no figure in the ready tables." + (" " + why.split(" Not loaded")[0] if why else "")
         return {"answer": say, "figure": None, "rows": [], "source": f"No rows for {k['name']}", "used": [], "trace": trace}
-    for t in sorted(ready, key=lambda t: -t["rows"]):
-        got = _read(plane, t, k, text, aliases(plane), th)
+    meas = recipe_measures(k, gold)  # c6 ops_clerk: a recipe-built figure is read from its own table first, from the column the recipe names
+    tabs = sorted(ready, key=lambda t: (t["name"] not in meas, -t["rows"]))
+    for t, how in [*((t, RC.answer) for t in tabs), *((t, None) for t in tabs)]:  # a limit or a tolerance on record, on any table, before a plain read
+        got = how(plane, k, t, text, th) if how else _read(plane, t, k, text, aliases(plane), th, meas.get(t["name"]))
         if got:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
             return {**got, "source": src, "used": [], "trace": trace}
@@ -845,19 +906,39 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
 
 def _not_loaded(th: dict | None) -> str:
     """What the load set aside, named, for an answer that cannot be given: the files that did not load and why (the thread's own record)."""
-    ex = [f"{e['title'].removesuffix(' did not load')}: {e['text']}" for e in (th or {}).get("exceptions") or [] if e.get("title") and e.get("text")]
+    ex = [f"{e['title'].removesuffix(' did not load')}: {e['text']}" for e in (th or {}).get("exceptions") or []
+          if str(e.get("title") or "").endswith(" did not load") and e.get("text")]  # files only; a pending question is not a file that did not load
     return (" Not loaded: " + " | ".join(ex)[:700]) if ex else ""
 
 
-def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | None = None) -> dict | None:
+def recipe_measures(k: dict, gold: list[dict]) -> dict[str, str]:
+    """{ready table: the column its recipe names as the figure} for the pack's tables built from a recipe for this figure: the table lists the figure,
+    or its recipe is the one the figure's name matches."""
+    from sh_platform.v1 import v3_recipes as R
+    r_k = (R.bound(k) or {}).get("id")
+    out = {}
+    for g in gold:
+        p = str(g.get("purpose") or "")
+        r = R.recipe(p[len(R.MARK):].split(":", 1)[0]) if p.startswith(R.MARK) else None
+        if r and r.get("measure") and (k["name"] in (g.get("kpis") or []) or r["id"] == r_k):
+            out[g["name"]] = r["measure"]
+    return out
+
+
+def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | None = None, measure: str | None = None) -> dict | None:
     from sh_platform.v1 import cx_dash as CD
     cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
     when = next((c for c, ty in cols.items() if ty.startswith(("date", "timestamp"))), None)
     nums = [c for c, ty in cols.items() if ty.startswith(("decimal", "numeric", "double", "float", "bigint", "integer", "hugeint")) and not c.endswith("_id")]
     want = _tokens(k["name"])
-    meas = max(nums, key=lambda c: (len(want & _tokens(c)), _slug(c) == _slug(k["name"])), default=None)
-    if not meas or not (want & _tokens(meas) or len(nums) == 1):
-        return None
+    if measure in cols:  # the recipe names the figure's column: no guessing by words
+        meas = measure
+    else:
+        meas = max(nums, key=lambda c: (len(want & _tokens(c)), _slug(c) == _slug(k["name"])), default=None)
+        if not meas or not (want & _tokens(meas) or len(nums) == 1):
+            return None
+        if (want & _tokens(NOT_WORDS)) - _tokens(meas):  # c4: "Missing statements" was read from statements_received_on_time; a count of what came is not what did not
+            return None
     asked = parse_when(text)
     cond = f' where "{when}" is not null' if when else ""
     if when and asked and asked[0]:
@@ -871,6 +952,8 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     q = _tokens(text)
     split_by = _tokens(" ".join(re.findall(r"(?:which|by|per|each|every)\s+([a-z]+)", text.lower()))) - {"how", "much", "many", "the", "our", "month", "day", "week", "year"}
     have = _tokens(" ".join(c for c in texts)) | {w for c in texts if any(str(r.get(c)) in names for r in rows) for w in _tokens(c)}
+    if have & HOLDING:  # "which holding": an issuer, instrument or fund column is the holding
+        have |= HOLDING
     if split_by - have and not (split_by & _tokens(k["name"])):  # "which entity": a table that has no split by it cannot say, and the nearest total is not the answer
         return {"answer": f"Not available yet: the ready table for {k['name']} has no split by {', '.join(sorted(split_by - have))}.", "figure": None, "rows": []}
     if (fake := fake_split(rows, [c for c in texts if c in cols], when, meas)):
@@ -908,20 +991,22 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     ccy = next((c for c in cols if CCY_COL.match(c)), None)
     ccys = {str(r.get(ccy)) for r, _ in vals if r.get(ccy)} if ccy else set()
     unit = next(iter(ccys)) if len(ccys) == 1 and not re.search(rf"\b{re.escape(next(iter(ccys)))}\b", k["name"], re.I) else ""
-    label = k["name"] + (f" · {_month_words(got)}" if got else "")
+    on_day = bool(got and asked and asked[2])  # a question about a day is answered for that day, not the month
+    period = (f"{got.day} {_month_words(got)}" if on_day else _month_words(got)) if got else ""
+    label = k["name"] + (f" · {period}" if got else "")
     split = [c for c in texts if len({str(r.get(c)) for r, _ in vals}) > 1] + ([ccy] if len(ccys) > 1 else [])  # never add one currency to another
     part = "" if named else coverage(plane, {str(r[c]) for r, _ in vals for c in texts if r.get(c) is not None})
     if len(vals) == 1 or not split:
         v = vals[0][1] if len(vals) == 1 else sum((v for _, v in vals), Decimal(0))
         who = " · ".join(dict.fromkeys(names.get(str(r[c]), str(r[c])) for r in [vals[0][0]] for c in texts if c in cols and r.get(c) is not None))
         num = _fmt(v, money) + (f" {unit}" if unit else "")
-        return {"answer": f"{k['name']}{' for ' + who if who else ''}{' ' + part if part else ''}{' in ' + _month_words(got) if got else ''}: {num}.",
+        return {"answer": f"{k['name']}{' for ' + who if who else ''}{' ' + part if part else ''}{(' on ' if on_day else ' in ') + period if got else ''}: {num}.",
                 "figure": {"label": label + (f" · {who}" if who else ""), "value": num, "change": ""}, "rows": []}
     parts = [(" · ".join(dict.fromkeys(names.get(str(r[c]), str(r[c])) for c in split)), v) for r, v in vals][:12]
     total = sum((v for _, v in vals), Decimal(0))
     add = money and len(ccys) <= 1 and not re.search(r"percent|ratio|rate|return|share", k["name"].lower())
     say = "; ".join(f"{a} {_fmt(v, money)}" for a, v in parts)
-    return {"answer": f"{k['name']}{' ' + part if part else ''}{' in ' + _month_words(got) if got else ''}: {say}." + (f" Total {_fmt(total, money)}." if add and len(parts) > 1 else ""),
+    return {"answer": f"{k['name']}{' ' + part if part else ''}{(' on ' if on_day else ' in ') + period if got else ''}: {say}." + (f" Total {_fmt(total, money)}." if add and len(parts) > 1 else ""),
             "figure": {"label": label + (" · total" if add else ""), "value": _fmt(total if add else parts[0][1], money), "change": ""},
             "rows": [{"label": a, "value": _fmt(v, money)} for a, v in parts]}
 
@@ -935,7 +1020,8 @@ def note_figures(x, limit: int = 6) -> list[dict]:
         gold = (pack.get("target") or {}).get("gold") or []
         live = {t["name"]: t for t in CD.gold_tables(x.plane, x.th["pid"])}
         names = aliases(x.plane)
-        for k in kpis_of(x.plane, x.th.get("iid")):
+        from sh_platform.v1 import v3_recipes as R
+        for k in [k for k in kpis_of(x.plane, x.th.get("iid")) if not R.held(x.th, k["name"])]:  # a held figure is not in the note
             t = max((live[g["name"]] for g in covering(k, gold) if g["name"] in live and live[g["name"]]["rows"]), key=lambda t: t["rows"], default=None)
             got = _read(x.plane, t, k, k["name"], names) if t else None
             if got and got.get("figure"):

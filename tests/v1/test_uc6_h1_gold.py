@@ -64,10 +64,12 @@ def test_rules_count_30_and_60_day_windows_from_the_month_end_and_list_balances(
     n = _gold(pack, "Calls not yet confirmed")["sql"]
     assert "confirmation_status = 'noticed'" in n and "'confirmed'" not in n  # "not confirmed" leaves confirmed out
     placed = {k for x in pack["target"]["gold"] for k in x.get("kpis") or []}
-    assert not placed & {"Available cash by entity", "Cash after calls by entity"}  # no sum of movements under a cash name
+    assert "Cash after calls by entity" not in placed  # no sum of movements under a cash name
+    cash = _gold(pack, "Available cash by entity")  # c6 (A7): the closing balance is built from the pack's cash_by_entity recipe, on positions, never movements
+    assert cash["purpose"].startswith("Recipe cash_by_entity:") and "cash_movements" not in cash["depends_on"]
     assert "Uncalled commitment by fund" in placed  # UC6 G: commitments now hold called_to_date, so the rules draft it
     rows = " ".join(m["needs_person"] for m in K.open_rows(pack))
-    assert "Define Available cash by entity: it is a closing balance" in rows
+    assert "Define Cash after calls by entity: it is a closing balance" in rows
     assert "Define Uncalled commitment by fund" not in rows  # closing cash stays listed (no decision on it)
 
     con = duckdb.connect()
@@ -100,7 +102,8 @@ def test_a_model_design_that_fails_the_plan_check_is_repaired_once_before_the_ru
     good = reply(f"create table gold_{slug}_calls as select cast(date_trunc('month', f.due_date) as date) as month, "
                  f"cast(sum(f.amount) as decimal(18,2)) as calls_due_within_30_days from cash_movements as f group by all")
     pack = draft(plane, pid, Script(bad, good), monkeypatch)
-    assert [g["name"] for g in pack["target"]["gold"] if g["name"].startswith(f"gold_{slug}_")] == [f"gold_{slug}_calls"]
+    designed = [g["name"] for g in pack["target"]["gold"] if g["name"].startswith(f"gold_{slug}_") and not g["purpose"].startswith("Recipe ")]  # A7: recipe tables are placed before the model
+    assert designed == [f"gold_{slug}_calls"]
 
 
 def test_drafted_uncalled_commitment_matches_the_office_view(uc6, world, monkeypatch):  # UC6 G: same figures as k6_liquidity.commitments()

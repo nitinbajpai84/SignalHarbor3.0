@@ -17,6 +17,7 @@ Rules (documented limits):
   people/users/accounts, and not a lowercase word ending in "s" (a plural noun) unless it is a
   month, a weekday or a short function word (is, was, has, as, this, his, its, us, does, thus). Otherwise it is
   checked like any figure ("grew by 2000 units", "in 1999 cases", "March 2000 orders").
+- Round 5: the value of a JSON reply's "name", "title", "label" or "code" is a label, never a stated figure ("Cash break over 5k").
 - Brackets give no exemption: "[99]" is checked.
 - AQ1: also ignored: ids made of a lowercase prefix and a hex part with a digit (prj-84d783f2), words joined by "_" that hold a digit
   (custodian_note_r1), file names (note_r1.txt), ISO date-times, column types (varchar(255)), and a day with a month but no year (9 Sep,
@@ -48,7 +49,8 @@ _NUM = re.compile(r"(?:(?<![\w.])[-−])?" + _AMOUNT)
 _ID_SKIP = (r"|(?<![\w-])[a-z]+(?:-[a-z]+)*-(?=[0-9a-f]*\d)[0-9a-f]{6,}(?:-[0-9a-f]+)*(?![\w-])"   # prj-84d783f2, tr-north-0a880dbf-357909fb
             r"|(?<!\w)(?=\w*_)(?=\w*\d)\w+"                                                     # cash_2026_09, custodian_note_r1
             r"|(?<![\w.])[\w-]+\.(?i:txt|csv|pdf|xlsx?|json|docx?|md|eml|msg|pptx?)\b"            # custodian_note_r1.txt
-            r"|\b[a-z]+\(\d+(?:,\s*\d+)?\)")                                                   # varchar(255), decimal(18,2)
+            r"|\b[a-z]+\(\d+(?:,\s*\d+)?\)"                                                    # varchar(255), decimal(18,2)
+            r'|"(?:name|title|label|code)"\s*:\s*"(?:[^"\\]|\\.)*"')                           # a JSON reply's name or label is not a stated figure ("Cash break over 5k")
 _TOKEN = re.compile(
     r"(?P<skip>\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?(?!\d)"
     r"|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b"

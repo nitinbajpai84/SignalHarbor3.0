@@ -420,6 +420,8 @@ def b_run(x):
     if (v.get("can") or {}).get("start"):
         v = x.api("leo", "POST", B + "/start", {})
     elif not v.get("round"):
+        from sh_platform.v1 import v3_plan_guard as PG
+        PG.ensure_plan(x)  # no build plan after an approved pack: draw it again, or ask naming the step that failed
         x.api("leo", "POST", f"/api/v1/build/p/{x.th['pid']}/run?mode=sandbox", {})
     cur = v.get("round") or {}
     waiting = [c for c in cur.get("connections") or [] if c.get("status") == "needs_sample"]
@@ -513,8 +515,10 @@ def c_live(x):
 
 def c_lumen(x):
     S = f"/api/v1/build/p/{x.th['pid']}/studio"
-    d = x.api("leo", "POST", S + "/starter", {})
+    d = x.api("leo", "POST", S + "/starter", {}, soft=True)
     did = d.get("id") or (d.get("dashboard") or {}).get("id")
+    if not did:  # no figure with a ready table yet: go-live never stops here; each live run proposes the starter once figures exist (b6_run._move)
+        return "no starter board yet: no figure has a ready table; it appears after a live run fills one"
     DASH = f"{S}/{did}"
     NUM, DATE = ("tinyint", "smallint", "integer", "bigint", "hugeint", "decimal", "double", "float", "real", "numeric"), ("date", "timestamp")
     STOP = {"the", "and", "per", "by", "due", "in", "of", "for", "days", "day", "month", "period"}
@@ -554,7 +558,8 @@ def c_lumen(x):
 
 def c_note(x):
     cur = x.api("leo", "GET", f"/api/v1/build/p/{x.th['pid']}/builder").get("round") or {}
-    figs = [{"label": r["figure"], "value": str(r["run"]), "change": str(r["diff"])} for r in ((cur.get("variance") or {}).get("lines")) or []]
+    figs = [{"label": r["figure"], "value": str(r["run"]), "change": "" if r["diff"] is None else str(r["diff"])}
+            for r in ((cur.get("variance") or {}).get("lines")) or [] if r["run"] is not None]  # c5 ops_lead: a line the run has no figure for printed "None"
     if not figs:  # no variance lines: the run's ready tables, as the Office view reads them
         as_of = (cur.get("run") or {}).get("as_of") or date.today().isoformat()
         liq = x.api("leo", "GET", f"/api/v1/office/liquidity?currency=USD&as_of={as_of}", soft=True) or {}
@@ -663,7 +668,8 @@ def doc(sow: dict) -> list[dict]:
             out.append({"title": f"Figure: {k.get('name') or 'unnamed'}", "lines": [
                 line("kpis", i, "name", "Name", k.get("name"), sug), line("kpis", i, "definition", "What it means", k.get("definition"), sug),
                 line("kpis", i, "formula", "How it is worked out", k.get("formula"), sug), line("kpis", i, "period", "How often", k.get("period"), sug),
-                line("kpis", i, "owner", "Owner", k.get("owner"), sug)]})
+                line("kpis", i, "owner", "Owner", k.get("owner"), sug),
+                *([line("kpis", i, "built_from", "Built from", _R.shown(k), not k.get("built_from_confirmed"))] if "built_from" in k else [])]})
     srcs = [line("sources", i, "holds", s.get("name") or "Source", s.get("holds") or s.get("owner"))
             for i, s in enumerate(sow.get("sources") or []) if isinstance(s, dict)]
     if srcs:
@@ -692,7 +698,10 @@ def edit_brief(app, plane, tid, body: dict, account_id) -> dict:
         raise ValueError("The brief can be changed while Decision 1 is open.")
     x = Ctx(app, plane, th, account_id)
     sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/sow")
-    x.api("me", "PUT", f"/api/v1/intents/{th['iid']}/sow", {**{k: body.get(k) for k in ("section", "index", "field", "value")}, "version": sow.get("version")})
+    if body.get("field") == "built_from":  # the person changes the recipe a figure is built from
+        _R.choose(plane, th["iid"], int(body.get("index") or 0), str(body.get("value") or ""), _who(app, account_id))
+    else:
+        x.api("me", "PUT", f"/api/v1/intents/{th['iid']}/sow", {**{k: body.get(k) for k in ("section", "index", "field", "value")}, "version": sow.get("version")})
     sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow
     th["sources"] = [s.get("name", "") for s in sow.get("sources") or []]
     th["decision"] = {**(th.get("decision") or {}), "brief": brief(sow), "gaps": _gaps(x, th["iid"])}
@@ -725,6 +734,7 @@ def _north(x, text, first=False):
         x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": NO_EARLIER})
         gaps = _gaps(x, th["iid"])
     sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow  # after the drafted lines were accepted
+    sow = _R.bind_brief(x, sow)  # each figure bound to a recipe by what it means, shown as "Built from" for the person to change
     th["sources"] = [s.get("name", "") for s in sow.get("sources") or []]
     th["rules"] = [str(g.get("rule") or g.get("text") or g.get("name") or g) if isinstance(g, dict) else str(g) for g in sow.get("governance") or []]
     th["title"] = str(sow.get("title") or th["title"])[:80]  # the drafted title, not the first sentence typed
@@ -778,7 +788,8 @@ def _gaps(x, iid: str) -> list[str]:
     from sh_platform.v1 import v3_signoff as SO
     SO.accept_drafts(x, iid)  # drafted lines count as filled; the person still reviews them in Decision 1
     from sh_platform.v1 import i6_chat as I6
-    return [g.strip() for g in I6._sign_gaps(x.plane, iid).split(";") if g.strip()]
+    from sh_platform.v1 import v3_plan_guard as PG  # a data build with no figures is a gap here, not "The plan has no tables." in Build
+    return [g.strip() for g in I6._sign_gaps(x.plane, iid).split(";") if g.strip()] + PG.figures_gap(x.plane, x.th, iid)
 
 
 def create(app, plane, text, account_id) -> dict:
@@ -880,6 +891,7 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
             _learn(plane, th, f"file:{srcs[m['name']]}", f"{m['name']}: {v}")
     if n == 1 and answer == "confirm" and th.get("iid"):
         _no_earlier_figures(app, plane, th["iid"])
+        _R.confirm(plane, th, _who(app, account_id))  # the bindings become the person's
     if n == 1 and (th.get("decision") or {}).get("brief"):
         th["brief"] = th["decision"]["brief"]  # the confirmed brief stays on screen (the Build graph) after Decision 1 closes
     th["decision"], th["stage"] = None, "working"
@@ -1007,6 +1019,12 @@ from sh_platform.v1 import v3_process as _P  # noqa: E402 - process-only builds 
 _P.register(sys.modules[__name__])
 from sh_platform.v1 import v3_figures as _F  # noqa: E402 - every figure of the brief ends in a filled ready table (chain B steps, Decision 3 lines)
 _F.install(sys.modules[__name__])
+from sh_platform.v1 import v3_recipes as _R  # noqa: E402 - Decision 1 binds each figure to a recipe by meaning; every later step reads the binding
+
+
+def _who(app, account_id) -> str | None:
+    acct = app.state.account_store.get(account_id) or {}
+    return acct.get("display_name") if isinstance(acct, dict) else getattr(acct, "display_name", None)
 
 
 def _recover(app) -> None:

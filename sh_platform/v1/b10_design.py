@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
+import hashlib
 import json
 import logging
 import os
@@ -414,22 +415,46 @@ def _intent_numbers(ctx: dict) -> str:
 
 
 def _ask_design(plane, model, viewer, pid: str, ctx: dict, ask: str = "Design the gold tables.") -> dict | None:
+    """The model's design as JSON, or None. The same input gets the same reply (temperature 0, and the reply kept by a hash of the input); a call that fails
+    or comes back unreadable is asked again, and only after two failed calls does the caller fall back to the rules."""
     if model is None or os.environ.get("SH_MODEL_PROVIDER", "").lower() == "off":
         return None
+    from sh_platform.agents.loop import run_agent
+    from sh_platform.agents.registry import ToolRegistry
+    from sh_platform.agents.runs import RunRegistry
+    from sh_platform.build.agents.runtime import OpenGate
+    from sh_platform.egress.providers import TEMPERATURE
+    from sh_platform.v1.egress_fit import fit
+    from sh_platform.v1.router import route
+    fitted, question = fit(ctx), ask + _intent_numbers(ctx)
+    key = hashlib.sha256(json.dumps([SYSTEM, fitted, question], sort_keys=True, default=str).encode("utf-8")).hexdigest()[:32]
+    kept = plane.path("v3", "design_cache", key + ".json")
     try:
-        from sh_platform.agents.loop import run_agent
-        from sh_platform.agents.registry import ToolRegistry
-        from sh_platform.agents.runs import RunRegistry
-        from sh_platform.build.agents.runtime import OpenGate
-        from sh_platform.v1.egress_fit import fit
-        from sh_platform.v1.router import route
-        res = run_agent(route(model, "span", "plan", "", plane, want_json=True), ToolRegistry(OpenGate()), plane.company_id, "m3_connect", "Span", SYSTEM,
-                        fit(ctx), ask + _intent_numbers(ctx), recorder=RunRegistry(plane))
-        a, b = res.text.find("{"), res.text.rfind("}")
-        return json.loads(res.text[a:b + 1]) if res.status == "done" and 0 <= a < b else None
-    except Exception:  # noqa: BLE001 - a failed call leaves the rules' design
-        log.warning("Span's design call failed; rules only")
-        return None
+        if kept.is_file():
+            return json.loads(kept.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        log.warning("a kept design reply could not be read", exc_info=True)
+    for attempt in (1, 2):
+        token = TEMPERATURE.set(0)
+        try:
+            res = run_agent(route(model, "span", "plan", "", plane, want_json=True), ToolRegistry(OpenGate()), plane.company_id, "m3_connect", "Span", SYSTEM,
+                            fitted, question, recorder=RunRegistry(plane))
+            a, b = res.text.find("{"), res.text.rfind("}")
+            got = json.loads(res.text[a:b + 1]) if res.status == "done" and 0 <= a < b else None
+        except Exception:  # noqa: BLE001 - a failed call is asked again; two failed calls leave the rules' design
+            log.warning("Span's design call %s failed", attempt, exc_info=True)
+            got = None
+        finally:
+            TEMPERATURE.reset(token)
+        if got is not None:
+            try:
+                kept.parent.mkdir(parents=True, exist_ok=True)
+                kept.write_text(json.dumps(got, sort_keys=True), encoding="utf-8")
+            except OSError:
+                log.warning("a design reply could not be kept", exc_info=True)
+            return got
+    log.warning("Span's design call failed twice; rules only")
+    return None
 
 
 def justify(plane, s: dict, words: set[str]) -> dict:
@@ -474,6 +499,10 @@ def design(plane, viewer, pid: str, sow: dict, plan: dict, grain: dict, model=No
     if not kpis:
         return plan
     slug = plan["project_slug"]
+    from sh_platform.v1 import v3_recipes as R  # A7: a figure with a recipe (or a design this office saved) is built from it; the model is asked for the rest
+    kpis = R.place(plane, viewer, pid, kpis, slug, grain, plan, notes)
+    if not kpis:
+        return plan
     words = set().union(*[_toks(f"{k.get('name')} {k.get('definition') or ''}") for k in kpis])
     ranked = rank_tables(plane, words)
     schema = {t["name"]: [c["name"] for c in t["columns"]] for t in E.current(plane)["tables"]}
@@ -489,6 +518,7 @@ def design(plane, viewer, pid: str, sow: dict, plan: dict, grain: dict, model=No
         if attempt is None:
             rules = rules or _rules_design(plane, slug, kpis, grain, notes)
             attempt = rules
+        attempt["gold"][:] = R.allowed(attempt["gold"], notes, kpis)  # A8: a design that reads a table its figure's recipe forbids is dropped, with the reason
         if not attempt["gold"]:
             continue
         change = file_model_change(plane, viewer, pid, attempt["silver"]) if attempt["silver"] else None

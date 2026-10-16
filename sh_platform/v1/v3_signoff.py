@@ -257,11 +257,12 @@ def before_sign(x) -> None:
     iid = x.th["iid"]
     H._no_earlier_figures(x.app, x.plane, iid)
     H._gaps(x, iid)  # North's drafts are accepted first, by the signer
-    gaps = blocking(x.plane, iid)
+    from sh_platform.v1 import v3_plan_guard as PG  # a data build with no figures stops here, never at "The plan has no tables."
+    gaps = blocking(x.plane, iid) + PG.figures_gap(x.plane, x.th, iid)
     if gaps:
         gaps = fill(x, gaps)
         H._no_earlier_figures(x.app, x.plane, iid)
-        gaps = blocking(x.plane, iid)
+        gaps = blocking(x.plane, iid) + PG.figures_gap(x.plane, x.th, iid)
     if gaps:
         me = (x.app.state.account_store.get(x.account_id) or {}).get("display_name") or "the signer"
         raise H.Q(gap_question(x.th, me, gaps))
