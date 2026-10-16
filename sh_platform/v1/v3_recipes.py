@@ -95,6 +95,10 @@ BIND_SYSTEM = (
     'Reply with JSON only: {"bindings": [{"figure": <figure id>, "recipe": <recipe id or "none">, "why": <one plain sentence>}]}.')
 
 
+BIND_STANDARD = ("Bind only when the recipe computes that very quantity, the same thing measured from the kind of records the brief names. A total, a split or a "
+                 "subset of the recipe's quantity is that recipe's figure. A count of items, or a share of the result, is none. Decide by the definition and formula, not the name alone.")
+
+
 def bound(k: dict) -> dict | None:
     """The recipe the figure is built and answered from: its binding when it has one ("" is none), never a new match by name. A figure with no
     binding at all (a brief from before Decision 1 bound its figures) falls back to the name match."""
@@ -170,6 +174,16 @@ def bind(plane, model, kpis: list[dict], question: str = "", sources: list[dict]
                "recipes": [{"id": r["id"], "label": r["label"], "also_called": r.get("names") or [], "formula": r["formula"], "reads": r["may_read"],
                             "why": r.get("why", "")} for r in recipes()]}
         got = _ask(plane, model, ctx) or {}
+        if model is not None:  # two models of different families bind each figure; a figure they agree on is bound, the rest keep the single model's binding
+            from sh_platform.v1 import v3_judge as J
+            ids_ = [r["id"] for r in recipes()]
+            for i, k in enumerate(left):
+                from sh_platform.v1.egress_fit import fit
+                one = fit({**ctx, "figures": [ctx["figures"][i]]})  # records as one-line strings: the row guard lets them out
+                said = J.judged(plane, "recipe", "Which recipe computes this figure, or none?", [*ids_, "none"], one, BIND_STANDARD, person=False)
+                if said:
+                    got.setdefault("bindings", [])[:] = [b for b in got.get("bindings") or [] if str(b.get("figure")) != str(i)] + [
+                        {"figure": i, "recipe": said, "why": "Two models of different families agreed."}]
         ids = {**{str(i): k for i, k in enumerate(left)}, **{k["name"]: k for k in left}}  # a reply may name the figure instead of its id
         for b in got.get("bindings") or []:
             if isinstance(b, dict) and str(b.get("figure")) in ids and recipe(str(b.get("recipe"))):

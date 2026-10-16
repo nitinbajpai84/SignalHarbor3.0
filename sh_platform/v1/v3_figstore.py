@@ -100,7 +100,7 @@ def row(rec: dict) -> dict:
 
 # ---- what a figure assumed ----------------------------------------------------------------------------------------------------------------
 
-def assumptions(reads, r: dict | None, th: dict | None = None) -> list[dict]:
+def assumptions(reads, r: dict | None, th: dict | None = None, plane=None) -> list[dict]:
     """The loaders' normalisations for the tables the figure reads, the recipe's stated reading (A7, A8) and what the person answered."""
     at, out = now(), []
     for t in sorted(reads or []):
@@ -116,6 +116,9 @@ def assumptions(reads, r: dict | None, th: dict | None = None) -> list[dict]:
         a = ((th or {}).get("answers") or {}).get(q["id"])
         if isinstance(a, str) and a.strip():
             out.append({"text": f"{q['text']} {a.strip()}", "source": "person", "at": at})
+    if plane is not None and th:
+        from sh_platform.v1 import v3_judge as J
+        out += J.assumptions(plane, th.get("id"))  # "Harbor (two models agreed)"
     return out
 
 
@@ -191,7 +194,7 @@ def confirm(plane, th: dict, who: str | None, reuse: dict | None) -> None:
                            "assumptions": [], "tie_out": None, "approved_by": who, "approved_at": at, "runs": [], "status": "draft"}
                     fig["versions"].append(ver)
                     fig.setdefault("current_v", ver["v"])
-                ver["assumptions"] = assumptions((r or {}).get("may_read"), r, th)
+                ver["assumptions"] = assumptions((r or {}).get("may_read"), r, th, plane)
                 if th["id"] not in _threads(fig):
                     fig["used_by"].append(use)
                 _save(plane, fig)
@@ -244,7 +247,7 @@ def trial(x) -> None:
                 ok = bool(f["ok"]) and not f.get("held") and (t is None or t["ok"])
                 ver.update(built_from=_built(k, plane), reads=reads, sql_hash=hashlib.sha256(sql.encode("utf-8")).hexdigest()[:12] if sql else None,
                            model="model design" if (th.get("model_tables") or {}).get(f.get("table")) else None,
-                           tie_out={"rule": t["label"], "ok": t["ok"], "at": now()} if t else None, assumptions=assumptions(reads, r, th),
+                           tie_out={"rule": t["label"], "ok": t["ok"], "at": now()} if t else None, assumptions=assumptions(reads, r, th, x.plane),
                            reason="" if ok else (f.get("reason") or (t and not t["ok"] and t["label"]) or "The figure has no numbers yet."))
                 _status(fig, ver, "verified" if ok else "held")
                 _save(plane, fig)

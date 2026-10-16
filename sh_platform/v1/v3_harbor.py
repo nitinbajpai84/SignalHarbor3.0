@@ -180,6 +180,8 @@ def _skill(x, sid: str, text: str):
 def _call(x, fn, action: str):
     """fn(x), as the catalogue skills it stands for (a step with no skill, such as a test's stub, just runs)."""
     ids = SKILLS_OF.get(getattr(fn, "__name__", ""), ())
+    from sh_platform.v1 import v3_judge as J
+    J.THREAD.set(x.th["id"])  # the judge counts its spend and files its questions against this build
     with ExitStack() as st:
         recs = [st.enter_context(_skill(x, i, action)) for i in ids]
         out = fn(x)
@@ -350,6 +352,8 @@ def d2(x) -> dict:
     from sh_platform.v1 import v3_docs as D
     files += V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
     qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
+    from sh_platform.v1 import v3_judge as J
+    qs += J.pending(x.plane, th["id"])  # a small judgement two models could not agree on: both opinions as options
     from sh_platform.v1 import v3_figures as F
     qs += F.account_questions(x)  # "Which entity owns account X?": an account number no portfolio has holds back the whole bank statement
     csvs = [f["name"] for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
@@ -372,6 +376,9 @@ def b_answers(x):
         elif kind == "doc":
             from sh_platform.v1 import v3_docs as D
             D.answer(x, key, val)
+        elif kind == "judge":
+            from sh_platform.v1 import v3_judge as J
+            J.answer(x.plane, key, val)
         elif kind == "pdf":
             V.answer(x, key, val)
         elif kind == "acct" and val:
@@ -960,6 +967,16 @@ def recognise(plane, name: str, threads: list[dict]):
         if pick:
             return "recognised", pick, hits[0][0]
     if len({h[0] for h in hits}) > 1 or len({h[1] for h in hits}) > 1:  # two threads, or two sources equally likely: ask, never guess
+        if len({h[0] for h in hits}) == 1:  # one build, two sources: two models of different families decide; a person gets only their disagreement
+            from sh_platform.v1 import v3_judge as J
+            srcs = sorted({h[1] for h in hits})
+            try:
+                head = plane.path("dropbox", name).read_text(encoding="utf-8-sig", errors="replace")[:300]
+            except OSError:
+                head = ""
+            if pick := J.judged(plane, "file", f"Which source is the file {name} from?", srcs, {"file name": name, "first lines": head},
+                                "Pick a source when the file's name, headings or columns name what that source holds. Say none only when two sources fit equally.", hits[0][0]):
+                return "recognised", pick, hits[0][0]
         return "question", hits[0][1], None
     return "recognised", hits[0][1], hits[0][0]
 
