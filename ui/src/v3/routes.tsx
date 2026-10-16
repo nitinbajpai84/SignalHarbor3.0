@@ -23,6 +23,8 @@ import BuildPage from "./build/BuildPage";
 import ConsumePage from "./consume/ConsumePage";
 import KnowledgePage from "./knowledge/KnowledgePage";
 import SkillsPage from "./knowledge/SkillsPage";
+import FiguresPage from "./knowledge/FiguresPage";
+import FigurePage from "./knowledge/FigurePage";
 
 /** Mounted by App.tsx at /v3/* inside the signed-in Gate. Paths are relative to /v3. */
 export default function V3Routes() {
@@ -53,6 +55,8 @@ export default function V3Routes() {
       <Route path="consume" element={<ConsumePage />} />
       <Route path="knowledge" element={<KnowledgePage />} />
       <Route path="knowledge/skills" element={<SkillsPage />} />
+      <Route path="knowledge/figures" element={<FiguresPage />} />
+      <Route path="knowledge/figures/:id" element={<FigurePage />} />
       <Route path="*" element={<Navigate to="desk" replace />} />
     </Routes>
   );

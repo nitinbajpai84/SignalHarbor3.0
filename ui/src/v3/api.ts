@@ -22,10 +22,10 @@ export interface SignOff {
   sent_at?: string; sent_by?: string; mine?: boolean; message?: string; gaps?: string[];
 }
 export interface ThreadRecord { started_by?: string | null; started_at?: string; sent_at?: string | null; line?: string | null; signed_by?: string; role?: string; signed_at?: string; version?: number; document?: string }
-export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
+export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; reuse?: ReuseOffer[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
 export interface CardAction { label: string; answer: string }
 export interface Card { kind: "decision" | "exception" | "question"; thread: string; title: string; text: string; actions: CardAction[] }
-export interface Figure { label: string; value: string; change: string }
+export interface Figure { label: string; value: string; change: string; id?: string; name?: string; v?: number }
 export interface Note { text: string; figures: Figure[] }
 export interface FilesLine { arrived: number; recognised: number; waiting: number }
 export interface Desk { needs: Card[]; note: Note | null; threads: ThreadSummary[]; files: FilesLine }
@@ -45,8 +45,8 @@ export const editBrief = (id: string, line: BriefLine, value: string) =>
   apiSend<Thread>("POST", `${t(id)}/brief`, { section: line.section, index: line.index, field: line.field, value });
 export const discardThread = (id: string, reason: string) => apiSend<Thread>("POST", `${t(id)}/discard`, { reason });
 export const sendForSignature = (id: string, to?: string) => apiSend<Thread>("POST", `${t(id)}/decide`, to ? { n: 1, answer: "send_for_signature", to } : { n: 1, answer: "send_for_signature" });
-export const decide = (id: string, n: 1 | 2 | 3, answer: string, answers?: Record<string, string>) =>
-  apiSend<Thread>("POST", `${t(id)}/decide`, answers ? { n, answer, answers } : { n, answer });
+export const decide = (id: string, n: 1 | 2 | 3, answer: string, answers?: Record<string, string>, reuse?: Record<string, string | null>) =>
+  apiSend<Thread>("POST", `${t(id)}/decide`, { n, answer, ...(answers ? { answers } : {}), ...(reuse ? { reuse } : {}) });
 export const listFiles = () => apiGet<{ files: FileRow[] }>("/api/v3/files");
 /** JSON form of the upload; the multipart form is posted by the Files page. */
 export const sendFile = (name: string, data: string) => apiSend<{ files: FileRow[] }>("POST", "/api/v3/files", { name, data });
@@ -117,3 +117,22 @@ export const getBoard = () => apiGet<Board>("/api/v3/board");
 export const ask = (text: string) => apiSend<AskAnswer>("POST", "/api/v3/ask", { text });
 export const getNote = () => apiGet<NoteFull>("/api/v3/note");
 export const getCase = (id: string) => apiGet<Case>(`/api/v3/cases/${encodeURIComponent(id)}`);
+
+// Step 1: figures the office has defined (docs/v3/STEP1-DECISION-SCHEMAS.md).
+export type FigureStatus = "verified" | "held" | "draft";
+export interface FigureRow { id: string; name: string; current_v: number; status: FigureStatus; built_from: { kind: string; id: string }; used_by_count: number; last_run_at: string | null }
+export interface FigureVersion {
+  v: number; built_from: { kind: string; id: string }; reads: string[]; sql_hash?: string; model?: string | null; prompt_hash?: string | null;
+  assumptions: { text: string; source: string; at: string }[]; tie_out?: { rule: string; ok: boolean; at: string } | null;
+  approved_by?: string | null; approved_at?: string | null; runs: { run_id: string; at: string; ok: boolean; rows: number }[]; status: FigureStatus;
+}
+export interface FigureRecord {
+  id: string; name: string; definition: string; grain: string[]; versions: FigureVersion[];
+  used_by: { thread: string; brief: string; person: string }[];
+  current_v?: number;
+  lineage: { files: { name: string; rows?: number }[]; tables: { name: string; rows?: number }[]; figure: { name?: string } };
+}
+export interface ReuseOffer { figure_id: string; name: string; built_from: { kind: string; id: string }; verified_runs: number; first_used_by: string; suggest: boolean }
+export const listFigures = () => apiGet<FigureRow[]>("/api/v3/figures");
+export const getFigure = (id: string) => apiGet<FigureRecord>(`/api/v3/figures/${encodeURIComponent(id)}`);
+export const rollbackFigure = (id: string, v: number) => apiSend<FigureRecord>("POST", `/api/v3/figures/${encodeURIComponent(id)}/rollback`, { v });

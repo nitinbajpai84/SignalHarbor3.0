@@ -7,6 +7,7 @@ import { EditLine } from "../build/IntentGraph";
 import "../build/build.css";
 import V3Frame from "../Frame";
 import Discard from "./Discard";
+import ReuseOffer from "./ReuseOffer";
 import { SignNote, signAction } from "./SignOff";
 import { MicButton, combineText } from "../../v1/voice";
 
@@ -116,6 +117,7 @@ export default function ThreadPage() {
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [reuse, setReuse] = useState<Record<string, string | null>>({});
   const composer = useRef<HTMLTextAreaElement>(null);
   const [talkW, splitter] = useSplit();
 
@@ -199,10 +201,11 @@ export default function ThreadPage() {
             <dt>Raise a case when</dt><dd>{b.cases_when}</dd>
           </dl>
         )}
+        <ReuseOffer offers={(t.reuse ?? []).filter((o) => o.suggest)} value={reuse} onChange={setReuse} />
         {d.gaps?.length ? <p className="v3-gap">Still needed before you confirm: {d.gaps.join("; ")}.</p> : null}
         <SignNote s={t.signoff} />
         <div className="v3-row">
-          {signAction(t.signoff, "Confirm", busy || updating, () => void run(decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
+          {signAction(t.signoff, "Confirm", busy || updating, () => void run(t.reuse?.length ? decide(id, 1, "confirm", undefined, Object.fromEntries(t.reuse.map((o) => [o.figure_id, reuse[o.figure_id] ?? null]))) : decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
           <button onClick={() => composer.current?.focus()}>Change something</button>
         </div>
         <small className="v3-mute">or just say it, for example "use 90 days"</small>
