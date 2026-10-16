@@ -81,6 +81,8 @@ async def decide(tid: str, request: Request):
     answers = dict(b["answers"]) if isinstance(b.get("answers"), dict) else {}
     if isinstance(b.get("to"), str):
         answers["to"] = b["to"]
+    if isinstance(b.get("reuse"), dict):
+        answers["reuse"] = b["reuse"]  # per brief figure: the figure to reuse, or null
     try:
         th = await run_in_threadpool(H.decide, app, plane, tid, b["n"], b["answer"], answers, acct)
     except ValueError as e:

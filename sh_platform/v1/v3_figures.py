@@ -647,11 +647,13 @@ def figure_answer(plane, viewer, text: str, pid: str | None, th: dict | None = N
     brief or the table cannot be read (Lumen answers); an empty table gives "Not available yet" and why. Logged as a skill run."""
     if not pid or not th:
         return None
-    from sh_platform.v1 import v3_skills as SK
+    from sh_platform.v1 import v3_figstore as FS, v3_skills as SK
     try:
         with SK.record(plane, th.get("id"), ANSWER) as rec:
             hit = _answer(plane, viewer, text, pid, th)
             rec["detail"] = (hit or {}).get("source", "not a question about a figure of the brief")
+            if hit and (kpi := hit.pop("kpi", None)) and (link := FS.link_answer(plane, th, kpi)):
+                hit["figure"] = {**(hit.get("figure") or {}), **link}  # "Where this number comes from": the figure record the answer was read through
     except Exception:  # noqa: BLE001 - any failure leaves the answer to Lumen
         log.info("figure answer failed", exc_info=True)
         return None
@@ -900,7 +902,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         got = how(plane, k, t, text, th) if how else _read(plane, t, k, text, aliases(plane), th, meas.get(t["name"]))
         if got:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
-            return {**got, "source": src, "used": [], "trace": trace}
+            return {**got, "source": src, "used": [], "trace": trace, "kpi": k["name"]}
     return None
 
 

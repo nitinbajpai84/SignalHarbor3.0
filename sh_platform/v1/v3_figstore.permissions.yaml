@@ -1,0 +1,5 @@
+# Harbor 3.0 figure records: every company role reads them; a rollback is checked in the handler (company admin, or the person who approved the figure).
+routes:
+  GET /api/v3/figures: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v3/figures/{figure_id}: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/figures/{figure_id}/rollback: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

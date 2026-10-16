@@ -892,6 +892,7 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
     if n == 1 and answer == "confirm" and th.get("iid"):
         _no_earlier_figures(app, plane, th["iid"])
         _R.confirm(plane, th, _who(app, account_id))  # the bindings become the person's
+        _FS.confirm(plane, th, _who(app, account_id), (answers or {}).get("reuse"))  # each figure becomes a figure version, or links to the one the person reuses
     if n == 1 and (th.get("decision") or {}).get("brief"):
         th["brief"] = th["decision"]["brief"]  # the confirmed brief stays on screen (the Build graph) after Decision 1 closes
     th["decision"], th["stage"] = None, "working"
@@ -1020,6 +1021,8 @@ _P.register(sys.modules[__name__])
 from sh_platform.v1 import v3_figures as _F  # noqa: E402 - every figure of the brief ends in a filled ready table (chain B steps, Decision 3 lines)
 _F.install(sys.modules[__name__])
 from sh_platform.v1 import v3_recipes as _R  # noqa: E402 - Decision 1 binds each figure to a recipe by meaning; every later step reads the binding
+from sh_platform.v1 import v3_figstore as _FS  # noqa: E402 - each figure is a versioned record: made at Decision 1, checked at Decision 3, a run appended each live run
+_FS.install(sys.modules[__name__])
 
 
 def _who(app, account_id) -> str | None:

@@ -92,12 +92,15 @@ def heal(plane, th) -> dict:
 
 
 def decorate(app, plane, v: dict, account_id) -> dict:
+    from sh_platform.v1 import v3_figstore as FS
     from sh_platform.v1.v3_harbor import load, view
     if v.get("stage") == "question":
         v = view(heal(plane, load(plane, v["id"])))
+    th = load(plane, v["id"])
+    v = {**v, "figures": FS.thread_figures(plane, th)}  # the figures this thread uses, with the hold when a newer version failed its tie-out
     if v.get("stage") != "decision1":
         return v
-    return {**v, "signoff": state(app, plane, load(plane, v["id"]), account_id)}
+    return {**v, "signoff": state(app, plane, th, account_id), "reuse": FS.reuse_for(plane, th)}
 
 
 def send(app, plane, th, to, account_id) -> None:
