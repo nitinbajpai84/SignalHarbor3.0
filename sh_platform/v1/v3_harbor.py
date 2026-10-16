@@ -417,12 +417,15 @@ def b_load(x):
 def b_run(x):
     B = f"/api/v1/build/p/{x.th['pid']}/builder"
     v = x.api("leo", "GET", B)
+    if not v.get("round") and not (v.get("can") or {}).get("start"):
+        from sh_platform.v1 import v3_plan_guard as PG
+        PG.ensure_plan(x)  # no approved build plan after an approved pack: approve it again, or ask naming the step that failed
+        v = x.api("leo", "GET", B)  # c8: the builder now starts its round on that plan (a bare sandbox run left no round: "stuck: " with no reason)
     if (v.get("can") or {}).get("start"):
         v = x.api("leo", "POST", B + "/start", {})
-    elif not v.get("round"):
-        from sh_platform.v1 import v3_plan_guard as PG
-        PG.ensure_plan(x)  # no build plan after an approved pack: draw it again, or ask naming the step that failed
-        x.api("leo", "POST", f"/api/v1/build/p/{x.th['pid']}/run?mode=sandbox", {})
+    if "already running" in str(((v.get("round") or {}).get("run") or {}).get("error") or ""):  # c8: another run held the copy (approval, a file arrival)
+        time.sleep(5)  # ponytail: one fixed wait and one retry; the question names the clash if it is still running
+        v = x.api("leo", "POST", B + "/recheck", {}, soft=True) or x.api("leo", "GET", B)
     cur = v.get("round") or {}
     waiting = [c for c in cur.get("connections") or [] if c.get("status") == "needs_sample"]
     if cur.get("state") == "blocked" and waiting:  # a source no file came for is left out, by name, and the run tries again
@@ -435,8 +438,10 @@ def b_run(x):
     from sh_platform.v1.b11_builder import run_trouble
     if why := run_trouble(cur):  # the failing step in plain words, here, not a generic refusal at go-live
         raise Q(why)
-    if cur.get("state") == "blocked" or not cur:
-        raise Q("The run on a copy is stuck: " + "; ".join(str(n.get("text") or n) for n in v.get("needs") or [])[:300])
+    if cur.get("state") == "blocked" or not cur:  # never an empty reason: the needs, else the sources not connected, else what the builder waits for
+        why = "; ".join(str(n.get("text") or n) for n in v.get("needs") or []) or "; ".join(
+            f"{c.get('name') or c.get('code')}: {c.get('detail') or c.get('status')}" for c in cur.get("connections") or [] if c.get("status") not in ("connected", "not_needed"))
+        raise Q("The run on a copy is stuck: " + (why or v.get("waiting") or "the builder did not start a round on the copy for the approved design pack")[:300])
     return "ran on a copy"
 
 
@@ -730,6 +735,9 @@ def _north(x, text, first=False):
             out = x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": FILL + "; ".join(gaps)})
             sow = out.get("sow") or x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow
             gaps = _gaps(x, th["iid"])
+        if fill and gaps:  # c8: success still empty after the fill: Harbor's own suggestion from the figures and their recipe tie-outs
+            from sh_platform.v1 import v3_signoff as SO
+            gaps = SO.success_fallback(x.plane, th["iid"], gaps)
     if fill and gaps and all("last period" in g for g in gaps):  # a first report has no earlier figures: say so plainly, once North has asked
         x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": NO_EARLIER})
         gaps = _gaps(x, th["iid"])

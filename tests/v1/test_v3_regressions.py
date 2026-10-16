@@ -375,3 +375,89 @@ def test_a_one_word_recipe_name_is_the_figure_only_when_it_is_the_whole_name():
     assert ids == {"Distributions incoming cash": None, "Cash after calls by entity": None, "Net break in USD": None, "Cash": "cash_by_entity",
                    "Cash by entity": "cash_by_entity", "Available cash by entity": "cash_by_entity", "NAV": "net_worth", "Cash balance per entity": "cash_by_entity"}
     assert R.match({"name": "How much cash does Entity B hold?"}, strict=False)["id"] == "cash_by_entity"  # a question's words still find it
+
+
+# ---- cycle 8: "How you will know it worked" never filled; the run on a copy stuck with no reason ----------------------------------
+
+def test_a_success_drafted_at_the_top_of_the_patch_lands_in_the_template_and_a_gap_list_is_not_a_statement():
+    """c7 cfo, risk_officer: North drafted {"success": {"text": ...}} at the top of sow_patch, where merge never reads it, so the gap stayed open on
+    every fill; and Harbor's own list of gaps was read as the person stating the result ("; How you will know it worked")."""
+    from sh_platform.v1 import i6_chat as I6
+    sp = {"result": {"text": "(suggested) A one-page daily pack."}, "success": {"text": "(suggested) The pack reaches Mei and Raj each morning."},
+          "template_fields": {"result": "Kept as written"}}
+    I6.template_at_top(sp)
+    assert sp == {"template_fields": {"result": "Kept as written", "success": "(suggested) The pack reaches Mei and Raj each morning."}}
+    assert I6.stated_fields(H.FILL + "What the result looks like; How you will know it worked") == {}
+    assert I6.stated_fields(H.FILL + "How you will know it worked; What is still unclear, and who can settle it") == {}
+    assert I6.stated_fields("We will know it worked when the pack ties to the custodian.")["success"] == "The pack ties to the custodian."
+
+
+def test_success_still_empty_after_the_usual_practice_is_harbors_suggestion_from_the_figures_and_their_tie_outs(tmp_path, monkeypatch):
+    from sh_platform.v1 import i4_sow as SW, t1_templates as T, v3_signoff as SO
+    plane = _office(tmp_path)
+    path = SW.path_of(plane, "ini-1")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"intent_id": "ini-1", "state": "draft", "kpis": [{"name": "Net worth", "built_from": "net_worth"}, {"name": "Unmatched count"}],
+                                "template_fields": {"result": "A page"}}))
+    monkeypatch.setattr(T, "for_intent", lambda plane, iid, kind="intent_of_work": {"fields": [{"key": "success", "label": "How you will know it worked"}]})
+    gaps = ["How you will know it worked", "What is still unclear, and who can settle it"]
+    assert SO.success_fallback(plane, "ini-1", gaps) == ["What is still unclear, and who can settle it"]
+    got = SW.read(plane, "ini-1")["template_fields"]
+    assert got["result"] == "A page" and got["success"] == (
+        "(suggested by Harbor) Each figure (Net worth, Unmatched count) is filled on the trial copy and ties out: "
+        "Net worth equals the sum of the position snapshots for the same dates.")
+    path.write_text(json.dumps({"intent_id": "ini-1", "state": "draft", "kpis": [], "template_fields": {"success": "The person's own words"}}))
+    assert SO.success_fallback(plane, "ini-1", gaps) == gaps and SW.read(plane, "ini-1")["template_fields"]["success"] == "The person's own words"
+    assert SO.success_fallback(plane, "ini-1", ["What is still unclear, and who can settle it"]) == ["What is still unclear, and who can settle it"]
+
+
+def _builder(answers):
+    calls = []
+
+    def api(who, method, path, body=None, soft=False):
+        calls.append(f"{method} {path.rsplit('/builder', 1)[-1] or '/'}")
+        return answers[calls[-1]].pop(0)
+    return calls, api
+
+
+RAN = {"state": "ran", "run": {"status": "ok", "run_id": "run-1"}, "connections": []}
+
+
+def test_a_drawn_but_unapproved_plan_is_approved_and_the_builder_runs_its_round(monkeypatch):
+    """c7 ops_clerk: the plan was only proposed, so the builder had no round; a bare sandbox run left none either: "stuck: " with no reason."""
+    from sh_platform.v1 import v3_plan_guard as PG
+    monkeypatch.setattr(PG, "ensure_plan", lambda x: x.api("anita", "POST", "/approve-plan"))
+    calls, api = _builder({"GET /": [{"round": None, "can": {"start": False}}, {"round": None, "can": {"start": True}}], "POST /approve-plan": [{}],
+                           "POST /start": [{"round": RAN, "can": {}}]})
+    x = SimpleNamespace(th={"pid": "prj-1"}, api=api)
+    assert H.b_run(x) == "ran on a copy" and x.th["run_id"] == "run-1"
+    assert calls == ["GET /", "POST /approve-plan", "GET /", "POST /start"]
+
+
+def test_ensure_plan_approves_a_plan_that_was_only_proposed(monkeypatch):
+    from sh_platform.v1 import b10_pack as K, b6_run, v3_plan_guard as PG
+    plans = [{"state": "proposed"}, {"state": "approved"}]
+    monkeypatch.setattr(b6_run, "latest_plan", lambda plane, pid, live=False: plans[0])
+    monkeypatch.setattr(K, "latest_approved", lambda plane, pid: {"version": 1})
+    calls = []
+    PG.ensure_plan(SimpleNamespace(th={"pid": "prj-1"}, plane=None, api=lambda *a, **k: (calls.append(a[2]), plans.pop(0))))
+    assert calls == ["/api/v1/build/p/prj-1/architecture/pack/plan/approve"]
+
+
+def test_a_run_that_met_another_run_is_tried_once_more_and_a_stuck_run_always_names_why(monkeypatch):
+    import pytest
+    monkeypatch.setattr(H.time, "sleep", lambda s: None)
+    busy = {"state": "failed", "run": {"status": "failed", "error": "This project is already running. Please wait for it to finish."}, "connections": []}
+    calls, api = _builder({"GET /": [{"round": busy, "can": {}}], "POST /recheck": [{"round": RAN, "can": {}}]})
+    assert H.b_run(SimpleNamespace(th={"pid": "prj-1"}, api=api)) == "ran on a copy" and calls == ["GET /", "POST /recheck"]
+    blocked = {"state": "blocked", "connections": [{"code": "bank", "name": "Bank feed", "status": "failed", "detail": "the address is not allowed"}]}
+    _, api = _builder({"GET /": [{"round": blocked, "can": {}, "needs": []}]})
+    with pytest.raises(H.Q) as e:
+        H.b_run(SimpleNamespace(th={"pid": "prj-1"}, api=api))
+    assert e.value.text == "The run on a copy is stuck: Bank feed: the address is not allowed"
+    from sh_platform.v1 import v3_plan_guard as PG
+    monkeypatch.setattr(PG, "ensure_plan", lambda x: None)
+    _, api = _builder({"GET /": [{"round": None, "can": {}}, {"round": None, "can": {}, "waiting": None}]})
+    with pytest.raises(H.Q) as e:
+        H.b_run(SimpleNamespace(th={"pid": "prj-1"}, api=api))
+    assert e.value.text.startswith("The run on a copy is stuck: ") and len(e.value.text) > len("The run on a copy is stuck: ") + 10

@@ -1223,6 +1223,7 @@ def ask(model, plane, iid: str, thread: dict, sow: dict, files: list, latest: st
     sp = got.get("sow_patch")
     if isinstance(sp, dict) and not isinstance(got.get("process_steps"), list) and isinstance(sp.get("process_steps"), list):
         got["process_steps"] = sp.pop("process_steps")  # test cycle 1: the model put the process steps inside sow_patch, where merge never reads them
+    template_at_top(sp)  # c8: "How you will know it worked" was drafted at the top of sow_patch and never landed
     if meta or plain_question(latest):  # NM2-6 (A4, A10): a question is not an answer; "what did you mean" drafts nothing
         got["sow_patch"], got["process_steps"] = {}, None
         if meta:
@@ -1266,6 +1267,19 @@ def _dedupe(patch: dict) -> None:
                     seen.add(h)
                     out.append(x)
             patch[k] = out
+
+
+def template_at_top(sp) -> None:
+    """c8: the model wrote a template section at the top of sow_patch, in the tool's shape ({"success": {"text": ...}}), where merge never reads
+    it: it moves to template_fields (a value already there wins)."""
+    if not isinstance(sp, dict):
+        return
+    for k in ("result", "success"):
+        v = sp.pop(k, None)
+        v = v.get("text") if isinstance(v, dict) else v
+        if isinstance(v, str) and v.strip():
+            tf = sp["template_fields"] = sp.get("template_fields") if isinstance(sp.get("template_fields"), dict) else {}
+            tf.setdefault(k, v.strip())
 
 
 def _fold_proposals(got: dict, proposals: list, sow: dict) -> None:
@@ -2115,6 +2129,8 @@ def stated_fields(text: str) -> dict:
         for x in sentences(text):
             m = rx.search(x)
             v = re.sub(r"^(?:when|if|that)\s+", "", x[m.end():].strip(" :,-"), flags=re.I) if m else ""
+            if v.startswith(";"):  # c8: a list of section names ("What the result looks like; How you will know it worked"), not a statement
+                v = ""
             if len(v) >= 8:
                 out[key] = v[:1].upper() + v[1:]
                 break
