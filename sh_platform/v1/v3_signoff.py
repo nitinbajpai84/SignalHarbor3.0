@@ -250,7 +250,41 @@ def fill(x, gaps: list[str]) -> list[str]:
         if gaps and all("last period" in g for g in gaps):
             x.api("me", "POST", f"/api/v1/intents/{iid}/chat", {"text": H.NO_EARLIER})
             gaps = H._gaps(x, iid)
+        gaps = success_fallback(x.plane, iid, gaps)
     return gaps
+
+
+def success_text(sow: dict) -> str:
+    """Harbor's own "how you will know it worked": the brief's figures, filled on the trial copy, and the written tie-outs of the recipes they are
+    bound to. No model and no new business rule: only what the brief and the pack already say."""
+    from sh_platform.v1 import v3_recipes as R
+    figs = [k for k in sow.get("kpis") or [] if isinstance(k, dict) and k.get("name")]
+    if not figs:
+        return "(suggested by Harbor) The build runs end to end on the trial copy and its result is checked at Decision 3."
+    ties = list(dict.fromkeys(lab for k in figs if (lab := (((R.bound(k) or {}).get("tie_out")) or {}).get("label"))))
+    return ("(suggested by Harbor) Each figure (" + ", ".join(k["name"] for k in figs) + ") is filled on the trial copy"
+            + (" and ties out: " + "; ".join(ties) if ties else "") + ".")[:600]
+
+
+def success_fallback(plane, iid: str, gaps: list[str]) -> list[str]:
+    """c8: after a "use the usual practice" fill the success section can still be empty (the model said it drafted it, nothing landed). Harbor
+    fills it with `success_text`, marked as its suggestion; the person can change it in Decision 1. Returns the gaps less that one."""
+    from sh_platform.jsonfile import lock_for, write_json_atomic
+    from sh_platform.v1 import i4_sow as SW
+    from sh_platform.v1 import t1_templates as T
+    f = next((f for f in (T.for_intent(plane, iid) or {}).get("fields") or [] if f.get("key") == "success"), None)
+    label = (f or {}).get("label") or "success"
+    if not f or label not in gaps:
+        return gaps
+    path = SW.path_of(plane, iid)
+    with lock_for(path):
+        sow = SW.read(plane, iid)
+        tf = sow.get("template_fields") if isinstance(sow.get("template_fields"), dict) else {}
+        if sow.get("state") == "signed" or str(tf.get("success") or "").strip():
+            return gaps
+        sow["template_fields"] = {**tf, "success": success_text(sow)}
+        write_json_atomic(path, sow)
+    return [g for g in gaps if g != label]
 
 
 def before_sign(x) -> None:

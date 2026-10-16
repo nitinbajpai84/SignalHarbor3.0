@@ -15,7 +15,7 @@ from sh_platform.v1 import b6_run
 def ensure_plan(x) -> None:
     from sh_platform.v1.v3_harbor import Q
     pid = x.th["pid"]
-    if b6_run.latest_plan(x.plane, pid):
+    if (b6_run.latest_plan(x.plane, pid, live=True) or {}).get("state") in b6_run.LIVE_OK:  # c8: a plan only drawn (proposed) is no plan the builder runs
         return
     pack = K.latest_approved(x.plane, pid)
     if pack is None:
@@ -26,8 +26,8 @@ def ensure_plan(x) -> None:
         why = (K.latest_approved(x.plane, pid) or pack).get("plan_error") or e.text
         raise Q(f"I could not draw the build plan from the approved design pack (version {pack['version']}): {why} "
                 "The figure's design needs a fix before it can run. Say retry after it is changed.") from None
-    if not b6_run.latest_plan(x.plane, pid):
-        raise Q(f"The design pack (version {pack['version']}) is approved but no build plan was drawn from it. Say retry to try again.")
+    if (b6_run.latest_plan(x.plane, pid, live=True) or {}).get("state") not in b6_run.LIVE_OK:
+        raise Q(f"The design pack (version {pack['version']}) is approved but its build plan is not approved. Say retry to try again.")
 
 
 # ---- Decision 1: a data build names its figures (c6 follow-up 2) ------------------------------------------------------------------------
