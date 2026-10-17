@@ -200,6 +200,7 @@ recipes:
     label: Insurance cover less asset value
     cards: [82]
     names: [cover gap, insurance cover gap, insured against appraised, under insured assets, insured value less asset value]
+    words_all: [[cover, insurance, insured, insurances], [gap, under, underinsured, appraised, appraisal, value, shortfall]]
     may_read: [real_assets, vendor_contracts, market_observations]
     never_read: [cash_movements, documents]
     why: What an asset is worth is its latest appraisal; what it is insured for is the sum insured of the policies that name it on the broker's schedule. A premium or a purchase price is neither.
@@ -225,6 +226,10 @@ recipes:
       cast(case when policy_refs is not null and insured_usd < appraised_usd then 1 else 0 end as integer) as under_insured
       from g
     measure: gap_usd
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Cover gap across {n} assets in USD: {sum:gap_usd} (negative means under-insured)"}
+      - {if: no_policy, lead: "No policy on:", say: "{asset}: appraised {appraised_usd} USD, gap {gap_usd}", all: true}
+      - {if: under_insured, lead: "Under-insured:", say: "{asset}: appraised {appraised_usd} USD, insured {insured_usd}, gap {gap_usd}", all: true}
     columns:
       appraised_value: The latest appraisal in the asset's own currency.
       rate: Units of the asset's currency per USD (1 for USD).
@@ -242,7 +247,8 @@ recipes:
   - id: payroll_total
     label: Payroll total against last month
     cards: [81]
-    names: [payroll total, pay run total, payroll against last month, pay file]
+    names: [payroll total, pay run total, payroll against last month, pay file, total payroll amount, payroll amount, payroll cost]
+    words_all: [[payroll, payslip, payslips], [total, amount, release, run, file, net, against, cost]]
     may_read: [staff_payroll, cash_movements]
     never_read: [office_expenses, documents]
     why: The pay file is the latest payroll run (the draft) set against the run before it; the bank shows whether last month's net pay left. Neither the expense ledger nor a budget is the payroll.
@@ -270,6 +276,10 @@ recipes:
       cast(case when count(l.flag) over () = 0 then 1 else 0 end as integer) as release
       from l left join qt on qt.currency = l.currency left join bank as b on b.currency = l.currency
     measure: total_cost
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Pay run for {currency}: net pay {run_net}, employer contributions {run_employer}, total cost {run_total_cost}; the last run cost {previous_total_cost} (net {previous_net}), a change of {change_pct}%"}
+      - {if: flagged, lead: "Held, not released:", say: "{employee_name}: {flag}, total cost {total_cost}", all: true}
+      - {once: true, if: release, say: "No line is flagged, so the pay file can be released"}
     columns:
       total_cost: Net pay plus the employer contribution of the person.
       previous_gross: The person's gross on the previous run; empty when not on it.
@@ -291,7 +301,8 @@ recipes:
   - id: access_review
     label: System access to give or remove
     cards: [91, 92]
-    names: [access review, access open, stale access, access given but not approved, joiner leaver access, access not used in 90 days]
+    names: [access review, access open, stale access, access given but not approved, joiner leaver access, access not used in 90 days, idle access, access not used]
+    words_all: [[access, grant, grants, permission, permissions], [remove, removed, idle, unused, stale, review, approver, leaver, joiner, joiners, leavers]]
     may_read: [system_access_grants, documents, extracted_fields]
     never_read: [users, access_group_memberships]
     why: Who can use which system comes from the access register; who joins and who leaves comes from HR's joiner and leaver mail. A user record does not say what the person may use.
@@ -315,6 +326,11 @@ recipes:
       cast(case when r.days_unused > 90 and not r.is_leaver then 1 else 0 end as integer) as unused_90, cast(1 as integer) as grants
       from r
     measure: grants
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: leaver, lead: "Leaver still holds access, to remove:", say: "{person}: {permission} on {system}", all: true}
+      - {if: joiner_not_requested, lead: "Joiner has access nobody requested:", say: "{person}: {permission} on {system}", all: true}
+      - {if: no_approver, lead: "No approver recorded:", say: "{person}: {permission} on {system}", all: true}
+      - {if: unused_90, sort: days_unused, lead: "Not used in 90 days, to remove:", say: "{person}: {permission} on {system}, {days_unused} days unused", all: true}
     columns:
       days_unused: Days from the last use to the as-at date; empty when the register shows no use.
       no_approver: 1 when the register records no approver for the grant.
@@ -331,7 +347,8 @@ recipes:
   - id: onboarding_items
     label: Manager onboarding items complete and outstanding
     cards: [93]
-    names: [onboarding items, onboarding checklist, manager onboarding, items outstanding before the first call, items complete and outstanding]
+    names: [onboarding items, onboarding checklist, manager onboarding, items outstanding before the first call, items complete and outstanding, manager onboarding items, onboarding items outstanding, onboarding checklist outstanding]
+    words_all: [[onboarding, onboard, checklist], [item, items, outstanding, complete, completion, ready, call, first]]
     may_read: [documents, extracted_fields]
     never_read: [commitments, cash_movements]
     why: What is in place for a new manager is the onboarding checklist the office keeps; a commitment on record does not say the bank details were called back.
@@ -352,6 +369,10 @@ recipes:
       cast(case when min(case when it.status = 'complete' then 1 else 0 end) over (partition by dm.id) = 1 then 1 else 0 end as integer) as ready
       from dm join it on it.document_id = dm.id where it.item is not null
     measure: complete
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "{manager} onboarding: {complete_items} of {items} items complete"}
+      - {if: not complete, lead: "Outstanding before the first call:", say: "{item} ({status})", all: true}
+      - {if: complete, lead: "Complete:", say: "{item}", all: true}
     columns:
       status: The checklist's status of the item (complete, missing ...).
       complete: 1 when the item is complete.
@@ -367,7 +388,8 @@ recipes:
   - id: sop_age
     label: SOPs by last review
     cards: [95]
-    names: [sop age, sops by last review, procedures not reviewed, sop review due]
+    names: [sop age, sops by last review, procedures not reviewed, sop review due, procedures overdue for review, procedures overdue, overdue for review, sops overdue, sop review]
+    words_all: [[sop, sops, procedure, procedures], [review, reviewed, overdue, due, age, aged]]
     may_read: [documents, extracted_fields]
     never_read: [cash_movements]
     why: When a procedure was last reviewed is written in the procedure itself; the date the file was received is not a review.
@@ -384,6 +406,8 @@ recipes:
       cast(case when date_diff('day', f.last_reviewed, (select d from asat)) > 365 then 1 else 0 end as integer) as due, cast(1 as integer) as sops
       from s left join f on f.document_id = s.id
     measure: due
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: due, sort: age_days, lead: "Past the review interval:", say: "{sop} ({owner}), last reviewed {last_reviewed}, {age_days} days ago", all: true}
     columns:
       last_reviewed: The last review date written in the procedure.
       age_days: Days from the last review to the as-at date; empty when the procedure states no review date.
@@ -440,7 +464,8 @@ recipes:
   - id: kyc_expiry
     label: KYC documents expiring
     cards: [97]
-    names: [kyc expiry, kyc documents expiring, know your client documents expiring, kyc refresh, documents expiring in 90 days]
+    names: [kyc expiry, kyc documents expiring, know your client documents expiring, kyc refresh, documents expiring in 90 days, kyc expiring, documents to refresh]
+    words_all: [[kyc, expiry, expiring, expires, expire], [document, documents, refresh, due, days, date, dates, expired]]
     may_read: [kyc_records, legal_entities]
     never_read: [documents, extracted_fields]
     why: Each KYC document and its expiry is a KYC record (from the register and the KYC packs); the pack file itself is evidence, not the record.
@@ -458,6 +483,9 @@ recipes:
       cast(1 as integer) as documents
       from r left join legal_entities as e on e.id = r.legal_entity_id
     measure: documents
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: expired, sort: days_left, lead: "Expired:", say: "{subject_name}, {document}, expired {expires_on} ({days_left} days)", all: true}
+      - {if: expiring_90, sort: days_left, lead: "Expiring within 90 days:", say: "{subject_name}, {document}, expires {expires_on} ({days_left} days)", all: true}
     columns:
       days_left: Days from the as-at date to the expiry; negative when it has passed.
       status: expired, expiring (within 90 days) or valid.
@@ -472,7 +500,8 @@ recipes:
   - id: terms_proposed
     label: Words proposed for the office word list
     cards: [98]
-    names: [terms proposed, word list proposals, words to add, new words proposed]
+    names: [terms proposed, word list proposals, words to add, new words proposed, language list, word list, proposed terms, words proposed]
+    words_all: [[term, terms, word, words], [proposed, proposal, proposals, add, language, list]]
     may_read: [documents, extracted_fields]
     never_read: [sheet_mapping_columns]
     why: A word is proposed in a mail or a meeting note and checked against the office word list the office keeps (its terms and aliases); the pack's own glossary is a suggestion, not the office's list.
@@ -490,6 +519,9 @@ recipes:
       cast(sum(pr.times_proposed) over () as integer) as proposals_made
       from pr
     measure: to_add
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: to_add, lead: "To add to the language list:", say: "{term} (proposed {times_proposed} time(s))", all: true}
+      - {if: not to_add, lead: "Already on the list:", say: "{term}", all: true}
     columns:
       times_proposed: How many times the term was proposed (mails and notes).
       in_list: 1 when the term is already a term or an alias of the office word list.
@@ -507,7 +539,8 @@ recipes:
   - id: tax_due
     label: Tax items due and overdue
     cards: [83]
-    names: [tax due, tax items due, tax items due in 60 days, tax calendar, tax filings due, tax obligations, overdue tax filings]
+    names: [tax due, tax items due, tax items due in 60 days, tax calendar, tax filings due, tax obligations, overdue tax filings, payment due date, filing due date, filings and payments due, filings due, payments due]
+    words_all: [[tax, taxes, filing, filings, return], [due, overdue, payment, payments, obligations, prepares, prepared]]
     may_read: [tax_obligations, legal_entities, documents]
     never_read: [cash_movements]
     why: Each filing or payment is a tax obligation of the calendar (tax_obligations); a changed status is a new row that replaces the old one, so only the current row counts.
@@ -524,6 +557,9 @@ recipes:
       cast(case when not r.done and r.days <= 0 then 1 else 0 end as integer) as overdue, cast(1 as integer) as items
       from r left join legal_entities as e on e.id = r.legal_entity_id
     measure: items
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: overdue, lead: "Overdue:", say: "{id}: {obligation} for {entity}, due {due}, prepared by {prepared_by}, {status}", all: true}
+      - {if: due_in_60_days, lead: "Due in the next 60 days:", say: "{id}: {obligation} for {entity}, due {due}, prepared by {prepared_by}, {status}", all: true}
     columns:
       days: Days from the as-at date to the due date; negative once it has passed.
       days_overdue: Days past the due date, for an item due on or before the as-at date.
@@ -538,7 +574,8 @@ recipes:
   - id: grants_used
     label: Grants paid and pledged against the budget
     cards: [85]
-    names: [grants used, grant budget used, paid and pledged against budget, philanthropy budget, grants against budget]
+    names: [grants used, grant budget used, paid and pledged against budget, philanthropy budget, grants against budget, annual grant budget, grant budget, budget remaining, remaining budget, grants budget]
+    words_all: [[grant, grants, philanthropy, charity], [budget, used, remaining, pledged, paid]]
     may_read: [grants, cash_movements, portfolios, business_rules, rule_versions]
     never_read: [office_expenses]
     why: The grants are the grant ledger (grants); the budget is the signed office budget for Grants (office_budget_grants, A48); the bank's grant debits prove what was paid.
@@ -559,6 +596,8 @@ recipes:
       (t.all_matched and t.paid = (select coalesce(sum(amount), 0) from bank)) as paid_matches_bank, cast(1 as integer) as grants
       from r cross join t
     measure: used
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Grant budget {budget} for the year: paid {paid}, pledged {pledged}, {used} used ({used_pct}%), {remaining} remaining"}
     columns:
       bank_matched: True when a bank grant debit of the same entity, day, amount and currency is on record.
       budget: The signed annual Grants budget (office_budget_grants); empty while none is signed.
@@ -579,6 +618,7 @@ recipes:
     label: Grant request against budget, charity age and cash
     cards: [86]
     names: [grant check, grant request check, budget charity check cash, approve a grant payment, grant approval]
+    words_all: [[grant, grants, request], [approve, approval, check, pay, buffer, budget, cash]]
     may_read: [grants, cash_movements, position_snapshots, instruments, portfolios, legal_entities, bank_accounts, business_rules, rule_versions, documents]
     never_read: [office_expenses]
     why: A request is a grant with status requested; the budget, the charity age and the cash buffer are signed office rules (office_budget_grants A48, grant_min_charity_months A54, cash_buffer); the cash is the administrator's balance.
@@ -616,6 +656,9 @@ recipes:
       cast(case when s.within_budget and s.charity_old_enough and s.cash_covers then 0 else 1 end as integer) as fails, cast(1 as integer) as requests
       from s
     measure: amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: pay, once: true, say: "Pay {request} for {currency} {amount} to {charity}: within the remaining budget of {remaining_budget}, cash after the request and calls {cash_after_request_and_calls}"}
+      - {if: not pay, once: true, say: "Do not pay {request} ({currency} {amount} to {charity}) yet: remaining budget {remaining_budget}; cash {cash} against {calls_due_30_days} of calls due in 30 days, leaving {cash_after_request_and_calls}; buffer required {buffer}; the charity was registered {charity_registered_months} months, {required_months} required"}
     columns:
       remaining_budget: The signed Grants budget less every paid and pledged grant.
       charity_registered_months: Whole months from the charity's registration to the as-at date.
@@ -639,6 +682,7 @@ recipes:
     label: Trust distribution room per beneficiary
     cards: [87]
     names: [trust distribution room, distribution room per beneficiary, trust distributions, trust payout room, what the deed allows]
+    words_all: [[trust, trusts, beneficiary, beneficiaries, deed, distribution, distributions], [room, pay, paid, payout, allows, allowed, distributable, distribute, left]]
     may_read: [documents, extracted_fields, cash_movements, portfolios, legal_entities, market_observations, family_members]
     never_read: [office_expenses, position_snapshots]
     why: The shares, the payout cap and the trust year are fields of the trust deed (a signed legal document, A44); the income, costs and allowances are the trust's confirmed bank lines; allowances count as distributions when the deed says so.
@@ -685,6 +729,10 @@ recipes:
       cast(case when k.allowances_count and coalesce(b.paid, 0) > round(k.dcap * sh.share, 2) then 1 else 0 end as integer) as over, cast(1 as integer) as beneficiaries
       from sh cross join k left join bypaid as b on b.member_name = sh.beneficiary
     measure: room
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Trust year from {trust_year_start}: income {trust_income}, expenses {trust_expenses}, distributable {distributable_income}, cap {distributable_cap} ({payout_cap_pct}% of distributable income)"}
+      - {if: over, lead: "Over the room:", say: "{beneficiary}: room {room}, paid {paid}, left {left_to_pay}", all: true}
+      - {if: not over, lead: "Room left to pay:", say: "{beneficiary}: room {room}, paid {paid}, left {left_to_pay}", all: true}
     columns:
       share_pct: The beneficiary's share of distributable income in the deed, in percent.
       trust_year_start: The first day of the current trust year (the deed's start date).
@@ -707,6 +755,7 @@ recipes:
     label: Payments over their approval limit
     cards: [89]
     names: [approval exceptions, payments over their approval limit, over approval limit, expense approval limits, approved above limit]
+    words_all: [[approval, approvals, approve, approved, approves, limit, limits], [over, above, exceed, exceeded, exceeds, exception, exceptions, limit, limits]]
     may_read: [office_expenses, market_observations, business_rules, rule_versions]
     never_read: [cash_movements, approvals]
     why: Who approved each payment is in the expense ledger (office_expenses); each approver's limit is a signed office rule approver_limit_<person> (A48).
@@ -726,6 +775,8 @@ recipes:
       cast(case when l.limit_currency = 'USD' and e.usd > l.limit_amount then 1 else 0 end as integer) as over_limit, cast(1 as integer) as payments
       from ex as e left join lim as l on l.rule_code = 'approver_limit_' || trim(regexp_replace(lower(trim(e.approver_name)), '[^a-z0-9]+', '_', 'g'), '_')
     measure: payments
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: over_limit, sort: usd, lead: "Over the approval limit:", say: "{reference} to {payee}, {usd} USD, approved by {approver} against a limit of {limit_usd} USD", all: true}
     columns:
       usd: The payment in USD at its day's fixing.
       approver: Who approved the payment in the ledger.
@@ -741,6 +792,7 @@ recipes:
     label: Office cost by type against budget
     cards: [90]
     names: [office cost, office costs, cost by type against budget, what the office costs, office budget against actual]
+    words_all: [[office], [cost, costs, budget, actual, spend, spending, planned]]
     may_read: [office_expenses, market_observations, business_rules, rule_versions]
     never_read: [cash_movements, staff_payroll]
     why: The cost is the office's expense ledger (office_expenses); the budget of each category is a signed office rule office_budget_<category> (A48).
@@ -765,6 +817,9 @@ recipes:
       cast(sum(case when c.budget is null then c.lines else 0 end) over () as integer) as uncategorised
       from c cross join span as s
     measure: actual
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Office costs from {first_day} to {last_day}: {total_actual} against a budget of {total_budget}"}
+      - {if: over, sort: variance, lead: "Over budget for the period:", say: "{category} {actual} against {budget_period}, over by {variance}", all: true}
     columns:
       actual: The category's spending in USD.
       budget_annual: The signed annual budget of the category.
@@ -783,6 +838,7 @@ recipes:
     label: Account set-up signatories against the signing policy
     cards: [94]
     names: [account setup, setup steps and signatories, account signatories, open a bank account, signing policy check]
+    words_all: [[account, accounts, bank, signatory, signatories, signing], [open, opening, setup, signing, signatory, signatories, policy, check]]
     may_read: [bank_accounts, legal_entities, extracted_fields, users, business_rules, rule_versions]
     never_read: [cash_movements]
     why: A pending account is a bank_accounts row read from its opening form; the signatories are the form's signatory fields; the signing policy is the signed office rule signing_policy (A49); who holds the required role is the users table.
@@ -804,6 +860,9 @@ recipes:
       cast(case when (select role from pol) is not null and not (r.n_sig >= (select min_n from pol) and r.has_role) then 1 else 0 end as integer) as fails, cast(1 as integer) as accounts
       from r left join legal_entities as e on e.id = r.legal_entity_id
     measure: accounts
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: meets_signing_policy, say: "{account_holder} at {bank_name} ({currency}, {status}): {signatory_count} of {min_signatories} signatories, meets the signing policy", all: true}
+      - {if: not meets_signing_policy, say: "{account_holder} at {bank_name} ({currency}, {status}): {signatory_count} of {min_signatories} signatories; the policy needs {required_role} {required_person}", all: true}
     columns:
       signatories: The signatories on the opening form, in its order.
       signatory_count: How many signatories the form names.
@@ -824,6 +883,7 @@ recipes:
     label: Access per family member against the policy
     cards: [100]
     names: [member access, access per family member, family access, what each family member can see, family view grants]
+    words_all: [[member, members, family], [access, see, view, grant, grants, granted, allowed, request, requests]]
     may_read: [family_members, legal_entities, access_groups, access_group_scopes, business_rules, rule_versions, documents, extracted_fields]
     never_read: [system_access_grants]
     why: What a member may see is a signed rule family_access_<member>_<entity> (A38, A49); what they are given is the scope of their family access group (summary is stored as preview, none as no row); a request is a document with requester, requested_entity and requested_level fields.
@@ -849,6 +909,10 @@ recipes:
       cast(case when requested is not null then 1 else 0 end as integer) as has_request, cast(1 as integer) as pairs
       from rk
     measure: pairs
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: over_granted, lead: "Granted more than allowed:", say: "{member} on {entity}: granted {granted}, allowed {allowed}", all: true}
+      - {if: has_request and request_allowed, lead: "Requests to allow:", say: "{member} on {entity}: {requested_level}", all: true}
+      - {if: has_request and not request_allowed, lead: "Requests not allowed:", say: "{member} on {entity}: {requested_level}", all: true}
     columns:
       allowed: The level the signed family access policy gives (none, summary or full); empty when no rule is signed.
       granted: The level the member's family group is given (none when no scope).
@@ -867,6 +931,7 @@ recipes:
     label: Transfer tax need against liquid assets
     cards: [88]
     names: [estate cash need, tax need against liquid assets, transfer tax, estate tax liquidity, cash for an estate or transfer tax]
+    words_all: [[estate, transfer, inheritance], [tax, cash, liquid, need, meet, cover, liquidity, pay]]
     may_read: [position_snapshots, instruments, portfolios, bank_accounts, valuation_observations, real_assets, credit_facilities, market_observations, business_rules, rule_versions, documents]
     never_read: [cash_movements, office_expenses]
     why: The estate is what the family owns on the plane (fund statements, the liquid book, the administrator's cash, the latest appraisals) less the term loan; the exemption and the rate are signed office rules (estate_tax_exemption, estate_tax_rate, A54) taken from the adviser's memo.
@@ -919,6 +984,10 @@ recipes:
       cast(case when x.liquid < x.tax then 1 else 0 end as integer) as short, cast(x.unconverted as integer) as unconverted
       from x
     measure: transfer_tax
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Estate value {estate_value} at {period_end}: investments {investments}, cash {cash}, real assets {real_assets}, loan {loan}"}
+      - {once: true, if: can_meet, say: "The family can meet the transfer tax of {transfer_tax} from liquid assets: {liquid_assets_after_debt} after debt, a cover of {cover} times"}
+      - {once: true, if: not can_meet, say: "The family cannot meet the transfer tax of {transfer_tax} from liquid assets: short by {short}, {liquid_assets_after_debt} after debt"}
     columns:
       period_end: The last month end before the as-at date; the investments are valued at it.
       estate_value: Investments + cash + real assets - loan, in USD.
