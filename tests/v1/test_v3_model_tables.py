@@ -27,7 +27,11 @@ from tools import seed_evergreen as EG  # noqa: E402
 
 FIX = ROOT / "tests" / "v1" / "fixtures" / "10uc" / "otc_confirms"
 NEW = ("fx_confirmations", "expected_statements", "bank_accounts", "credit_facilities", "family_members", "vendor_contracts", "deal_pipeline", "committee_decisions")
-ADDED_COLS = {"cash_movements": ("bank_account_id", "counterparty_portfolio_id"), "approvals": ("cash_movement_id",)}  # assumption A18: columns added to existing tables
+NEW2 = ("office_expenses", "corporate_actions", "real_assets", "tax_lots", "tax_obligations", "grants", "staff_payroll", "kyc_records", "fund_holdings", "system_access_grants")  # assumptions A32 to A41
+NEW = NEW + NEW2
+ADDED_COLS = {"cash_movements": ("bank_account_id", "counterparty_portfolio_id", "payment_stage", "payee_name", "reference"), "approvals": ("cash_movement_id",),  # assumption A18: columns added to existing tables
+              "transactions": ("counterparty_name", "status_reason"), "exceptions": ("external_ref", "legal_entity_id"), "source_batches": ("arrived_on_time", "manual_fix"),  # assumptions A32 onward
+              "sheet_mapping_columns": ("confidence",), "vendor_contracts": ("contract_kind", "sum_insured", "covered_asset_ref")}
 OLD = "11111111-1111-4111-8111-111111111111"
 
 
@@ -65,7 +69,8 @@ def test_old_office_gets_the_new_tables_and_columns_and_keeps_its_data(office):
     cat["refs"] = [r for r in cat["refs"] if r["from"]["table"] not in NEW and r["to"]["table"] not in NEW]
     for t in cat["tables"]:
         t["columns"] = [c for c in t["columns"] if c["name"] not in ADDED_COLS.get(t["name"], ())]
-    cat["refs"] = [r for r in cat["refs"] if r["from"]["columns"][0] not in sum(ADDED_COLS.values(), ())]
+    added = {(t, c) for t, cs in ADDED_COLS.items() for c in cs}
+    cat["refs"] = [r for r in cat["refs"] if (r["from"]["table"], r["from"]["columns"][0]) not in added]
     p.write_text(json.dumps(cat), encoding="utf-8")
     with wh.connect(plane) as con:
         for t, cs in ADDED_COLS.items():
@@ -85,6 +90,23 @@ def test_old_office_gets_the_new_tables_and_columns_and_keeps_its_data(office):
     with wh.connect(plane) as con:  # the new tables take a row with the shared columns
         con.execute("insert into bank_accounts (id, organization_id, source_record_id, received_at, recorded_at, holder_kind, account_purpose, bank_name, account_ref, status) "
                     "values (?, ?, ?, now(), now(), 'payee', 'payee', 'Harbour Bank (synthetic)', '4471', 'active')", [wh.new_id(), org_id(plane), wh.new_id()])
+        con.execute("insert into office_expenses (id, organization_id, source_record_id, received_at, recorded_at, spent_on, category, currency, amount) "
+                    "values (?, ?, ?, now(), now(), ?, 'Premises', 'USD', 100)", [wh.new_id(), org_id(plane), wh.new_id(), date(2026, 9, 1)])
+        con.execute("insert into cash_movements (id, organization_id, source_record_id, portfolio_id, movement_type, effective_date, received_at, recorded_at, amount, currency, "
+                    "confirmation_status, payment_stage, payee_name, reference) values (?, ?, ?, ?, 'payment', ?, now(), now(), 5, 'SGD', 'expected', 'scheduled', 'Synthetic Payee', 'CPF-202610')",
+                    [wh.new_id(), org_id(plane), wh.new_id(), wh.new_id(), date(2026, 10, 14)])
+
+
+def test_the_sql_file_and_the_model_file_name_the_same_tables_and_the_new_tables_follow_the_load_rule():
+    import re
+    db = (ROOT / "docs" / "v2" / "evidence-to-action-mvp.dbml").read_text(encoding="utf-8")
+    ddl = (ROOT / "docs" / "v2" / "evidence-to-action-mvp.duckdb.sql").read_text(encoding="utf-8")
+    assert set(re.findall(r"^Table (\w+) \{", db, re.M)) == set(re.findall(r"CREATE TABLE IF NOT EXISTS (\w+) \(", ddl))
+    for t in NEW2:  # same organisation and load columns as fx_confirmations; a change is a new row that supersedes the old
+        body = re.search(rf"CREATE TABLE IF NOT EXISTS {t} \((.*?)\n\);", ddl, re.S).group(1)
+        cols = set(re.findall(r"^\s+(\w+) ", body, re.M))
+        assert {"id", "organization_id", "source_record_id", "received_at", "recorded_at"} <= cols, t
+        assert any(c.startswith("supersedes_") for c in cols), t
 
 
 def test_fx_confirmation_pdf_loads_one_row_per_confirmation_with_its_page(office):

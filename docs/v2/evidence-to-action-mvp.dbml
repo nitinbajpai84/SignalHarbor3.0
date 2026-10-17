@@ -221,6 +221,7 @@ Table sheet_mapping_columns {
   target_table varchar(80) [not null, note: 'e.g. position_snapshots']
   target_field varchar(80) [not null]
   transform_rule varchar(255) [note: 'e.g. date dd/mm/yyyy, values in thousands']
+  confidence varchar(10) [note: 'ADDED (v3 wave 2): high, medium or doubt: how sure the proposed mapping is']
 
   indexes {
     (sheet_mapping_id, source_column) [unique]
@@ -240,6 +241,8 @@ Table source_batches {
   storage_uri text
   validation_status varchar(40) [not null, note: 'loaded, rejected_totals, quarantined']
   validation_summary text
+  arrived_on_time boolean [note: 'ADDED (v3 wave 2): As the load log states it']
+  manual_fix boolean [note: 'ADDED (v3 wave 2): True when a person had to correct the file before it loaded']
 
   indexes {
     (source_system_id, batch_reference) [unique]
@@ -410,6 +413,8 @@ Table transactions {
   recorded_at timestamptz [not null]
   status varchar(40) [not null]
   supersedes_transaction_id uuid [ref: > transactions.id]
+  counterparty_name varchar(200) [note: 'ADDED (v3 wave 2): The broker or counterparty of the trade, as the settlement report names it']
+  status_reason varchar(300) [note: 'ADDED (v3 wave 2): Why a trade is failed or pending, as the settlement report states it']
 
   indexes {
     (portfolio_id, instrument_id, effective_date)
@@ -502,7 +507,7 @@ Table cash_movements {
   portfolio_id uuid [not null, ref: > portfolios.id]
   instrument_id uuid [ref: > instruments.id]
 
-  movement_type varchar(80) [not null, note: 'subscription, redemption, call, distribution, dividend, fee, payment, transfer, allowance']
+  movement_type varchar(80) [not null, note: 'subscription, redemption, call, distribution, dividend, coupon, fee, payment, transfer, allowance']
   effective_date date [not null]
   received_at timestamptz [not null]
   recorded_at timestamptz [not null, note: 'ADDED']
@@ -511,10 +516,13 @@ Table cash_movements {
   confirmation_status varchar(40) [not null, note: 'expected, noticed, confirmed, cancelled']
   supersedes_cash_movement_id uuid [ref: > cash_movements.id, note: 'ADDED']
   due_date date [note: 'ADDED: when a call must be paid or a distribution is expected']
-  notice_kind varchar(40) [note: 'ADDED: call, distribution, recallable']
+  notice_kind varchar(40) [note: 'ADDED: call, distribution, recallable, dividend, coupon']
   commitment_id uuid [ref: > commitments.id, note: 'ADDED']
   bank_account_id uuid [ref: > bank_accounts.id, note: 'ADDED (v3): the account the money goes to (a payee account for a payment) or comes from']
   counterparty_portfolio_id uuid [ref: > portfolios.id, note: 'ADDED (v3): the other side of a transfer between two portfolios of the office; each side is one row naming the other']
+  payment_stage varchar(20) [note: 'ADDED (v3 wave 2): expected, approved, scheduled, held, released: where a payment stands in the schedule; the approvals that moved it are approvals rows']
+  payee_name varchar(200) [note: 'ADDED (v3 wave 2): Who a payment is to, when no bank_account_id is on file']
+  reference varchar(100) [note: 'ADDED (v3 wave 2): The schedule, ledger or bank reference of the movement; joins to office_expenses and grants']
 
   indexes {
     (portfolio_id, instrument_id, effective_date)
@@ -704,6 +712,9 @@ Table vendor_contracts {
   annual_cost numeric(28,8)
   currency char(3)
   status varchar(20) [not null, note: 'active, ended, under_review']
+  contract_kind varchar(20) [note: 'ADDED (v3 wave 2): service, insurance, lease, other. Empty means service']
+  sum_insured numeric(28,8) [note: 'ADDED (v3 wave 2): For an insurance policy: the cover, in its currency']
+  covered_asset_ref varchar(60) [note: 'ADDED (v3 wave 2): For an insurance policy: the real_assets.asset_ref it covers, empty for liability or cyber']
 
   indexes {
     (organization_id, vendor_name, recorded_at)
@@ -768,6 +779,310 @@ Table committee_decisions {
 
   indexes {
     (organization_id, committee, decided_on)
+  }
+}
+
+/*
+  One line of the office's own expense ledger: money the office spent, with its category and the person who approved it. It is not a cash movement: the bank line of the same payment is already in cash_movements, and a second row there would count the cash twice. Budget is a signed rule (office_budget_<category>); actual against budget and approver-limit breaches are figures. A USD equivalent is a figure at the day's fixing, never stored.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table office_expenses {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_office_expense_id uuid [ref: > office_expenses.id]
+
+  spent_on date [not null]
+  category varchar(80) [not null, note: 'As the ledger names it: Staff, Premises, Professional fees, Grants']
+  payee_name varchar(200)
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The entity that paid']
+  currency char(3) [not null]
+  amount numeric(28,8) [not null, note: 'In its own currency, positive']
+  reference varchar(100) [note: 'The ledger reference; joins to cash_movements.reference when the bank line is loaded']
+  approver_name varchar(200)
+  approver_user_id uuid [ref: > users.id]
+
+  indexes {
+    (organization_id, spent_on)
+    (organization_id, reference)
+  }
+}
+
+/*
+  An event on a security that the custodian notifies: a dividend, a coupon, a tender offer. The expected cash of a dividend or coupon is also a cash_movements row (expected, then noticed or confirmed); this row holds the dates and the choice the office must make. What is due in 14 days and a dividend forecast are figures.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table corporate_actions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_corporate_action_id uuid [ref: > corporate_actions.id]
+
+  instrument_id uuid [not null, ref: > instruments.id]
+  action_type varchar(40) [not null, note: 'dividend, coupon, tender_offer, split, merger, rights']
+  custodian_ref varchar(100) [note: 'The custodian notice reference']
+  announced_on date
+  ex_date date
+  record_date date
+  pay_date date
+  rate_per_unit numeric(28,10) [note: 'Per share for a dividend, per unit of face for a coupon']
+  currency char(3)
+  election_required boolean [note: 'True when the holder must choose before the deadline (a voluntary action)']
+  election_deadline date
+  elected_option varchar(80) [note: 'What the office chose, once it has']
+  status varchar(20) [not null, note: 'announced, elected, paid, lapsed']
+
+  indexes {
+    (instrument_id, pay_date)
+    (organization_id, custodian_ref, recorded_at)
+  }
+}
+
+/*
+  A property, land, art, wine or vessel the family owns, as one appraisal or title observation of it. The same asset_ref repeats on each new appraisal; the latest row at or before a date is its value then. Held outside positions on purpose: a position row would change the net worth figures. Age of appraisal, cover gap and estate value are figures.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table real_assets {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_real_asset_id uuid [ref: > real_assets.id]
+
+  asset_ref varchar(60) [not null, note: 'The same on every observation of one asset']
+  asset_name varchar(200) [not null]
+  asset_type varchar(40) [not null, note: 'residential_property, land, art, wine, vessel, other']
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The entity the office treats as the owner']
+  title_holder_name varchar(200) [note: 'Who the title deed names; it can differ from the entity']
+  currency char(3) [not null]
+  appraised_value numeric(28,8)
+  appraised_on date
+  appraiser varchar(200)
+  status varchar(20) [not null, note: 'held, sold']
+
+  indexes {
+    (organization_id, asset_ref, recorded_at)
+  }
+}
+
+/*
+  A purchase lot of a listed holding, from the custodian's lot register: the quantity and cost on a date. Unrealised gain by lot is a figure (market value less cost). A sale is a transaction; the lot is reduced by a new row that supersedes the old.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table tax_lots {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_tax_lot_id uuid [ref: > tax_lots.id]
+
+  portfolio_id uuid [not null, ref: > portfolios.id]
+  instrument_id uuid [not null, ref: > instruments.id]
+  lot_ref varchar(100) [not null]
+  acquired_on date [not null]
+  quantity numeric(28,10) [not null]
+  unit_cost numeric(28,10)
+  cost_amount numeric(28,8) [not null]
+  currency char(3) [not null]
+  as_at date [not null, note: 'The date the register states the lot at']
+  status varchar(20) [not null, note: 'open, closed']
+
+  indexes {
+    (portfolio_id, instrument_id, lot_ref, recorded_at)
+  }
+}
+
+/*
+  A filing or payment the office owes a tax authority, from the tax adviser's calendar. A new status is a new row that supersedes the old. Overdue and days to due are figures. Tax rates are signed rules (tax_rate_<entity>), not columns.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table tax_obligations {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_tax_obligation_id uuid [ref: > tax_obligations.id]
+
+  obligation_ref varchar(60) [not null]
+  legal_entity_id uuid [not null, ref: > legal_entities.id]
+  obligation varchar(300) [not null]
+  due_date date [not null]
+  prepared_by varchar(200) [note: 'The adviser or person preparing it']
+  estimated_amount numeric(28,8)
+  currency char(3)
+  status varchar(40) [not null, note: 'As the calendar states it: not started, draft with adviser, filed, paid']
+  filed_on date
+  paid_on date
+
+  indexes {
+    (organization_id, obligation_ref, recorded_at)
+    (organization_id, due_date)
+  }
+}
+
+/*
+  A charitable grant the office is asked for, has pledged or has paid, from the grant requests and the grant ledger. The annual budget is a signed rule (grant_budget). The payment is a bank line in cash_movements that carries the same reference. Used and remaining budget are figures.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table grants {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_grant_id uuid [ref: > grants.id]
+
+  grant_ref varchar(60) [not null]
+  charity_name varchar(200) [not null]
+  charity_registered_on date [note: 'When the charity was registered; its age is a figure']
+  purpose varchar(300)
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The entity that pays']
+  amount numeric(28,8) [not null]
+  currency char(3) [not null]
+  requested_on date
+  decided_on date
+  paid_on date
+  payment_reference varchar(100) [note: 'Joins to cash_movements.reference']
+  status varchar(20) [not null, note: 'requested, pledged, paid, declined']
+
+  indexes {
+    (organization_id, grant_ref, recorded_at)
+  }
+}
+
+/*
+  One employee or contractor on one pay run, as the payroll register states it. Sensitive personal pay data: the source document must sit in a restricted access group. Draft against last month, total cost and raises are figures. Employer cost is gross plus employer_contribution.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table staff_payroll {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_staff_payroll_id uuid [ref: > staff_payroll.id]
+
+  pay_period date [not null, note: 'First day of the pay month']
+  employee_name varchar(200) [not null]
+  title varchar(200)
+  employment_kind varchar(20) [not null, note: 'employee, contractor']
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The entity that pays']
+  currency char(3) [not null]
+  gross_pay numeric(28,8) [not null]
+  employee_contribution numeric(28,8) [note: 'Statutory deduction from the employee, as the register states it']
+  employer_contribution numeric(28,8) [note: 'Statutory cost on top of gross, as the register states it']
+  net_pay numeric(28,8)
+  pay_date date
+  run_status varchar(20) [not null, note: 'draft, approved, paid']
+
+  indexes {
+    (organization_id, pay_period, employee_name, recorded_at)
+  }
+}
+
+/*
+  One identity or due-diligence document held for an entity or a person, with its dates. Personal identity data: the document number is never stored here, only that the document exists and when it expires; the source document must sit in a restricted access group. Expiring and expired are figures.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table kyc_records {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_kyc_record_id uuid [ref: > kyc_records.id]
+
+  subject_kind varchar(20) [not null, note: 'legal_entity, person, manager']
+  subject_name varchar(200) [not null]
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'Set when the subject is one of the office entities']
+  document_kind varchar(80) [not null, note: 'passport, proof_of_address, incorporation, ownership_declaration, other']
+  issued_on date
+  expires_on date
+  verified_on date
+  verified_by uuid [ref: > users.id]
+  status varchar(20) [not null, note: 'valid, pending, rejected']
+
+  indexes {
+    (organization_id, subject_name, document_kind, recorded_at)
+    (organization_id, expires_on)
+  }
+}
+
+/*
+  What a fund owns, as its manager reports it: a company and its weight in the fund at a date. The companies are not instruments of the office. Look-through exposure of the family is a figure (weight times the office's value of the fund).
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table fund_holdings {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_fund_holding_id uuid [ref: > fund_holdings.id]
+
+  instrument_id uuid [not null, ref: > instruments.id, note: 'The fund']
+  holding_name varchar(200) [not null]
+  sector varchar(100)
+  weight_pct numeric(12,6) [not null, note: 'Percent of the fund, as reported (12 means 12 percent)']
+  as_at date [not null]
+
+  indexes {
+    (instrument_id, as_at)
+  }
+}
+
+/*
+  A person's access to one of the office's systems (order system, bank portal, shared drive, Harbor), from the access register. Not Harbor's own data access (access_group_memberships and access_group_scopes). A joiner, a mover or a leaver is a new row that supersedes the old; unused and without-approver are figures.
+  Added by the v3 steward for cards 51 to 100 (assumptions A32 onward). Same organisation and load columns as fx_confirmations.
+*/
+Table system_access_grants {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_system_access_grant_id uuid [ref: > system_access_grants.id]
+
+  person_name varchar(200) [not null]
+  user_id uuid [ref: > users.id, note: 'Set while the person is a Harbor user; a leaver has none']
+  system_name varchar(100) [not null]
+  access_level varchar(40)
+  granted_on date
+  approved_by_name varchar(200) [note: 'Empty means no approver is recorded']
+  approved_by_user_id uuid [ref: > users.id]
+  last_used_on date
+  revoked_on date
+  status varchar(20) [not null, note: 'active, revoked']
+
+  indexes {
+    (organization_id, person_name, system_name, recorded_at)
   }
 }
 
@@ -1072,6 +1387,8 @@ Table exceptions {
   due_at timestamptz
   resolution_code varchar(100)
   resolved_at timestamptz
+  external_ref varchar(100) [note: 'ADDED (v3 wave 2): The id the office register gives it (a break id)']
+  legal_entity_id uuid [note: 'ADDED (v3 wave 2): The entity it concerns, when the register names an entity and not a portfolio']
 
   indexes {
     (organization_id, status, due_at)
@@ -1253,6 +1570,16 @@ TableGroup office_records {
   vendor_contracts
   deal_pipeline
   committee_decisions
+  office_expenses
+  corporate_actions
+  real_assets
+  tax_lots
+  tax_obligations
+  grants
+  staff_payroll
+  kyc_records
+  fund_holdings
+  system_access_grants
 }
 
 TableGroup rules_and_benchmarks {

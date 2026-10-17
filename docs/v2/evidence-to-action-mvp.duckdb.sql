@@ -126,7 +126,8 @@ CREATE TABLE IF NOT EXISTS sheet_mapping_columns (
   source_column VARCHAR NOT NULL,
   target_table VARCHAR NOT NULL,
   target_field VARCHAR NOT NULL,
-  transform_rule VARCHAR
+  transform_rule VARCHAR,
+  confidence VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS source_batches (
@@ -141,7 +142,9 @@ CREATE TABLE IF NOT EXISTS source_batches (
   content_hash VARCHAR,
   storage_uri VARCHAR,
   validation_status VARCHAR NOT NULL,
-  validation_summary VARCHAR
+  validation_summary VARCHAR,
+  arrived_on_time BOOLEAN,
+  manual_fix BOOLEAN
 );
 
 CREATE TABLE IF NOT EXISTS batch_control_totals (
@@ -250,7 +253,9 @@ CREATE TABLE IF NOT EXISTS transactions (
   currency VARCHAR NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL,
   status VARCHAR NOT NULL,
-  supersedes_transaction_id VARCHAR
+  supersedes_transaction_id VARCHAR,
+  counterparty_name VARCHAR,
+  status_reason VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS position_snapshots (
@@ -322,7 +327,10 @@ CREATE TABLE IF NOT EXISTS cash_movements (
   notice_kind VARCHAR,
   commitment_id VARCHAR,
   bank_account_id VARCHAR,
-  counterparty_portfolio_id VARCHAR
+  counterparty_portfolio_id VARCHAR,
+  payment_stage VARCHAR,
+  payee_name VARCHAR,
+  reference VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS market_observations (
@@ -519,7 +527,9 @@ CREATE TABLE IF NOT EXISTS exceptions (
   owner_user_id VARCHAR,
   due_at TIMESTAMPTZ,
   resolution_code VARCHAR,
-  resolved_at TIMESTAMPTZ
+  resolved_at TIMESTAMPTZ,
+  external_ref VARCHAR,
+  legal_entity_id VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS exception_impacts (
@@ -729,7 +739,10 @@ CREATE TABLE IF NOT EXISTS vendor_contracts (
   notice_days INTEGER,
   annual_cost DECIMAL(28,8),
   currency VARCHAR,
-  status VARCHAR NOT NULL
+  status VARCHAR NOT NULL,
+  contract_kind VARCHAR,
+  sum_insured DECIMAL(28,8),
+  covered_asset_ref VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS deal_pipeline (
@@ -772,4 +785,214 @@ CREATE TABLE IF NOT EXISTS committee_decisions (
   amount DECIMAL(28,8),
   currency VARCHAR,
   recorded_by VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS office_expenses (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_office_expense_id VARCHAR,
+  spent_on DATE NOT NULL,
+  category VARCHAR NOT NULL,
+  payee_name VARCHAR,
+  legal_entity_id VARCHAR,
+  currency VARCHAR NOT NULL,
+  amount DECIMAL(28,8) NOT NULL,
+  reference VARCHAR,
+  approver_name VARCHAR,
+  approver_user_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS corporate_actions (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_corporate_action_id VARCHAR,
+  instrument_id VARCHAR NOT NULL,
+  action_type VARCHAR NOT NULL,
+  custodian_ref VARCHAR,
+  announced_on DATE,
+  ex_date DATE,
+  record_date DATE,
+  pay_date DATE,
+  rate_per_unit DECIMAL(28,10),
+  currency VARCHAR,
+  election_required BOOLEAN,
+  election_deadline DATE,
+  elected_option VARCHAR,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS real_assets (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_real_asset_id VARCHAR,
+  asset_ref VARCHAR NOT NULL,
+  asset_name VARCHAR NOT NULL,
+  asset_type VARCHAR NOT NULL,
+  legal_entity_id VARCHAR,
+  title_holder_name VARCHAR,
+  currency VARCHAR NOT NULL,
+  appraised_value DECIMAL(28,8),
+  appraised_on DATE,
+  appraiser VARCHAR,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tax_lots (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_tax_lot_id VARCHAR,
+  portfolio_id VARCHAR NOT NULL,
+  instrument_id VARCHAR NOT NULL,
+  lot_ref VARCHAR NOT NULL,
+  acquired_on DATE NOT NULL,
+  quantity DECIMAL(28,10) NOT NULL,
+  unit_cost DECIMAL(28,10),
+  cost_amount DECIMAL(28,8) NOT NULL,
+  currency VARCHAR NOT NULL,
+  as_at DATE NOT NULL,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tax_obligations (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_tax_obligation_id VARCHAR,
+  obligation_ref VARCHAR NOT NULL,
+  legal_entity_id VARCHAR NOT NULL,
+  obligation VARCHAR NOT NULL,
+  due_date DATE NOT NULL,
+  prepared_by VARCHAR,
+  estimated_amount DECIMAL(28,8),
+  currency VARCHAR,
+  status VARCHAR NOT NULL,
+  filed_on DATE,
+  paid_on DATE
+);
+
+CREATE TABLE IF NOT EXISTS grants (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_grant_id VARCHAR,
+  grant_ref VARCHAR NOT NULL,
+  charity_name VARCHAR NOT NULL,
+  charity_registered_on DATE,
+  purpose VARCHAR,
+  legal_entity_id VARCHAR,
+  amount DECIMAL(28,8) NOT NULL,
+  currency VARCHAR NOT NULL,
+  requested_on DATE,
+  decided_on DATE,
+  paid_on DATE,
+  payment_reference VARCHAR,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS staff_payroll (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_staff_payroll_id VARCHAR,
+  pay_period DATE NOT NULL,
+  employee_name VARCHAR NOT NULL,
+  title VARCHAR,
+  employment_kind VARCHAR NOT NULL,
+  legal_entity_id VARCHAR,
+  currency VARCHAR NOT NULL,
+  gross_pay DECIMAL(28,8) NOT NULL,
+  employee_contribution DECIMAL(28,8),
+  employer_contribution DECIMAL(28,8),
+  net_pay DECIMAL(28,8),
+  pay_date DATE,
+  run_status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS kyc_records (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_kyc_record_id VARCHAR,
+  subject_kind VARCHAR NOT NULL,
+  subject_name VARCHAR NOT NULL,
+  legal_entity_id VARCHAR,
+  document_kind VARCHAR NOT NULL,
+  issued_on DATE,
+  expires_on DATE,
+  verified_on DATE,
+  verified_by VARCHAR,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fund_holdings (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_fund_holding_id VARCHAR,
+  instrument_id VARCHAR NOT NULL,
+  holding_name VARCHAR NOT NULL,
+  sector VARCHAR,
+  weight_pct DECIMAL(12,6) NOT NULL,
+  as_at DATE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_access_grants (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_system_access_grant_id VARCHAR,
+  person_name VARCHAR NOT NULL,
+  user_id VARCHAR,
+  system_name VARCHAR NOT NULL,
+  access_level VARCHAR,
+  granted_on DATE,
+  approved_by_name VARCHAR,
+  approved_by_user_id VARCHAR,
+  last_used_on DATE,
+  revoked_on DATE,
+  status VARCHAR NOT NULL
 );
