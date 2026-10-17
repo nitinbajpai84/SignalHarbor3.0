@@ -449,3 +449,442 @@ recipes:
       sql: >-
         select (select coalesce(sum(times_proposed), 0) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where f.field_name = 'proposed_term'
         and trim(coalesce(f.value_text, '')) <> '' and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+
+  # ---- W1b office, cards 83 to 100 on the family and controls readers (docs/v3/w1/build51-office.md). Every limit, budget, level and policy is a signed office rule
+  # (A48, A49, A54), read here, never typed: with no signed rule the figure that needs it is empty, never zero. USD is the day's fixing (or the latest before it), as cash_runway does.
+  - id: tax_due
+    label: Tax items due and overdue
+    cards: [83]
+    names: [tax due, tax items due, tax items due in 60 days, tax calendar, tax filings due, tax obligations, overdue tax filings]
+    may_read: [tax_obligations, legal_entities, documents]
+    never_read: [cash_movements]
+    why: Each filing or payment is a tax obligation of the calendar (tax_obligations); a changed status is a new row that replaces the old one, so only the current row counts.
+    formula: 'One row per current tax obligation. days = due date less the as-at date (the latest day a document was received). due_in_60_days: due after the as-at date and within 60 days (the window of card 83). overdue: due on or before the as-at date and not done (status filed, paid or complete, or a filed date); days_overdue = as-at less due.'
+    grain: By tax obligation
+    sql: >-
+      create table {name} as with t as (select o.* from tax_obligations as o where not exists (select 1 from tax_obligations as x where x.supersedes_tax_obligation_id = o.id)),
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      r as (select t.*, cast(date_diff('day', (select d from asat), t.due_date) as integer) as days,
+      (lower(trim(coalesce(t.status, ''))) in ('filed', 'paid', 'complete', 'completed', 'done') or t.filed_on is not null) as done from t)
+      select r.obligation_ref as id, e.entity_name as entity, r.obligation, r.due_date as due, r.days, case when r.days <= 0 then 0 - r.days end as days_overdue, r.prepared_by, r.status,
+      cast(r.estimated_amount as decimal(18,2)) as estimated_amount, r.currency, (select d from asat) as as_at,
+      cast(case when r.days > 0 and r.days <= 60 then 1 else 0 end as integer) as due_in_60_days,
+      cast(case when not r.done and r.days <= 0 then 1 else 0 end as integer) as overdue, cast(1 as integer) as items
+      from r left join legal_entities as e on e.id = r.legal_entity_id
+    measure: items
+    columns:
+      days: Days from the as-at date to the due date; negative once it has passed.
+      days_overdue: Days past the due date, for an item due on or before the as-at date.
+      due_in_60_days: 1 when the item falls due in the next 60 days.
+      overdue: 1 when the due date has passed and the item is not filed or paid.
+      items: 1 for each current tax obligation.
+    tie_out:
+      label: Items equal the current tax obligations on file
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from tax_obligations as o where not exists (select 1 from tax_obligations as x where x.supersedes_tax_obligation_id = o.id))
+
+  - id: grants_used
+    label: Grants paid and pledged against the budget
+    cards: [85]
+    names: [grants used, grant budget used, paid and pledged against budget, philanthropy budget, grants against budget]
+    may_read: [grants, cash_movements, portfolios, business_rules, rule_versions]
+    never_read: [office_expenses]
+    why: The grants are the grant ledger (grants); the budget is the signed office budget for Grants (office_budget_grants, A48); the bank's grant debits prove what was paid.
+    formula: 'One row per current grant that is paid or pledged (a request is not yet a grant). paid and pledged are the sums by status, used their total, used_pct used over the signed annual Grants budget (one decimal), remaining the budget less used. bank_matched: a confirmed bank grant debit of the same entity, day, amount and currency. paid_matches_bank: every paid grant is matched and the paid total equals all bank grant debits. With no signed budget, budget, used_pct and remaining are empty.'
+    grain: By grant, with the totals on every row
+    sql: >-
+      create table {name} as with g as (select x.* from grants as x where not exists (select 1 from grants as y where y.supersedes_grant_id = x.id) and lower(x.status) in ('paid', 'pledged')),
+      bud as (select cast(json_extract_string(v.parameters, '$.annual') as decimal(18,2)) as annual from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      where r.rule_code = 'office_budget_grants' and v.approval_status = 'approved' qualify row_number() over (order by v.version_number desc) = 1),
+      bank as (select m.effective_date, 0 - m.amount as amount, m.currency, p.legal_entity_id from cash_movements as m join portfolios as p on p.id = m.portfolio_id
+      where m.movement_type = 'grant' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
+      r as (select g.*, exists (select 1 from bank as b where b.effective_date = g.paid_on and b.amount = g.amount and b.currency = g.currency and b.legal_entity_id = g.legal_entity_id) as bank_matched from g),
+      t as (select coalesce(sum(amount) filter (where lower(status) = 'paid'), 0) as paid, coalesce(sum(amount) filter (where lower(status) = 'pledged'), 0) as pledged,
+      coalesce(bool_and(bank_matched) filter (where lower(status) = 'paid'), true) as all_matched from r)
+      select r.grant_ref, r.charity_name, r.status, cast(r.amount as decimal(18,2)) as amount, r.currency, r.paid_on, r.bank_matched,
+      (select annual from bud) as budget, cast(t.paid as decimal(18,2)) as paid, cast(t.pledged as decimal(18,2)) as pledged, cast(t.paid + t.pledged as decimal(18,2)) as used,
+      cast(round(100 * (t.paid + t.pledged) / (select annual from bud), 1) as decimal(9,1)) as used_pct, cast((select annual from bud) - t.paid - t.pledged as decimal(18,2)) as remaining,
+      (t.all_matched and t.paid = (select coalesce(sum(amount), 0) from bank)) as paid_matches_bank, cast(1 as integer) as grants
+      from r cross join t
+    measure: used
+    columns:
+      bank_matched: True when a bank grant debit of the same entity, day, amount and currency is on record.
+      budget: The signed annual Grants budget (office_budget_grants); empty while none is signed.
+      paid: All paid grants.
+      pledged: All pledged grants.
+      used: Paid plus pledged.
+      used_pct: Used over the budget, in percent.
+      remaining: The budget less used.
+      paid_matches_bank: True when every paid grant has its bank debit and the totals agree.
+      grants: 1 for each paid or pledged grant.
+    tie_out:
+      label: Used equals the paid and pledged grants on file
+      sql: >-
+        select (select coalesce(sum(amount), 0) from {name}), (select coalesce(sum(amount), 0) from grants as x where not exists (select 1 from grants as y where y.supersedes_grant_id = x.id)
+        and lower(x.status) in ('paid', 'pledged'))
+
+  - id: grant_check
+    label: Grant request against budget, charity age and cash
+    cards: [86]
+    names: [grant check, grant request check, budget charity check cash, approve a grant payment, grant approval]
+    may_read: [grants, cash_movements, position_snapshots, instruments, portfolios, legal_entities, bank_accounts, business_rules, rule_versions, documents]
+    never_read: [office_expenses]
+    why: A request is a grant with status requested; the budget, the charity age and the cash buffer are signed office rules (office_budget_grants A48, grant_min_charity_months A54, cash_buffer); the cash is the administrator's balance.
+    formula: 'One row per open grant request. remaining_budget = the signed Grants budget less every paid and pledged grant. charity_registered_months = whole months from the registration date to the as-at date (the latest day a document was received). cash = the administrator''s cash of the request''s entity in its currency at the latest date (bank-account instruments left out, as cash_runway does). calls = the open calls (noticed or expected) of that entity and currency due within 30 days of the as-at date, past-due ones included. cash_after = cash less calls less the request. Checks: within_budget (request <= remaining), charity_old_enough (months >= the signed minimum), cash_covers (cash_after >= the signed cash buffer, in the same currency); pay when all three hold. A check whose rule is not signed is empty, and so is pay.'
+    grain: By grant request
+    sql: >-
+      create table {name} as with {positions},
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      g as (select x.* from grants as x where not exists (select 1 from grants as y where y.supersedes_grant_id = x.id)),
+      req as (select * from g where lower(g.status) = 'requested'),
+      rule as (select r.rule_code, v.parameters from business_rules as r join rule_versions as v on v.business_rule_id = r.id where v.approval_status = 'approved'
+      qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      bud as (select cast(json_extract_string(parameters, '$.annual') as decimal(18,2)) as annual from rule where rule_code = 'office_budget_grants'),
+      age as (select cast(json_extract_string(parameters, '$.months') as integer) as months from rule where rule_code = 'grant_min_charity_months'),
+      buf as (select cast(json_extract_string(parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(parameters, '$.currency') as currency from rule where rule_code = 'cash_buffer'),
+      used as (select coalesce(sum(amount), 0) as used from g where lower(status) in ('paid', 'pledged')),
+      cash0 as (select p.legal_entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash'
+      join portfolios as p on p.id = l.portfolio_id where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      cash as (select c.* from cash0 as c where c.position_date = (select max(x.position_date) from cash0 as x where x.legal_entity_id = c.legal_entity_id)),
+      calls as (select p.legal_entity_id, m.currency, sum(0 - m.amount) as calls from cash_movements as m join portfolios as p on p.id = m.portfolio_id
+      where m.movement_type = 'call' and m.confirmation_status in ('noticed', 'expected') and coalesce(m.due_date, m.effective_date) <= (select d from asat) + interval 30 day
+      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) group by all),
+      r as (select q.*, e.entity_name, (select d from asat) as as_at, (select annual from bud) - (select used from used) as remaining_budget,
+      cast((year((select d from asat)) - year(q.charity_registered_on)) * 12 + month((select d from asat)) - month(q.charity_registered_on)
+      - case when day((select d from asat)) < day(q.charity_registered_on) then 1 else 0 end as integer) as registered_months, (select months from age) as required_months,
+      c.cash, coalesce(k.calls, 0) as calls, (select amount from buf where currency = q.currency) as buffer
+      from req as q left join legal_entities as e on e.id = q.legal_entity_id left join cash as c on c.legal_entity_id = q.legal_entity_id and c.currency = q.currency
+      left join calls as k on k.legal_entity_id = q.legal_entity_id and k.currency = q.currency),
+      s as (select r.*, r.cash - r.calls - r.amount as cash_after, r.amount <= r.remaining_budget as within_budget, r.registered_months >= r.required_months as charity_old_enough,
+      r.cash - r.calls - r.amount >= r.buffer as cash_covers from r)
+      select s.grant_ref as request, s.charity_name as charity, s.purpose, s.entity_name as entity, s.as_at, cast(s.amount as decimal(18,2)) as amount, s.currency,
+      cast(s.remaining_budget as decimal(18,2)) as remaining_budget, s.charity_registered_on, s.registered_months as charity_registered_months, s.required_months,
+      cast(s.cash as decimal(18,2)) as cash, cast(s.calls as decimal(18,2)) as calls_due_30_days, cast(s.cash_after as decimal(18,2)) as cash_after_request_and_calls,
+      cast(s.buffer as decimal(18,2)) as buffer, s.within_budget, s.charity_old_enough, s.cash_covers, s.within_budget and s.charity_old_enough and s.cash_covers as pay,
+      cast(case when s.within_budget and s.charity_old_enough and s.cash_covers then 0 else 1 end as integer) as fails, cast(1 as integer) as requests
+      from s
+    measure: amount
+    columns:
+      remaining_budget: The signed Grants budget less every paid and pledged grant.
+      charity_registered_months: Whole months from the charity's registration to the as-at date.
+      required_months: The signed minimum age of a charity, in months (grant_min_charity_months).
+      cash: The administrator's cash of the entity in the request's currency.
+      calls_due_30_days: Open calls of the entity due within 30 days.
+      cash_after_request_and_calls: Cash less the calls and the request.
+      buffer: The signed cash buffer in the request's currency.
+      within_budget: The request fits the remaining budget.
+      charity_old_enough: The charity is registered long enough.
+      cash_covers: The cash left stays at or above the buffer.
+      pay: All three checks hold.
+      fails: 1 when the request fails a check (or a rule is missing), else 0.
+      requests: 1 for each open request.
+    tie_out:
+      label: Requests equal the open grant requests on file
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from grants as x where lower(x.status) = 'requested' and not exists (select 1 from grants as y where y.supersedes_grant_id = x.id))
+
+  - id: trust_distribution_room
+    label: Trust distribution room per beneficiary
+    cards: [87]
+    names: [trust distribution room, distribution room per beneficiary, trust distributions, trust payout room, what the deed allows]
+    may_read: [documents, extracted_fields, cash_movements, portfolios, legal_entities, market_observations, family_members]
+    never_read: [office_expenses, position_snapshots]
+    why: The shares, the payout cap and the trust year are fields of the trust deed (a signed legal document, A44); the income, costs and allowances are the trust's confirmed bank lines; allowances count as distributions when the deed says so.
+    formula: 'The trust is the legal entity whose name the deed''s title carries. Trust year: from the deed''s trust_year_start (month-day) on or before the as-at date (the latest day a document was received) to the as-at date. Income = confirmed coupon, dividend and interest lines of the trust''s accounts; expenses = confirmed fee and payment lines (money out, made positive); each in USD at the fixing of its day or the latest before it. Distributable income = income less expenses; the cap = distributable income x the deed''s payout_cap_pct, rounded to the cent; room = cap x the beneficiary''s share, rounded. Paid = the allowance payments of the trust year matched to the member''s schedule line (same paying portfolio, currency, month and amount), as allowance_due matches them, when the deed''s allowances_count_as_distributions is yes. left = room less paid; over when paid exceeds room.'
+    grain: By beneficiary of the deed
+    sql: >-
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      deed as (select d.* from documents as d where d.document_type = 'trust_deed' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
+      qualify row_number() over (order by d.received_at desc, d.id) = 1),
+      f as (select x.* from extracted_fields as x where x.document_id = (select id from deed) and x.review_status is distinct from 'Rejected'),
+      ent as (select e.* from legal_entities as e where starts_with(trim(regexp_replace(lower((select title from deed)), '[^a-z0-9]+', '_', 'g'), '_'), trim(regexp_replace(lower(e.entity_name), '[^a-z0-9]+', '_', 'g'), '_'))),
+      ys as (select make_date(year((select d from asat)), cast(split_part(value_text, '-', 1) as integer), cast(split_part(value_text, '-', 2) as integer)) as y from f where field_name = 'trust_year_start'),
+      yr as (select case when y > (select d from asat) then cast(y - interval 1 year as date) else y end as y0, (select d from asat) as y1 from ys),
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      mv as (select m.id, m.movement_type, case when m.currency = 'USD' then m.amount else round(m.amount / fx.rate, 2) end as usd from cash_movements as m
+      join portfolios as p on p.id = m.portfolio_id and p.legal_entity_id = (select id from ent) left join fxall as fx on fx.currency = m.currency and fx.rate_date <= m.effective_date
+      where m.confirmation_status = 'confirmed' and m.movement_type in ('coupon', 'dividend', 'interest', 'fee', 'payment') and m.effective_date between (select y0 from yr) and (select y1 from yr)
+      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) qualify row_number() over (partition by m.id order by fx.rate_date desc nulls last) = 1),
+      tot as (select coalesce(sum(usd) filter (where movement_type in ('coupon', 'dividend', 'interest')), 0) as income,
+      coalesce(sum(0 - usd) filter (where movement_type in ('fee', 'payment') and usd < 0), 0) as expenses, count(*) filter (where usd is null) as unconverted from mv),
+      cap as (select (select value_numeric from f where field_name = 'payout_cap_pct') as pct, coalesce((select lower(value_text) from f where field_name = 'allowances_count_as_distributions'), 'no') = 'yes' as allowances_count),
+      fm as (select m.* from family_members as m where not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id) and m.allowance_amount is not null and lower(m.allowance_frequency) = 'monthly'),
+      due as (select fm.member_name, fm.paid_from_portfolio_id, fm.allowance_currency as currency, fm.allowance_amount as scheduled, cast(g.m as date) as month,
+      row_number() over (partition by fm.paid_from_portfolio_id, fm.allowance_currency, g.m, fm.allowance_amount order by fm.member_name, fm.id) as rn
+      from fm, unnest(generate_series(cast(date_trunc('month', greatest(fm.allowance_from, (select y0 from yr))) as timestamp),
+      cast(date_trunc('month', least(coalesce(fm.allowance_to, (select y1 from yr)), (select y1 from yr))) as timestamp), interval 1 month)) as g(m)),
+      am as (select c.id, c.portfolio_id, c.currency, c.effective_date, cast(date_trunc('month', c.effective_date) as date) as month, c.amount from cash_movements as c
+      where c.movement_type = 'allowance' and c.effective_date between (select y0 from yr) and (select y1 from yr) and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = c.id)),
+      rev as (select portfolio_id, currency, month, amount, count(*) as n from am where amount > 0 group by all),
+      pay as (select am.*, 0 - am.amount as out_amount, row_number() over (partition by portfolio_id, currency, month, amount order by effective_date desc, id desc) as k from am where amount < 0),
+      paid as (select p.portfolio_id, p.currency, p.month, p.out_amount as amount, row_number() over (partition by p.portfolio_id, p.currency, p.month, p.out_amount order by p.effective_date, p.id) as rn
+      from pay as p left join rev as r on r.portfolio_id = p.portfolio_id and r.currency = p.currency and r.month = p.month and r.amount = p.out_amount where p.k > coalesce(r.n, 0)),
+      bypaid as (select d.member_name, sum(coalesce(q.amount, 0)) as paid from due as d left join paid as q on q.portfolio_id = d.paid_from_portfolio_id and q.currency = d.currency
+      and q.month = d.month and q.amount = d.scheduled and q.rn = d.rn group by all),
+      sh as (select value_text as beneficiary, value_numeric as share from f where field_name = 'beneficiary_share'),
+      k as (select case when t.unconverted = 0 then t.income end as income, case when t.unconverted = 0 then t.expenses end as expenses, c.pct, c.allowances_count,
+      round((t.income - t.expenses) * c.pct / 100, 2) as dcap from tot as t cross join cap as c)
+      select sh.beneficiary, cast(round(sh.share * 100, 2) as decimal(9,2)) as share_pct, (select y0 from yr) as trust_year_start, (select y1 from yr) as period_to,
+      (select entity_name from ent) as trust, cast(k.income as decimal(18,2)) as trust_income, cast(k.expenses as decimal(18,2)) as trust_expenses,
+      cast(k.income - k.expenses as decimal(18,2)) as distributable_income, cast(k.pct as decimal(9,2)) as payout_cap_pct, cast(k.dcap as decimal(18,2)) as distributable_cap,
+      cast(round(k.dcap * sh.share, 2) as decimal(18,2)) as room, cast(case when k.allowances_count then coalesce(b.paid, 0) end as decimal(18,2)) as paid,
+      cast(round(k.dcap * sh.share, 2) - case when k.allowances_count then coalesce(b.paid, 0) end as decimal(18,2)) as left_to_pay,
+      cast(case when k.allowances_count and coalesce(b.paid, 0) > round(k.dcap * sh.share, 2) then 1 else 0 end as integer) as over, cast(1 as integer) as beneficiaries
+      from sh cross join k left join bypaid as b on b.member_name = sh.beneficiary
+    measure: room
+    columns:
+      share_pct: The beneficiary's share of distributable income in the deed, in percent.
+      trust_year_start: The first day of the current trust year (the deed's start date).
+      trust_income: Coupons, dividends and interest of the trust's accounts in the trust year, in USD.
+      trust_expenses: Fees and payments of the trust's accounts in the trust year, in USD.
+      distributable_income: Income less expenses.
+      payout_cap_pct: The share of distributable income the deed lets the trustees pay out.
+      distributable_cap: Distributable income times the cap.
+      room: The cap times the beneficiary's share.
+      paid: Allowances paid to the beneficiary in the trust year (distributions under the deed).
+      left_to_pay: Room less paid; negative when more was paid than the deed allows.
+      over: 1 when paid exceeds the room.
+      beneficiaries: 1 for each beneficiary of the deed.
+    tie_out:
+      label: The shares of the deed add up to the whole
+      sql: >-
+        select (select cast(round(sum(share_pct), 2) as decimal(9,2)) from {name}), cast(100 as decimal(9,2))
+
+  - id: approval_exceptions
+    label: Payments over their approval limit
+    cards: [89]
+    names: [approval exceptions, payments over their approval limit, over approval limit, expense approval limits, approved above limit]
+    may_read: [office_expenses, market_observations, business_rules, rule_versions]
+    never_read: [cash_movements, approvals]
+    why: Who approved each payment is in the expense ledger (office_expenses); each approver's limit is a signed office rule approver_limit_<person> (A48).
+    formula: 'One row per current expense of the ledger, in USD at the fixing of its day (or the latest before it), rounded to the cent. The limit is the signed approver_limit_ rule named after the approver (the name in lower case, words joined by _), in its currency. over_limit when the USD amount is above it. An approver with no signed limit has an empty limit and is not judged.'
+    grain: By expense
+    sql: >-
+      create table {name} as with fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      ex as (select x.*, case when x.currency = 'USD' then x.amount else round(x.amount / f.rate, 2) end as usd from office_expenses as x
+      left join fxall as f on f.currency = x.currency and f.rate_date <= x.spent_on where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id)
+      qualify row_number() over (partition by x.id order by f.rate_date desc nulls last) = 1),
+      lim as (select r.rule_code, cast(json_extract_string(v.parameters, '$.limit') as decimal(18,2)) as limit_amount, json_extract_string(v.parameters, '$.currency') as limit_currency
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'approver_limit_') and v.approval_status = 'approved'
+      qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1)
+      select e.reference, e.payee_name as payee, e.category, e.spent_on, cast(e.amount as decimal(18,2)) as amount, e.currency, cast(e.usd as decimal(18,2)) as usd, e.approver_name as approver,
+      case when l.limit_currency = 'USD' then l.limit_amount end as limit_usd,
+      cast(case when l.limit_currency = 'USD' and e.usd > l.limit_amount then 1 else 0 end as integer) as over_limit, cast(1 as integer) as payments
+      from ex as e left join lim as l on l.rule_code = 'approver_limit_' || trim(regexp_replace(lower(trim(e.approver_name)), '[^a-z0-9]+', '_', 'g'), '_')
+    measure: payments
+    columns:
+      usd: The payment in USD at its day's fixing.
+      approver: Who approved the payment in the ledger.
+      limit_usd: The approver's signed limit in USD; empty when none is signed.
+      over_limit: 1 when the payment is above the approver's limit.
+      payments: 1 for each payment of the ledger.
+    tie_out:
+      label: Payments equal the current lines of the expense ledger
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from office_expenses as x where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id))
+
+  - id: office_cost
+    label: Office cost by type against budget
+    cards: [90]
+    names: [office cost, office costs, cost by type against budget, what the office costs, office budget against actual]
+    may_read: [office_expenses, market_observations, business_rules, rule_versions]
+    never_read: [cash_movements, staff_payroll]
+    why: The cost is the office's expense ledger (office_expenses); the budget of each category is a signed office rule office_budget_<category> (A48).
+    formula: 'Every current expense in USD at the fixing of its day (or the latest before it), rounded to the cent, summed by category. The budget for the period is the signed annual budget of the category (office_budget_ and the category in lower case, words joined by _) x the months the ledger spans (first to last month, both counted) / 12. variance = actual less budget; over when positive. A category with no signed budget has an empty budget and is counted in uncategorised.'
+    grain: By expense category, with the totals on every row
+    sql: >-
+      create table {name} as with fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      ex as (select x.category, x.spent_on, case when x.currency = 'USD' then x.amount else round(x.amount / f.rate, 2) end as usd from office_expenses as x
+      left join fxall as f on f.currency = x.currency and f.rate_date <= x.spent_on where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id)
+      qualify row_number() over (partition by x.id order by f.rate_date desc nulls last) = 1),
+      span as (select min(spent_on) as first_day, max(spent_on) as last_day, date_diff('month', date_trunc('month', min(spent_on)), date_trunc('month', max(spent_on))) + 1 as months from ex),
+      bud as (select substr(r.rule_code, 15) as code, cast(json_extract_string(v.parameters, '$.annual') as decimal(18,2)) as annual from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      where starts_with(r.rule_code, 'office_budget_') and v.approval_status = 'approved' and json_extract_string(v.parameters, '$.currency') = 'USD'
+      qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      cat as (select category, sum(usd) as actual, count(*) as lines from ex group by all),
+      c as (select cat.*, b.annual, cast(b.annual * (select months from span) / 12 as decimal(18,2)) as budget from cat
+      left join bud as b on b.code = trim(regexp_replace(lower(coalesce(cat.category, '')), '[^a-z0-9]+', '_', 'g'), '_'))
+      select c.category, cast(c.actual as decimal(18,2)) as actual, c.annual as budget_annual, c.budget as budget_period, cast(c.actual - c.budget as decimal(18,2)) as variance,
+      cast(case when c.actual > c.budget then 1 else 0 end as integer) as over, cast(c.lines as integer) as lines, s.first_day, s.last_day, cast(s.months as integer) as months,
+      cast(sum(c.actual) over () as decimal(18,2)) as total_actual, cast(sum(c.budget) over () as decimal(18,2)) as total_budget,
+      cast(sum(case when c.budget is null then c.lines else 0 end) over () as integer) as uncategorised
+      from c cross join span as s
+    measure: actual
+    columns:
+      actual: The category's spending in USD.
+      budget_annual: The signed annual budget of the category.
+      budget_period: The annual budget for the months the ledger spans.
+      variance: Actual less the period budget.
+      over: 1 when the category spent more than its period budget.
+      total_actual: All spending of the ledger in USD.
+      total_budget: The period budget of every category with a signed budget.
+      uncategorised: Expense lines whose category has no signed budget.
+    tie_out:
+      label: Every expense of the ledger is counted once in a category
+      sql: >-
+        select (select coalesce(sum(lines), 0) from {name}), (select count(*) from office_expenses as x where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id))
+
+  - id: account_setup
+    label: Account set-up signatories against the signing policy
+    cards: [94]
+    names: [account setup, setup steps and signatories, account signatories, open a bank account, signing policy check]
+    may_read: [bank_accounts, legal_entities, extracted_fields, users, business_rules, rule_versions]
+    never_read: [cash_movements]
+    why: A pending account is a bank_accounts row read from its opening form; the signatories are the form's signatory fields; the signing policy is the signed office rule signing_policy (A49); who holds the required role is the users table.
+    formula: 'One row per current pending bank account. signatories = the signatory fields of its opening form, in the form''s order. The policy needs at least min_signatories, one of whom holds the required_role (users.business_role). missing_signatory = the holder of the required role when not among the signatories. meets_signing_policy when both hold; approved when it meets the policy and the account is no longer pending. With no signed policy the checks are empty.'
+    grain: By pending bank account
+    sql: >-
+      create table {name} as with a as (select b.* from bank_accounts as b where lower(b.status) = 'pending' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id)),
+      sig as (select cast(f.document_id as varchar) as doc, f.value_text as name, coalesce(f.line_number, 0) as n from extracted_fields as f where f.field_name = 'signatory' and f.review_status is distinct from 'Rejected'),
+      pol as (select cast(json_extract_string(v.parameters, '$.min_signatories') as integer) as min_n, json_extract_string(v.parameters, '$.required_role') as role
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'signing_policy' and v.approval_status = 'approved' qualify row_number() over (order by v.version_number desc) = 1),
+      req as (select string_agg(u.display_name, ', ' order by u.display_name) as person from users as u where u.is_active and u.business_role = (select role from pol)),
+      r as (select a.*, (select string_agg(s.name, ', ' order by s.n, s.name) from sig as s where s.doc = a.source_document_id) as signatories,
+      (select count(*) from sig as s where s.doc = a.source_document_id) as n_sig,
+      exists (select 1 from sig as s join users as u on u.display_name = s.name and u.business_role = (select role from pol) where s.doc = a.source_document_id) as has_role from a)
+      select e.entity_name as account_holder, r.bank_name, r.currency, r.status, r.signatories, cast(r.n_sig as integer) as signatory_count, (select min_n from pol) as min_signatories,
+      (select role from pol) as required_role, (select person from req) as required_person, case when (select role from pol) is not null and not r.has_role then (select person from req) end as missing_signatory,
+      case when (select role from pol) is not null then r.n_sig >= (select min_n from pol) and r.has_role end as meets_signing_policy,
+      case when (select role from pol) is not null then r.n_sig >= (select min_n from pol) and r.has_role and lower(r.status) <> 'pending' end as approved,
+      cast(case when (select role from pol) is not null and not (r.n_sig >= (select min_n from pol) and r.has_role) then 1 else 0 end as integer) as fails, cast(1 as integer) as accounts
+      from r left join legal_entities as e on e.id = r.legal_entity_id
+    measure: accounts
+    columns:
+      signatories: The signatories on the opening form, in its order.
+      signatory_count: How many signatories the form names.
+      min_signatories: The signed policy's minimum.
+      required_role: The role the signed policy requires among the signatories.
+      required_person: Who holds that role.
+      missing_signatory: The holder of the required role when the form leaves them out.
+      meets_signing_policy: Enough signatories and the required role among them.
+      approved: It meets the policy and the account is no longer pending.
+      fails: 1 when the form breaks the signed policy.
+      accounts: 1 for each pending account.
+    tie_out:
+      label: Accounts equal the pending bank accounts on file
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from bank_accounts as b where lower(b.status) = 'pending' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id))
+
+  - id: member_access
+    label: Access per family member against the policy
+    cards: [100]
+    names: [member access, access per family member, family access, what each family member can see, family view grants]
+    may_read: [family_members, legal_entities, access_groups, access_group_scopes, business_rules, rule_versions, documents, extracted_fields]
+    never_read: [system_access_grants]
+    why: What a member may see is a signed rule family_access_<member>_<entity> (A38, A49); what they are given is the scope of their family access group (summary is stored as preview, none as no row); a request is a document with requester, requested_entity and requested_level fields.
+    formula: 'One row per family member and legal entity. allowed = the level of the signed rule (empty when none is signed); granted = the scope of the member''s family group (none when there is no scope). Levels rank none < summary < full; over_granted when granted ranks above allowed. A request on record for the member and entity gives requested_level, and request_allowed when it ranks at or below allowed.'
+    grain: By family member and entity
+    sql: >-
+      create table {name} as with fm as (select distinct m.member_name from family_members as m where not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id)),
+      pol as (select r.rule_code, json_extract_string(v.parameters, '$.level') as level from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      where starts_with(r.rule_code, 'family_access_') and v.approval_status = 'approved' qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      gr as (select substr(g.group_name, 8) as member_name, s.scope_value as entity_code, case when s.access_level = 'preview' then 'summary' else s.access_level end as level
+      from access_groups as g join access_group_scopes as s on s.access_group_id = g.id where starts_with(g.group_name, 'family:') and s.scope_type = 'entity'),
+      rq as (select d.id, max(f.value_text) filter (where f.field_name = 'requester') as member_name, max(f.value_text) filter (where f.field_name = 'requested_entity') as entity_code,
+      max(f.value_text) filter (where f.field_name = 'requested_level') as level from documents as d join extracted_fields as f on f.document_id = d.id
+      where f.field_name in ('requester', 'requested_entity', 'requested_level') and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id) group by d.id),
+      grid as (select fm.member_name, e.entity_code, e.entity_name, p.level as allowed, coalesce(g.level, 'none') as granted,
+      (select max(q.level) from rq as q where q.member_name = fm.member_name and q.entity_code = e.entity_code) as requested
+      from fm cross join legal_entities as e left join pol as p on p.rule_code = 'family_access_' || trim(regexp_replace(lower(fm.member_name), '[^a-z0-9]+', '_', 'g'), '_') || '_'
+      || trim(regexp_replace(lower(e.entity_code), '[^a-z0-9]+', '_', 'g'), '_') left join gr as g on g.member_name = fm.member_name and g.entity_code = e.entity_code),
+      rk as (select grid.*, case allowed when 'none' then 0 when 'summary' then 1 when 'full' then 2 end as a_rank, case granted when 'none' then 0 when 'summary' then 1 when 'full' then 2 end as g_rank,
+      case requested when 'none' then 0 when 'summary' then 1 when 'full' then 2 end as r_rank from grid)
+      select member_name as member, entity_code, entity_name as entity, allowed, granted, cast(case when a_rank is not null then case when g_rank > a_rank then 1 else 0 end end as integer) as over_granted,
+      requested as requested_level, case when requested is not null and a_rank is not null then r_rank <= a_rank end as request_allowed,
+      cast(case when requested is not null then 1 else 0 end as integer) as has_request, cast(1 as integer) as pairs
+      from rk
+    measure: pairs
+    columns:
+      allowed: The level the signed family access policy gives (none, summary or full); empty when no rule is signed.
+      granted: The level the member's family group is given (none when no scope).
+      over_granted: 1 when the member is given more than the policy allows.
+      requested_level: The level a request on record asks for.
+      request_allowed: True when the request is within the policy.
+      has_request: 1 when a request is on record for the member and entity.
+      pairs: 1 for each member and entity.
+    tie_out:
+      label: Every family member is listed against every entity
+      sql: >-
+        select (select count(*) from {name}), (select count(distinct m.member_name) * (select count(*) from legal_entities) from family_members as m
+        where not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id))
+
+  - id: estate_cash_need
+    label: Transfer tax need against liquid assets
+    cards: [88]
+    names: [estate cash need, tax need against liquid assets, transfer tax, estate tax liquidity, cash for an estate or transfer tax]
+    may_read: [position_snapshots, instruments, portfolios, bank_accounts, valuation_observations, real_assets, credit_facilities, market_observations, business_rules, rule_versions, documents]
+    never_read: [cash_movements, office_expenses]
+    why: The estate is what the family owns on the plane (fund statements, the liquid book, the administrator's cash, the latest appraisals) less the term loan; the exemption and the rate are signed office rules (estate_tax_exemption, estate_tax_rate, A54) taken from the adviser's memo.
+    formula: 'As-at = the latest day a document was received; the period end is the last month end before it. Investments = each fund''s latest statement value dated on or before the period end (valuation_observations, not superseded) + the liquid book (listed equity, bonds, convertibles) at the period end. Cash = the administrator''s cash of every entity at its latest date (bank-account instruments left out), other currencies at the fixing of that day or the latest before it. Real assets = each asset''s latest appraisal on or before the as-at date, in USD at the fixing of the as-at date. Loan = the drawn amount of each credit facility at its latest date. Estate = investments + cash + real assets - loan. Tax = (estate - the signed exemption, not below 0) x the signed rate, rounded to the cent. Liquid assets after debt = cash + the liquid book at its latest date + the latest values of the liquid funds - loan. cover = liquid over tax (2 decimals); can_meet when liquid >= tax. With no signed rule the tax, cover and can_meet are empty; with a value in a currency that has no fixing the totals are empty.'
+    grain: One row
+    sql: >-
+      create table {name} as with {positions},
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      pe as (select cast(date_trunc('month', (select d from asat)) - interval 1 day as date) as d),
+      rule as (select r.rule_code, v.parameters from business_rules as r join rule_versions as v on v.business_rule_id = r.id where v.approval_status = 'approved'
+      and r.rule_code in ('estate_tax_exemption', 'estate_tax_rate') qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      fxat as (select currency, arg_max(rate, rate_date) as rate from fxall where rate_date <= (select d from asat) group by all),
+      fv as (select v.instrument_id, i.instrument_type, v.valuation_date, case when v.currency = 'USD' then v.value_amount else v.value_amount / f.rate end as usd
+      from valuation_observations as v join instruments as i on i.id = v.instrument_id left join fxat as f on f.currency = v.currency
+      where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)),
+      funds_pe as (select * from fv where valuation_date <= (select d from pe) qualify row_number() over (partition by instrument_id order by valuation_date desc) = 1),
+      liqf as (select * from fv where instrument_type = 'liquid_fund' and valuation_date <= (select d from asat) qualify row_number() over (partition by instrument_id order by valuation_date desc) = 1),
+      bk0 as (select l.position_date, case when l.currency = 'USD' then l.source_market_value else l.source_market_value / f.rate end as usd from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type in ('listed_equity', 'bond', 'convertible') left join fxat as f on f.currency = l.currency),
+      book_pe as (select sum(usd) as v, count(*) filter (where usd is null) as n from bk0 where position_date = (select max(position_date) from bk0 where position_date <= (select d from pe))),
+      book_now as (select sum(usd) as v, count(*) filter (where usd is null) as n from bk0 where position_date = (select max(position_date) from bk0 where position_date <= (select d from asat))),
+      cash0 as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      cashp as (select c.* from cash0 as c where c.position_date = (select max(x.position_date) from cash0 as x where x.entity_id = c.entity_id)),
+      cashu as (select case when c.currency = 'USD' then c.cash else round(c.cash / f.rate, 2) end as usd from cashp as c
+      left join fxall as f on f.currency = c.currency and f.rate_date <= c.position_date qualify row_number() over (partition by c.entity_id, c.currency order by f.rate_date desc nulls last) = 1),
+      ra as (select case when a.currency = 'USD' then a.appraised_value else round(a.appraised_value / f.rate, 2) end as usd from real_assets as a left join fxat as f on f.currency = a.currency
+      where not exists (select 1 from real_assets as x where x.supersedes_real_asset_id = a.id) and a.appraised_on <= (select d from asat)
+      qualify row_number() over (partition by a.asset_ref order by a.appraised_on desc, a.recorded_at desc, a.id) = 1),
+      ln as (select case when c.currency = 'USD' then c.drawn_amount else c.drawn_amount / f.rate end as usd from credit_facilities as c left join fxat as f on f.currency = c.currency
+      where not exists (select 1 from credit_facilities as x where x.supersedes_credit_facility_id = c.id) and c.as_at <= (select d from asat)
+      qualify row_number() over (partition by c.facility_ref order by c.as_at desc, c.recorded_at desc) = 1),
+      t as (select (select d from asat) as as_at, (select d from pe) as period_end,
+      (select sum(usd) from funds_pe) + (select v from book_pe) as investments, (select sum(usd) from cashu) as cash, (select sum(usd) from ra) as real_assets,
+      coalesce((select sum(usd) from ln), 0) as loan, (select v from book_now) as liquid_book, (select sum(usd) from liqf) as liquid_funds,
+      (select count(*) from funds_pe where usd is null) + (select n from book_pe) + (select n from book_now) + (select count(*) from cashu where usd is null)
+      + (select count(*) from ra where usd is null) + (select count(*) from ln where usd is null) + (select count(*) from liqf where usd is null) as unconverted,
+      (select cast(json_extract_string(parameters, '$.amount') as decimal(18,2)) from rule where rule_code = 'estate_tax_exemption') as exemption,
+      (select cast(json_extract_string(parameters, '$.rate') as decimal(9,4)) from rule where rule_code = 'estate_tax_rate') as rate),
+      u as (select t.*, case when unconverted = 0 then investments + cash + real_assets - loan end as estate,
+      case when unconverted = 0 then cash + liquid_book + liquid_funds - loan end as liquid from t),
+      x as (select u.*, round(greatest(estate - exemption, 0) * rate, 2) as tax from u)
+      select x.as_at, x.period_end, cast(x.estate as decimal(18,2)) as estate_value, cast(x.investments as decimal(18,2)) as investments, cast(x.cash as decimal(18,2)) as cash,
+      cast(x.real_assets as decimal(18,2)) as real_assets, cast(x.loan as decimal(18,2)) as loan, cast(x.liquid_book as decimal(18,2)) as liquid_book,
+      cast(x.liquid_funds as decimal(18,2)) as liquid_funds, x.exemption, x.rate, cast(x.tax as decimal(18,2)) as transfer_tax,
+      cast(x.liquid as decimal(18,2)) as liquid_assets_after_debt, cast(round(x.liquid / nullif(x.tax, 0), 2) as decimal(9,2)) as cover, x.liquid >= x.tax as can_meet,
+      cast(case when x.liquid < x.tax then 1 else 0 end as integer) as short, cast(x.unconverted as integer) as unconverted
+      from x
+    measure: transfer_tax
+    columns:
+      period_end: The last month end before the as-at date; the investments are valued at it.
+      estate_value: Investments + cash + real assets - loan, in USD.
+      investments: Each fund's latest statement value to the period end + the liquid book at the period end.
+      cash: The administrator's cash of every entity, in USD.
+      real_assets: The latest appraisal of each real asset, in USD.
+      loan: The drawn credit facilities at their latest date.
+      liquid_book: The listed book at its latest date.
+      liquid_funds: The latest values of the liquid (index) funds.
+      exemption: The signed transfer tax exemption.
+      rate: The signed transfer tax rate above the exemption.
+      transfer_tax: (Estate - exemption) x rate.
+      liquid_assets_after_debt: Cash + liquid book + liquid funds - loan.
+      cover: Liquid assets over the tax.
+      can_meet: True when the liquid assets cover the tax.
+      short: 1 when they do not.
+      unconverted: Values in a currency with no fixing; the totals are empty while any is.
+    tie_out:
+      label: The estate is investments, cash and real assets less the loan
+      sql: >-
+        select (select estate_value from {name}), (select investments + cash + real_assets - loan from {name})

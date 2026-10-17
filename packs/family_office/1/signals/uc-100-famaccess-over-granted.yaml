@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-100-famaccess, the exception: a family member is given more than the signed family access policy allows (M43) -> that report is not sent until the view is cut back.
+suggestion: true
+id: uc-100-famaccess-over-granted
+title: A family member sees more than the policy allows
+pain_points: [INT-GOV, INT-DATAGOV]
+trigger: {on: figure_changed, figure: member_access}
+inputs:
+  - {kind: doc, fields: [member, entity, allowed, granted, over_granted]}
+subject: "{doc.member} {doc.entity}"
+condition: doc.over_granted == 1
+severity: problem
+route_to: hr_admin
+action: {verb: record, options: [Cut the view back to the policy, Ask the Principal to change the policy]}
+hold: {blocks: send_family_report, scope: "{doc.entity} report to {doc.member}", until: "the view matches the signed family access policy"}
+message: "{doc.member} is given the '{doc.granted}' view of {doc.entity}; the signed family access policy allows '{doc.allowed}'."
+evidence: [doc.member, doc.entity, doc.granted, doc.allowed]

@@ -575,4 +575,10 @@ def wave2_rules(w):
            dict(minutes_per_failure=SOP_FAIL_MIN, months=6), "approved", 1),
           ("deal_stage_limit_days", STAGE_LIMIT_DAYS, f"A deal under review that has been in its stage for more than {STAGE_LIMIT_DAYS} days is stuck and goes to the CIO to move forward or drop. Signed by Raj Patel (Chief Investment Officer)", "policy",
            dict(days=STAGE_LIMIT_DAYS), "approved", 1)]
+    m = GRANT_POLICY["min_registration_months"]  # card 86 (A54): the grant policy the key and M34 state, in no file of the office
+    r.append(("grant_min_charity_months", m, f"A charity must have been registered for at least {m} months before the office pays it a grant. Signed by Mei Chen (Principal)", "policy",
+              dict(months=m), "approved", 1))
+    ex, rt = ESTATE["exemption"], float(ESTATE["rate"])  # card 88 (A54): signed v2 beside the proposed v1 the transfer tax memo reader writes
+    r += [("estate_tax_exemption", ex, f"The transfer tax exemption is {ex:,} USD, as the adviser's transfer tax memo states. Signed by Mei Chen (Principal)", "policy", dict(amount=ex, currency="USD"), "approved", 2),
+          ("estate_tax_rate", rt, f"Transfer tax is {rt * 100:g} percent of the estate above the exemption, as the adviser's transfer tax memo states. Signed by Mei Chen (Principal)", "policy", dict(rate=rt), "approved", 2)]
     return r

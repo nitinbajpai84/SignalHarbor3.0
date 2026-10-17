@@ -467,3 +467,14 @@ def test_signed_rules_of_cards_51_to_100_agree_with_the_keys():
     assert not any(k.startswith("allocation_") for k in signed), "the interim targets of card 79 are proposed, not signed (its key says so)"
     deals = ex("uc-077-deals")["deals"]  # A55: the stage limit of card 77; stuck exactly when the days in stage are above it
     assert all(d["stuck"] == (d["days_in_stage"] > signed["deal_stage_limit_days"]["days"]) for d in deals) and signed["deal_stage_limit_days"] == {"days": 60}
+
+
+def test_signed_family_rules_of_cards_86_and_88_agree_with_the_keys():
+    """A54: the charity age of card 86 and the transfer tax of card 88 are signed with the values their answer keys use."""
+    import json
+    rows = list(csv.DictReader((FIX / "reference" / "office_rules.csv").open(encoding="utf-8")))
+    signed = {r["rule"]: json.loads(r["parameters"]) for r in rows if r["approval_status"] == "approved" and r["parameters"]}
+    ex = lambda cid: next(iter(keys()[cid]["questions"].values()))["expected"]  # noqa: E731
+    assert signed["grant_min_charity_months"] == {"months": ex("uc-086-grantappr")["required_months"]}
+    assert signed["estate_tax_exemption"] == {"amount": ex("uc-088-estateliq")["exemption"], "currency": "USD"} and signed["estate_tax_rate"] == {"rate": ex("uc-088-estateliq")["rate"]}
+    assert not any(k.startswith("tax_rate_") for k in signed), "card 84: the tax rates stay proposed (A54)"

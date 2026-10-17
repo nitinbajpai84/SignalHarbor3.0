@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-087-trustdist, the exception: a beneficiary has been paid more than the deed allows this trust year (M47) -> the next allowance waits.
+suggestion: true
+id: uc-087-trustdist-over
+title: A beneficiary is paid beyond the deed
+pain_points: [INT-GOV, INT-RISK]
+trigger: {on: figure_changed, figure: trust_distribution_room}
+inputs:
+  - {kind: doc, fields: [beneficiary, share_pct, room, paid, left_to_pay, distributable_cap, over]}
+subject: "{doc.beneficiary} over the deed"
+condition: doc.over == 1
+severity: problem
+route_to: fund_accountant
+action: {verb: approve, options: [Ask the trustees to approve or stop the allowance]}
+hold: {blocks: prepare_payment, scope: "{doc.beneficiary} allowance", until: "the trustees approve the excess or the trust year's room covers it"}
+message: "{doc.beneficiary}'s {doc.share_pct:,.0f} percent share of the USD {doc.distributable_cap:,.2f} the deed lets the trust pay out is USD {doc.room:,.2f}; USD {doc.paid:,.2f} has been paid, {doc.left_to_pay:,.2f} left."
+evidence: [doc.beneficiary, doc.room, doc.paid, doc.left_to_pay]

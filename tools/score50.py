@@ -954,17 +954,77 @@ PATH_CAUSE.update({
 BLOCKED.update({
     "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
                       "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
-    "uc-083-taxcal": "no reader for tax_calendar and tax_notices",
-    "uc-084-taxest": "no reader for tax_calendar",
-    "uc-085-grants": "no reader for grant_ledger",
-    "uc-086-grantappr": "no reader for grant_ledger and grant_requests",
-    "uc-087-trustdist": "no reader for trust_deed",
-    "uc-088-estateliq": "no reader for estate_planning and trust_deed",
-    "uc-089-expapp": "approver_limit_ rules are proposed, not signed (A20)",
-    "uc-090-offcost": "office_budget_ rules are proposed, not signed (A20)",
-    "uc-094-onbbank": "signing_policy rules are proposed, not signed (A20)",
-    "uc-096-automation": "the 45 minutes of rework per failure is in the key's method only: in no file and no signed rule",
-    "uc-100-famaccess": "family_access_ rules are proposed, not signed (A20)",
+    "uc-084-taxest": ("the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched "
+                      "first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54)"),
+    "uc-096-automation": ("the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved "
+                          "or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule"),
+})
+
+# ---- Office cards 83 to 100 (test_w1b_office.py; docs/v3/w1/build51-office.md) ----------------------------------------------------------------
+
+CHECKS.update({
+    "uc-083-taxcal": [  # card 83, tax_due
+        L(0, "due_in_60_days", "tax_due", {"id": "id"}, {k: k for k in ("entity", "obligation", "due", "days", "prepared_by", "status")}, due_in_60_days=1),
+        F(0, "count_by_entity", ["tax_due"], lambda x: dict(Counter(r["entity"] for r in x["tax_due"] if r["due_in_60_days"]))),
+        L(0, "overdue", "tax_due", {"id": "id"}, {k: k for k in ("entity", "obligation", "due", "days_overdue", "prepared_by", "status")}, overdue=1),
+    ],
+    "uc-085-grants": [  # card 85, grants_used
+        *[FIRST(0, k, "grants_used", k) for k in ("budget", "paid", "pledged", "used", "used_pct", "remaining", "paid_matches_bank")],
+    ],
+    "uc-086-grantappr": [  # card 86, grant_check
+        *[FIRST(0, k, "grant_check", c) for k, c in (("request", "request"), ("amount", "amount"), ("remaining_budget", "remaining_budget"),
+                                                    ("charity_registered_months", "charity_registered_months"), ("required_months", "required_months"),
+                                                    ("holdings_usd_cash", "cash"), ("calls_due_30_days", "calls_due_30_days"),
+                                                    ("cash_after_request_and_calls", "cash_after_request_and_calls"), ("checks.within_budget", "within_budget"),
+                                                    ("checks.charity_old_enough", "charity_old_enough"), ("checks.cash_covers", "cash_covers"), ("pay", "pay"))],
+    ],
+    "uc-087-trustdist": [  # card 87, trust_distribution_room
+        *[FIRST(0, k, "trust_distribution_room", k) for k in ("trust_year_start", "trust_income", "trust_expenses", "distributable_income", "payout_cap_pct", "distributable_cap")],
+        D(0, "by_beneficiary", "trust_distribution_room", "beneficiary", {"share_pct": "share_pct", "room": "room", "paid": "paid", "left": "left_to_pay", "over": "over"}),
+        S(0, "over_distributed", "trust_distribution_room", "beneficiary", lambda r: r["over"]),
+    ],
+    "uc-088-estateliq": [  # card 88, estate_cash_need
+        *[FIRST(0, k, "estate_cash_need", c) for k, c in (("estate_value", "estate_value"), ("investments_30_sep", "investments"), ("cash", "cash"), ("real_assets", "real_assets"),
+                                                         ("loan", "loan"), ("exemption", "exemption"), ("rate", "rate"), ("transfer_tax", "transfer_tax"),
+                                                         ("liquid_assets_after_debt", "liquid_assets_after_debt"), ("cover", "cover"), ("can_meet", "can_meet"))],
+    ],
+    "uc-089-expapp": [  # card 89, approval_exceptions (the limits themselves are the signed rules: test_card89_*)
+        N(0, "payments", "approval_exceptions"),
+        L(0, "over_limit", "approval_exceptions", {"reference": "reference"}, {"payee": "payee", "usd": "usd", "approver": "approver", "limit": "limit_usd"}, over_limit=1),
+        F(0, "approvals_by_person", ["approval_exceptions"], lambda x: dict(Counter(r["approver"] for r in x["approval_exceptions"]))),
+    ],
+    "uc-090-offcost": [  # card 90, office_cost
+        D(0, "by_category", "office_cost", "category", {"actual": "actual", "budget_half_year": "budget_period", "variance": "variance", "over": "over"}),
+        FIRST(0, "actual", "office_cost", "total_actual"),
+        FIRST(0, "budget", "office_cost", "total_budget"),
+        S(0, "over_budget", "office_cost", "category", lambda r: r["over"]),
+        FIRST(0, "uncategorised", "office_cost", "uncategorised"),
+    ],
+    "uc-094-onbbank": [  # card 94, account_setup (the six checklist steps are in no file: not compared)
+        F(0, "signatories", ["account_setup"], lambda x: str(x["account_setup"][0]["signatories"]).split(", ") if x["account_setup"] else None),
+        FIRST(0, "required_head_of_finance", "account_setup", "required_person"),
+        FIRST(0, "missing_signatory", "account_setup", "missing_signatory"),
+        FIRST(0, "meets_signing_policy", "account_setup", "meets_signing_policy"),
+        FIRST(0, "approved", "account_setup", "approved"),
+    ],
+    "uc-100-famaccess": [  # card 100, member_access
+        F(0, "by_member", ["member_access"], lambda x: {m: {"allowed": {r["entity"]: r["allowed"] for r in x["member_access"] if r["member"] == m and r["allowed"] not in (None, "none")},
+                                                             "granted": {r["entity"]: r["granted"] for r in x["member_access"] if r["member"] == m and r["granted"] != "none"},
+                                                             "over_granted": {r["entity"]: {"granted": r["granted"], "allowed": r["allowed"]} for r in x["member_access"]
+                                                                              if r["member"] == m and r["over_granted"]}}
+                                                        for m in {r["member"] for r in x["member_access"]}}),
+        F(0, "over_grants", ["member_access"], lambda x: sorted({r["member"] for r in x["member_access"] if r["over_granted"]})),
+        F(0, "request", ["member_access"], lambda x: next(({"member": r["member"], "entity": r["entity"], "level": r["requested_level"], "allowed": r["request_allowed"]}
+                                                           for r in x["member_access"] if r["has_request"]), None)),
+    ],
+})
+MESS.update({
+    "uc-083-taxcal": [({"id": "TX-04"}, "M33 overdue filing")],
+    "uc-086-grantappr": [({"request": "REQ-2026-06"}, "M34 grant request fails the policy")],
+    "uc-087-trustdist": [({"beneficiary": "Wen Chen"}, "M47 trust paid beyond its share")],
+    "uc-089-expapp": [({"reference": ["BAL-2026-051", "LL-2026-0708"]}, "M35 approved above the approver's limit")],
+    "uc-094-onbbank": [({"account_holder": "Evergreen Family Trust"}, "M38 signatory missing")],
+    "uc-100-famaccess": [({"member": "Wen Chen", "entity_code": "EG-B"}, "M43 view over-granted")],
 })
 
 

@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-094-onbbank, the exception: an account opening form breaks the signed signing policy (M38) -> the account is not opened.
+suggestion: true
+id: uc-094-onbbank-signatory
+title: An account form breaks the signing policy
+pain_points: [INT-GOV, INT-RISK]
+trigger: {on: figure_changed, figure: account_setup}
+inputs:
+  - {kind: doc, fields: [account_holder, bank_name, currency, signatories, required_role, missing_signatory, fails]}
+subject: "{doc.account_holder} {doc.currency} account"
+condition: doc.fails == 1
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Add the missing signatory to the form]}
+hold: {blocks: open_bank_account, scope: "{doc.account_holder} {doc.currency} account at {doc.bank_name}", until: "the form names the signatories the signing policy requires"}
+message: "The {doc.currency} account of {doc.account_holder} at {doc.bank_name} names {doc.signatories}; the signing policy needs the {doc.required_role}, {doc.missing_signatory}, among them."
+evidence: [doc.account_holder, doc.signatories, doc.missing_signatory]

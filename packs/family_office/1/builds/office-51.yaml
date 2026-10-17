@@ -1,5 +1,5 @@
-# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md): the nine cards built on the real pack readers. The other eleven wait for a
-# reader or for a rule that is proposed and not signed (see Needs there). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md): the eighteen cards built on the real pack readers. The other two (84, 96)
+# wait for what the build note names. Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
 # files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
 # uc-082 also lists the 13 Oct fixing file: the key puts SGD into USD at 1.3400, which is that day's fixing.
 template: family_office@1
@@ -54,6 +54,22 @@ roles:
         dashboard: "Procedures by days since the last review"
         check: {ask: "Which procedures to review", expect: ["Open or change a bank account", "Vendor payment run", "Payroll release", "681", "480", "378"]}
 
+      - id: uc-089-expapp
+        title: "Expense approval and sign-off rules"
+        say: "Every payment in the expense ledger names who approved it, and each of us has a signed limit. Show me every payment approved above the approver's limit, in USD at the day's fixing, and how many each of us approved."
+        files: ["office6m:*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx", "office6m:reference/office_rules.csv"]
+        skills: ["check.against-source", "action.detect-exception", "action.route-owner"]
+        dashboard: "Payments over the approver's limit, and approvals by person"
+        check: {ask: "Which approval limits to set and who may approve", expect: ["BAL-2026-051", "LL-2026-0708", "16,662.93", "38,000", "Priya Nair", "10,000"]}
+
+      - id: uc-100-famaccess
+        title: "What each family member can see"
+        say: "Each family member sees the reports the signed family access policy allows. Put what each is given beside what the policy allows, show me anyone who sees more than allowed, and tell me whether Maya's request for the Holdings report fits the policy."
+        files: ["office6m:*/family_access/*"]
+        skills: ["intent.set-access", "action.detect-exception", "action.route-owner"]
+        dashboard: "Views granted against the policy, per member and entity"
+        check: {ask: "What each family member may see", expect: ["Wen Chen", "Entity B", "Maya Chen", "Evergreen Holdings", "summary"]}
+
   - id: ops_lead
     builds:
       - id: uc-093-onbmgr
@@ -83,3 +99,65 @@ roles:
         skills: ["consume.understand-words", "knowledge.learn-word"]
         dashboard: "Words proposed, already on the list and to add"
         check: {ask: "Whether to add a word to the language list", expect: ["side letter", "stub period", "capital account", "dry powder"]}
+
+  - id: fund_accountant
+    builds:
+      - id: uc-083-taxcal
+        title: "Tax calendar"
+        say: "The tax calendar lists every filing and payment of our three entities and who prepares it. Show me what falls due in the next 60 days and anything past its date that is not filed."
+        files: ["office6m:*/tax_calendar/tax_calendar_2026-27.xlsx", "office6m:*/tax_notices/eci_notice_EG-HOLD_2026.pdf"]
+        skills: ["data.recognise-file", "action.detect-exception", "action.route-owner"]
+        dashboard: "Tax items by due date, the next 60 days and the overdue ones"
+        check: {ask: "Which filings and payments are due and who prepares them", expect: ["TX-01", "TX-02", "TX-04", "2026-11-30", "2026-09-30", "Summit Tax Advisory"]}
+
+      - id: uc-087-trustdist
+        title: "Trust distributions to beneficiaries"
+        say: "The deed lets the trustees pay out part of the trust's distributable income, split by each beneficiary's share, and the allowances count. Work out this trust year's income less costs, each beneficiary's room and what has been paid, and flag anyone paid beyond the deed."
+        files: ["office6m:*/trust_deed/evergreen_family_trust_deed.pdf", "office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv", "office6m:*/family_allowances/allowance_schedule_2026-*.xlsx"]
+        skills: ["data.read-pdf-fields", "check.adds-up", "action.detect-exception"]
+        dashboard: "Room, paid and left per beneficiary under the deed"
+        check: {ask: "Whether the trust pays what its deed allows", expect: ["504,980.42", "46,001.31", "321,285.38", "25,702.83", "-2,297.17", "Wen Chen"]}
+
+  - id: principal
+    builds:
+      - id: uc-085-grants
+        title: "Philanthropy: budget used"
+        say: "We set a grants budget for the year. Show me what is paid and pledged against it, what is left, and whether the paid grants agree with the bank."
+        files: ["office6m:*/grant_ledger/grant_ledger_2026.xlsx", "office6m:*/bank_statements/HB_HOLD_USD_2026-0[5-9].xlsx"]
+        skills: ["check.against-source", "consume.answer-question"]
+        dashboard: "Paid and pledged grants against the budget"
+        check: {ask: "Whether to approve more grants this year", expect: ["300,000", "175,000", "90,000", "265,000", "88.3", "35,000"]}
+
+      - id: uc-086-grantappr
+        title: "Approve a grant payment"
+        say: "Before I pay a grant I check three things: it fits what is left of the budget, the charity has been registered long enough, and Holdings keeps its cash buffer after the calls due. Check this request and tell me whether to pay it."
+        files: ["office6m:*/grant_requests/grant_request_REQ-2026-06.pdf", "office6m:*/grant_requests/2026-10-09_REQ-2026-06.eml", "office6m:*/grant_ledger/grant_ledger_2026.xlsx"]
+        skills: ["check.against-source", "action.detect-exception", "action.suggest-next-step"]
+        dashboard: "The request against budget, charity age and cash"
+        check: {ask: "Whether to pay the grant", expect: ["REQ-2026-06", "50,000", "35,000", "1,230,000", "1,250,000", "-70,000"]}
+
+      - id: uc-088-estateliq
+        title: "Cash for an estate or transfer tax"
+        say: "If the estate passed today, the adviser's memo says transfer tax is due above an exemption. Value what the family owns, work out the tax and tell me whether the liquid assets after the loan could pay it."
+        files: ["office6m:*/trust_deed/evergreen_family_trust_deed.pdf", "office6m:*/estate_planning/transfer_tax_memo_2026.pdf", "office6m:*/property_valuations/valuation_RA-*.pdf"]
+        skills: ["data.read-pdf-fields", "check.adds-up", "consume.answer-question"]
+        dashboard: "Estate, transfer tax and the liquid assets that cover it"
+        check: {ask: "Whether the family could meet a transfer tax from liquid assets", expect: ["131,306,339.91", "109,960,000", "18,945,950.99", "55,879,741.41", "2.95"]}
+
+  - id: cfo
+    builds:
+      - id: uc-090-offcost
+        title: "What the office costs"
+        say: "The Principal set the year's office budget by category in April. Put the expense ledger of April to September beside half of it, in USD, and show me which categories are over."
+        files: ["office6m:*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx", "office6m:*/office_budget/office_budget_2026.xlsx"]
+        skills: ["check.against-source", "check.explain-difference", "consume.answer-question"]
+        dashboard: "Cost by category against the budget for the half year"
+        check: {ask: "Whether the office costs more than planned", expect: ["1,463,862.76", "1,455,850", "78,252.48", "35,752.48", "Professional fees", "Grants"]}
+
+      - id: uc-094-onbbank
+        title: "Open or change a bank or custody account"
+        say: "No account opens until its signatories meet our signing policy. Check the opening form's signatories against the policy and tell me who is missing."
+        files: ["office6m:*/bank_forms/*"]
+        skills: ["data.read-pdf-fields", "check.against-source", "action.detect-exception"]
+        dashboard: "Signatories on the form against the signing policy"
+        check: {ask: "Whether the account and its signatories are approved", expect: ["Raj Patel", "Grace Ong", "Daniel Foo"]}

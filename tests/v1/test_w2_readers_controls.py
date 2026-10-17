@@ -96,14 +96,17 @@ def test_payments_over_the_approvers_limit_are_the_two_of_the_key(office):
     k = key("uc-089-expapp")
     flagged = office.report["expense_ledger"]["flagged"]
     assert sorted(f.split(":")[0] for f in flagged if "whose limit" in f) == sorted(o["reference"] for o in k["over_limit"])
-    rules = office.rows("select b.rule_code, v.parameters, v.approval_status, v.approved_by from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code like 'approver_limit_%'")
+    rules = office.rows("select b.rule_code, v.parameters, v.approval_status, v.approved_by from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code like 'approver_limit_%' and v.version_number = 1")
     assert {r["rule_code"]: json.loads(r["parameters"])["limit"] for r in rules} == {f"approver_limit_{C.slug(n)}": float(v) for n, v in k["limits"].items()}
-    assert {r["approval_status"] for r in rules} == {"proposed"} and all(r["approved_by"] is None for r in rules)  # unsigned: a recipe that needs one is held
+    assert {r["approval_status"] for r in rules} == {"proposed"} and all(r["approved_by"] is None for r in rules)  # the reader writes them unsigned (v1)
+    # the office signed them as v2 beside the reader's v1 (A48): the reader never touches a signed rule
+    assert office.one("select count(*) from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code like 'approver_limit_%' "
+                      "and v.version_number = 2 and v.approval_status = 'approved'") == len(rules)
 
 
 def test_the_budget_is_written_as_proposed_rules_that_give_the_keys_half_year(office):
     k = key("uc-090-offcost")["by_category"]
-    rules = {r["rule_code"]: r for r in office.rows("select b.rule_code, v.parameters, v.approval_status from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code like 'office_budget_%'")}
+    rules = {r["rule_code"]: r for r in office.rows("select b.rule_code, v.parameters, v.approval_status from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code like 'office_budget_%' and v.version_number = 1")}
     assert len(rules) == len(k) == 13
     for cat, v in k.items():
         r = rules[f"office_budget_{C.slug(cat)}"]
@@ -212,7 +215,7 @@ def test_bank_form_signatories_policy_and_the_pending_account(office):
     assert sig == k["signatories"] and k["missing_signatory"] not in sig
     roles = [r["value_text"] for r in fields(office, "account_opening_form", "signatory_role")]
     assert not [r for r in roles if "Head of Finance" in r]  # the Head of Finance is not on the form
-    pol = office.rows("select v.parameters, v.approval_status from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code = 'signing_policy'")
+    pol = office.rows("select v.parameters, v.approval_status from business_rules b join rule_versions v on v.business_rule_id = b.id where b.rule_code = 'signing_policy' and v.version_number = 1")
     assert len(pol) == 1 and json.loads(pol[0]["parameters"]) == {"min_signatories": 2, "required_role": "Head of Finance"} and pol[0]["approval_status"] == "proposed"
     acct = office.rows("select * from bank_accounts where status = 'pending'")
     assert len(acct) == 1 and acct[0]["currency"] == "EUR" and acct[0]["legal_entity_id"] and acct[0]["source_document_id"]

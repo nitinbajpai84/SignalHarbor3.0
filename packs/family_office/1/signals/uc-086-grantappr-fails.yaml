@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-086-grantappr, the exception: a grant request fails the budget, the charity policy or the cash buffer (M34) -> the grant is not paid.
+suggestion: true
+id: uc-086-grantappr-fails
+title: A grant request fails the grant policy
+pain_points: [INT-GOV, INT-LIQ]
+trigger: {on: figure_changed, figure: grant_check}
+inputs:
+  - {kind: doc, fields: [request, charity, amount, remaining_budget, charity_registered_months, required_months, cash_after_request_and_calls, buffer, fails]}
+subject: "{doc.request} {doc.charity}"
+condition: doc.fails == 1
+severity: problem
+route_to: principal
+action: {verb: approve, options: [Decline the request, Defer it to next year's budget]}
+hold: {blocks: prepare_payment, scope: "{doc.request} grant to {doc.charity}", until: "the request fits the budget, the charity policy and the cash buffer"}
+message: "{doc.request} ({doc.charity}) asks USD {doc.amount:,.2f}; {doc.remaining_budget:,.2f} of the grants budget is left. The charity is {doc.charity_registered_months:,.0f} months old against {doc.required_months:,.0f}. Cash after the request and the calls due: USD {doc.cash_after_request_and_calls:,.2f}, against a buffer of {doc.buffer:,.2f}."
+evidence: [doc.request, doc.amount, doc.remaining_budget, doc.charity_registered_months, doc.cash_after_request_and_calls]
