@@ -1,0 +1,39 @@
+# SUGGESTION. Fee on the call notice differs from the fund terms. Card uc-002-callrecord, W1 cash builder (docs/v3/w1/build-cash.md). Skipped (with the reason) when the fund terms or the commitment are not on record: the fee is never guessed.
+suggestion: true
+id: uc-002-callrecord-fee-off
+title: Fee on the call differs from the fund terms
+pain_points:
+- PP-02
+row: exception
+trigger:
+  'on': action_done
+  signal: uc01-call-arrives
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - investor
+  - call_no
+- kind: figure
+  id: call_fee_check
+  recipe: call_fee_check
+  as: fee
+  by:
+    fund: doc.fund
+    call_no: doc.call_no
+condition: not fee.fee_matches
+subject: '{doc.fund} call {doc.call_no} fee'
+severity: problem
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Approve the exception
+  - Send it back to the fund
+hold:
+  blocks: record_call
+  scope: '{doc.fund}'
+  until: the Head of Finance decides
+message: '{doc.fund} call {doc.call_no}: the fee on the notice is {fee.fee_on_notice:,.0f} against {fee.fee_per_terms:,.0f} per the fund terms ({fee.fee_difference:,.0f} difference). It needs the Head of Finance''s decision before it is recorded.'
+evidence:
+- fee

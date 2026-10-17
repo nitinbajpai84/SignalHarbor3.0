@@ -6,11 +6,11 @@ title: An allowance is due this month
 pain_points: [INT-LIQ, PP-01, INT-GOV]
 trigger: {on: figure_changed, figure: allowance_due}
 inputs:
-  - {kind: doc, fields: [member_name, month, scheduled, paid, owed, currency, entity, earlier]}
+  - {kind: doc, fields: [member_name, month, month_name, scheduled, paid, owed, currency, entity, earlier]}
 subject: "{doc.member_name} {doc.month}"
 condition: doc.owed > 0 and doc.earlier == 0
 severity: needs
 route_to: principal
 action: {verb: approve, options: [Approve, Change]}
-message: "{doc.member_name}: {doc.currency} {doc.owed:,.0f} due for {doc.month} from {doc.entity} (scheduled {doc.scheduled:,.0f}, paid {doc.paid:,.0f}). Approve?"
+message: "{doc.member_name}: {doc.currency} {doc.owed:,.0f} due for {doc.month_name} from {doc.entity} (scheduled {doc.scheduled:,.0f}, paid {doc.paid:,.0f}). Approve?"
 evidence: [doc.member_name, doc.scheduled, doc.paid, doc.owed]

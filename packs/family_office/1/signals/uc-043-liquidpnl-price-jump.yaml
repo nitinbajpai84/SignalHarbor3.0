@@ -1,4 +1,4 @@
-# SUGGESTION. uc-043 row 3, exception: a price that moved more than 10 percent in a day. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-043 row 3, exception: a price that moved more than 10 percent in a day (the 10 percent is the card's figure; no office rule for it is signed). Reads every move in the table, not only the largest. Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-043-liquidpnl-price-jump
 title: A price moved more than 10 percent in a day
@@ -10,13 +10,13 @@ inputs:
   recipe: liquid_price_move
   as: mv
   by: {top_move: true}
-condition: abs(mv.move_pct) > 10
-subject: '{mv.instrument} price {mv.position_date}'
+condition: mv.jump_count > 0
+subject: 'price jumps: {mv.jump_names}'
 severity: problem
 route_to: ops_clerk
 action:
   verb: record
   options: [Confirm the price, Correct the price]
 hold: {blocks: enter_price, scope: '{mv.instrument}', until: the price is confirmed or corrected}
-message: '{mv.instrument} moved {mv.move_pct:.2f} percent between {mv.previous_date} and {mv.position_date} ({mv.previous_price} to {mv.price}). It is held for review before it enters the liquid book figure.'
+message: '{mv.jump_count} price move(s) over 10 percent: {mv.jump_names}. The largest is {mv.instrument}, {mv.move_pct:.2f} percent between {mv.previous_date} and {mv.position_date} ({mv.previous_price:.4f} to {mv.price:.4f}). Confirm or correct the price before it enters the liquid book figure.'
 evidence: [mv]

@@ -16,10 +16,14 @@ inputs:
   - step
   - step_name
   - owner
-  - due_on
-  - days_past
+- kind: figure
+  id: close_items_done
+  as: c
+  by:
+    close_month: doc.close_month
+    step: doc.step
 subject: close {doc.close_month} step {doc.step}
-condition: doc.days_past > 0
+condition: c.late == 1 and c.open == 1
 severity: problem
 route_to: ops_lead
 action:
@@ -30,7 +34,7 @@ hold:
   blocks: sign_close
   scope: '{doc.close_month}'
   until: the step is done or its owner has been reminded
-message: Close {doc.close_month}, step {doc.step} '{doc.step_name}' (owner {doc.owner}) was due {doc.due_on} and is {doc.days_past} days past. The owner is named and needs a reminder.
+message: Close {doc.close_month}, step {doc.step} '{doc.step_name}' (owner {c.owner}) was due {c.due_on} and is {c.days_late} days past. The owner is named and needs a reminder.
 evidence:
-- doc.due_on
-- doc.days_past
+- c.due_on
+- c.days_late

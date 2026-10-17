@@ -1,0 +1,16 @@
+# SUGGESTION. Card 41, the exception no signed rule can answer: the policy signs no private-markets limit (or its figures cannot be converted), or the cash cannot be stated. The approve prompt is replaced by this one; the CIO decides how the missing test is treated, the system does not invent a limit.
+suggestion: true
+id: uc-041-commitappr-test-not-on-record
+title: A test of the new commitment is not on record
+pain_points: [INT-LIQ, INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: commit_check}
+inputs:
+  - {kind: doc, fields: [deal_name, currency, new_commitment, cash_status, budget_status]}
+subject: "{doc.deal_name}"
+condition: doc.budget_status == 'not set' or doc.budget_status == 'not stated' or doc.cash_status == 'not stated'
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Take it to the committee without that test, Wait until the limit is signed]}
+hold: {blocks: approve_commitment, scope: "{doc.deal_name}", until: the CIO decides how the missing test is treated}
+message: "{doc.deal_name}: commitment {doc.currency} {doc.new_commitment:,.0f}. The budget test is '{doc.budget_status}' (the signed policy sets no private-markets limit, or the amounts cannot be converted) and the cash test is '{doc.cash_status}'. There is no approve button until you decide how the missing test is treated."
+evidence: [doc.new_commitment, doc.budget_status, doc.cash_status]

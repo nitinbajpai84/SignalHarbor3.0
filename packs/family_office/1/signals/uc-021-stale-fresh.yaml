@@ -1,4 +1,4 @@
-# SUGGESTION. uc-021 row 2: a fresh statement arrives. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-021 row 2: a fresh statement arrives for a fund whose earlier value was more than 90 days old when it arrived. Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-021-stale-fresh
 title: A fresh statement takes a fund off the stale list
@@ -12,12 +12,12 @@ inputs:
   recipe: value_age_days
   as: age
   by: {fund: doc.fund}
-condition: not age.stale
+condition: not age.stale and age.was_stale
 subject: '{doc.fund} value dated {age.valuation_date}'
 severity: info
 route_to: risk_officer
 action:
   verb: see
   options: [Seen]
-message: '{doc.fund} now has a value dated {age.valuation_date}, {age.age_days} days old. It leaves the stale list.'
+message: '{doc.fund} now has a value dated {age.valuation_date}, {age.age_days} days old; the value before it was more than 90 days old when this one arrived. It leaves the stale list.'
 evidence: [doc.fund, age]

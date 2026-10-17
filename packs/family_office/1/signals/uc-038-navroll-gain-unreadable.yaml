@@ -1,0 +1,24 @@
+# SUGGESTION. uc-038 gap: the manager's gain line was not read, so the roll-forward cannot be checked. Silence here would look like a tie.
+suggestion: true
+id: uc-038-navroll-gain-unreadable
+title: The manager's gain line could not be read
+pain_points: [INT-PERF, INT-TRUST, PP-03]
+trigger: {on: file_arrived, kind: manager_statement}
+inputs:
+- kind: doc
+  fields: [fund]
+- kind: figure
+  id: nav_rollforward
+  recipe: nav_rollforward
+  as: rf
+  by: {fund: doc.fund, latest: true}
+condition: rf.gain_unreadable
+subject: '{doc.fund} gain line unreadable at {rf.period_end}'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: call_back
+  options: [Record the call to the manager]
+hold: {blocks: report_fund, scope: '{doc.fund}', until: the gain line is read or the manager confirms it}
+message: '{doc.fund}, {rf.period_start} to {rf.period_end}: the gain line of the statement was not read (or the statement carries two different figures), so prior value + calls - distributions cannot be checked against it. The flows alone leave {rf.implied_gain:,.0f}. The fund is held back from reports until the gain is confirmed.'
+evidence: [doc.fund, rf]

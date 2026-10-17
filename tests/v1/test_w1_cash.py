@@ -34,7 +34,7 @@ ORG, TS = "org-1", "2026-10-13 09:00:00+00"
 ENTITIES = {"EG-HOLD": "Evergreen Holdings", "EG-TRUST": "Evergreen Family Trust", "EG-B": "Entity B"}
 CARDS = ["uc-002-callrecord", "uc6-liquidity", "uc-004-callcheck", "uc-005-benefcheck", "uc-006-fxneed", "uc-008-payrun", "uc-010-bankexp", "uc-018-fundplan",
          "uc-028-interco", "uc6-uncalled", "uc-037-distrack"]
-BUILT = ["called_to_date", "call_fee_check", "calls_due", "cash_after_calls", "bank_details_changed", "fx_required", "payment_batch", "cash_by_bank",
+BUILT = ["called_to_date", "call_fee_check", "calls_due", "cash_after_calls", "bank_details_changed", "fx_required", "fx_rate_check", "call_payment_status", "payment_batch", "cash_by_bank",
          "funding_plan", "intercompany_balance", "distribution_gap"]
 
 
@@ -85,7 +85,7 @@ class Office:
     def __init__(self):
         self.con = duckdb.connect()
         self.con.execute(DDL.read_text(encoding="utf-8"))
-        self.n, self.cols = 0, {}
+        self.n, self.cols, self.names = 0, {}, {}
         self.ent, self.port, self.fund, self.cashi, self.commit, self.office_acct, self.payee = {}, {}, {}, {}, {}, {}, {}
         for code, name in ENTITIES.items():
             self.ent[code] = self.ins("legal_entities", entity_code=code, entity_name=name, base_currency="USD")
@@ -165,6 +165,7 @@ class Office:
             fund = re.search(r"Fund:\s*(.+)", t)[1].strip()
             call = "CAPITAL CALL NOTICE" in t
             entity = next(c for c, n in ENTITIES.items() if n in re.search(r"To:\s*(.+)", t)[1])
+            entity_name = ENTITIES[entity]
             amount = money(re.search(r"Amount to be paid (?:by|to) the investor\s+USD ([\d,\.]+)", t)[1])
             noticed = day(re.search(r"Date of notice:\s*(.+)", t)[1])
             due = day(re.search(r"Payment (?:due|value) date:\s*(.+)", t)[1])
@@ -177,6 +178,7 @@ class Office:
                 self.ins("extracted_fields", document_id=doc, field_name=name, value_numeric=v if isinstance(v, Decimal) else None, value_text=None if isinstance(v, Decimal) else str(v),
                          page_number=1, confidence="high", review_status="confirmed")
             if call:
+                self.ins("extracted_fields", document_id=doc, field_name="investor", value_text=entity_name, page_number=1, confidence="high", review_status="confirmed")
                 fee = re.search(r"Management fee \([\d.]+% of commitment\)\s+USD ([\d,\.]+)", t)
                 acct = re.search(r"Account:\s*(\S+)", t)[1]
                 if fee:  # "none in this call" has no fee line
@@ -198,6 +200,16 @@ class Office:
             r = csv_rows(p)[0]
             self.ins("market_observations", series_key="USD/SGD", observation_type="fx", observed_at=f"{r['Date']} 16:00:00+00", value=r["Rate (SGD per 1 USD)"], base_currency="USD",
                      quote_currency="SGD", quality_status="ok")
+        return self
+
+    # the bank's fx confirmations (pdf text) -> fx_confirmations; the trade reference is the one in the file name (the key's refs)
+    def fx_confirmations(self, pattern: str = "*/fx_confirmations/FXS-*_confirmation.pdf") -> "Office":
+        for p in files(pattern):
+            t = pdf_text(str(p))
+            sold, bought = re.search(r"Client sells:\s*([A-Z]{3}) ([\d,\.]+)", t), re.search(r"Client buys:\s*([A-Z]{3}) ([\d,\.]+)", t)
+            self.ins("fx_confirmations", trade_reference=p.name.split("_confirmation")[0], trade_date=re.search(r"Trade date:\s*(\S+)", t)[1], value_date=re.search(r"Value date:\s*(\S+)", t)[1],
+                     currency_bought=bought[1], amount_bought=money(bought[2]), currency_sold=sold[1], amount_sold=money(sold[2]), rate=re.search(r"Rate \(\w+ per \w+\):\s*([\d.]+)", t)[1],
+                     counterparty=t.splitlines()[0].title())
         return self
 
     # reference/standing_instructions.csv -> the payee account on file for each fund; reference/accounts.csv -> the office's own accounts
@@ -235,19 +247,34 @@ class Office:
             aid, _, code = self.office_acct[acct]
             for r in sheet(p, "Transactions"):
                 typ, desc, amt = r["Type"], r["Description"], r["Amount"]
+                sr = self.ins("source_records", source_batch_id="sb-1", external_record_id=r["Reference"], record_type="bank_line", raw_payload_uri=p.name, content_hash=r["Reference"],
+                              quality_status="ok")
                 if typ == "capital_call":
                     ending = re.search(r"ACCT (\d{4})", desc)[1]
                     fund = self.fund_of(desc)
                     name = next(n for n, i in self.fund.items() if i == fund)
                     self.ins("cash_movements", portfolio_id=self.port[code], instrument_id=fund, movement_type="payment", effective_date=r["Value date"], amount=amt, currency=r["Currency"],
-                             confirmation_status="confirmed", bank_account_id=self.payee[(name, ending)])
+                             confirmation_status="confirmed", bank_account_id=self.payee[(name, ending)], source_record_id=sr)
                 elif typ == "distribution":
                     self.ins("cash_movements", portfolio_id=self.port[code], instrument_id=self.fund_of(desc), movement_type="distribution", effective_date=r["Value date"], amount=amt,
-                             currency=r["Currency"], confirmation_status="confirmed", bank_account_id=aid)
+                             currency=r["Currency"], confirmation_status="confirmed", bank_account_id=aid, source_record_id=sr)
                 elif typ == "intercompany_transfer":
                     other = next(c for c, n in ENTITIES.items() if n == r["Counterparty"])
                     self.ins("cash_movements", portfolio_id=self.port[code], movement_type="transfer", effective_date=r["Value date"], amount=amt, currency=r["Currency"],
-                             confirmation_status="confirmed", bank_account_id=aid, counterparty_portfolio_id=self.port[other])
+                             confirmation_status="confirmed", bank_account_id=aid, counterparty_portfolio_id=self.port[other], source_record_id=sr)
+        return self
+
+    # the approvals file -> an approved approval on the sending side of the transfer whose bank reference it names
+    def approvals(self, pattern: str = "*/approvals/approvals_2026-08.csv") -> "Office":
+        for p in files(pattern):
+            for r in csv_rows(p):
+                if not r["approved_by"]:
+                    continue
+                hit = self.con.execute("select m.id from cash_movements as m join source_records as s on s.id = m.source_record_id where s.external_record_id = ? and m.amount < 0",
+                                       [r["payment_ref"]]).fetchone()
+                if hit:
+                    self.ins("approvals", cash_movement_id=hit[0], approval_type="payment_approval", requested_from_user_id=self.user[r["approved_by"]], decision_by_user_id=self.user[r["approved_by"]],
+                             status="approved", requested_at=TS, decided_at=f"{r['approved_on']} 09:00:00+00")
         return self
 
     # the payments waiting to be released on 13 Oct: three invoices and call 7 (the pdf text), with their approvals and holds
@@ -290,7 +317,7 @@ class Office:
         self.con.execute(f"drop table if exists t_{rid}")
         self.con.execute(R.render(r, f"t_{rid}"))
         cur = self.con.execute(f"select * from t_{rid}")
-        names = [d[0] for d in cur.description]
+        names = self.names[rid] = [d[0] for d in cur.description]
         return [dict(zip(names, row)) for row in cur.fetchall()]
 
 
@@ -342,9 +369,14 @@ def test_card_2_the_fee_part_of_call_7_matches_the_fund_terms_and_call_3_of_cred
     k, rows = key("uc-002-callrecord", 1), liquid.run("call_fee_check")
     c = one(rows, fund="Cedarpoint Ventures III", call_no=7)
     assert f2(c["fee_on_notice"]) == k["fee_on_notice"] and f2(c["fee_per_terms"]) == k["fee_per_terms"] and c["fee_matches"] is k["matches"]
-    g = one(rows, fund="Evergreen Credit III", call_no=3)  # M08: 28,125.00 charged, 18,750.00 per the terms
-    assert (f2(g["fee_on_notice"]), f2(g["fee_per_terms"]), f2(g["fee_difference"]), g["fee_matches"]) == (28125.0, 18750.0, 9375.0, False)
-    assert [r["call_no"] for r in rows if not r["fee_matches"]] == [3]
+    g = one(rows, fund="Evergreen Credit III", call_no=3)  # M08 (the manifest): the notice charges more than the terms; both numbers are read from the files, not typed
+    notice = pdf_text(str(files("*/notices/2026-06-10_G_call3.pdf")[0]))
+    charged = money(re.search(r"Management fee \([\d.]+% of commitment\)\s+USD ([\d,\.]+)", notice)[1])
+    pct = Decimal(next(r["fee_pct_of_commitment_per_billing"] for r in csv_rows(OFFICE / "reference" / "fund_terms.csv") if r["fund"] == "Evergreen Credit III"))
+    commitment = Decimal(str(next(r["Commitment"] for r in sheet(files("*/commitments/commitments_register_2026-10-13.xlsx")[0], "Register") if r["Fund"] == "Evergreen Credit III")))
+    per_terms = commitment * pct / 100
+    assert (f2(g["fee_on_notice"]), f2(g["fee_per_terms"]), f2(g["fee_difference"]), g["fee_matches"]) == (f2(charged), f2(per_terms), f2(charged - per_terms), False) and charged > per_terms
+    assert [r["call_no"] for r in rows if r["fee_matches"] is False] == [3] and all(r["fee_basis"] == "rate times commitment" for r in rows)
 
 
 def test_card_36_how_much_is_uncalled_across_the_commitments(liquid):
@@ -352,7 +384,11 @@ def test_card_36_how_much_is_uncalled_across_the_commitments(liquid):
     assert round(sum(float(r["unfunded_after_notice"]) for r in rows), 2) == k["uncalled_after_call_7"]
     assert round(sum(float(r["unfunded_before_notice"]) for r in rows), 2) == k["uncalled_register_13_oct_before_call_7_recorded"]
     assert {r["fund"]: f2(r["unfunded_after_notice"]) for r in rows} == k["by_fund"]
-    assert all(f2(r["called_after_notice"]) + f2(r["unfunded_after_notice"]) == f2(r["commitment"]) for r in rows)
+    for r in sheet(files("*/commitments/commitments_register_2026-10-13.xlsx")[0], "Register"):  # the register's own columns, fund by fund
+        if r["Fund"] is None:
+            continue
+        c = one(rows, fund=r["Fund"])
+        assert f2(c["unfunded_before_notice"]) == f2(Decimal(str(r["Commitment"])) - Decimal(str(r["Called to date"]))) and f2(c["noticed_not_recorded"]) == f2(r["Noticed, not yet recorded"] or 0)
 
 
 # ---- card 3: cash by entity (the existing recipe) and the calls due in 30 and 60 days ----------------------------------------------------
@@ -502,7 +538,7 @@ def test_card_28_the_trust_lent_holdings_600000_on_5_august_and_both_sides_agree
     r = rows[0]
     assert (r["lender"], r["borrower"], f2(r["balance_outstanding"])) == (k["lender"], k["borrower"], k["balance_outstanding"] * 1.0)
     assert str(r["first_transfer_date"]) == k["date"] == str(r["last_transfer_date"]) and r["sides_agree"] is True and r["unmatched_rows"] == 0
-    assert k["approval_recorded"] and k["amount"] == f2(r["balance_outstanding"])
+    assert k["amount"] == f2(r["balance_outstanding"])
 
 
 def test_card_28_a_transfer_with_no_row_on_the_other_side_is_flagged():
@@ -608,31 +644,44 @@ def test_every_signal_is_valid_for_the_engine_and_routes_to_a_role_of_the_team()
         assert used <= names, (sid, used - names)
 
 
-def test_the_columns_a_signal_reads_are_columns_of_the_recipe_it_names(liquid):
-    cols = {rid: set(R.recipe(rid)["columns"]) | set(liquid.run(rid)[0]) if liquid.run(rid) else set() for rid in ("called_to_date", "call_fee_check", "cash_after_calls", "funding_plan",
-                                                                                                              "fx_required", "calls_due")}
+def test_the_columns_a_signal_reads_are_columns_of_the_recipe_it_names():
+    empty = Office()
+    cols = {}
+    for rid in BUILT:
+        empty.run(rid)
+        cols[rid] = set(empty.names[rid])
     for sid, sig in SIGNALS.items():
         alias = {i["as"]: i["id"] for i in sig["inputs"] if i["kind"] == "figure"}
         text = " ".join([sig["condition"], sig["message"], *(sig.get("let") or {}).values(), *(str(i.get("by", "")) for i in sig["inputs"])])
+        by = {i["as"]: set(i.get("by") or {}) for i in sig["inputs"] if i["kind"] == "figure"}
         for a, rid in alias.items():
             if rid in cols:
-                for col in re.findall(rf"\b{a}\.(\w+)", text):
+                for col in re.findall(rf"{a}\.(\w+)", text):
                     assert col in cols[rid], (sid, a, col)
+                assert by[a] <= cols[rid], (sid, a, by[a] - cols[rid])  # the columns a signal picks its row by exist too
+
+
+CALL7 = {"fund": "Cedarpoint Ventures III", "investor": "Evergreen Holdings", "amount": 1250000, "currency": "USD", "call_no": 7, "due_date": "2026-10-23"}
 
 
 def test_signals_fire_on_call_7_with_the_numbers_of_the_answer_keys(liquid):
-    doc = {"fund": "Cedarpoint Ventures III", "investor": "Evergreen Holdings", "amount": 1250000, "currency": "USD", "call_no": 7, "due_date": "2026-10-23"}
+    doc = CALL7
     calls, fee = liquid.run("called_to_date"), liquid.run("call_fee_check")
     cac, plan, fx = liquid.run("cash_after_calls"), liquid.run("funding_plan"), liquid.run("fx_required")
     k2 = key("uc-002-callrecord")
     ok, msg = fire("uc-002-callrecord-recorded", doc, {"called_to_date": calls})
     assert ok and f"{k2['unfunded_after_call_7']:,}" in msg and f"{k2['called_after_call_7']:,}" in msg
-    ok, _ = fire("uc-002-callrecord-blocked", doc, {"called_to_date": calls, "call_fee_check": fee})
-    assert ok is False  # it fits and the fee matches: nothing is blocked
-    ok, msg = fire("uc-002-callrecord-blocked", {**doc, "amount": 4000001}, {"called_to_date": calls, "call_fee_check": fee})
-    assert ok and "1,250,000" not in msg and "4,000,001" in msg and "4,000,000" in msg
-    ok, msg = fire("uc-002-callrecord-blocked", {**doc, "fund": "Evergreen Credit III", "investor": "Entity B", "call_no": 3, "amount": 400000}, {"called_to_date": calls, "call_fee_check": fee})
-    assert ok and "28,125" in msg and "18,750" in msg  # M08: the fee part is off the fund terms
+    assert fire("uc-002-callrecord-blocked", doc, {"called_to_date": calls})[0] is False  # it fits: nothing is blocked
+    assert fire("uc-002-callrecord-fee-off", doc, {"call_fee_check": fee})[0] is False  # and the fee matches the terms
+    ok, msg = fire("uc-002-callrecord-blocked", {**doc, "amount": 4000001}, {"called_to_date": calls})
+    assert ok and "1,250,000" not in msg and "4,000,000" in msg
+    ok, _ = fire("uc-002-callrecord-blocked", {**doc, "currency": "SGD"}, {"called_to_date": calls})
+    assert ok  # a call in another currency than the commitment cannot be compared: it is not recorded without a decision
+    c3 = {**doc, "fund": "Evergreen Credit III", "investor": "Entity B", "call_no": 3, "amount": 100000}
+    g = one(fee, fund="Evergreen Credit III", call_no=3)
+    ok, msg = fire("uc-002-callrecord-fee-off", c3, {"call_fee_check": fee})  # M08: the fee part is off the fund terms
+    assert ok and f"{g['fee_on_notice']:,.0f}" in msg and f"{g['fee_per_terms']:,.0f}" in msg
+    assert fire("uc-002-callrecord-blocked", c3, {"called_to_date": calls})[0] is False  # the call itself fits; only the fee is off
     ok, msg = fire("uc6-liquidity-call-vs-cash", doc, {"cash_after_calls": cac})
     assert ok and "1,230,000" in msg and "1,250,000" in msg
     ok, msg = fire("uc-006-fxneed-release", doc, {"fx_required": fx})
@@ -645,14 +694,22 @@ def test_signals_fire_on_call_7_with_the_numbers_of_the_answer_keys(liquid):
     assert ok and "Entity B can lend 270,000" in msg
     assert fire("uc-028-interco-lender-short", doc, {"funding_plan": plan})[0] is False  # Entity B can cover the whole shortfall
     assert fire("uc-004-callcheck-no-source", doc, {"funding_plan": plan})[0] is False
-    ok, msg = fire("uc6-uncalled-adds-up", doc, {"called_to_date": calls})
-    assert ok is False
-    over = [{**r, "unfunded_after_notice": Decimal("-1000")} if r["fund"] == doc["fund"] else r for r in calls]
+    assert fire("uc6-uncalled-adds-up", doc, {"called_to_date": calls})[0] is False
+    over = [{**r, "called_before_notice": r["commitment"] + 1} if r["fund"] == doc["fund"] else r for r in calls]  # the register and the recorded calls say more is called than committed
     assert fire("uc6-uncalled-adds-up", doc, {"called_to_date": over})[0] is True
 
 
+def test_the_funding_signals_pick_their_call_by_fund_due_date_and_amount_so_a_second_open_call_of_the_fund_is_not_mixed_in(liquid):
+    plan = liquid.run("funding_plan")
+    twin = [{**r, "due_date": "2026-11-20", "call_amount": Decimal("300000.00"), "cover_after_calls": Decimal("1")} for r in plan if r["fund"] == CALL7["fund"]]
+    ok, msg = fire("uc-018-fundplan-plan", CALL7, {"funding_plan": plan + twin})
+    assert ok and "-270,000" in msg  # the 23 Oct call, not the 20 Nov one
+    with pytest.raises(SG.Missing):  # two rows that fit the same call cannot be told apart: skipped, never guessed
+        fire("uc-018-fundplan-plan", CALL7, {"funding_plan": plan + [r for r in plan if r["is_named"]]})
+
+
 def test_signals_that_say_no_source_or_partial_lender_fire_when_the_other_entities_cannot_cover(liquid):
-    doc = {"fund": "Cedarpoint Ventures III", "investor": "Evergreen Holdings", "amount": 1250000, "currency": "USD", "call_no": 7}
+    doc = CALL7
     plan = liquid.run("funding_plan")
     none = [{**r, "best_other_spare": Decimal("0")} if r["is_named"] else r for r in plan]
     part = [{**r, "best_other_spare": Decimal("100000")} if r["is_named"] else r for r in plan]
@@ -661,20 +718,51 @@ def test_signals_that_say_no_source_or_partial_lender_fire_when_the_other_entiti
     assert fire("uc-028-interco-offer", doc, {"funding_plan": part})[0] is False
 
 
-def test_the_approval_signal_reads_the_signed_rule_and_the_fx_signal_needs_a_signed_tolerance(liquid):
-    doc = {"fund": "Cedarpoint Ventures III", "investor": "Evergreen Holdings", "amount": 1250000, "currency": "USD", "call_no": 7}
+def test_the_approval_signal_reads_the_signed_rule_and_never_compares_two_currencies(liquid):
+    doc = CALL7
     rule = {"amount": 500000, "currency": "USD", "text": "Payments over 500,000 need the Head of Finance's approval"}
     ok, msg = fire("uc-004-callcheck-approval", doc, {}, {"payment_approval": rule})
     assert ok and "500,000" in msg and fire("uc-004-callcheck-approval", {**doc, "amount": 400000}, {}, {"payment_approval": rule})[0] is False
-    fx = liquid.run("fx_required")
-    conf = {"trade_reference": "FXS-20261022-HOLD", "currency_bought": "USD", "currency_sold": "SGD", "amount_sold": 361935, "rate": 1.3405}
+    ok, msg = fire("uc-004-callcheck-approval", {**doc, "amount": 400000, "currency": "SGD"}, {}, {"payment_approval": rule})
+    assert ok and "another currency" in msg  # a small SGD call is not waved through against a USD limit
+
+
+@pytest.fixture()
+def confs() -> Office:
+    return Office().fx_rates().fx_confirmations()
+
+
+def test_card_6_every_bank_conversion_is_checked_against_the_fixing_of_its_day_and_the_one_without_a_confirmation_is_found(confs):
+    k = key("uc-006-fxneed", 0)["conversions"]
+    rows = confs.run("fx_rate_check")
+    want = {c["ref"]: c for c in k if c["confirmation"]}
+    assert {r["trade_reference"] for r in rows} == set(want)
+    for r in rows:
+        c = want[r["trade_reference"]]
+        assert (f2(r["amount_bought"]), float(r["bank_rate"]), float(r["fixing"]), round(float(r["difference_pct"]), 4)) == (float(c["usd"]), c["rate"], c["fixing"], c["diff_pct"])
+        assert abs(r["difference_pct"]) < Decimal("0.1") and c["within_0_1_pct"]
+    bank = {line["Reference"] for p in files("*/bank_statements/*.xlsx") for line in sheet(p, "Transactions") if line["Type"] == "fx_conversion"}  # conversions the banks booked (the data)
+    assert bank - {r["trade_reference"] for r in rows} == set(key("uc-006-fxneed", 2)["refs"])  # M09: booked at the bank, no confirmation (a recipe needs a reference on the movement: build doc)
+
+
+def test_card_6_the_rate_signal_needs_a_signed_tolerance_and_fires_on_a_rate_away_from_the_fixing(confs):
     tol = {"pct": 0.1}
-    ok, _ = fire("uc-006-fxneed-confirmation-off", conf, {"fx_required": fx}, {"fx_plan_tolerance": tol})
-    assert ok is False  # 361,935 against 361,800 is 0.037 percent: inside the tolerance
-    ok, msg = fire("uc-006-fxneed-confirmation-off", {**conf, "amount_sold": 363000}, {"fx_required": fx}, {"fx_plan_tolerance": tol})
-    assert ok and "1,200" in msg
+    rows = confs.run("fx_rate_check")
+    first = rows[0]
+    doc = {"trade_reference": first["trade_reference"], "rate": first["bank_rate"]}
+    assert fire("uc-006-fxneed-confirmation-off", doc, {"fx_rate_check": rows}, {"fx_plan_tolerance": tol})[0] is False  # 0.037 percent: inside 0.1
+    confs.ins("fx_confirmations", trade_reference="FXS-TEST-OFF", trade_date="2026-04-16", currency_bought="USD", amount_bought=1000000, currency_sold="SGD", amount_sold=1342400, rate="1.3424",
+              counterparty="Harbour Bank (synthetic)")
+    rows = confs.run("fx_rate_check")
+    off = one(rows, trade_reference="FXS-TEST-OFF")
+    assert float(off["fixing"]) == 1.3369 and round(float(off["difference_pct"]), 3) == 0.411
+    ok, msg = fire("uc-006-fxneed-confirmation-off", {"trade_reference": "FXS-TEST-OFF", "rate": off["bank_rate"]}, {"fx_rate_check": rows}, {"fx_plan_tolerance": tol})
+    assert ok and "0.4114" in msg and "1.3369" in msg
     with pytest.raises(SG.Missing):  # no signed tolerance: skipped, never guessed
-        fire("uc-006-fxneed-confirmation-off", {**conf, "amount_sold": 363000}, {"fx_required": fx}, {})
+        fire("uc-006-fxneed-confirmation-off", {"trade_reference": "FXS-TEST-OFF", "rate": off["bank_rate"]}, {"fx_rate_check": rows}, {})
+    confs.ins("fx_confirmations", trade_reference="FXS-TEST-NOFIX", trade_date="2025-01-02", currency_bought="USD", amount_bought=1, currency_sold="SGD", amount_sold=1, rate="1.3", counterparty="x")
+    nofix = one(confs.run("fx_rate_check"), trade_reference="FXS-TEST-NOFIX")
+    assert nofix["fixing"] is None and nofix["difference_pct"] is None  # no fixing on that day: nothing is guessed from another day
 
 
 def test_the_bank_hold_signal_fires_for_call_7_only_while_no_call_back_is_recorded(payees):
@@ -719,6 +807,212 @@ def test_the_distribution_signals_log_the_notice_and_chase_the_missing_credit():
 def test_the_late_administrator_file_signal_fires_on_a_date_that_has_passed():
     ok, msg = fire("uc6-liquidity-cash-file-late", {"due_date": "2026-10-13", "days_past": 0}, {})
     assert ok and "2026-10-13" in msg
+
+
+# ---- wave 2: the cases the verifier named, built from the same office files with one thing changed each ----------------------------------------------
+
+def october() -> Office:
+    return Office().admin_cash().rules().commitments().fund_terms().notices().fx_rates()
+
+
+def add_call(o: Office, entity: str, fund: str, amount: float, due: str, status: str, currency: str = "USD") -> str:
+    return o.ins("cash_movements", portfolio_id=o.port[entity], instrument_id=o.fund[fund], movement_type="call", effective_date="2026-09-20", due_date=due, notice_kind="call",
+                 commitment_id=o.commit[fund], amount=-amount, currency=currency, confirmation_status=status)
+
+
+def test_a_noticed_call_already_past_its_due_date_is_still_unpaid_cash_and_a_recorded_one_past_due_is_paid():
+    o = october()
+    add_call(o, "EG-B", "Evergreen Credit III", 50000, "2026-09-30", "noticed")  # past due, never paid
+    add_call(o, "EG-B", "Evergreen Credit III", 70000, "2026-10-01", "confirmed")  # recorded and due before the cash date: the cash already shows it paid
+    due = one(o.run("calls_due"), entity="Entity B", currency="USD", window_days=30)
+    assert f2(due["calls_due"]) == 50000.0 and f2(due["overdue_amount"]) == 50000.0 and due["calls"] == 1
+    cac = one(o.run("cash_after_calls"), entity="Entity B", currency="USD")
+    k = key("uc-018-fundplan")["usd_cover_after_buffer_and_call"]["Entity B"]
+    assert f2(cac["calls_due"]) == 50000.0 and f2(cac["overdue_calls"]) == 50000.0 and f2(cac["cash_after_calls"]) == round(k - 50000, 2)
+    plan = o.run("funding_plan")
+    late = [r for r in plan if f2(r["call_amount"]) == 50000.0]
+    assert len(late) == 3 and one(late, entity="Entity B")["is_named"] is True and f2(one(late, entity="Entity B")["cover_after_calls"]) == round(k - 50000, 2)
+    assert R.tie_out(o.con, R.recipe("funding_plan"), "t_funding_plan")["ok"] and R.tie_out(o.con, R.recipe("calls_due"), "t_calls_due")["ok"]
+
+
+def test_an_entity_that_reports_cash_on_an_earlier_date_keeps_the_calls_due_between_its_date_and_the_latest_date():
+    o = october()
+    o.con.execute("delete from position_snapshots where position_date > '2026-10-09' and portfolio_id = ?", [o.port["EG-TRUST"]])
+    add_call(o, "EG-TRUST", "Evergreen Income II", 40000, "2026-10-10", "confirmed")  # after the Trust's last cash date, before the other entities'
+    cac = one(o.run("cash_after_calls"), entity="Evergreen Family Trust", currency="USD")
+    assert str(cac["as_of"]) == "2026-10-09" and f2(cac["calls_due"]) == 40000.0
+    due = one(o.run("calls_due"), entity="Evergreen Family Trust", currency="USD", window_days=30)
+    assert str(due["as_of"]) == "2026-10-09" and f2(due["calls_due"]) == 40000.0
+    assert str(one(o.run("calls_due"), entity="Entity B", currency="USD", window_days=30)["as_of"]) == "2026-10-13"
+    assert R.tie_out(o.con, R.recipe("calls_due"), "t_calls_due")["ok"]
+
+
+def test_a_signed_buffer_is_in_force_on_the_entitys_date_and_an_unsigned_one_leaves_the_figure_empty():
+    o = october()
+    o.con.execute("update rule_versions set effective_from = '2026-11-01' where business_rule_id in (select id from business_rules where rule_code = 'cash_buffer')")
+    rows = o.run("cash_after_calls")
+    assert all(r["buffer"] is None and r["cash_after_calls"] is None and r["shortfall"] is None for r in rows)  # not on record: never zero
+    assert o.run("fx_required") == [] and all(r["cover_after_calls"] is None for r in o.run("funding_plan")) and one(o.run("funding_plan"), is_named=True)["transfer_needed"] is None
+    sgd = one(october().run("cash_after_calls"), entity="Evergreen Holdings", currency="SGD")
+    assert sgd["buffer"] is None and sgd["cash_after_calls"] is None  # the signed buffer is in USD: no SGD buffer is invented
+
+
+def test_the_cash_of_an_entity_is_not_counted_twice_when_the_bank_balances_are_typed_as_cash():
+    o = Office().admin_cash().rules().commitments().notices().office_accounts().bank_balances().fx_rates()
+    k = key("uc6-liquidity", 0)
+    o.con.execute("update instruments set instrument_type = 'cash' where instrument_type = 'bank_balance'")  # a loader that types the bank balances as cash
+    day13 = [r for r in o.run("cash_by_entity") if str(r["position_date"]) == "2026-10-13"]
+    for name, v in k.items():
+        assert f2(one(day13, entity=name, currency="USD")["cash"]) == v["usd"] and f2(one(day13, entity=name, currency="SGD")["cash"]) == v["sgd"]
+    assert f2(one(o.run("cash_after_calls"), entity="Evergreen Holdings", currency="USD")["cash"]) == key("uc-004-callcheck")["holdings_usd"]
+    for rid in ("cash_by_entity", "cash_after_calls"):
+        assert R.tie_out(o.con, R.recipe(rid), f"t_{rid}")["ok"]
+
+
+def test_a_call_in_another_currency_than_the_commitment_is_counted_and_never_added():
+    o = october()
+    add_call(o, "EG-HOLD", "Evergreen Growth I", 9000, "2026-11-01", "noticed", currency="SGD")
+    g = one(o.run("called_to_date"), fund="Evergreen Growth I")
+    assert g["calls_in_other_currency"] == 1 and g["notice_fits"] is False and f2(g["noticed_not_recorded"]) == 0.0
+    assert R.tie_out(o.con, R.recipe("called_to_date"), "t_called_to_date")["ok"]
+
+
+def test_the_fee_is_checked_against_the_investor_the_notice_names_and_not_at_all_when_two_investors_hold_the_fund():
+    o = Office().commitments().fund_terms().notices()
+    o.ins("commitments", legal_entity_id=o.ent["EG-B"], instrument_id=o.fund["Cedarpoint Ventures III"], commitment_amount=5000000, currency="USD", committed_on="2026-01-01",
+          called_to_date=0, called_as_at="2026-10-13", source_record_id=None)
+    c7 = one(o.run("call_fee_check"), fund="Cedarpoint Ventures III", call_no=7)
+    assert c7["fee_matches"] is True and c7["investor"] == "Evergreen Holdings" and f2(c7["commitment"]) == key("uc-002-callrecord")["commitment"]  # the notice names the Holdings
+    o.con.execute("delete from extracted_fields where field_name = 'investor'")
+    c7 = one(o.run("call_fee_check"), fund="Cedarpoint Ventures III", call_no=7)
+    assert c7["fee_matches"] is None and c7["fee_per_terms"] is None and c7["fee_basis"] == "investor not named on the notice"
+    o.con.execute("delete from documents where document_type = 'fund_terms'")
+    assert one(o.run("call_fee_check"), fund="Cedarpoint Ventures III", call_no=7)["fee_basis"] == "fee rate not on record"
+    with pytest.raises(SG.Missing):  # a fee that cannot be checked is skipped with the reason, never called a match or a miss
+        fire("uc-002-callrecord-fee-off", CALL7, {"call_fee_check": o.run("call_fee_check")})
+
+
+# ---- card 8 ---------------------------------------------------------------------------------------------------------------------------------
+
+def test_a_payment_to_a_changed_unverified_account_is_not_ready_even_when_no_approval_is_open():
+    o = Office().commitments().notices().payee_accounts().payments()
+    o.con.execute("delete from approvals where approval_type = 'payment_approval'")
+    c = one(o.run("payment_batch"), payee="Cedarpoint Ventures III")
+    assert c["state"] == "hold: account changed, no call-back" and c["release_blocked"] is True and c["blocked_by"] == "account changed, no call-back"
+    rows = o.run("payment_batch")
+    usd = [r for r in rows if r["currency"] == "USD"]
+    assert {f2(r["batch_total_in_currency"]) for r in usd} == {f2(sum(r["amount"] for r in usd))}
+    assert {f2(r["releasable_total_in_currency"]) for r in usd} == {16234.5}  # only the administrator's invoice is free to release; held and changed-account payments are not in it
+    assert [r["blocked_by"] for r in rows if r["payee"] == "Anchorage Custody (synthetic)"] == ["invoice above fee schedule, 1,030 over"]
+
+
+def test_the_payment_window_is_the_signed_rule_and_without_one_every_expected_payment_is_listed_unwindowed():
+    o = Office().commitments().notices().payee_accounts().payments()
+    assert all(r["in_window"] is None and r["window_days"] is None for r in o.run("payment_batch"))
+    rid = o.ins("business_rules", rule_code="payment_run_window_days", rule_type="policy", owner_user_id=o.user["Daniel Foo"])
+    o.ins("rule_versions", business_rule_id=rid, version_number=1, definition_text="Payment run covers the next 5 days", parameters=json.dumps({"days": 5}), effective_from="2026-04-01",
+          approval_status="approved")
+    rows = o.run("payment_batch")
+    assert {r["payee"]: r["in_window"] for r in rows} == {"Summit Tax Advisory": True, "Harbourline Fund Services (synthetic)": False, "Anchorage Custody (synthetic)": False,
+                                                          "Cedarpoint Ventures III": False}  # 13 Oct + 5 days = 18 Oct: only the Summit invoice (due 14 Oct)
+
+
+# ---- card 10 ---------------------------------------------------------------------------------------------------------------------------------
+
+def test_an_account_with_no_rate_to_usd_makes_the_bank_figure_empty_and_holds_it_instead_of_leaving_the_account_out():
+    o = Office().office_accounts().bank_balances()  # no fx rates at all
+    rows = o.run("cash_by_bank")
+    assert all(r["usd_equivalent"] is None and r["share_pct"] is None and r["unconverted_accounts"] > 0 for r in rows)
+    assert "no rate to USD" in R.needs(o.con, R.recipe("cash_by_bank"))
+    assert R.needs(Office().office_accounts().bank_balances().fx_rates().con, R.recipe("cash_by_bank")) is None
+
+
+def test_two_banks_over_their_signed_limits_are_both_ranked_and_counted():
+    o = Office().office_accounts().bank_balances().fx_rates()
+    for bank in ("harbour_bank_synthetic", "tidewater_commercial_bank_synthetic"):
+        rid = o.ins("business_rules", rule_code=f"bank_limit_{bank}", rule_type="policy", owner_user_id=o.user["Daniel Foo"])
+        o.ins("rule_versions", business_rule_id=rid, version_number=1, definition_text="limit", parameters=json.dumps({"max_pct": 10}), effective_from="2026-10-01", approval_status="approved")
+    rows = o.run("cash_by_bank")
+    assert sorted(r["worst"] for r in rows) == [1, 2] and {r["banks_over_limit"] for r in rows} == {2} and one(rows, worst=1)["bank"].startswith("Harbour")
+    ok, msg = fire("uc-010-bankexp-over-limit", {}, {"cash_by_bank": rows})
+    assert ok and "Banks over their limit: 2" in msg
+
+
+# ---- card 28 -----------------------------------------------------------------------------------------------------------------------------------
+
+def test_card_28_the_reference_and_the_approval_come_from_the_rows_and_the_approvals_file():
+    k = key("uc-028-interco")
+    o = Office().commitments().payee_accounts().office_accounts().bank_lines("*/bank_statements/HB_[HT]*_USD_2026-08.xlsx").approvals()
+    r = o.run("intercompany_balance")[0]
+    row = next(x for x in csv_rows(files("*/approvals/approvals_2026-08.csv")[0]) if x["payment_ref"] == k["reference"])
+    assert r["reference"] == k["reference"] and r["approvals_recorded"] == 1 and r["approved_by"] == row["approved_by"] and f2(row["amount_usd"]) == f2(r["balance_outstanding"])
+
+
+def test_card_28_a_repayment_recorded_by_the_borrower_only_still_reduces_the_balance_and_is_flagged():
+    o = Office().commitments().payee_accounts().office_accounts().bank_lines("*/bank_statements/HB_[HT]*_USD_2026-08.xlsx")
+    o.ins("cash_movements", portfolio_id=o.port["EG-HOLD"], movement_type="transfer", effective_date="2026-09-01", amount=-100000, currency="USD", confirmation_status="confirmed",
+          counterparty_portfolio_id=o.port["EG-TRUST"])
+    r = o.run("intercompany_balance")[0]
+    assert (r["lender"], f2(r["balance_outstanding"]), r["sides_agree"], r["unmatched_rows"]) == ("Evergreen Family Trust", 500000.0, False, 1)
+    o.ins("cash_movements", portfolio_id=o.port["EG-TRUST"], movement_type="transfer", effective_date="2026-09-02", amount=100000, currency="USD", confirmation_status="confirmed",
+          counterparty_portfolio_id=o.port["EG-HOLD"])  # the Trust books it a day later: one repayment, not two
+    r = o.run("intercompany_balance")[0]
+    assert f2(r["balance_outstanding"]) == 500000.0 and r["unmatched_rows"] == 0 and r["date_differs"] == 1 and r["sides_agree"] is False
+    ok, msg = fire("uc-028-interco-one-sided", {}, {"intercompany_balance": [r]})
+    assert ok and "on another date" in msg
+
+
+# ---- card 37 -----------------------------------------------------------------------------------------------------------------------------------
+
+def distributions() -> Office:
+    return Office().commitments().notices().office_accounts().payee_accounts().bank_lines("*/bank_statements/HB_*_USD_2026-0[4-9].xlsx")
+
+
+def test_card_37_a_credit_a_day_late_is_still_the_credit_of_the_notice_and_a_reversal_takes_money_back():
+    o = distributions()
+    base = {r["fund"]: r for r in o.run("distribution_gap")}
+    o.con.execute("update cash_movements set effective_date = effective_date + 1 where movement_type = 'distribution' and confirmation_status = 'confirmed' and instrument_id = ?",
+                  [o.fund["Evergreen Growth I"]])
+    late = one(o.run("distribution_gap"), fund="Evergreen Growth I")
+    assert (f2(late["received"]), f2(late["gap"]), late["status"]) == (f2(base["Evergreen Growth I"]["received"]), f2(base["Evergreen Growth I"]["gap"]), "short")
+    o.ins("cash_movements", portfolio_id=o.port["EG-HOLD"], instrument_id=o.fund["Evergreen Income II"], movement_type="distribution", effective_date="2026-07-16", amount=-20000, currency="USD",
+          confirmation_status="confirmed", bank_account_id=next(iter(o.office_acct.values()))[0])  # a reversal of part of the July distribution
+    rev = one(o.run("distribution_gap"), fund="Evergreen Income II", pay_date="2026-07-15")
+    assert (f2(rev["received"]), f2(rev["gap"]), rev["status"]) == (100000.0, 20000.0, "short")
+
+
+def test_card_37_more_money_than_the_notice_is_over_not_short_and_a_notice_with_no_recorded_movement_is_still_tracked():
+    o = distributions()
+    o.ins("cash_movements", portfolio_id=o.port["EG-HOLD"], instrument_id=o.fund["Evergreen Income II"], movement_type="distribution", effective_date="2026-04-15", amount=5000, currency="USD",
+          confirmation_status="confirmed", bank_account_id=next(iter(o.office_acct.values()))[0])
+    over = one(o.run("distribution_gap"), fund="Evergreen Income II", pay_date="2026-04-15")
+    assert (f2(over["received"]), f2(over["gap"]), over["status"]) == (125000.0, -5000.0, "over")
+    n = len(o.run("distribution_gap"))
+    o.con.execute("delete from cash_movements where movement_type = 'distribution' and confirmation_status = 'noticed' and instrument_id = ?", [o.fund["Evergreen Credit III"]])
+    rows = o.run("distribution_gap")
+    c = one(rows, fund="Evergreen Credit III")
+    assert len(rows) == n and c["recorded"] is False and f2(c["notice_amount"]) == 55000.0 and c["status"] == "received"  # the notice document alone keeps the row
+    assert R.tie_out(o.con, R.recipe("distribution_gap"), "t_distribution_gap")["ok"]
+    o.con.execute("delete from cash_movements where movement_type = 'distribution' and confirmation_status = 'confirmed' and instrument_id = ?", [o.fund["Evergreen Credit III"]])
+    c = one(o.run("distribution_gap"), fund="Evergreen Credit III")
+    assert (c["status"], f2(c["gap"])) == ("no credit", 55000.0)  # and with no credit either the whole amount is the gap
+
+
+def test_card_6_a_call_is_paid_when_the_bank_shows_the_exact_amount_on_its_due_date_and_call_7_is_not_due():
+    k = key("uc-006-fxneed", 1)["calls_due_to_date"]
+    o = Office().commitments().notices().office_accounts().payee_accounts().bank_lines("*/bank_statements/*_USD_2026-0[4-9].xlsx")
+    rows = o.run("call_payment_status")
+    keyed = {r["Fund key"]: r["Fund"] for r in sheet(files("*/commitments/commitments_register_2026-10-13.xlsx")[0], "Register") if r["Fund"]}
+    for c in k:
+        letter = c["call"].split("-")[1]
+        hit = [r for r in rows if r["fund"] == keyed[letter] and r["due_date"] == c["due"] and f2(r["amount"]) == float(c["amount"])]
+        assert len(hit) == 1 and (hit[0]["status"] == "paid") is c["paid"], c
+    seven = one(rows, fund="Cedarpoint Ventures III", due_date="2026-10-23")
+    assert seven["status"] == "not due" and seven["payments_found"] == 0
+    assert [r for r in rows if r["status"] == "not paid"] == []
+    o.con.execute("delete from cash_movements where movement_type = 'payment' and instrument_id = ?", [o.fund["Cedarpoint Ventures III"]])  # the bank shows nothing for Cedarpoint III
+    assert sorted(r["due_date"] for r in o.run("call_payment_status") if r["status"] == "not paid" and r["fund"] == "Cedarpoint Ventures III") == ["2026-04-21", "2026-07-21"]
+    assert R.tie_out(o.con, R.recipe("call_payment_status"), "t_call_payment_status")["ok"]
 
 
 # ---- persona builds -------------------------------------------------------------------------------------------------------------------------

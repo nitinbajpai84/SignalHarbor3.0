@@ -1,0 +1,21 @@
+# SUGGESTION. uc-021 gap: the latest value of a fund is a manager estimate. It is aged as recorded, so it can look fresh; this asks for the final. Whether an estimate may stand is the office's decision.
+suggestion: true
+id: uc-021-stale-estimate-only
+title: A fund's latest value is only an estimate
+pain_points: [INT-TRUST, INT-RISK, PP-04]
+trigger: {on: figure_changed, figure: value_age_days}
+inputs:
+- kind: figure
+  id: value_age_days
+  recipe: value_age_days
+  as: age
+  by: {first_row: true}
+condition: age.estimate_count > 0
+subject: 'estimate values at {age.as_of}: {age.estimate_names}'
+severity: needs
+route_to: risk_officer
+action:
+  verb: record
+  options: [Ask the manager for the final statement]
+message: '{age.estimate_count} fund value(s) rest on a manager estimate, not a final statement: {age.estimate_names}. Their age is counted from the estimate date; ask the manager for the final?'
+evidence: [age]

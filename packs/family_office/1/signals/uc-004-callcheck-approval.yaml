@@ -19,7 +19,7 @@ inputs:
 - kind: rule
   id: payment_approval
   as: limit
-condition: doc.amount > limit.amount
+condition: doc.currency != limit.currency or doc.amount > limit.amount
 subject: '{doc.fund} call {doc.call_no}'
 severity: needs
 route_to: cfo
@@ -27,7 +27,7 @@ action:
   verb: approve
   options:
   - Approve
-message: '{doc.fund} call {doc.call_no} is {doc.amount:,.0f}, over {limit.amount:,.0f}. Office rule: {limit.text} Your name and the time go on the record.'
+message: '{doc.fund} call {doc.call_no} is {doc.currency} {doc.amount:,.0f}, over the {limit.currency} {limit.amount:,.0f} limit (or in another currency than the limit, which cannot be compared). Office rule: {limit.text} Your name and the time go on the record.'
 evidence:
 - doc.amount
 - limit

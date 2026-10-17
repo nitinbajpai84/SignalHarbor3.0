@@ -1,0 +1,21 @@
+# SUGGESTION. uc-017 gap: a facility whose terms state no limit has no headroom, so the covenant check cannot run. This asks for the limit; it never guesses one.
+suggestion: true
+id: uc-017-liab-no-limit-on-record
+title: A facility has no limit on record
+pain_points: [INT-SCOPE, PP-01, INT-LIQ]
+trigger: {on: file_arrived, kind: loan_statement}
+inputs:
+- kind: figure
+  id: facility_headroom
+  recipe: facility_headroom
+  as: fac
+  by: {first_row: true}
+condition: fac.facilities_without_limit > 0
+subject: 'no limit on record: {fac.no_limit_facilities}'
+severity: needs
+route_to: cfo
+action:
+  verb: record
+  options: [Record the limit and covenant line from the loan agreement]
+message: '{fac.facilities_without_limit} facility(ies) state no limit and no covenant line in the data: {fac.no_limit_facilities}. The headroom check cannot run for them until the limit and the line are recorded.'
+evidence: [fac]

@@ -1,7 +1,7 @@
 # W1 build: Invest domain (cards 7, 25, 34, 35, 39, 40, 41, 49)
 
 Files: `packs/family_office/1/recipes/invest.yaml`, `packs/family_office/1/signals/<card id>-*.yaml` (19), `packs/family_office/1/builds/invest.yaml` (7 builds), `tests/v1/test_w1_invest.py`.
-Test: `pytest tests/v1/test_w1_invest.py` gives **30 passed, 0 failed** (about 55 s). Every number a recipe is asserted against comes from `answer_keys.yaml`.
+Test: `pytest tests/v1/test_w1_invest.py` gives **37 passed, 0 failed** (about 70 s) after the second pass (wave 2 fixes below). Every number a recipe is asserted against comes from `answer_keys.yaml`; the one that is not in the key (card 49, the 9,375 above terms, M08) is worked out in the test from the notices and fund terms files and checked against the MANIFEST.
 
 ## How the test proves the recipes
 The test builds a small DuckDB from the warehouse DDL (`docs/v2/evidence-to-action-mvp.duckdb.sql`) and loads the office6m files into it (xlsx with openpyxl, PDF text with pypdf).
@@ -55,3 +55,36 @@ Notes on how each answers the key:
 5. **Signal wiring**: `figure_changed` events must pass each row of the figure as `doc` (the pattern the office builder's signals use). Signals skip, never guess, when a field is empty (for example the budget room with no signed limit).
 6. **Distributions completeness** is not checked in `fund_irr_tvpi` (only calls, against the statements' cumulative called): the statements' per-period distributions are not loaded.
 7. **Existing tests that fail because of other builders' work, not this domain** (they fail the same with the original invest.yaml): `tests/v1/test_v3_recipes.py` (4: `renewals_vendors` and `invoice_variance` lack `never_read`; the signal library and recipe-name tests assume the old small lists) and `tests/v1/test_v3_signals.py` (3: the library is now 130+ signals, not five).
+
+
+## Wave 2: answers to the verifier (docs/v3/w1/verify-invest.md)
+
+Changes in the recipes: every amount that crosses currencies is converted to USD at the latest `fx_fixing` (units per USD) on or before the register or position date, and a missing fixing gives an empty figure plus `conversion_gaps`, never a guess. A call noticed or paid on or after the register's as-at date is "since the register"; one received before it is in the register's `called_to_date`. A rule is the latest approved version in force.
+
+| card | verifier row | result |
+|---|---|---|
+| 49 | no fund terms: excess silently 0 | fixed. `fee_drag` counts `fee_rows_without_terms`; with any, `expected_fees` and `fees_above_terms` are empty, not 0. Terms are used only when the latest, unsuperseded fund terms document has a `fee_basis` on the commitment (no rule invented). New exception signal `uc-049-feedrag-no-terms` (needs, Fund Accountant, hold on accepting the fee). Tests `test_card49_missing_terms_are_not_zero_excess` (no rate, and a basis that is not the commitment). |
+| 41 | approve fires when budget "not set" | fixed. `uc-041-commitappr-tests` needs cash covered, budget `within` a signed limit and class not `over`. New `uc-041-commitappr-test-not-on-record` (needs, CIO, hold on approval) fires when the budget is not set or not stated, or cash is not stated; it fires on the office data, because the policy signs no limit. |
+| 41 | cosign has no gate | fixed. Same three conditions repeated in `uc-041-commitappr-cosign`; it is quiet on the office data (cash short, no budget). |
+| 7, 34, 41 | budget per currency, no conversion | fixed. One USD figure: net worth at the latest position date, converted; commitments converted. Test `test_budget_converts_commitments_in_another_currency` and the budget tests now use a net worth that includes the SGD accounts at the key's cash figure (6,156,041.41). `private_markets_budget` is one row; "USD" is the reporting currency (all entities' base currency in the data). |
+| 41 | commit_check takes only the deal's currency | fixed. Uncalled and committed of all commitments in every currency, in USD. Test `test_card41_commitments_in_another_currency...`. Also the cash now uses each cash account's latest snapshot with `cash_oldest_on`, not only the newest date. |
+| 41 | non-USD deal dropped silently | fixed. The deal is converted; with no fixing the status is `not stated` and the not-on-record signal fires. |
+| 7 | noticed calls counted with no date filter | fixed. A noticed or confirmed call counts when it was received on or after the register's as-at date; one before is in the register's figure. A call that goes from noticed to confirmed stays counted once (it used to drop out, because the confirmed test was "after" the as-at date). Test `test_card7_a_call_is_counted_once_whatever_its_state_and_month`. Same logic in `fund_irr_tvpi`, `fee_drag`, `mandate_fit`, `memo_support`, `commit_check`. |
+| 40 | memo_support lists superseded questionnaires | fixed. Same supersedes filter as `ddq_compare`; test `test_card40_and_card35_agree_when_a_questionnaire_is_replaced`. |
+| 25 | manager_timeline shows a superseded statement | kept on purpose and marked. The answer key counts nine items including the original 7,050,000 statement and the amended 7,012,500 one, because both arrived. New column `replaced_on` says the first was replaced on 20 Aug; the test asserts it. The count of nine stays. |
+| 39 | distributions are not reconciled to the bank credit | partly fixed. A distribution that is noticed, due by the register date and not confirmed by a bank credit makes `irr_status` incomplete (`distributions_not_received`; test added; signal `uc-039-irr-incomplete` wording covers it). Not done: comparing a credit with the notice amount (M19, 275,000 against 262,500, is a known short pay by withholding, not a missing credit) and the statements' per-period distributions; the loader does not read those yet (needs the platform loader). |
+| 39 | label says "since we invested" | fixed in the build title, the person's request and the recipe formula: the IRR is from the first value on file. |
+| 49 | fee share signal skipped when the share is null | fixed. Column `fee_drag_text` always states the share or says why it is not stated; `uc-049-feedrag-share` fires for all four managers (the two with a loss say "not stated"). |
+| 49 | test asserts 9,375, which is not in the key | fixed. The test works the excess out from the notices and the fund terms files for every manager and compares with the recipe; the MANIFEST (M08) is checked for 9,375. |
+| 41 | 24-month need not in ASSUMPTIONS.md | not fixed here: ASSUMPTIONS.md is outside my files. `need_basis` now says in the figure that it is an assumption of the answer key and that no signed pacing rule is on record. To add by the orchestrator: A-row "24-month cash need = all uncalled commitments, no pacing rule signed" and the rule parameter name `max_pct`. |
+| 35 | no peer comparison | not fixed. The office data holds one manager's questionnaires (Cedarpoint 2025 and 2026), so there is nothing to compare with; needs other managers' questionnaires and the platform loader. The signal text already says the comparison is against the manager's earlier answers. |
+| 35 | build check "12" and "14" too short | fixed. The check now expects the eight question names and the answers (820 million ...). |
+| 40 | build check "5" too short | fixed. The check expects "Cedarpoint Ventures III" and "amended" instead; the count of 5 is asserted in the test and the key. |
+| 40 | raw field names in messages | fixed. New column `figure_label` (plain words), used in the messages and subjects. |
+| 40 | info signal fires about 40 times | fixed. `uc-040-icmemo-figure-source` now fires only for a latest value that comes from an amended statement (2 rows on the office data). |
+| 34 | "linked to the existing fund page" | fixed. The message says nothing is linked automatically. |
+| 34 | plain words ("ticket", "uncalled", "venture", IRR/TVPI/DPI) | partly fixed. Messages say "minimum commitment" and "still be asked to pay in"; the IRR/TVPI/DPI dashboard text is explained. The asset class value comes from the data and is shown as it is. |
+| test | tautology on measure columns | fixed. It now asserts the measure is a described column. |
+
+New in the recipes beyond the rows: `mandate_fit` and `commit_check` read `market_observations` (fixing); `commit_check` also states the class test; the rules are the latest approved version in force (not the largest `max_pct` of several).
+Not done, noted: a card 41 class test gives `not set` on this office (no class limit signed), so it never blocks.

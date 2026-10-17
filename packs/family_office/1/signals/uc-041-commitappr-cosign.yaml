@@ -1,13 +1,13 @@
-# SUGGESTION. Card 41 row 2: after the CIO approves, the Principal gets one page with the tests and signs.
+# SUGGESTION. Card 41 row 2: after the CIO approves, the Principal gets one page with the tests and signs. The gate of the tests signal is repeated: no page when the cash is short or not stated, or the budget is not within a signed limit.
 suggestion: true
 id: uc-041-commitappr-cosign
 title: The Principal co-signs a commitment
 pain_points: [INT-LIQ, INT-RISK, INT-GOV]
 trigger: {on: action_done, signal: uc-041-commitappr-tests}
 inputs:
-  - {kind: doc, fields: [deal_name, currency, new_commitment, cash_status, budget_status]}
+  - {kind: doc, fields: [deal_name, currency, new_commitment, cash_status, budget_status, class_status]}
 subject: "{doc.deal_name}"
-condition: doc.new_commitment > 0
+condition: doc.new_commitment > 0 and doc.cash_status == 'covered' and doc.budget_status == 'within' and doc.class_status != 'over'
 severity: needs
 route_to: principal
 action: {verb: approve, options: [Sign]}

@@ -1,4 +1,4 @@
-# SUGGESTION. uc-013 row 2: the owner supplies the class, allocation and limits recompute. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-013 row 2: the owner supplies the class and the identifier. Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-013-secgaps-completed
 title: Every holding has a class and an identifier
@@ -11,11 +11,11 @@ inputs:
   as: gap
   by: {first_row: true}
 condition: gap.gap_count == 0
-subject: identifier gaps closed at {gap.net_worth}
+subject: 'identifier gaps closed at {gap.as_of_max}'
 severity: info
 route_to: head_of_data
 action:
   verb: see
   options: [Seen]
-message: Every instrument now has an asset class and an approved identifier. Allocation and limits recompute.
+message: Every instrument held has an asset class and an approved identifier ({gap.currency} {gap.net_worth:,.0f} held, positions dated {gap.as_of_min} to {gap.as_of_max}).
 evidence: [gap]

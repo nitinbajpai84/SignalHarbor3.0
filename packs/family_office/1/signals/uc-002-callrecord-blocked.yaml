@@ -1,7 +1,7 @@
-# SUGGESTION. Call larger than what is left, or fee off the terms. Card uc-002-callrecord, W1 cash builder (docs/v3/w1/build-cash.md).
+# SUGGESTION. Call larger than what is left (or in another currency than the commitment). Card uc-002-callrecord, W1 cash builder (docs/v3/w1/build-cash.md). The fee part is its own signal, uc-002-callrecord-fee-off.
 suggestion: true
 id: uc-002-callrecord-blocked
-title: Call larger than what is left, or fee off the terms
+title: Call larger than what is left
 pain_points:
 - PP-02
 row: exception
@@ -22,14 +22,8 @@ inputs:
   as: calls
   by:
     fund: doc.fund
-- kind: figure
-  id: call_fee_check
-  recipe: call_fee_check
-  as: fee
-  by:
-    fund: doc.fund
-    call_no: doc.call_no
-condition: doc.amount > calls.unfunded_before_notice or not fee.fee_matches
+    investor: doc.investor
+condition: doc.currency != calls.currency or doc.amount > calls.unfunded_before_notice
 subject: '{doc.fund} call {doc.call_no}'
 severity: problem
 route_to: cfo
@@ -42,8 +36,7 @@ hold:
   blocks: record_call
   scope: '{doc.fund}'
   until: the Head of Finance decides
-message: '{doc.fund} call {doc.call_no} ({doc.amount:,.0f}) cannot be recorded as it stands: {calls.unfunded_before_notice:,.0f} was left before it, and the fee on the notice is {fee.fee_on_notice:,.0f} against {fee.fee_per_terms:,.0f} per the fund terms.'
+message: '{doc.fund} call {doc.call_no} ({doc.currency} {doc.amount:,.0f}) is more than the commitment can take in {calls.currency}: {calls.unfunded_before_notice:,.0f} was left before it. It needs the Head of Finance''s decision before it is recorded.'
 evidence:
 - calls
-- fee
 - doc.amount

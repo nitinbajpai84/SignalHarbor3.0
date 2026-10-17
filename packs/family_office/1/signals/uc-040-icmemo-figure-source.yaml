@@ -1,15 +1,15 @@
-# SUGGESTION. Card 40 row 2: every figure the memo cites carries its source beside it.
+# SUGGESTION. Card 40 row 2: the memo may cite a value that rests on an amended statement; it is shown with the statement it comes from so the memo says it is amended. Every figure carries its source in the figure itself (the build shows them); this signal is for the one that needs a word in the memo, not for all of them.
 suggestion: true
 id: uc-040-icmemo-figure-source
-title: A memo figure and its source
+title: The memo cites a value from an amended statement
 pain_points: [INT-OPS, PP-07, INT-RISK]
 trigger: {on: figure_changed, figure: memo_support}
 inputs:
-  - {kind: doc, fields: [fund, figure, value, source, traced]}
-subject: "{doc.fund} {doc.figure}"
-condition: doc.traced == 1
+  - {kind: doc, fields: [fund, figure, figure_label, value, detail, source, traced]}
+subject: "{doc.fund} {doc.figure_label}"
+condition: doc.figure == 'latest_value' and doc.traced == 1 and doc.detail == 'amended'
 severity: info
 route_to: cio
 action: {verb: see, options: [Open the source]}
-message: "{doc.fund}: {doc.figure} {doc.value:,.0f} comes from {doc.source}."
-evidence: [doc.value, doc.source]
+message: "{doc.fund}: the latest value {doc.value:,.0f} comes from {doc.source}, an amended statement. Say in the memo that it was amended."
+evidence: [doc.value, doc.source, doc.detail]

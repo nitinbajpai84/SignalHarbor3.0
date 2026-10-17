@@ -1,18 +1,18 @@
 # SUGGESTION. Card 15 row 2: the allowance was approved and the entity cash covers it after the buffer, so the payment goes to Finance to release.
-# Exclusive with uc-015-allowances-cash-short (the same test the other way round).
+# The cash test uses entity_owed (everything the entity owes in the currency), so approvals one by one cannot together break the buffer. Exclusive with uc-015-allowances-cash-short (the same test the other way round).
 suggestion: true
 id: uc-015-allowances-approved
 title: Approved allowance goes to Finance to release
 pain_points: [INT-LIQ, PP-01, INT-GOV]
 trigger: {on: action_done, signal: uc-015-allowances-due}
 inputs:
-  - {kind: doc, fields: [member_name, month, owed, currency, entity]}
+  - {kind: doc, fields: [member_name, month, month_name, owed, entity_owed, currency, entity]}
   - {kind: figure, id: cash_by_entity, recipe: cash_by_entity, as: cash, by: {entity: doc.entity, currency: doc.currency}}
   - {kind: rule, id: cash_buffer, as: buffer}
 subject: "{doc.member_name} {doc.month} payment"
-condition: doc.owed + buffer.amount <= cash.cash
+condition: doc.entity_owed + buffer.amount <= cash.cash
 severity: needs
 route_to: cfo
 action: {verb: approve, options: [Release]}
-message: "{doc.member_name}: {doc.currency} {doc.owed:,.0f} for {doc.month} approved by the Principal. {doc.entity} holds {cash.cash:,.0f}, enough after the {buffer.amount:,.0f} buffer. Release?"
-evidence: [doc.member_name, doc.owed, cash, buffer]
+message: "{doc.member_name}: {doc.currency} {doc.owed:,.0f} for {doc.month_name} approved by the Principal. {doc.entity} holds {cash.cash:,.0f}, enough for all {doc.entity_owed:,.0f} of allowances owed and the {buffer.amount:,.0f} buffer. Release?"
+evidence: [doc.member_name, doc.owed, doc.entity_owed, cash, buffer]

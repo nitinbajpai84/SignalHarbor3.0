@@ -15,7 +15,6 @@ inputs:
   - fund
   - period_end
   - due_date
-  - days_past
 - kind: figure
   id: statement_timeliness
   as: s
@@ -23,14 +22,14 @@ inputs:
     statement_of: doc.fund
     period_end: doc.period_end
 subject: '{doc.fund} statement {doc.period_end}'
-condition: s.status == 'missing' and doc.days_past > 0
+condition: s.status == 'missing' and s.business_days_overdue > 0
 severity: needs
 route_to: fund_accountant
 action:
   verb: approve
   options:
   - Send the chase draft
-message: '{s.statement_of}: the statement for {s.period_end} was due {s.due_date} and has not come, {s.business_days_overdue} business days overdue. A chase draft is ready; you send it.'
+message: '{s.statement_of}: the {s.kind} for {s.period_end} was due {s.due_date} and has not come, {s.business_days_overdue} business days overdue. A chase draft is ready; you send it.'
 evidence:
 - s
 - doc.due_date

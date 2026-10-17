@@ -36,14 +36,14 @@ roles:
         files: ["office6m:*/ddq/cedarpoint_ddq_2025.pdf", "office6m:*/ddq/cedarpoint_ddq_2026.pdf"]
         skills: ["intent.read-company-doc", "data.read-pdf-fields", "consume.answer-question"]
         dashboard: "Consume: questionnaire answers side by side by manager, changed answers marked"
-        check: {ask: "Which answers differ between the Cedarpoint 2025 and 2026 questionnaires?", expect: ["12", "14", "820 million", "910 million", "Two named partners", "Three named partners", "2.0% of commitment", "2.25% of commitment", "R. Okafor", "T. Lindqvist"]}
+        check: {ask: "Which answers differ between the Cedarpoint 2025 and 2026 questionnaires?", expect: ["Number of investment professionals", "Assets under management (USD)", "Key person provision", "Management fee", "Chief operating officer", "820 million", "910 million", "Two named partners", "Three named partners", "2.0% of commitment", "2.25% of commitment", "R. Okafor", "T. Lindqvist"]}
 
       - id: uc-039-irr
-        title: "Return of each private fund since we invested"
-        say: "Each quarter I want to see what we have made on each private fund since we first held it: IRR, TVPI and DPI from the capital calls, the distributions and the latest value in the manager statements. Put the funds in order of IRR so I can show Raj which earned their place and which to stop adding to. If a fund is missing a call or a distribution, say so and show the IRR as incomplete rather than a number."
+        title: "Return of each private fund since the first value on file"
+        say: "Each quarter I want to see what we have made on each private fund since the first value we have on file: IRR, TVPI and DPI from the capital calls, the distributions and the latest value in the manager statements. Put the funds in order of IRR so I can show Raj which earned their place and which to stop adding to. If a fund is missing a call or a distribution, say so and show the IRR as incomplete rather than a number."
         files: ["office6m:*/manager_statements/*_final.pdf", "office6m:*/manager_statements/*_amended.pdf", "office6m:*/notices/*_call*.pdf", "office6m:*/notices/*_distribution.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/bank_statements/*_USD_*.xlsx"]
         skills: ["build.write-formula-table", "data.read-pdf-fields", "data.match-identity", "check.adds-up", "consume.answer-question"]
-        dashboard: "Consume: league table of private funds by IRR with TVPI and DPI"
+        dashboard: "Consume: league table of private funds by IRR (yearly return), with TVPI (value now plus cash back, per dollar paid in) and DPI (cash back only, per dollar paid in)"
         check: {ask: "Which funds earned their place and which should we stop adding to?", expect: ["23.24", "32.74", "-40.54", "-2.83", "-9.32", "9.83", "17.28", "-24.85", "0.9282", "0.9222", "1.3792", "1.0168", "2.4875", "1.2833", "1.125", "0.9042"]}
 
       - id: uc-040-icmemo
@@ -52,7 +52,7 @@ roles:
         files: ["office6m:*/ddq/cedarpoint_ddq_2025.pdf", "office6m:*/ddq/cedarpoint_ddq_2026.pdf", "office6m:*/manager_statements/cedarpoint_C_*.pdf", "office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/2026-10-13_C_call7.pdf"]
         skills: ["intent.read-company-doc", "data.read-pdf-fields", "check.against-source", "consume.explain-number", "consume.answer-question"]
         dashboard: "Action: memo figures with their sources, untraced figures struck out"
-        check: {ask: "What figures support recommending the Cedarpoint Ventures III commitment?", expect: ["10,000,000", "7,250,000", "2,750,000", "8,275,000", "350,000", "5"]}
+        check: {ask: "What figures support recommending the Cedarpoint Ventures III commitment?", expect: ["10,000,000", "7,250,000", "2,750,000", "8,275,000", "350,000", "Cedarpoint Ventures III", "amended"]}
 
   - id: fund_accountant
     builds:

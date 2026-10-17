@@ -10,12 +10,12 @@ inputs:
   recipe: liquid_pnl_mtd
   as: pnl
   by: {first_row: true}
-condition: pnl.value_month_end > 0
-subject: 'liquid book to {pnl.position_date}: {pnl.gain_loss}'
+condition: pnl.total_value_month_end > 0
+subject: 'liquid books to {pnl.position_date}: {pnl.total_gain_loss:,.0f}'
 severity: info
 route_to: cio
 action:
   verb: see
   options: [Seen]
-message: 'The liquid book is {pnl.gain_loss:,.0f} ({pnl.gain_pct:.2f} percent) since {pnl.month_end_date}: {pnl.value_today:,.0f} now, {pnl.value_month_end:,.0f} then, net trades {pnl.net_trades:,.0f}.'
+message: 'The {pnl.books} listed book(s) together are {pnl.total_gain_loss:,.0f} ({pnl.total_gain_pct:.2f} percent) since {pnl.month_end_date}: {pnl.total_value_today:,.0f} now, {pnl.total_value_month_end:,.0f} then, net trades {pnl.total_net_trades:,.0f}. {pnl.books_without_start} book(s) have no month-end value and are left out of the gain.'
 evidence: [pnl]

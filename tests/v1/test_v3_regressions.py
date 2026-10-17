@@ -372,7 +372,7 @@ def test_a_one_word_recipe_name_is_the_figure_only_when_it_is_the_whole_name():
     from sh_platform.v1 import v3_recipes as R
     ids = {n: (R.match({"name": n}) or {}).get("id") for n in ["Distributions incoming cash", "Cash after calls by entity", "Net break in USD", "Cash",
                                                                 "Cash by entity", "Available cash by entity", "NAV", "Cash balance per entity"]}
-    assert ids == {"Distributions incoming cash": None, "Cash after calls by entity": None, "Net break in USD": None, "Cash": "cash_by_entity",
+    assert ids == {"Distributions incoming cash": None, "Cash after calls by entity": "cash_after_calls", "Net break in USD": None, "Cash": "cash_by_entity",
                    "Cash by entity": "cash_by_entity", "Available cash by entity": "cash_by_entity", "NAV": "net_worth", "Cash balance per entity": "cash_by_entity"}
     assert R.match({"name": "How much cash does Entity B hold?"}, strict=False)["id"] == "cash_by_entity"  # a question's words still find it
 

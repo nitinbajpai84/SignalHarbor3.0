@@ -11,11 +11,11 @@ inputs:
   as: gap
   by: {first_row: true}
 condition: gap.gap_count > 0
-subject: 'identifier gaps: {gap.gap_count} instruments, {gap.gap_value_total}'
+subject: 'identifier gaps: {gap.gap_count} instruments, {gap.gap_value_total:,.0f}'
 severity: needs
 route_to: head_of_data
 action:
   verb: record
   options: [Ask the owner of the security master]
-message: '{gap.gap_count} instrument(s) have no asset class or no approved identifier, {gap.currency} {gap.gap_value_total:,.0f} held in them ({gap.gap_pct_of_net_worth:.2f} percent of what is held). Ask the owner of the security master to complete it?'
+message: '{gap.gap_count} instrument(s) held have no asset class or no approved identifier, {gap.currency} {gap.gap_value_total:,.0f} held in them ({gap.gap_pct_of_net_worth:.2f} percent of what is held; positions dated {gap.as_of_min} to {gap.as_of_max}). Ask the owner of the security master to complete it?'
 evidence: [gap]

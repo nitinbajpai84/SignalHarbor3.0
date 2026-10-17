@@ -1,0 +1,16 @@
+# SUGGESTION. Card 30: the renewal date has passed and the contract is still active, so its next renewal date was never entered. Exclusive with the other card 30 signals.
+suggestion: true
+id: uc-030-vendors-renewal-passed
+title: A contract's renewal date passed and no next date is on file
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: figure_changed, figure: renewals_vendors}
+inputs:
+  - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date, days_to_renewal]}
+let: {ago: 0 - doc.days_to_renewal}
+subject: "{doc.vendor_name} {doc.next_renewal_date} renewal passed"
+condition: doc.days_to_renewal < 0
+severity: needs
+route_to: hr_admin
+action: {verb: record, options: [Record the next renewal date]}
+message: "{doc.vendor_name}: the renewal date {doc.next_renewal_date} passed {ago:,.0f} days ago and the contract is still active ({doc.currency} {doc.annual_cost:,.0f} a year). Record the next renewal date from the renewed contract."
+evidence: [doc.vendor_name, doc.next_renewal_date]

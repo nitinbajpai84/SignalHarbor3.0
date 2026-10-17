@@ -275,6 +275,19 @@ def test_card1_notices_open_match_the_key(office):
     assert office.tie("notices_open")["ok"]
 
 
+def test_card1_a_reviewer_correction_wins_and_a_second_copy_is_counted():
+    o = Office()
+    ins = o.inst("Cedarpoint Ventures III")
+    o.doc("capital_call_notice", "n7.pdf", "2026-10-13", instrument=ins, fields=[("call_no", "7", 7, None, 1), ("amount", None, Decimal("1250000"), "USD", 1),
+                                                                                  ("management_fee", None, Decimal("350000"), "USD", 1), ("new_investments", None, Decimal("900000"), "USD", 1)])
+    o.con.execute("update extracted_fields set corrected_value_text = '1,300,000' where field_name = 'amount'")
+    o.doc("capital_call_notice", "n7-again.pdf", "2026-10-14", instrument=ins, fields=[("call_no", "7", 7, None, 1), ("amount", None, Decimal("1250000"), "USD", 1)])
+    rows = o.build("call_notice_fields")
+    assert len(rows) == 1 and rows[0]["amount"] == Decimal("1300000") and rows[0]["copies"] == 2
+    o.con.execute("update extracted_fields set corrected_value_text = 'about 1.3m' where field_name = 'amount' and corrected_value_text is not null")
+    assert o.build("call_notice_fields")[0]["amount"] is None  # a correction that is not a number is not read as the old figure
+
+
 # ---- card 11: uc10-pipeline (recipe net_worth, hold.yaml) -------------------------------------------------------------------------------------
 
 def test_card11_net_worth_by_portfolio_matches_the_key(office):
@@ -282,7 +295,9 @@ def test_card11_net_worth_by_portfolio_matches_the_key(office):
     r = R.recipe("net_worth")
     office.con.execute("drop table if exists gold_nw")
     office.con.execute(R.render(r, "gold_nw", ["portfolio"]))
-    got = {x["portfolio"]: x["net_worth"] for x in office.rows("select * from gold_nw")}
+    rows = office.rows("select * from gold_nw")
+    got = {x["portfolio"]: x["net_worth"] for x in rows}
+    assert len(rows) == len(got)  # one row per portfolio: a second currency would show here, not be hidden by the dict
     assert got == {k: Decimal(v) for k, v in exp["net_worth_by_portfolio"].items()} and got["EG-LIQUID"] == exp["evergreen_liquid"]
     assert R.tie_out(office.con, r, "gold_nw")["ok"]
     f = next(OFFICE.glob("*/administrator_nav/administrator_export_2026-09.xlsx"))
@@ -326,8 +341,24 @@ def test_card16_renamed_column_is_found_and_the_old_name_counted():
     assert (r["old_name"], r["new_name"], r["change"], r["target_field"]) == (exp["old_name"], exp["new_name"], "renamed", "position_snapshots.source_market_value")
     assert exp["file"] == "administrator_export_2026-06.xlsx" and headers("2026-06")[5] == exp["new_name"]
     # the key says 5; the fixture has six packs (March, April, May, July, August, September) that keep the old name: reported under Needs
-    assert r["batches_on_old_name"] == on_old == 6
+    assert r["batches_on_old_name"] == on_old  # counted from the files, not typed
+    assert on_old == 6 != exp["months_with_old_name"]  # the key says 5; the files say 6 (the key generator is wrong; see build-operate.md)
     assert o.tie("columns_changed")["ok"]
+
+
+def test_card16_two_sources_with_the_same_sheet_name_are_counted_apart():
+    o = Office()
+    for code, n_batches in (("administrator", 3), ("custodian", 1)):
+        sysid = o.put("source_systems", source_code=code, source_name=code, source_type=code)
+        v1 = o.put("sheet_mappings", source_system_id=sysid, file_pattern="x_*.xlsx", sheet_name="Positions", header_row=1, version_number=1, mapping_status="approved")
+        o.put("sheet_mapping_columns", sheet_mapping_id=v1, source_column="Market Value", target_table="position_snapshots", target_field="source_market_value")
+        for i in range(n_batches):
+            o.put("source_batches", source_system_id=sysid, batch_reference=f"{code}{i}", received_at=ts("2026-05-31"), sheet_mapping_id=v1)
+        if code == "administrator":
+            v2 = o.put("sheet_mappings", source_system_id=sysid, file_pattern="x_*.xlsx", sheet_name="Positions", header_row=1, version_number=2, mapping_status="proposed")
+            o.put("sheet_mapping_columns", sheet_mapping_id=v2, source_column="Value (USD)", target_table="position_snapshots", target_field="source_market_value")
+    rows = o.build("columns_changed")
+    assert len(rows) == 1 and rows[0]["batches_on_old_name"] == 3  # not the custodian's batch, not the first mapping of any source
 
 
 # ---- card 19: uc3-statements-inbox ----------------------------------------------------------------------------------------------------------
@@ -348,6 +379,15 @@ def test_card19_missing_late_and_bank_statements_match_the_key(office):
                    for x in q["Bank statements late or missing"]["expected"]["rows"])
     assert bank == keyed
     assert office.tie("statement_timeliness")["ok"]
+
+
+def test_card19_a_statement_with_no_period_date_is_not_matched_to_the_month_it_arrived_in():
+    o = Office()
+    acct = o.inst("HB-X-USD", "cash")
+    o.put("expected_statements", instrument_id=acct, period_end=date(2026, 5, 31), due_date=date(2026, 6, 2))
+    o.doc("bank_statement", "no period date", "2026-06-16", instrument=acct)  # arrives in June, says nothing about its period
+    r = o.build("statement_timeliness")[0]
+    assert (r["status"], r["received_on"]) == ("missing", None)  # not 'on time' for May, and June is not credited either
 
 
 # ---- card 22: uc-022-amendlog ---------------------------------------------------------------------------------------------------------------
@@ -390,7 +430,7 @@ def load_cash(o: Office) -> None:
     interest are on the bank side only), so the difference to the bank is the desk's timing difference."""
     accts = {r["account_id"]: r for r in csv.DictReader((OFFICE / "reference" / "accounts.csv").open(encoding="utf-8"))}
     ent_code = {n: k for k, n in ENT.items()}
-    bank, first, items, seen = {}, {}, {}, {}
+    bank, first, items, seen, per_acct = {}, {}, {}, {}, []
     for f in sorted(OFFICE.glob("*/bank_statements/*.xlsx")):
         acc = re.match(r"([A-Z]+_[A-Z]+_[A-Z]{3})_", f.name).group(1).replace("_", "-")
         key = (ent_code[accts[acc]["entity"]], accts[acc]["currency"])
@@ -398,6 +438,7 @@ def load_cash(o: Office) -> None:
         for r in list(wb["Daily balances"].iter_rows(values_only=True))[1:]:
             bank[key + (r[0],)] = bank.get(key + (r[0],), 0) + Decimal(str(r[5]))
             seen[key + (r[0],)] = seen.get(key + (r[0],), 0) + 1
+            per_acct.append((acc, key, r[0], Decimal(str(r[5]))))
             if acc not in first or r[0] < first[acc][0]:
                 first[acc] = (r[0], key, Decimal(str(r[3])))
         for r in list(wb["Transactions"].iter_rows(values_only=True))[1:]:
@@ -420,12 +461,16 @@ def load_cash(o: Office) -> None:
         per_key[k] = per_key.get(k, 0) + 1
     for (e, c, d), v in sorted(bank.items()):
         if seen[(e, c, d)] < per_key[(e, c)]:
-            continue  # an account's statement is missing that month (M02b): the bank total is not the bank's cash, so no break can be called
-        desk = v + sum(a for dd, a in moves.get((e, c), []) if dd <= d) - sum(a for dd, a in items.get((e, c), []) if dd <= d)
-        for stype, value in (("bank", v), ("administrator", admin.get((e, c, d))), ("oms", desk)):
+            desk = None  # an account's statement is missing that day (M02b): the desk balance cannot be derived from a partial bank total; the recipe must not call a break
+        else:
+            desk = v + sum(a for dd, a in moves.get((e, c), []) if dd <= d) - sum(a for dd, a in items.get((e, c), []) if dd <= d)
+        for stype, value in (("administrator", admin.get((e, c, d))), ("oms", desk)):
             if value is not None:
                 o.put("position_snapshots", source_record_id=o.record(stype, stype)[1], portfolio_id=o.portfolio(f"{e}-CASH", e), instrument_id=o.inst(f"Cash {c} {e}", "cash", c),
                       position_date=d, as_of_at=ts(d), received_at=ts(d), recorded_at=ts(d), currency=c, data_status="Final", source_market_value=value)
+    for acc, (e, c), d, v in per_acct:  # the bank statement per account, as the bank sends it
+        o.put("position_snapshots", source_record_id=o.record("bank", "bank")[1], portfolio_id=o.portfolio(f"{e}-CASH", e), instrument_id=o.inst(f"Cash {acc}", "cash", c),
+              position_date=d, as_of_at=ts(d), received_at=ts(d), recorded_at=ts(d), currency=c, data_status="Final", source_market_value=v)
     owner = o.put("users", external_identity_id="head-of-finance", display_name="Head of Finance", email="head.of.finance@evergreen.example.test")
     rule = o.put("business_rules", rule_code="cash_tolerance", rule_type="tolerance", owner_user_id=owner)
     o.put("rule_versions", business_rule_id=rule, version_number=1, definition_text="Daily cash may differ by up to 5,000 per entity before it is a break",
@@ -436,18 +481,45 @@ def test_card27_cash_breaks_match_the_key():
     q = KEYS["uc2-recon-break-desk"]["questions"]
     o = Office()
     load_cash(o)
-    rows = [r for r in o.build("cash_difference_by_source") if r["currency"] == "USD"]
+    allrows = o.build("cash_difference_by_source")
+    rows = [r for r in allrows if r["bank_complete"]]  # complete bank days only; the incomplete ones are checked below, not dropped silently
     e8 = q["Which entity has a cash break on 8 October and by how much?"]["expected"]
     b = next(r for r in rows if r["entity"] == e8["entity"] and str(r["day"]) == e8["date"] and r["source"] == "administrator")
     assert (b["bank_cash"], b["other_cash"], b["cash_break"]) == (Decimal(e8["bank"]), Decimal(e8["administrator"]), Decimal(e8["difference"]))
     ex = q["All breaks over the 5,000 tolerance, and those inside it"]["expected"]
     src = {"admin": "administrator", "oms": "desk"}
-    over = sorted((str(r["day"]), r["entity"], r["source"], r["bank_cash"], r["other_cash"], r["cash_break"]) for r in rows if r["over_tolerance"])
+    over = sorted((str(r["day"]), r["entity"], r["source"], r["bank_cash"], r["other_cash"], r["cash_break"]) for r in rows if r["over_tolerance"] == 1)
     want_over = sorted((x["date"], x["entity"], src[x["source"]], Decimal(str(x["bank"])), Decimal(str(x["other"])), Decimal(str(x["difference"]))) for x in ex["over_tolerance"])
-    inside = sorted((str(r["day"]), r["entity"], r["source"], r["cash_break"]) for r in rows if not r["over_tolerance"])
+    inside = sorted((str(r["day"]), r["entity"], r["source"], r["cash_break"]) for r in rows if r["over_tolerance"] == 0)
     want_in = sorted((x["date"], x["entity"], src[x["source"]], Decimal(str(x["difference"]))) for x in ex["inside_tolerance"])
     assert over == want_over and inside == want_in
+    assert all(r["over_tolerance"] is not None for r in rows)
+    # a day with an account's bank statement missing is listed, with no break and no tolerance verdict (no false break)
+    gap = [r for r in allrows if not r["bank_complete"]]
+    assert gap and all(r["cash_break"] is None and r["over_tolerance"] is None for r in gap)
+    assert {(r["entity"], r["currency"], r["day"].strftime("%Y-%m")) for r in gap} == {("Entity B", "USD", "2026-07")}  # TCB-B-USD July is the missing statement (M02b)
     assert o.tie("cash_difference_by_source")["ok"]
+
+
+def test_card27_each_currency_has_its_own_tolerance():
+    o = Office()
+    load_cash(o)
+    p = o.portfolio("EG-B-CASH", "EG-B")
+    day_ = date(2026, 10, 14)
+    for stype, v in (("bank", 100000), ("administrator", 106000)):
+        o.put("position_snapshots", source_record_id=o.record(stype, stype)[1], portfolio_id=p, instrument_id=o.inst("Cash JPY test", "cash", "JPY"), position_date=day_,
+              as_of_at=ts(day_), received_at=ts(day_), recorded_at=ts(day_), currency="JPY", data_status="Final", source_market_value=v)
+    jpy = lambda: [r for r in o.build("cash_difference_by_source") if r["currency"] == "JPY" and str(r["day"]) == "2026-10-14"]  # noqa: E731
+    r = jpy()[0]  # the USD rule of 5,000 is not applied to JPY: no JPY rule is signed, so the verdict is empty
+    assert (r["cash_break"], r["tolerance"], r["over_tolerance"]) == (Decimal("6000"), None, None)
+    owner = o.con.execute("select owner_user_id from business_rules").fetchone()[0]
+    rule = o.put("business_rules", rule_code="cash_tolerance_jpy", rule_type="tolerance", owner_user_id=owner)
+    o.put("rule_versions", business_rule_id=rule, version_number=1, definition_text="JPY cash may differ by 7,000", parameters=json.dumps({"limit": 7000, "currency": "JPY"}),
+          effective_from="2026-04-01", approval_status="approved")
+    r = jpy()[0]
+    assert (r["tolerance"], r["over_tolerance"]) == (Decimal("7000"), 0)
+    usd = [r for r in o.build("cash_difference_by_source") if r["currency"] == "USD" and r["bank_complete"]]
+    assert {r["tolerance"] for r in usd} == {Decimal("5000")}
 
 
 def test_card27_without_a_signed_tolerance_the_figure_is_held():
@@ -465,19 +537,30 @@ def load_close(o: Office) -> None:
         users.setdefault(r["owner"], o.put("users", external_identity_id=r["owner"], display_name=r["owner"], email=r["owner"].replace(" ", ".").lower() + "@evergreen.example.test"))
         o.put("exceptions", exception_type="close_item", title=r["name"], description=f"{r['month']} close, step {r['step']}", detected_at=ts(month_end(r["month"])),
               owner_user_id=users[r["owner"]], due_at=ts(r["due_on"], "23:59:00"), resolved_at=ts(r["done_on"]) if r["done_on"] else None, status="resolved" if r["done_on"] else "open")
-    o.doc("capital_call_notice", "latest file received", "2026-10-13")  # the latest date the office received anything: 13 October
 
 
 def test_card29_close_items_match_the_key():
     exp = KEYS["uc-029-closeck"]["questions"]["Whether the close is complete and the report can start"]["expected"]
     o = Office()
+    load_statements(o)  # the received log: the latest date any document came in is 13 October
     load_close(o)
+    assert str(o.con.execute("select cast(max(received_at) as date) from documents").fetchone()[0]) == "2026-10-13"
     rows = o.build("close_items_done")
     assert len(rows) == exp["steps"] and sum(r["done"] for r in rows) == exp["done"]
     assert sorted(r["step_name"] for r in rows if r["open"]) == sorted(exp["open"])
     assert sorted(r["step_name"] for r in rows if r["late"]) == sorted(exp["late"])
     assert {r["close_month"] for r in rows} == {"2026-09"}
     assert o.tie("close_items_done")["ok"]
+
+
+def test_card29_a_step_without_the_description_convention_is_kept_and_the_tie_out_says_so():
+    o = Office()
+    load_close(o)
+    o.put("exceptions", exception_type="close_item", title="Extra step", description="please do this", detected_at=ts("2026-09-30"), due_at=ts("2026-10-05", "23:59:00"))
+    rows = o.build("close_items_done")
+    extra = [r for r in rows if r["step_name"] == "Extra step"]
+    assert len(extra) == 1 and extra[0]["close_month"] == "not stated" and extra[0]["step"] is None  # kept in the list, not dropped and not an error
+    assert not o.tie("close_items_done")["ok"]
 
 
 # ---- recipes: shape ---------------------------------------------------------------------------------------------------------------------------
@@ -555,4 +638,5 @@ def test_builds_are_new_cards_only_and_expect_numbers_from_the_key():
             plain = re.sub(r"(\d)(?=(\d{3})+$)", r"\1,", "")
             for e in b["check"]["expect"]:
                 assert e.replace(",", "") in blob, (b["id"], e)
+                assert len(e.replace(",", "")) > 2, (b["id"], e, "too short to prove anything")
     assert sorted(ids) == sorted(["uc-001-noticelog", "uc-016-schemadrift", "uc-022-amendlog", "uc-026-stmtadmin", "uc-029-closeck"])

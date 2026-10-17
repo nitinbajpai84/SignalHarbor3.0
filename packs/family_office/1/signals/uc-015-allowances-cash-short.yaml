@@ -1,19 +1,19 @@
-# SUGGESTION. Card 15 row 3, the exception: the entity cash cannot cover the allowance after the signed buffer, so the payment is held with the shortfall.
+# SUGGESTION. Card 15 row 3, the exception: the entity cash cannot cover the allowance after the signed buffer, so the payment is held with the shortfall. The test uses entity_owed (all allowances the entity owes in the currency).
 suggestion: true
 id: uc-015-allowances-cash-short
 title: Entity cash cannot cover the allowance after the buffer
 pain_points: [INT-LIQ, PP-01]
 trigger: {on: action_done, signal: uc-015-allowances-due}
 inputs:
-  - {kind: doc, fields: [member_name, month, owed, currency, entity]}
+  - {kind: doc, fields: [member_name, month, month_name, owed, entity_owed, currency, entity]}
   - {kind: figure, id: cash_by_entity, recipe: cash_by_entity, as: cash, by: {entity: doc.entity, currency: doc.currency}}
   - {kind: rule, id: cash_buffer, as: buffer}
-let: {short: doc.owed + buffer.amount - cash.cash}
+let: {short: doc.entity_owed + buffer.amount - cash.cash}
 subject: "{doc.member_name} {doc.month} payment"
 condition: short > 0
 severity: problem
 route_to: cfo
 action: {verb: approve, options: [Fund from another entity, Pay later, Release anyway]}
 hold: {blocks: prepare_payment, scope: "{doc.entity}", until: the Head of Finance decides how the allowance is funded}
-message: "{doc.entity} holds {doc.currency} {cash.cash:,.0f}. Paying {doc.member_name} {doc.owed:,.0f} for {doc.month} would leave it {short:,.0f} below the {buffer.amount:,.0f} buffer. The payment is held."
-evidence: [doc.member_name, doc.owed, cash, buffer]
+message: "{doc.entity} holds {doc.currency} {cash.cash:,.0f} and owes {doc.entity_owed:,.0f} of allowances, {doc.member_name}'s {doc.owed:,.0f} for {doc.month_name} among them. Paying them all would leave it {short:,.0f} below the {buffer.amount:,.0f} buffer. The payment is held."
+evidence: [doc.member_name, doc.owed, doc.entity_owed, cash, buffer]

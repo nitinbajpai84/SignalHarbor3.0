@@ -1,0 +1,16 @@
+# SUGGESTION. Card 30, exception: the notice deadline has passed, the renewal date has not, and no decision is recorded. Exclusive with -renewing and -notice-near.
+suggestion: true
+id: uc-030-vendors-notice-passed
+title: The notice deadline of a contract passed with no decision
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: figure_changed, figure: renewals_vendors}
+inputs:
+  - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date, notice_deadline, days_to_renewal, days_to_notice_deadline, decision_open]}
+subject: "{doc.vendor_name} {doc.next_renewal_date} notice passed"
+condition: doc.days_to_notice_deadline < 0 and doc.days_to_renewal >= 0 and doc.decision_open == 1
+severity: problem
+route_to: hr_admin
+action: {verb: call_back, options: [Record the call with the vendor]}
+hold: {blocks: renew_contract, scope: "{doc.vendor_name}", until: a renewal decision is recorded}
+message: "{doc.vendor_name}: the last day to give notice was {doc.notice_deadline} and no decision is recorded. The contract renews on {doc.next_renewal_date} ({doc.currency} {doc.annual_cost:,.0f} a year). Ask the vendor whether notice is still accepted."
+evidence: [doc.vendor_name, doc.annual_cost, doc.notice_deadline, doc.next_renewal_date]

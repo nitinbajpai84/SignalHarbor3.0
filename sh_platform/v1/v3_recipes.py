@@ -81,16 +81,21 @@ def match(kpi: dict, strict: bool = True) -> dict | None:
         return None
     text, have = _words(name), set(_words(name).split())
     core = _words(SPLIT.sub(" ", name)).strip()
-    best, score = None, 0
+    best, score, tied = None, 0, False
     for r in recipes():
         got = max([10 + len(n) for n in r.get("names") or [] if _words(n) in text and (not strict or " " in n.strip() or _words(n).strip() == core)] or [0])
         if r.get("words_all") and all(have & set(g) for g in r["words_all"]):
             got = max(got, 25)
         if got > score:
-            best, score = r, got
+            best, score, tied = r, got, False
+        elif got and got == score:
+            tied = True
+    if tied:  # two recipes answer to the name equally: the rules do not guess, the model and the judge decide by meaning (w2: a large library)
+        return None
     if best is None and kpi.get("definition"):
         full = set(_words(f"{name} {kpi['definition']}").split())
-        best = next((r for r in recipes() if r.get("words_all") and all(full & set(g) for g in r["words_all"])), None)
+        hits = [r for r in recipes() if r.get("words_all") and all(full & set(g) for g in r["words_all"])]
+        best = hits[0] if len(hits) == 1 else None  # more than one: left to the model and the judge
     return best
 
 
@@ -113,9 +118,32 @@ BIND_SYSTEM = (
     'Reply with JSON only: {"bindings": [{"figure": <figure id>, "recipe": <recipe id or "none">, "why": <one plain sentence>}]}.')
 
 
-def described() -> dict[str, str]:
+def described(rs: list[dict] | None = None) -> dict[str, str]:
     """The recipes in plain words for the judge's options, and the option that none computes the figure."""
-    return {**{r["id"]: f"{r['label']}: {r['formula']}" for r in recipes()}, "none": "No recipe here computes this figure; Span designs a table for it."}
+    return {**{r["id"]: f"{r['label']}: {r['formula']}" for r in (recipes() if rs is None else rs)},
+            "none": "No recipe here computes this figure; Span designs a table for it."}
+
+
+STOP = set("a an and the of in on for to by per each is are be it its this that our we us from with as at or less than over into vs against "
+           "who which what how much many all any not no same".split())
+SHORT = 8  # recipes the model and the judge see per figure: the whole library no longer fits one egress message (w2, ~55 recipes)
+
+
+def _stems(text) -> set[str]:
+    return {w.rstrip("s") for w in _words(text).split() if w not in STOP and len(w) > 1}
+
+
+def shortlist(k: dict, n: int = SHORT) -> list[dict]:
+    """The recipes closest to the figure by the words of its name, definition and formula: a label or an also-called name counts twice the
+    formula's words. Ties keep the library's order, so the same brief gets the same list. ponytail: word overlap, an embedding if it misses."""
+    fig = _stems(" ".join(str(k.get(f) or "") for f in ("name", "definition", "formula")))
+    scored = []
+    for i, r in enumerate(recipes()):
+        named = _stems(" ".join([r["label"], *(r.get("names") or []), *(w for g in r.get("words_all") or [] for w in g)]))
+        s = 2 * len(fig & named) + len(fig & _stems(f"{r.get('formula', '')} {r.get('why', '')}"))
+        if s:
+            scored.append((-s, i, r))
+    return [r for *_, r in sorted(scored, key=lambda t: t[:2])[:n]]
 
 
 def bound(k: dict) -> dict | None:
@@ -187,26 +215,30 @@ def bind(plane, model, kpis: list[dict], question: str = "", sources: list[dict]
                  built_from_why=f"Its name or definition names the {r['label'].lower()} recipe." if r else "No recipe of the pack computes it; Span designs it.")
     left = [k for k in todo if not k["built_from"]]
     if left:  # by meaning: the figures the rules could not bind
+        def card(r):
+            return {"id": r["id"], "label": r["label"], "also_called": r.get("names") or [], "formula": r["formula"], "reads": r["may_read"], "why": r.get("why", "")}
+        short = [shortlist(k) for k in left]  # only the recipes near each figure: the whole library is too long to send (w2)
+        named = [r for r in recipes() if asks(question, r) or asks(said, r)]
+        near = {r["id"] for rs in short for r in [*rs, *named]}
         ctx = {"brief_question": question, **({"said": said} if said else {}),
                "sources": [{"name": s.get("name"), "holds": s.get("holds")} for s in sources or [] if isinstance(s, dict)],
                "figures": [{"id": i, **{f: k.get(f) for f in ("name", "definition", "formula", "unit")}} for i, k in enumerate(left)],
-               "recipes": [{"id": r["id"], "label": r["label"], "also_called": r.get("names") or [], "formula": r["formula"], "reads": r["may_read"],
-                            "why": r.get("why", "")} for r in recipes()]}
+               "recipes": [card(r) for r in recipes() if r["id"] in near]}
         got = _ask(plane, model, ctx) or {}
         if model is not None:  # two models of different families bind each figure; a figure they agree on is bound, the rest keep the single model's binding
             from sh_platform.v1 import v3_judge as J
-            ids_ = [r["id"] for r in recipes()]
+            from sh_platform.v1.egress_fit import fit
             for i, k in enumerate(left):
-                from sh_platform.v1.egress_fit import fit
-                one = fit({**ctx, "figures": [ctx["figures"][i]]})  # records as one-line strings: the row guard lets them out
-                said = J.judged(plane, "recipe", J.question("recipe", figure=k.get("name"), definition=k.get("definition") or "not given", formula=k.get("formula") or "not given"),
-                                [*ids_, "none"], one, J.standard("recipe"), person=False, describe=described())
-                if said:
+                rs = short[i] + [r for r in named if r not in short[i]]
+                one = fit({**ctx, "figures": [ctx["figures"][i]], "recipes": [card(r) for r in rs]})  # records as one-line strings: the row guard lets them out
+                agreed = J.judged(plane, "recipe", J.question("recipe", figure=k.get("name"), definition=k.get("definition") or "not given", formula=k.get("formula") or "not given"),
+                                  [*(r["id"] for r in rs), "none"], one, J.standard("recipe"), person=False, describe=described(rs))
+                if agreed:
                     got.setdefault("bindings", [])[:] = [b for b in got.get("bindings") or [] if str(b.get("figure")) != str(i)] + [
-                        {"figure": i, "recipe": said, "why": "Two models of different families agreed."}]
+                        {"figure": i, "recipe": agreed, "why": "Two models of different families agreed."}]
         ids = {**{str(i): k for i, k in enumerate(left)}, **{k["name"]: k for k in left}}  # a reply may name the figure instead of its id
         for b in got.get("bindings") or []:
-            if isinstance(b, dict) and str(b.get("figure")) in ids and recipe(str(b.get("recipe"))):
+            if isinstance(b, dict) and str(b.get("figure")) in ids and str(b.get("recipe")) in near:  # only a recipe it was shown
                 ids[str(b["figure"])].update(built_from=b["recipe"], built_from_why=str(b.get("why") or "")[:300], built_from_by=SPAN)
     have = {k.get("built_from") for k in kpis if isinstance(k, dict)}
     first = todo[0]

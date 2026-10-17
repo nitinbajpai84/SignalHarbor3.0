@@ -1,7 +1,7 @@
-# SUGGESTION. uc-013 row 3, exception: unclassified holdings above 1 percent of net worth. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-013 row 3, exception: holdings with no class or identifier above 1 percent of what is held (the 1 percent is the card's figure; no office rule for it is signed). Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-013-secgaps-over-one-percent
-title: Unclassified holdings above 1 percent of net worth
+title: Holdings with no class or identifier above 1 percent of what is held
 pain_points: [INT-RISK, INT-TRUST, INT-DATAGOV]
 trigger: {on: figure_changed, figure: identifier_gaps}
 inputs:
@@ -11,12 +11,12 @@ inputs:
   as: gap
   by: {first_row: true}
 condition: gap.gap_pct_of_net_worth > 1
-subject: 'identifier gaps over 1 percent: {gap.gap_value_total}'
+subject: 'identifier gaps over 1 percent: {gap.gap_value_total:,.0f} at {gap.as_of_max}'
 severity: problem
 route_to: head_of_data
 action:
   verb: call_back
   options: [Record the call to the owner]
 hold: {blocks: publish_limits, scope: identifier gaps, until: the class or identifier is supplied}
-message: Instruments with no class or identifier are {gap.gap_pct_of_net_worth:.2f} percent of what is held ({gap.currency} {gap.gap_value_total:,.0f}), above 1 percent. The limits figure is marked incomplete until the class is supplied.
+message: Instruments with no class or identifier are {gap.gap_pct_of_net_worth:.2f} percent of what is held ({gap.currency} {gap.gap_value_total:,.0f}), above 1 percent. The limits figure is not published until the class or identifier is supplied.
 evidence: [gap]

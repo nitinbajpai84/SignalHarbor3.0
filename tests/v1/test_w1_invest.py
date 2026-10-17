@@ -295,7 +295,7 @@ def test_the_invest_recipes_are_built_and_the_others_stay_stubs():
         assert read <= set(r["may_read"]), (rid, sorted(read - set(r["may_read"])))
         assert not read & set(r["never_read"]), rid
         assert not R.refusal(r, R.render(r, "x")), rid
-        assert all(r["measure"] in {c for c in r["columns"]} | {r["measure"]} for _ in [0])
+        assert r["measure"] in r["columns"], rid  # the measure is a described column
 
 
 @pytest.mark.parametrize("rid", MY_RECIPES)
@@ -328,6 +328,20 @@ def test_card7_unfunded_across_all_funds_with_call_7_counted(office):
     assert funds["Cedarpoint Ventures III"]["noticed"] == 1_250_000  # call 7 is noticed, not recorded: the register still shows 6,000,000 called
 
 
+def test_card7_a_call_is_counted_once_whatever_its_state_and_month(office, data):
+    funds = lambda: by([r for r in office.build("commitments_by_fund") if not r["is_total"]], "fund")  # noqa: E731
+    c = funds()["Cedarpoint Ventures III"]
+    assert (c["called"], c["noticed"]) == (7_250_000, 1_250_000)
+    # the bank debit arrives: the same call is now paid, still counted once
+    office.con.execute("update cash_movements set confirmation_status = 'confirmed' where commitment_id = ? and received_at >= '2026-10-13'", [office.commit["C"]])
+    c = funds()["Cedarpoint Ventures III"]
+    assert (c["called"], c["noticed"], c["unfunded"]) == (7_250_000, 0, 2_750_000)
+    # a notice that came before the register date is in the register's called figure already: not added a second time
+    office.con.execute("update cash_movements set received_at = '2026-10-01 12:00:00+00' where commitment_id = ? and received_at >= '2026-10-13'", [office.commit["C"]])
+    c = funds()["Cedarpoint Ventures III"]
+    assert (c["called"], c["noticed"], c["unfunded"]) == (6_000_000, 0, 4_000_000)
+
+
 def test_card7_budget_is_held_when_the_policy_signs_none(office):
     exp = KEYS["uc-007-pacing"]["questions"]["Room to commit"]["expected"]
     assert exp["private_markets_budget"] is None
@@ -336,17 +350,37 @@ def test_card7_budget_is_held_when_the_policy_signs_none(office):
     assert "no private-markets limit is signed" in R.needs(office.con, r).lower()
 
 
-def usd_cash(data) -> Decimal:
-    return sum((c["balance"] for c in data["cash"] if c["currency"] == "USD"), Decimal(0))
+KEY41 = KEYS["uc-041-commitappr"]["questions"]["Whether the commitment fits the budget, limits and cash"]["expected"]
+CASH_USD = Decimal(str(KEY41["cash_usd_equivalent"]))  # all 12 accounts at the 13 Oct fixing, from the key
+NW_TEST = 100_000_000 + CASH_USD  # net worth in USD for the budget tests: the test holding plus the cash of every account, converted
+
+
+def fix_on(data, day=ASOF) -> Decimal:
+    """SGD per USD at the latest fixing on or before the day (from the fx files)."""
+    return max((d, r) for d, r in data["fx"] if d <= day)[1]
 
 
 def test_card7_budget_headroom_when_a_limit_is_signed(office, data):
     office.sign_rule("allocation_private_markets", 60)  # test-only rule, not the office's
     office.hold(100_000_000)
-    nw = 100_000_000 + usd_cash(data)  # net worth counts the cash positions too
-    row = by(office.build("private_markets_budget"), "currency")["USD"]
-    assert (row["net_worth"], row["limit_pct"], row["committed"]) == (nw, 60, 54_850_000)
+    nw = NW_TEST  # net worth counts the cash positions too, SGD accounts converted at the fixing
+    (row,) = office.build("private_markets_budget")
+    assert (row["currency"], row["net_worth"], row["limit_pct"], row["committed"], row["conversion_gaps"]) == ("USD", nw, 60, 54_850_000, 0)
     assert (row["budget"], row["headroom"]) == (round(nw * 60 / 100, 2), round(nw * 60 / 100 - 54_850_000, 2))
+
+
+def test_budget_converts_commitments_in_another_currency(office, data):
+    """A commitment in SGD counts in USD at the fixing, not as if it were USD (and the budget is one figure, not one per currency)."""
+    office.sign_rule("allocation_private_markets", 60)
+    office.hold(100_000_000)
+    fund = data["funds"]["G"]
+    office.con.execute("update commitments set currency = 'SGD' where id = ?", [office.commit["G"]])
+    want = Decimal(54_850_000) - fund["commitment"] + fund["commitment"] / fix_on(data)
+    (row,) = office.build("private_markets_budget")
+    assert abs(row["committed"] - want) < Decimal("0.02") and row["conversion_gaps"] == 0
+    office.con.execute("delete from market_observations")  # no fixing at all: the budget is not stated, never guessed
+    (row,) = office.build("private_markets_budget")
+    assert row["conversion_gaps"] > 0 and row["budget"] is None and row["headroom"] is None
 
 
 # ---- card 25: what changed at Kestrel Ridge -------------------------------------------------------------------------------------------------------
@@ -361,6 +395,8 @@ def test_card25_timeline_since_the_last_meeting_newest_first(office):
     assert got == want
     amended = next(r for r in st if r["status_kind"] == "amended")
     assert (int(amended["restated_from"]), int(amended["value"])) == (exp["h1_july_restated_from"], exp["h1_july_restated_to"])
+    replaced = {(r["fund"], str(r["period"]), r["status_kind"]): r["replaced_on"] for r in st if r["replaced_on"]}
+    assert replaced == {("Kestrel Ridge Macro Fund", "2026-07-31", "final"): dt.date(2026, 8, 20)}  # the replaced statement stays (it did arrive) and says it was replaced
     team = [r for r in rows if r["item_kind"] == "newsletter"]
     assert len(team) == 1 and "Thomas Lindqvist left the firm" in team[0]["detail"] and team[0]["source"].endswith("newsletter")
 
@@ -380,13 +416,13 @@ def test_card34_limits_when_signed(office, data):
     office.sign_rule("allocation_private_markets", 60)
     office.sign_rule("allocation_venture", 2)  # test-only: 2 percent of net worth for venture, nothing committed to venture yet
     office.hold(100_000_000)
-    nw = 100_000_000 + usd_cash(data)
+    nw = NW_TEST
     (row,) = office.build("mandate_fit")
     assert (row["budget_room_after"], row["budget_status"]) == (round(nw * 60 / 100 - 54_850_000 - 2_000_000, 2), "within")
     assert (row["class_room_after"], row["class_status"]) == (round(nw * 2 / 100 - 2_000_000, 2), "within")
-    office.con.execute("update deal_pipeline set target_commitment = 8000000")
+    office.con.execute("update deal_pipeline set target_commitment = 12000000")
     (row,) = office.build("mandate_fit")
-    assert (row["budget_status"], row["class_status"], row["budget_room_after"]) == ("over", "over", round(nw * 60 / 100 - 54_850_000 - 8_000_000, 2))
+    assert (row["budget_status"], row["class_status"], row["budget_room_after"]) == ("over", "over", round(nw * 60 / 100 - 54_850_000 - 12_000_000, 2))
 
 
 # ---- card 35: questionnaires side by side ----------------------------------------------------------------------------------------------------------
@@ -405,6 +441,15 @@ def test_card35_a_missing_answer_is_a_gap(office):
     rows = office.build("ddq_compare")
     gap = [r for r in rows if r["open_item"]]
     assert [(r["topic"], r["answer"]) for r in gap] == [("Audit firm", None)]
+
+
+def test_card40_and_card35_agree_when_a_questionnaire_is_replaced(office):
+    ids = dict(office.con.execute("select title, id from documents where document_type = 'ddq'").fetchall())
+    old, new = ids["Cedarpoint Ventures - Due Diligence Questionnaire 2025"], ids["Cedarpoint Ventures - Due Diligence Questionnaire 2026"]
+    office.con.execute("update documents set supersedes_document_id = ? where id = ?", [old, new])  # the 2026 one replaces the 2025 one: nothing left to compare it with
+    changed = sum(r["changed"] for r in office.build("ddq_compare"))
+    memo = next(r for r in office.build("memo_support") if r["fund"] == "Cedarpoint Ventures III" and r["figure"] == "ddq_changes")
+    assert changed == memo["value"] == 0
 
 
 # ---- card 39: IRR, TVPI, DPI by fund ---------------------------------------------------------------------------------------------------------------
@@ -428,6 +473,15 @@ def test_card39_a_missing_call_makes_the_irr_incomplete(office):
     rows = by(office.build("fund_irr_tvpi"), "fund")
     assert rows["Evergreen Growth I"]["irr_status"] == "incomplete" and rows["Evergreen Growth I"]["history_gap"] == 500_000
     assert [n for n, r in rows.items() if r["irr_status"] != "ok"] == ["Evergreen Growth I"]
+
+
+def test_card39_a_distribution_without_its_bank_credit_makes_the_irr_incomplete(office):
+    n = office.con.execute("select count(*) from cash_movements where movement_type = 'distribution' and confirmation_status = 'confirmed' and commitment_id = ?", [office.commit["A"]]).fetchone()[0]
+    assert n == 1
+    office.con.execute("update cash_movements set supersedes_cash_movement_id = null where movement_type = 'distribution' and confirmation_status = 'confirmed' and commitment_id = ?", [office.commit["A"]])
+    office.con.execute("delete from cash_movements where movement_type = 'distribution' and confirmation_status = 'confirmed' and commitment_id = ?", [office.commit["A"]])
+    rows = by(office.build("fund_irr_tvpi"), "fund")
+    assert rows["Evergreen Growth I"]["irr_status"] == "incomplete" and rows["Evergreen Growth I"]["distributions_not_received"] == 1
 
 
 # ---- card 40: the figures cited in the memo --------------------------------------------------------------------------------------------------------
@@ -457,6 +511,25 @@ def test_card41_budget_limit_and_cash_tests(office):
     assert (row["new_commitment"], row["uncalled_after"]) == (exp["new_commitment"], exp["uncalled_after"])
     assert float(row["cash_usd"]) == exp["cash_usd_equivalent"] and float(row["cash_cover_pct"]) == exp["cash_cover_of_uncalled_after_pct"]
     assert row["cash_status"] == "short" and row["budget_status"] == "not set" and exp["budget"] == "not set in policy v2026.1" and row["cash_unconverted"] == 0
+    assert row["class_status"] == "not set" and row["conversion_gaps"] == 0 and "no signed pacing rule" in row["need_basis"]
+
+
+def test_card41_commitments_in_another_currency_count_in_full_and_the_deal_is_not_dropped(office, data):
+    exp = KEY41
+    fund = data["funds"]["G"]  # Evergreen Credit III, no call noticed: unfunded = commitment less the register's called figure
+    office.con.execute("update commitments set currency = 'SGD' where id = ?", [office.commit["G"]])
+    unf = fund["commitment"] - fund["called"]
+    (row,) = office.build("commit_check")
+    want = exp["uncalled_after"] - unf + unf / fix_on(data) + 0  # the key's uncalled, with this fund's share converted
+    assert abs(row["uncalled_after"] - Decimal(want).quantize(Decimal("0.01"))) < Decimal("0.02")
+    # a deal in another currency is converted, not dropped
+    office.con.execute("update deal_pipeline set currency = 'SGD'")
+    (row,) = office.build("commit_check")
+    assert row["new_commitment"] == exp["new_commitment"] and abs(row["uncalled_after"] - (Decimal(want) - exp["new_commitment"] + Decimal(exp["new_commitment"]) / fix_on(data))) < Decimal("0.02")
+    # no fixing: the tests are not stated (and say so), never a number
+    office.con.execute("delete from market_observations")
+    (row,) = office.build("commit_check")
+    assert (row["cash_status"], row["uncalled_after"], row["cash_usd"]) == ("not stated", None, None)
 
 
 # ---- card 49: fees paid to each manager ------------------------------------------------------------------------------------------------------------
@@ -469,8 +542,28 @@ def test_card49_fees_and_fee_drag_by_manager(office):
         r = rows[name]
         assert (r["fees_paid"], r["net_gain"], r["gross_gain"]) == (k["fees_paid_via_calls"], k["net_gain_since_1_apr"], k["gross_gain"]), name
         assert (r["fee_drag_pct"] is None) if k["fee_drag_pct"] is None else close(r["fee_drag_pct"], k["fee_drag_pct"], 2), name
-    assert rows["Bluewater Capital"]["fees_above_terms"] == 9_375  # M08: Evergreen Credit III call 3 charged 28,125 against 18,750
-    assert sum(r["fees_above_terms"] for r in rows.values()) == 9_375
+    # M08 is in the MANIFEST, not in the key: the excess is worked out here from the notices and the fund terms files (fee on the notice less commitment x rate)
+    manifest = (FIX / "MANIFEST.md").read_text(encoding="utf-8")
+    assert "excess 9,375.00" in manifest
+    excess: dict = {}
+    for n in office.d["notices"]:
+        if n["kind"] == "call" and n["fee"]:
+            f = office.d["funds"][n["key"]]
+            excess[f["manager"]] = excess.get(f["manager"], 0) + max(n["fee"] - f["commitment"] * f["fee_pct"] / 100, 0)
+    assert {m: r["fees_above_terms"] for m, r in rows.items()} == {m: excess.get(m, 0) for m in rows} and rows["Bluewater Capital"]["fees_above_terms"] == 9_375
+    assert all(r["fee_rows_without_terms"] == 0 and r["expected_fees"] is not None for r in rows.values())
+
+
+def test_card49_missing_terms_are_not_zero_excess(office):
+    office.con.execute("delete from extracted_fields where field_name = 'management_fee_rate'")
+    rows = by(office.build("fee_drag"), "manager")
+    assert all(r["fees_above_terms"] is None and r["expected_fees"] is None and r["fee_rows_without_terms"] > 0 for r in rows.values())
+    assert count(office, "uc-049-feedrag-no-terms") == 4 and count(office, "uc-049-feedrag-above-terms") == 0
+    # terms that are not on the commitment are not used either (no rule is invented)
+    office.con.execute("insert into extracted_fields (id, organization_id, document_id, field_name, value_numeric, page_number, confidence, review_status) "
+                       "select 'f-' || id, organization_id, id, 'management_fee_rate', 0.5, 1, 'high', 'confirmed' from documents where document_type = 'fund_terms'")
+    office.con.execute("update extracted_fields set value_text = 'invested capital' where field_name = 'fee_basis'")
+    assert all(r["fees_above_terms"] is None for r in office.build("fee_drag").__iter__())
 
 
 # ---- the signals --------------------------------------------------------------------------------------------------------------------------------------
@@ -517,11 +610,12 @@ EXPECTED_SIGNALS = {  # id -> (recipe, severity, role)
     "uc-039-irr-by-fund": ("fund_irr_tvpi", "info", "investment_analyst"), "uc-039-irr-incomplete": ("fund_irr_tvpi", "problem", "investment_analyst"),
     "uc-040-icmemo-figure-source": ("memo_support", "info", "cio"), "uc-040-icmemo-untraced": ("memo_support", "problem", "investment_analyst"),
     "uc-041-commitappr-tests": ("commit_check", "needs", "cio"), "uc-041-commitappr-cosign": ("commit_check", "needs", "principal"),
-    "uc-041-commitappr-cash-short": ("commit_check", "problem", "cfo"),
+    "uc-041-commitappr-cash-short": ("commit_check", "problem", "cfo"), "uc-041-commitappr-test-not-on-record": ("commit_check", "needs", "cio"),
     "uc-049-feedrag-share": ("fee_drag", "info", "fund_accountant"), "uc-049-feedrag-above-terms": ("fee_drag", "problem", "fund_accountant"),
+    "uc-049-feedrag-no-terms": ("fee_drag", "needs", "fund_accountant"),
 }
 EXCEPTIONS = {"uc-007-pacing-over-budget", "uc7-manager-diligence-restated", "uc-034-prospect-class-over", "uc-035-ddq-open-item", "uc-039-irr-incomplete", "uc-040-icmemo-untraced",
-              "uc-041-commitappr-cash-short", "uc-049-feedrag-above-terms"}
+              "uc-041-commitappr-cash-short", "uc-049-feedrag-above-terms", "uc-041-commitappr-test-not-on-record", "uc-049-feedrag-no-terms"}
 
 
 def test_every_card_has_signals_a_known_role_and_an_exception():
@@ -564,24 +658,42 @@ def test_the_normal_signals_fire_on_the_office_data(office):
     got = {sid: count(office, sid) for sid in ("uc-007-pacing-unfunded", "uc7-manager-diligence-team-change", "uc-034-prospect-screened", "uc-035-ddq-differences", "uc-035-ddq-fee-answer",
                                                   "uc-039-irr-by-fund", "uc-049-feedrag-share")}
     assert got == {"uc-007-pacing-unfunded": 1, "uc7-manager-diligence-team-change": 1, "uc-034-prospect-screened": 1, "uc-035-ddq-differences": 5, "uc-035-ddq-fee-answer": 1,
-                   "uc-039-irr-by-fund": 8, "uc-049-feedrag-share": 2}  # fee share: Bluewater and Northgate; the two managers with a loss have no drag and are skipped
+                   "uc-039-irr-by-fund": 8, "uc-049-feedrag-share": 4}  # fee share: the four managers; the two with a loss say the share is not stated
 
 
 def test_the_exception_signals_fire_on_the_planted_rows(office):
     assert count(office, "uc7-manager-diligence-restated") == 1  # M03: Kestrel Macro July restated 7,050,000 to 7,012,500
     assert count(office, "uc-041-commitappr-cash-short") == 1  # cash cover 37.08 percent of the uncalled after the ticket
     assert count(office, "uc-049-feedrag-above-terms") == 1  # M08: Bluewater, 9,375 above the terms
-    assert count(office, "uc-041-commitappr-tests") == 0 and count(office, "uc-041-commitappr-cosign") == 1
+    # budget not on record and cash short: no approve prompt and no co-sign page; the CIO gets the "not on record" prompt instead
+    assert count(office, "uc-041-commitappr-tests") == 0 and count(office, "uc-041-commitappr-cosign") == 0 and count(office, "uc-041-commitappr-test-not-on-record") == 1
+    assert count(office, "uc-049-feedrag-no-terms") == 0
     # no limit is signed in the policy, so the limit exceptions stay quiet rather than guess
     assert count(office, "uc-007-pacing-over-budget") == 0 and count(office, "uc-034-prospect-class-over") == 0 and count(office, "uc-034-prospect-known-manager") == 0
     assert count(office, "uc-035-ddq-open-item") == 0 and count(office, "uc-039-irr-incomplete") == 0 and count(office, "uc-040-icmemo-untraced") == 0
+    assert count(office, "uc-040-icmemo-figure-source") == 2  # the two funds whose latest value is an amended statement (Growth I and Cedarpoint III), not every figure
+
+
+def test_the_approve_prompt_needs_a_signed_budget_and_cash_that_covers(office):
+    office.sign_rule("allocation_private_markets", 60)
+    office.hold(100_000_000)
+    office.con.execute("update deal_pipeline set target_commitment = 2000000")
+    # budget within a signed limit but the cash is short: no approve prompt, the cash-short exception
+    assert count(office, "uc-041-commitappr-tests") == 0 and count(office, "uc-041-commitappr-cash-short") == 1 and count(office, "uc-041-commitappr-test-not-on-record") == 0
+    # add cash that covers the 16.6 million need
+    office.con.execute("update position_snapshots set source_market_value = source_market_value + 20000000, quantity = quantity + 20000000 where currency = 'USD' and "
+                       "instrument_id in (select id from instruments where instrument_type = 'cash') and id = (select min(id) from position_snapshots where currency = 'USD' and instrument_id in (select id from instruments where instrument_type = 'cash'))")
+    assert count(office, "uc-041-commitappr-tests") == 1 and count(office, "uc-041-commitappr-cosign") == 1 and count(office, "uc-041-commitappr-cash-short") == 0
+    # a budget that the commitment breaks: no approve prompt, no co-sign page
+    office.con.execute("update deal_pipeline set target_commitment = 120000000")
+    assert count(office, "uc-041-commitappr-tests") == 0 and count(office, "uc-041-commitappr-cosign") == 0
 
 
 def test_the_exception_signals_fire_when_their_condition_is_planted(office):
     office.sign_rule("allocation_private_markets", 60)
     office.sign_rule("allocation_venture", 2)
     office.hold(100_000_000)
-    office.con.execute("update deal_pipeline set target_commitment = 8000000")
+    office.con.execute("update deal_pipeline set target_commitment = 12000000")
     office.con.execute("delete from extracted_fields where field_name = 'ddq: Audit firm' and document_id in (select id from documents where title like '%2026')")
     office.con.execute("delete from cash_movements where commitment_id = ? and received_at < '2026-07-01' and notice_kind = 'capital_call'", [office.commit["A"]])
     office.con.execute("update commitments set source_record_id = null where id = ?", [office.commit["C"]])

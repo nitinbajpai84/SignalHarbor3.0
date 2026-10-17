@@ -1,4 +1,4 @@
-# SUGGESTION. uc-043 row 2: the month rolls over. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-043 row 2: the first position date of a new month is on file. Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-043-liquidpnl-month-start
 title: The month rolls over
@@ -10,12 +10,12 @@ inputs:
   recipe: liquid_pnl_mtd
   as: pnl
   by: {first_row: true}
-condition: pnl.value_month_end > 0
+condition: pnl.new_month and pnl.total_value_month_end > 0
 subject: liquid book month start {pnl.month_end_date}
 severity: info
 route_to: cio
 action:
   verb: see
   options: [Seen]
-message: 'A new month: the start value is the {pnl.value_month_end:,.0f} of the {pnl.month_end_date} close.'
+message: 'A new month: the start value is the {pnl.total_value_month_end:,.0f} of the {pnl.month_end_date} close.'
 evidence: [pnl]

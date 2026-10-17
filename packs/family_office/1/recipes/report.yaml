@@ -54,62 +54,73 @@ recipes:
     label: Time weighted return and active return
     cards: [42, 44]
     names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark]
-    may_read: [position_snapshots, transactions, market_observations, benchmark_definitions, benchmark_components, portfolios]
+    may_read: [position_snapshots, transactions, market_observations, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements]
-    why: A return is the change in value of what is held, less what was put in or taken out. It reads the position snapshots at each month end, the buys and sells that moved value into or out of the portfolio, and the index levels of the approved benchmark. Commitments and cash calls are not returns.
-    formula: 'Monthly return in percent (modified Dietz) = (end value - start value - net flow) / (start value + 0.5 x net flow) x 100, where start and end are the portfolio value on the last position date of the month and of the month before, and the net flow is the cost of the buys less the proceeds of the sells in between (income is not a flow). Benchmark monthly return = sum over the components of the approved benchmark of weight x (index return of the month + spread in basis points a year / 12 / 100), the index return from the last level of the month over the last level of the month before; a month with a missing level has no benchmark return and says so. A quarter, the year to date, the last 12 months and all months are the monthly returns chain-linked, (1 + r1) x (1 + r2) x ... - 1, for the portfolio and for the benchmark; active return = portfolio less benchmark over the same months. A period that lacks months says so (complete = false).'
+    why: A return is the change in value of what is held, less what was put in or taken out. It reads the position snapshots at each month end, the buys and sells that moved value into or out of the portfolio, and the index levels of the approved benchmark the office has linked to the portfolio (the signed rule benchmark_link). Commitments and cash calls are not returns.
+    formula: 'Monthly return in percent (modified Dietz) = (end value - start value - net flow) / (start value + 0.5 x net flow) x 100, where start and end are the portfolio value on the last position date of the month and of the month before, and the net flow is the cost of the buys less the proceeds of the sells in between (income is not a flow, and is not in the return: the income column shows the dividends and coupons of the month so it is visible). Only values that are real count: a month is worked out only when no value at either month end is carried forward or estimated, all holdings are in the portfolio''s base currency, the month before is the previous calendar month, and the holdings did not change without a trade on record; otherwise the month has no return and data_note says why. The benchmark is the approved one the signed rule benchmark_link names for the portfolio (parameters portfolio and benchmark_code); a portfolio with no such link has no benchmark return (benchmark_linked is false). Benchmark monthly return = sum over the components of the approved benchmark of weight x (index return of the month + spread in basis points a year / 12 / 100), the index return from the last level of the month over the last level of the month before; a month with a missing level has no benchmark return and says so. A quarter, the year to date, the last 12 months and all months are the monthly returns chain-linked, (1 + r1) x (1 + r2) x ... - 1, for the portfolio and for the benchmark; active return = portfolio less benchmark over the same months. A period that lacks months says so (complete = false).'
     grain: By portfolio, benchmark and period (month, quarter, year to date, last 12 months, all months)
     sql: >-
       create table {name} as with {positions},
-      pv as (select portfolio_id, position_date, sum(source_market_value) as v from positions group by all),
-      me as (select portfolio_id, position_date as month_end, v from (select *, row_number() over (partition by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1),
-      pm as (select portfolio_id, month_end, v as end_value, lag(month_end) over w as start_date, lag(v) over w as start_value from me window w as (partition by portfolio_id order by month_end)),
-      fl as (select pm.portfolio_id, pm.month_end, coalesce(-sum(t.cash_amount), 0) as net_flow from pm left join transactions as t on t.portfolio_id = pm.portfolio_id
-      and t.transaction_type in ('buy', 'sell') and t.effective_date > pm.start_date and t.effective_date <= pm.month_end group by all),
+      pv as (select l.portfolio_id, l.position_date, sum(l.source_market_value) as v, count(*) as n, count(*) filter (where coalesce(l.data_status, '') in ('Carried forward', 'Estimate')) as n_unsettled,
+      count(*) filter (where l.currency <> g.base_currency) as n_foreign from positions as l join portfolios as g on g.id = l.portfolio_id group by all),
+      me as (select portfolio_id, position_date as month_end, v, n, n_unsettled, n_foreign from (select *, row_number() over (partition by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1),
+      pm as (select portfolio_id, month_end, v as end_value, n as end_n, n_unsettled + lag(n_unsettled) over w as unsettled, n_foreign + lag(n_foreign) over w as foreign_n,
+      lag(month_end) over w as start_date, lag(v) over w as start_value, lag(n) over w as start_n from me window w as (partition by portfolio_id order by month_end)),
+      fl as (select pm.portfolio_id, pm.month_end, coalesce(-sum(t.cash_amount) filter (where t.transaction_type in ('buy', 'sell')), 0) as net_flow, count(*) filter (where t.transaction_type in ('buy', 'sell')) as trades,
+      count(*) filter (where t.transaction_type in ('buy', 'sell') and t.currency <> g.base_currency) as foreign_trades, coalesce(sum(t.cash_amount) filter (where t.transaction_type in ('dividend', 'coupon')), 0) as income
+      from pm join portfolios as g on g.id = pm.portfolio_id left join transactions as t on t.portfolio_id = pm.portfolio_id and t.effective_date > pm.start_date and t.effective_date <= pm.month_end group by all),
       lv as (select series_key, date_trunc('month', cast(observed_at at time zone 'UTC' as date)) as m, arg_max(value, observed_at) as level from market_observations where observation_type = 'index_level' group by all),
       bd as (select id as def_id, benchmark_code, effective_from, coalesce(effective_to, date '9999-12-31') as effective_to from benchmark_definitions where lower(approval_status) = 'approved'),
+      lk as (select p.id as portfolio_id, json_extract_string(v.parameters, '$.benchmark_code') as benchmark_code from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_code = 'benchmark_link' and lower(v.approval_status) = 'approved' and v.effective_to is null),
       bm as (select pm.portfolio_id, pm.month_end, bd.benchmark_code,
       case when count(e.level) = count(*) and count(s.level) = count(*) then sum(c.component_weight * (100 * (e.level / s.level - 1) + coalesce(c.spread_bps, 0) / 12 / 100)) end as b,
       string_agg(c.market_series_key, ', ') filter (where e.level is null or s.level is null) as gap
-      from pm join bd on pm.month_end between bd.effective_from and bd.effective_to
+      from pm join lk on lk.portfolio_id = pm.portfolio_id join bd on bd.benchmark_code = lk.benchmark_code and pm.month_end between bd.effective_from and bd.effective_to
       join benchmark_components as c on c.benchmark_definition_id = bd.def_id and pm.month_end >= c.weight_effective_from and pm.month_end <= coalesce(c.weight_effective_to, date '9999-12-31')
       left join lv as e on e.series_key = c.market_series_key and e.m = date_trunc('month', pm.month_end)
       left join lv as s on s.series_key = c.market_series_key and s.m = date_trunc('month', pm.start_date) group by all),
-      m as (select pm.portfolio_id, bm.benchmark_code, pm.start_date, pm.month_end, pm.start_value, pm.end_value, fl.net_flow,
-      100 * (pm.end_value - pm.start_value - fl.net_flow) / nullif(pm.start_value + 0.5 * fl.net_flow, 0) as r, bm.b, bm.gap
-      from pm join fl on fl.portfolio_id = pm.portfolio_id and fl.month_end = pm.month_end
-      left join bm on bm.portfolio_id = pm.portfolio_id and bm.month_end = pm.month_end where pm.start_value is not null),
+      m0 as (select pm.portfolio_id, bm.benchmark_code, pm.start_date, pm.month_end, pm.start_value, pm.end_value, fl.net_flow, fl.income, bm.b, bm.gap,
+      pm.unsettled = 0 and pm.foreign_n = 0 and fl.foreign_trades = 0 and date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) = 1 and (pm.end_n = pm.start_n or fl.trades > 0) as usable,
+      case when pm.unsettled > 0 then 'a value is carried forward or estimated' when pm.foreign_n > 0 or fl.foreign_trades > 0 then 'holdings in another currency are not converted'
+      when date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) <> 1 then 'a month end is missing' when pm.end_n <> pm.start_n and fl.trades = 0 then 'the holdings changed with no trade on record' end as why_not
+      from pm join fl on fl.portfolio_id = pm.portfolio_id and fl.month_end = pm.month_end left join bm on bm.portfolio_id = pm.portfolio_id and bm.month_end = pm.month_end where pm.start_value is not null),
+      m as (select *, case when usable then 100 * (end_value - start_value - net_flow) / nullif(start_value + 0.5 * net_flow, 0) end as r from m0),
       lastm as (select max(month_end) as last_end from m),
       p as (
       select portfolio_id, benchmark_code, 'month' as period_kind, strftime(month_end, '%Y-%m') as period_label, start_date as first_start, month_end as last_month_end, 1 as months,
-      true as complete, start_value, end_value, net_flow, r as pr, b as br, cast(b is null as integer) as months_without_benchmark, gap from m
+      true as complete, start_value, end_value, net_flow, income, r as pr, b as br, cast(b is null as integer) as months_without_benchmark, gap, cast(r is null as integer) as months_not_usable, why_not from m
       union all
       select portfolio_id, benchmark_code, 'quarter', strftime(month_end, '%Y') || 'Q' || cast(quarter(month_end) as varchar), min(start_date), max(month_end), count(*), count(*) = 3,
-      null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', ')
+      null, null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ')
       from m group by portfolio_id, benchmark_code, strftime(month_end, '%Y') || 'Q' || cast(quarter(month_end) as varchar)
       union all
       select portfolio_id, benchmark_code, 'ytd', 'YTD ' || strftime(month_end, '%Y'), min(start_date), max(month_end), count(*), min(month(month_end)) = 1,
-      null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', ')
+      null, null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ')
       from m group by portfolio_id, benchmark_code, strftime(month_end, '%Y')
       union all
       select portfolio_id, benchmark_code, 'last_12_months', 'Last 12 months', min(start_date), max(month_end), count(*), count(*) = 12,
-      null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', ')
+      null, null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ')
       from m where month_end > (select last_end from lastm) - interval 12 month group by portfolio_id, benchmark_code
       union all
       select portfolio_id, benchmark_code, 'all', 'All months', min(start_date), max(month_end), count(*), true,
-      null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', ')
+      null, null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ')
       from m group by portfolio_id, benchmark_code)
-      select g.portfolio_name as portfolio, p.benchmark_code, p.period_kind, p.period_label, p.first_start as from_date, p.last_month_end as to_date, p.months, p.complete,
-      cast(p.start_value as decimal(18,2)) as start_value, cast(p.end_value as decimal(18,2)) as end_value, cast(p.net_flow as decimal(18,2)) as net_flow,
+      select g.portfolio_name as portfolio, p.benchmark_code, p.benchmark_code is not null as benchmark_linked, p.period_kind, p.period_label, p.first_start as from_date, p.last_month_end as to_date, p.months, p.complete,
+      cast(p.start_value as decimal(18,2)) as start_value, cast(p.end_value as decimal(18,2)) as end_value, cast(p.net_flow as decimal(18,2)) as net_flow, cast(p.income as decimal(18,2)) as income,
       cast(p.pr as decimal(12,4)) as portfolio_return_pct, cast(p.br as decimal(12,4)) as benchmark_return_pct, cast(p.pr - p.br as decimal(12,4)) as active_pct,
-      p.months_without_benchmark, p.gap as benchmark_gap
+      p.months_without_benchmark, p.gap as benchmark_gap, p.months_not_usable, p.why_not as data_note
       from p join portfolios as g on g.id = p.portfolio_id
     measure: portfolio_return_pct
     columns:
-      portfolio_return_pct: The portfolio's return over the period in percent, monthly returns chain-linked.
+      portfolio_return_pct: The portfolio's return over the period in percent, monthly returns chain-linked; empty when a month of the period has no return (data_note says why).
       benchmark_return_pct: The approved benchmark's return over the same months in percent; empty when an index level is missing for a month (months_without_benchmark says how many).
       active_pct: Portfolio return less benchmark return, in percentage points.
       net_flow: The cost of buys less the proceeds of sells in the month, the money put into the portfolio.
+      income: The dividends and coupons received in the month. They are not a flow and are not in the return.
+      benchmark_linked: True when the office has a signed benchmark_link for the portfolio; without it there is no benchmark return.
+      months_not_usable: The months of the period with no return because a value is carried forward or estimated, a currency is not converted, a month is missing or the holdings changed with no trade.
+      data_note: Why those months have no return.
       complete: False when the period has fewer months than its name says (the data starts later).
       benchmark_gap: The index series that has no level for a month of the period; empty when none is missing.
     tie_out:
@@ -123,6 +134,8 @@ recipes:
         why: No index levels are loaded, so no benchmark return can be worked out.
       - sql: select count(*) from benchmark_definitions where lower(approval_status) = 'approved'
         why: No approved benchmark definition is loaded, so no benchmark return can be worked out.
+      - sql: select count(*) from business_rules where rule_code = 'benchmark_link'
+        why: The office has not signed which benchmark belongs to which portfolio (benchmark_link), so no portfolio is compared with a benchmark.
 
   - id: attribution
     label: Return attribution
@@ -131,7 +144,7 @@ recipes:
     may_read: [position_snapshots, instruments, transactions, benchmark_definitions, benchmark_components, market_observations, portfolios]
     never_read: [commitments, cash_movements]
     why: Attribution splits the active return by asset class from what was held at the start of the month, the class returns and the benchmark's class returns. It reads positions, the buys and sells, the instrument's asset class and the benchmark; nothing about commitments.
-    formula: 'Brinson-Fachler by asset class for one month, against the liquid sleeve of the approved benchmark (its components without a spread, weights scaled to 100 percent). For each class: start weight wp = class value at the start over the portfolio value; benchmark weight wb; class return rp = (end - start - flow) / (start + 0.5 x flow), the same modified Dietz as the portfolio return; benchmark class return rb = the index return of the class (listed_equity: Global Equity Index, bond: Global Bond Index; a class with no index, such as an instrument with no asset class, has 0); Rb = sum of wb x rb. Allocation = (wp - wb) x (rb - Rb); selection = wb x (rp - rb); interaction = (wp - wb) x (rp - rb). The three add to the active return (portfolio return less Rb) when the month has no flows; adds_up says whether they do. Only portfolios whose classified holdings all have an index are shown.'
+    formula: 'Brinson-Fachler by asset class for one month, against the liquid sleeve of the approved benchmark (its components without a spread, weights scaled to 100 percent). For each class: weight wp = (class value at the start + half the class flow) over the same sum for the portfolio (the average capital, so it equals the start value over the portfolio value when the month has no flows); benchmark weight wb; class return rp = (end - start - flow) / (start + 0.5 x flow), the same modified Dietz as the portfolio return; benchmark class return rb = the index return of the class (listed_equity: Global Equity Index, bond: Global Bond Index; a class with no index, such as an instrument with no asset class, has 0); Rb = sum of wb x rb. Allocation = (wp - wb) x (rb - Rb); selection = wb x (rp - rb); interaction = (wp - wb) x (rp - rb). The three add to the active return (portfolio return less Rb) in every month, flows included, because the weights are average-capital weights; adds_up says whether they do. A portfolio with a carried-forward, estimated or foreign-currency value is not shown. Only portfolios whose classified holdings all have an index are shown.'
     grain: By portfolio, month end and asset class
     sql: >-
       create table {name} as with {positions},
@@ -139,8 +152,8 @@ recipes:
       me as (select portfolio_id, position_date as month_end from (select *, row_number() over (partition by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1),
       pm as (select portfolio_id, month_end, lag(month_end) over (partition by portfolio_id order by month_end) as start_date from me),
       cmap(asset_class, series_key) as (values ('listed_equity', 'IDX:GLEQ:SYN'), ('bond', 'IDX:GLBD:SYN')),
-      hs as (select l.portfolio_id, l.position_date, coalesce(i.asset_class, 'unclassified') as asset_class, sum(l.source_market_value) as v from positions as l join instruments as i on i.id = l.instrument_id group by all),
-      elig as (select portfolio_id from hs group by portfolio_id having count(*) filter (where asset_class <> 'unclassified' and asset_class not in (select asset_class from cmap)) = 0
+      hs as (select l.portfolio_id, l.position_date, coalesce(i.asset_class, 'unclassified') as asset_class, sum(l.source_market_value) as v, count(*) filter (where coalesce(l.data_status, '') in ('Carried forward', 'Estimate') or l.currency <> g.base_currency) as bad from positions as l join instruments as i on i.id = l.instrument_id join portfolios as g on g.id = l.portfolio_id group by all),
+      elig as (select portfolio_id from hs group by portfolio_id having sum(bad) = 0 and count(*) filter (where asset_class <> 'unclassified' and asset_class not in (select asset_class from cmap)) = 0
       and count(*) filter (where asset_class in (select asset_class from cmap)) > 0),
       tf as (select pm.portfolio_id, pm.month_end, coalesce(i.asset_class, 'unclassified') as asset_class, -sum(t.cash_amount) as flow from pm join transactions as t on t.portfolio_id = pm.portfolio_id
       and t.transaction_type in ('buy', 'sell') and t.effective_date > pm.start_date and t.effective_date <= pm.month_end join instruments as i on i.id = t.instrument_id group by all),
@@ -162,7 +175,7 @@ recipes:
       left join wb on wb.portfolio_id = cm.portfolio_id and wb.month_end = cm.month_end and wb.series_key = cmap.series_key
       left join lv as e on e.series_key = cmap.series_key and e.m = date_trunc('month', cm.month_end)
       left join lv as s on s.series_key = cmap.series_key and s.m = date_trunc('month', cm.start_date)),
-      x as (select *, coalesce(rp0, 0) as rp, sv / nullif(sum(sv) over (partition by portfolio_id, month_end), 0) as wp,
+      x as (select *, coalesce(rp0, 0) as rp, (sv + 0.5 * fl) / nullif(sum(sv + 0.5 * fl) over (partition by portfolio_id, month_end), 0) as wp,
       sum(wbc * rb) over (partition by portfolio_id, month_end) as rb_total,
       100 * (sum(ev) over (partition by portfolio_id, month_end) - sum(sv) over (partition by portfolio_id, month_end) - sum(fl) over (partition by portfolio_id, month_end))
       / nullif(sum(sv) over (partition by portfolio_id, month_end) + 0.5 * sum(fl) over (partition by portfolio_id, month_end), 0) as rp_total from cls),
@@ -197,34 +210,36 @@ recipes:
     may_read: [position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: A single-name limit is a share of one portfolio, so it reads the positions, the name of the instrument and the signed limit. Whether a breach is real or rests on an old value is decided by the age of the value behind it.
-    formula: For the latest position date of each portfolio that has a signed single-name limit (a business rule of type policy whose parameters name the portfolio and the dimension single_name, with max_pct), each holding's exposure over the portfolio total in percent. A holding is over the limit when its share is above max_pct; a sovereign note is exempt (the answer key and the committee notes treat the limit as a limit on companies; the policy text does not say so, see the build notes). A breach is real when the oldest value behind it is no older than the office's stale-value days (rule stale_value_days, else 90 days, the use-case card), otherwise it is possibly stale. Cost to cure = (exposure - limit x total) / (1 - limit), the amount to sell so the name is at the limit of what is left. A holding with no asset class is flagged.
+    formula: For the latest position date of each portfolio that has a signed single-name limit (a business rule of type policy whose parameters name the portfolio and the dimension single_name, with max_pct), each holding's exposure over the portfolio total in percent. A holding is over the limit when its share is above max_pct. A holding is exempt only when a signed office rule says so (a business rule of type policy whose parameters name the portfolio, the dimension single_name_exempt and the instrument); with no such rule on record every holding, a sovereign note included, is tested like the others, and the policy text (section 3, any single name 0 to 5 percent) names no exception. A portfolio with holdings in more than one currency has no share worked out (status says so). A breach is real when the oldest value behind it is no older than the office's stale-value days (rule stale_value_days, else 90 days, the use-case card), otherwise it is possibly stale. Cost to cure = (exposure - limit x total) / (1 - limit), the amount to sell so the name is at the limit of what is left. A holding with no asset class is flagged.
     grain: By portfolio, holding (instrument name) and position date
     sql: >-
       create table {name} as with {positions},
       latest as (select portfolio_id, max(position_date) as position_date from positions group by portfolio_id),
-      tot as (select l.portfolio_id, l.position_date, sum(l.source_market_value) as total from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date group by all),
-      lim as (select p.id as portfolio_id, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2)) as limit_pct from business_rules as r join rule_versions as v on v.business_rule_id = r.id
-      join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
-      where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
-      stale as (select coalesce((select cast(json_extract_string(v.parameters, '$.days') as integer) from business_rules as r join rule_versions as v on v.business_rule_id = r.id
-      where r.rule_code = 'stale_value_days' and lower(v.approval_status) = 'approved' order by v.version_number desc limit 1), 90) as days),
+      tot as (select l.portfolio_id, l.position_date, sum(l.source_market_value) as total, count(distinct l.currency) as n_ccy from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date group by all),
+      lim as (select p.id as portfolio_id, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2)) as limit_pct from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      ex as (select p.id as portfolio_id, r.rule_code, lower(json_extract_string(v.parameters, '$.instrument')) as instrument from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name_exempt'),
+      stale as (select coalesce((select cast(json_extract_string(v.parameters, '$.days') as integer) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'stale_value_days' and lower(v.approval_status) = 'approved' order by v.version_number desc limit 1), 90) as days),
       held as (select p.portfolio_name as portfolio, l.portfolio_id, i.canonical_name as holding, i.asset_class, l.position_date, l.currency, sum(l.source_market_value) as exposure,
       max(l.position_date - cast(l.as_of_at at time zone 'UTC' as date)) as value_age_days
       from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date
       join instruments as i on i.id = l.instrument_id join portfolios as p on p.id = l.portfolio_id where l.portfolio_id in (select portfolio_id from lim) group by all),
-      x as (select h.*, t.total, m.limit_pct, h.holding ilike '%sovereign%' as exempt, h.exposure * 100 / nullif(t.total, 0) > m.limit_pct and not (h.holding ilike '%sovereign%') as over_limit
-      from held as h join tot as t on t.portfolio_id = h.portfolio_id and t.position_date = h.position_date join lim as m on m.portfolio_id = h.portfolio_id)
-      select x.portfolio, x.holding, x.asset_class, x.position_date, x.currency, cast(x.exposure as decimal(18,2)) as exposure, cast(x.total as decimal(18,2)) as portfolio_total,
-      cast(100 * x.exposure / nullif(x.total, 0) as decimal(9,2)) as concentration_pct, x.limit_pct, x.over_limit, x.exempt, x.value_age_days,
-      case when x.exempt then 'exempt' when not x.over_limit then 'inside limit' when x.value_age_days > (select days from stale) then 'possibly stale' else 'real breach' end as status,
-      x.asset_class is null as no_asset_class,
-      case when x.over_limit then cast((x.exposure - x.limit_pct / 100 * x.total) / (1 - x.limit_pct / 100) as decimal(18,2)) end as cost_to_cure
-      from x
+      x as (select h.*, t.total, t.n_ccy, m.limit_pct, (select min(e.rule_code) from ex as e where e.portfolio_id = h.portfolio_id and e.instrument = lower(h.holding)) as exemption_rule
+      from held as h join tot as t on t.portfolio_id = h.portfolio_id and t.position_date = h.position_date join lim as m on m.portfolio_id = h.portfolio_id),
+      y as (select *, exemption_rule is not null as exempt, exemption_rule is null and n_ccy = 1 and exposure * 100 / nullif(total, 0) > limit_pct as over_limit from x)
+      select y.portfolio, y.holding, y.asset_class, y.position_date, y.currency, cast(y.exposure as decimal(18,2)) as exposure, cast(y.total as decimal(18,2)) as portfolio_total,
+      cast(case when y.n_ccy = 1 then 100 * y.exposure / nullif(y.total, 0) end as decimal(9,2)) as concentration_pct, y.limit_pct, y.over_limit, y.exempt, y.exemption_rule, y.value_age_days,
+      case when y.exempt then 'exempt' when y.n_ccy > 1 then 'not worked out: holdings in more than one currency' when not y.over_limit then 'inside limit'
+      when y.value_age_days > (select days from stale) then 'possibly stale' else 'real breach' end as status,
+      y.asset_class is null as no_asset_class,
+      case when y.over_limit then cast((y.exposure - y.limit_pct / 100 * y.total) / (1 - y.limit_pct / 100) as decimal(18,2)) end as cost_to_cure
+      from y
     measure: exposure
     columns:
       concentration_pct: The holding's share of the portfolio on the position date, in percent.
       limit_pct: The signed single-name limit of the portfolio, in percent.
-      status: real breach, possibly stale (the value behind it is older than the stale-value days), inside limit, or exempt.
+      status: real breach, possibly stale (the value behind it is older than the stale-value days), inside limit, exempt (a signed exemption), or not worked out (more than one currency).
+      exempt: True only when a signed exemption rule names the holding.
+      exemption_rule: The code of the signed exemption rule; empty when none is on record.
       cost_to_cure: The amount to sell to bring the name back to the limit of what is left; empty unless the holding is over the limit.
       no_asset_class: True when the holding has no asset class, so no class limit can be tested for it.
     tie_out:
@@ -275,9 +290,10 @@ recipes:
       drift_pct: The share less the target, in percentage points; empty when the policy sets no target.
       possibly_stale: True when the oldest value in the bucket is older than the stale-value days, so the drift may be a stale value and not a move.
     tie_out:
-      label: Each bucket is a part of the portfolio total on the same date (shares are between 0 and 100)
+      label: The portfolio totals used equal the position snapshots of the same portfolios and dates, and every share is between 0 and 100
       sql: >-
-        select (select count(*) from {name} where allocation_pct between 0 and 100), (select count(*) from {name})
+        select (select coalesce(sum(portfolio_total), 0) from (select distinct portfolio, position_date, portfolio_total from {name}) as q) + (select count(*) from {name} where allocation_pct between 0 and 100),
+        (select coalesce(sum(c.v), 0) from ({positions_check}) as c join portfolios as p on p.id = c.portfolio_id where exists (select 1 from {name} as n where n.portfolio = p.portfolio_name and n.position_date = c.position_date)) + (select count(*) from {name})
 
   - id: limit_changes
     label: Proposed against current limits
@@ -286,36 +302,41 @@ recipes:
     may_read: [position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: To see what a limit would have caused, the largest name at each month end is tested against each version of the limit, the signed one and the proposed one. It reads positions, names and the limit versions.
-    formula: For every month end of each portfolio that has a single-name limit, the largest holding (a sovereign note is exempt, as in single_name_breach) over the portfolio total in percent, tested against every version of the limit that is not retired, the signed one and any proposed one (a rule version of the same rule with another approval status). over_limit is 1 when the largest name is above that version's max_pct; summing it over the months gives the breaches the version would have caused. The months are the ones the positions cover.
+    formula: For every month end of each portfolio that has a single-name limit, the largest holding (one with a signed exemption, as in single_name_breach, is left out; with none on record all holdings count) over the portfolio total in percent, tested against every version of the limit that is not retired, the signed one and any proposed one (a rule version of the same rule with another approval status). over_limit is 1 when the largest name is above that version's max_pct; summing it over the months gives the breaches the version would have caused. The months are the ones the positions cover; the first position date of a portfolio is its opening position and is shown (is_opening) but not counted in months_tested or breaches_in_period, the same way the first date is only a start value in a return. A portfolio with holdings in more than one currency has no share (mixed_currency).
     grain: By portfolio, limit version and month end
     sql: >-
       create table {name} as with {positions},
       pv as (select distinct portfolio_id, position_date from positions),
-      me as (select portfolio_id, position_date from (select *, row_number() over (partition by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1),
-      tot as (select portfolio_id, position_date, sum(source_market_value) as total from positions group by all),
+      me as (select portfolio_id, position_date, first_date from (select *, row_number() over (partition by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn, min(position_date) over (partition by portfolio_id) as first_date from pv) as q where rn = 1),
+      tot as (select portfolio_id, position_date, sum(source_market_value) as total, count(distinct currency) as n_ccy from positions group by all),
+      ex as (select p.id as portfolio_id, r.rule_code, lower(json_extract_string(v.parameters, '$.instrument')) as instrument from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name_exempt'),
       nm as (select l.portfolio_id, l.position_date, i.canonical_name as holding, sum(l.source_market_value) as v from positions as l join instruments as i on i.id = l.instrument_id
-      where i.canonical_name not ilike '%sovereign%' group by all),
+      where not exists (select 1 from ex as e where e.portfolio_id = l.portfolio_id and e.instrument = lower(i.canonical_name)) group by all),
       topn as (select portfolio_id, position_date, arg_max(holding, v) as largest_holding, max(v) as exposure from nm group by portfolio_id, position_date),
       lim as (select p.id as portfolio_id, r.rule_code, v.version_number, lower(v.approval_status) as approval_status, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2)) as limit_pct
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
-      where r.rule_type = 'policy' and lower(v.approval_status) <> 'retired' and json_extract_string(v.parameters, '$.dimension') = 'single_name')
-      , r as (select p.portfolio_name as portfolio, m.rule_code, m.version_number, m.approval_status, m.limit_pct, e.position_date as month_end, t.largest_holding, cast(t.exposure as decimal(18,2)) as exposure,
-      cast(100 * t.exposure / nullif(o.total, 0) as decimal(9,2)) as largest_name_pct, case when 100 * t.exposure / nullif(o.total, 0) > m.limit_pct then 1 else 0 end as over_limit
+      where r.rule_type = 'policy' and lower(v.approval_status) <> 'retired' and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      r as (select p.portfolio_name as portfolio, m.rule_code, m.version_number, m.approval_status, m.limit_pct, e.position_date as month_end, e.position_date = e.first_date as is_opening, t.largest_holding, cast(t.exposure as decimal(18,2)) as exposure,
+      cast(case when o.n_ccy = 1 then 100 * t.exposure / nullif(o.total, 0) end as decimal(9,2)) as largest_name_pct, o.n_ccy > 1 as mixed_currency,
+      case when o.n_ccy > 1 then null when 100 * t.exposure / nullif(o.total, 0) > m.limit_pct then 1 else 0 end as over_limit
       from lim as m join me as e on e.portfolio_id = m.portfolio_id join topn as t on t.portfolio_id = e.portfolio_id and t.position_date = e.position_date
       join tot as o on o.portfolio_id = e.portfolio_id and o.position_date = e.position_date join portfolios as p on p.id = m.portfolio_id)
-      select r.*, count(*) over (partition by rule_code, version_number) as months_tested, cast(sum(over_limit) over (partition by rule_code, version_number) as integer) as breaches_in_period,
+      select r.*, count(*) filter (where not is_opening) over (partition by portfolio, rule_code, version_number) as months_tested,
+      cast(coalesce(sum(over_limit) filter (where not is_opening) over (partition by portfolio, rule_code, version_number), 0) as integer) as breaches_in_period,
       cast(month_end = max(month_end) over (partition by portfolio) as integer) as is_latest from r
     measure: over_limit
     columns:
       largest_name_pct: The largest holding's share of the portfolio at the month end, in percent.
       over_limit: 1 when that share is above this version's limit at that month end, else 0; its sum is the breaches the version would have caused.
       approval_status: approved for the signed limit, proposed (or draft) for one still to be decided.
-      breaches_in_period: The months in which the largest name was above this version's limit, out of the months tested.
+      breaches_in_period: The months in which the largest name was above this version's limit, out of the months tested (the opening position is not counted), per portfolio and version.
+      is_opening: True on the first position date of the portfolio, shown but not counted.
+      mixed_currency: True when the portfolio holds more than one currency on the date, so no share is worked out.
       is_latest: 1 on the latest month end, the holding as it stands now.
     tie_out:
       label: Every month end is tested against every limit version once
       sql: >-
-        select (select count(*) from {name}), (select count(*) from (select distinct rule_code, version_number, month_end from {name}) as q)
+        select (select count(*) from {name}), (select count(*) from (select distinct portfolio, rule_code, version_number, month_end from {name}) as q)
 
   - id: report_tie_out
     label: Issued report against the administrator
@@ -362,7 +383,7 @@ recipes:
     grain: By report section of the latest issued report
     sql: >-
       create table {name} as with {positions},
-      rep as (select d.id, d.title, d.document_date from documents as d where d.document_type = 'investment_report' and not exists (select 1 from documents as x where x.document_type = 'investment_report' and x.document_date > d.document_date)),
+      rep as (select id, title, document_date, received_at from (select d.*, row_number() over (order by d.document_date desc, d.received_at desc, d.id) as rn from documents as d where d.document_type = 'investment_report') as q where rn = 1),
       adm as (select l.position_date, i.canonical_name as k, l.source_market_value as v from positions as l join instruments as i on i.id = l.instrument_id where l.view_type = 'accounting'
       union all select l.position_date, p.portfolio_name, l.source_market_value from positions as l join portfolios as p on p.id = l.portfolio_id where l.view_type = 'accounting'),
       admt as (select position_date, k, sum(v) as v from adm group by all),
@@ -376,7 +397,7 @@ recipes:
       select title as report_file, document_date as report_date, section, cast(report_value as decimal(18,2)) as report_value, cast(source_value as decimal(18,2)) as source_value, status,
       source_value is not null as has_source, coalesce(abs(report_value - source_value) < 0.005, false) as ties,
       coalesce(abs(report_value - source_value) < 0.005, false) and coalesce(lower(status), '') <> 'estimated' as ready,
-      case when not coalesce(abs(report_value - source_value) < 0.005, false) then 'does not tie to its source' when lower(status) = 'estimated' then 'rests on an estimate' end as reason,
+      case when source_value is null and section = 'FX translation' then 'no WMR fixing for the report date' when source_value is null then 'no source figure to check against' when not coalesce(abs(report_value - source_value) < 0.005, false) then 'does not tie to its source' when lower(status) = 'estimated' then 'rests on an estimate' end as reason,
       cast(100.0 * sum(case when coalesce(abs(report_value - source_value) < 0.005, false) and coalesce(lower(status), '') <> 'estimated' then 1 else 0 end) over () / count(*) over () as decimal(9,2)) as share_ready_pct
       from sec
     measure: report_value
@@ -390,7 +411,7 @@ recipes:
       label: The sections of the report are its lines plus the Total and the FX translation
       sql: >-
         select (select count(*) from {name}), (select count(*) from documents as d join extracted_fields as f on f.document_id = d.id where d.document_type = 'investment_report' and f.field_name not ilike 'total%'
-        and not exists (select 1 from documents as x where x.document_type = 'investment_report' and x.document_date > d.document_date)) + 2
+        and d.id = (select r.id from (select d2.id, row_number() over (order by d2.document_date desc, d2.received_at desc, d2.id) as rn from documents as d2 where d2.document_type = 'investment_report') as r where r.rn = 1)) + 2
 
   - id: report_total_fx
     label: Report total in USD and SGD
@@ -402,8 +423,8 @@ recipes:
     formula: The Total line of the latest issued investment report in USD, the date of the report and the date it was issued, the WMR USD/SGD fixing of the report date, and the SGD total = USD total x fixing. The SGD total the report states is shown beside it.
     grain: By issued report (the latest)
     sql: >-
-      create table {name} as with rep as (select d.id, d.title, d.document_date, cast(d.received_at at time zone 'UTC' as date) as issued_on from documents as d
-      where d.document_type = 'investment_report' and not exists (select 1 from documents as x where x.document_type = 'investment_report' and x.document_date > d.document_date)),
+      create table {name} as with rep0 as (select id, title, document_date, received_at from (select d.*, row_number() over (order by d.document_date desc, d.received_at desc, d.id) as rn from documents as d where d.document_type = 'investment_report') as q where rn = 1),
+      rep as (select id, title, document_date, cast(received_at at time zone 'UTC' as date) as issued_on from rep0),
       fx as (select cast(observed_at at time zone 'UTC' as date) as d, arg_max(value, observed_at) as rate from market_observations where observation_type = 'fx' and base_currency = 'USD' and quote_currency = 'SGD' group by 1)
       select r.title as report_file, r.document_date as report_date, r.issued_on, cast(u.value_numeric as decimal(18,2)) as total_usd, u.value_text as total_status, fx.rate as usd_sgd_fixing,
       cast(u.value_numeric * fx.rate as decimal(18,2)) as total_sgd, cast(s.value_numeric as decimal(18,2)) as total_sgd_reported
@@ -436,7 +457,7 @@ recipes:
       rep as (select strftime(d.document_date, '%Y-%m') as report_month, f.field_name as line, f.value_numeric as figure, d.title as source_file, f.page_number as source_page
       from documents as d join extracted_fields as f on f.document_id = d.id where d.document_type = 'investment_report'),
       j as (select i.*, r.source_file, r.source_page, row_number() over (partition by i.request_id, i.item order by r.source_file) as rn from items as i
-      left join rep as r on r.report_month = i.report_month and r.line = i.line and r.figure = i.figure)
+      left join rep as r on r.report_month = i.report_month and lower(trim(regexp_replace(r.line, '\s*\([^)]*\)\s*$', ''))) = lower(trim(regexp_replace(i.line, '\s*\([^)]*\)\s*$', ''))) and r.figure = i.figure)
       select request_file, item, report_month, line, cast(figure as decimal(18,2)) as figure, source_file, source_page, source_file is not null as traced,
       cast(100.0 * count(*) filter (where source_file is not null) over (partition by request_id) / count(*) over (partition by request_id) as decimal(9,2)) as share_traced_pct,
       count(*) over (partition by request_id) as items_in_request, count(*) filter (where source_file is null) over (partition by request_id) as untraced_items
@@ -463,43 +484,48 @@ recipes:
     may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, business_rules, rule_versions, valuation_observations, committee_decisions, deal_pipeline, cash_movements, market_observations, benchmark_definitions]
     never_read: [commitments, transactions]
     why: 'The committee pack is a list of sections, each with its owner and its state, drawn from what the office holds: the issued report, the performance inputs, the breaches, the amendments still open and the proposals waiting for a decision.'
-    formula: 'Five sections with an owner role. Report (cio): the latest issued report, how many of its lines are estimates. Performance (cio): ready when the index levels of the latest month and an approved benchmark are loaded. Attribution (investment_analyst): same inputs as performance. Breaches (risk_officer): the real single-name breaches (as single_name_breach counts them) with no committee decision on them. Proposals (cfo): the capital calls noticed and not yet confirmed and the deals in the pipeline at their latest stage, with their amounts. Amendments open = amended valuations (the latest of a chain) with no committee decision on them, shown on the Report section.'
+    formula: 'Five sections with an owner role. Report (cio): the latest issued report, how many of its lines are estimates. Performance (cio): ready when the index levels of the latest month and an approved benchmark are loaded. Attribution (investment_analyst): same inputs as performance. Breaches (risk_officer): the real single-name breaches (as single_name_breach counts them, signed exemptions only) with no committee decision on them, and the largest. Proposals (cfo): the capital calls noticed and not yet confirmed and the deals in the pipeline at their latest stage, each with its own amount (call_amount and deal_amount, never added together because a call is money owed and a deal is a possible commitment). Whether cash covers the call is the figure cash_after_calls, not this one. Amendments open = amended valuations (the latest of a chain) with no committee decision on them, shown on the Report section.'
     grain: By committee pack section
     sql: >-
       create table {name} as with {positions},
-      rep as (select d.id, d.document_date, d.received_at from documents as d where d.document_type = 'investment_report' and not exists (select 1 from documents as x where x.document_type = 'investment_report' and x.document_date > d.document_date)),
+      rep as (select id, title, document_date, received_at from (select d.*, row_number() over (order by d.document_date desc, d.received_at desc, d.id) as rn from documents as d where d.document_type = 'investment_report') as q where rn = 1),
       est as (select count(*) filter (where lower(f.value_text) = 'estimated' and f.field_name not ilike 'total%') as n, max(f.value_numeric) filter (where f.field_name = 'Total') as total, max(r.document_date) as report_date
       from rep as r join extracted_fields as f on f.document_id = r.id),
       amend as (select count(*) as n from valuation_observations as a where a.supersedes_valuation_id is not null and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id)
       and not exists (select 1 from committee_decisions as c where c.subject_type = 'valuation' and c.subject_id = a.id)),
       latest as (select portfolio_id, max(position_date) as position_date from positions group by portfolio_id),
-      stale as (select coalesce((select cast(json_extract_string(v.parameters, '$.days') as integer) from business_rules as r join rule_versions as v on v.business_rule_id = r.id
-      where r.rule_code = 'stale_value_days' and lower(v.approval_status) = 'approved' order by v.version_number desc limit 1), 90) as days),
-      br as (select count(*) as n from (select l.portfolio_id, i.canonical_name, sum(l.source_market_value) as v, max(l.position_date - cast(l.as_of_at at time zone 'UTC' as date)) as age
-      from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date join instruments as i on i.id = l.instrument_id
-      where i.canonical_name not ilike '%sovereign%' group by all) as h join (select p.id as portfolio_id, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2)) as limit_pct
-      from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
-      where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name') as m on m.portfolio_id = h.portfolio_id
-      join (select portfolio_id, sum(v) as total from (select l.portfolio_id, l.source_market_value as v from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date) as z group by portfolio_id) as t
-      on t.portfolio_id = h.portfolio_id where h.v * 100 / t.total > m.limit_pct and h.age <= (select days from stale)
+      stale as (select coalesce((select cast(json_extract_string(v.parameters, '$.days') as integer) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'stale_value_days' and lower(v.approval_status) = 'approved' order by v.version_number desc limit 1), 90) as days),
+      lim as (select p.id as portfolio_id, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2)) as limit_pct from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      ex as (select p.id as portfolio_id, r.rule_code, lower(json_extract_string(v.parameters, '$.instrument')) as instrument from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name_exempt'),
+      tp as (select l.portfolio_id, sum(l.source_market_value) as total, count(distinct l.currency) as n_ccy from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date group by all),
+      hd as (select l.portfolio_id, i.canonical_name, sum(l.source_market_value) as v, max(l.position_date - cast(l.as_of_at at time zone 'UTC' as date)) as age
+      from positions as l join latest as d on d.portfolio_id = l.portfolio_id and d.position_date = l.position_date join instruments as i on i.id = l.instrument_id group by all),
+      brk as (select h.canonical_name, 100 * h.v / t.total as pct from hd as h join lim as m on m.portfolio_id = h.portfolio_id join tp as t on t.portfolio_id = h.portfolio_id
+      where t.n_ccy = 1 and h.v * 100 / t.total > m.limit_pct and h.age <= (select days from stale)
+      and not exists (select 1 from ex as e where e.portfolio_id = h.portfolio_id and e.instrument = lower(h.canonical_name))
       and not exists (select 1 from committee_decisions as c where c.subject_type = 'breach' and c.subject_id = h.canonical_name)),
-      calls as (select count(*) as n, coalesce(sum(abs(amount)), 0) as amount from cash_movements as c where c.movement_type = 'capital_call' and c.confirmation_status = 'noticed'
+      br as (select count(*) as n, arg_max(canonical_name, pct) as top_name, max(pct) as top_pct from brk),
+      calls as (select count(*) as n, coalesce(sum(abs(amount)), 0) as amount from cash_movements as c where c.movement_type = 'call' and c.confirmation_status = 'noticed'
       and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = c.id)),
       deals as (select count(*) as n, coalesce(sum(d.target_commitment), 0) as amount from deal_pipeline as d where not exists (select 1 from deal_pipeline as x where x.supersedes_deal_id = d.id)
       and lower(d.stage) not in ('declined', 'closed', 'withdrawn')),
       idx as (select count(*) as n from market_observations where observation_type = 'index_level' and observed_at >= (select coalesce(max(document_date), date '1900-01-01') from rep) - interval 1 month),
       bmk as (select count(*) as n from benchmark_definitions where lower(approval_status) = 'approved')
       select 'Report' as section, 'cio' as owner_role, 'report_tie_out' as figure_ref, case when est.n > 0 then est.n || ' line(s) estimated' else 'all lines official' end as status, est.total as amount, est.n as items,
-      amend.n as amendments_open, est.report_date as as_of from est, amend
-      union all select 'Performance', 'cio', 'time_weighted_return', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date from idx, bmk, est
-      union all select 'Attribution', 'investment_analyst', 'attribution', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date from idx, bmk, est
-      union all select 'Breaches', 'risk_officer', 'single_name_breach', br.n || ' real breach(es) open', null, br.n, null, est.report_date from br, est
-      union all select 'Proposals', 'cfo', 'cash_after_calls', calls.n || ' capital call(s) noticed, ' || deals.n || ' deal(s) in the pipeline', calls.amount + deals.amount, calls.n + deals.n, null, est.report_date from calls, deals, est
+      amend.n as amendments_open, est.report_date as as_of, cast(null as decimal(18,2)) as call_amount, cast(null as decimal(18,2)) as deal_amount from est, amend
+      union all select 'Performance', 'cio', 'time_weighted_return', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date, null, null from idx, bmk, est
+      union all select 'Attribution', 'investment_analyst', 'attribution', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date, null, null from idx, bmk, est
+      union all select 'Breaches', 'risk_officer', 'single_name_breach', br.n || ' real breach(es) open' || case when br.n > 0 then ', the largest is ' || br.top_name || ' at ' || cast(round(br.top_pct, 2) as varchar) || ' percent' else '' end,
+      null, br.n, null, est.report_date, null, null from br, est
+      union all select 'Proposals', 'cfo', 'cash_after_calls', calls.n || ' capital call(s) noticed for ' || cast(round(calls.amount) as bigint) || ' and ' || deals.n || ' deal(s) in the pipeline for ' || cast(round(deals.amount) as bigint),
+      null, calls.n + deals.n, null, est.report_date, cast(calls.amount as decimal(18,2)), cast(deals.amount as decimal(18,2)) from calls, deals, est
     measure: amount
     columns:
       owner_role:  The role id that owns the section in the pack.
       status: What state the section is in, from the data.
-      amount: 'The money behind the section: the report total, or the calls noticed plus the deal tickets.'
+      amount: 'The report total on the Report section; empty on the others.'
+      call_amount: On the Proposals section, the capital calls noticed and not yet confirmed.
+      deal_amount: On the Proposals section, the deal tickets in the pipeline.
       amendments_open: On the Report section, the amended valuations with no committee decision yet.
       figure_ref: The figure the section is read from.
     tie_out:

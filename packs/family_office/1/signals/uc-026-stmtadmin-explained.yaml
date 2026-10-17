@@ -13,6 +13,7 @@ inputs:
 - kind: doc
   fields:
   - fund
+  - statement_date
   - statement_value
   - administrator_value
   - difference
@@ -23,6 +24,7 @@ inputs:
   as: a
   by:
     fund: doc.fund
+    valuation_date: doc.statement_date
 subject: '{doc.fund} difference explained'
 condition: doc.difference != 0 and a.change == doc.difference
 severity: info

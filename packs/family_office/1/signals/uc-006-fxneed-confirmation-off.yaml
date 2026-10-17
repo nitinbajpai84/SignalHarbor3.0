@@ -1,7 +1,8 @@
-# SUGGESTION. The bank's confirmation differs from the plan. Card uc-006-fxneed, W1 cash builder (docs/v3/w1/build-cash.md). Needs a signed rule fx_plan_tolerance (parameters pct): the 0.1 percent is in the card and the answer key, not in the office rules.
+# SUGGESTION. The bank's rate on a confirmation differs from the fixing. Card uc-006-fxneed, W1 cash builder (docs/v3/w1/build-cash.md). Part two of the card: every conversion is checked against the fixing of its trade date, not against the planned amount.
+# Needs a signed rule fx_plan_tolerance (parameters pct): the 0.1 percent is in the card and the answer key, not in the office rules, so while no rule is signed the signal is skipped with the reason.
 suggestion: true
 id: uc-006-fxneed-confirmation-off
-title: The bank's confirmation differs from the plan
+title: The bank's rate differs from the fixing
 pain_points:
 - PP-01
 row: exception
@@ -12,23 +13,17 @@ inputs:
 - kind: doc
   fields:
   - trade_reference
-  - currency_bought
-  - currency_sold
-  - amount_sold
   - rate
 - kind: figure
-  id: fx_required
-  recipe: fx_required
-  as: plan
+  id: fx_rate_check
+  recipe: fx_rate_check
+  as: chk
   by:
-    currency: doc.currency_bought
-    convert_currency: doc.currency_sold
+    trade_reference: doc.trade_reference
 - kind: rule
   id: fx_plan_tolerance
   as: tol
-let:
-  diff: doc.amount_sold - plan.convert_amount
-condition: abs(diff) > plan.convert_amount * tol.pct / 100
+condition: abs(chk.difference_pct) > tol.pct
 subject: '{doc.trade_reference}'
 severity: problem
 route_to: ops_lead
@@ -40,8 +35,8 @@ hold:
   blocks: close_fx_match
   scope: '{doc.trade_reference}'
   until: the bank corrects or the difference is accepted
-message: 'The confirmation {doc.trade_reference} is {diff:,.0f} {plan.convert_currency} away from the plan: {doc.amount_sold:,.0f} against {plan.convert_amount:,.0f}. Call the bank.'
+message: 'The confirmation {doc.trade_reference} is at {chk.bank_rate} against the fixing {chk.fixing} of {chk.trade_date}: {chk.difference_pct:.4f} percent apart, over the signed {tol.pct} percent. Call the bank before the match is closed.'
 evidence:
-- plan
+- chk
 - tol
 - doc.rate

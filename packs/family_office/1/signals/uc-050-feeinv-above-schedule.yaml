@@ -1,4 +1,4 @@
-# SUGGESTION. Card 50 row 3, the exception: the invoice is higher than the fee schedule gives. Held with the difference and a query draft.
+# SUGGESTION. Card 50 row 3, the exception: the invoice is higher than the fee schedule gives. Held with the difference until the query is answered.
 suggestion: true
 id: uc-050-feeinv-above-schedule
 title: A fee invoice is above the fee schedule
@@ -12,5 +12,5 @@ severity: problem
 route_to: ops_lead
 action: {verb: record, options: [Send the query]}
 hold: {blocks: prepare_payment, scope: "{doc.invoice_no}", until: the vendor answers the query and the Head of Finance approves the payment}
-message: "{doc.vendor} invoice {doc.invoice_no}: {doc.currency} {doc.billed:,.2f} billed against {doc.expected:,.2f} on the fee schedule, {doc.variance:,.2f} more (rate {doc.rate_billed_pct}% billed, {doc.rate_schedule_pct}% on the schedule). Held. A query to the vendor is drafted."
+message: "{doc.vendor} invoice {doc.invoice_no}: {doc.currency} {doc.billed:,.2f} billed against {doc.expected:,.2f} on the fee schedule, {doc.variance:,.2f} more (rate {doc.rate_billed_pct}% billed, {doc.rate_schedule_pct}% on the schedule). Held until the vendor answers a query."
 evidence: [doc.invoice_no, doc.billed, doc.expected, doc.variance]

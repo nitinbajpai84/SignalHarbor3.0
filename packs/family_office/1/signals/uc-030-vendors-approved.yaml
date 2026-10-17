@@ -1,4 +1,4 @@
-# SUGGESTION. Card 30 row 2: HR proposed, the Head of Finance approves, and the next renewal date is set.
+# SUGGESTION. Card 30 row 2: HR proposed, the Head of Finance approves. Nothing here sets the next renewal date; if it is never entered, uc-030-vendors-renewal-passed raises it once the date passes.
 suggestion: true
 id: uc-030-vendors-approved
 title: A renewal proposal waits for approval
@@ -11,5 +11,5 @@ condition: doc.annual_cost > 0
 severity: needs
 route_to: cfo
 action: {verb: approve, options: [Approve, Send back]}
-message: "HR proposed a decision on {doc.vendor_name} ({doc.currency} {doc.annual_cost:,.0f} a year, renews {doc.next_renewal_date}). Approve? The contract's next renewal date is set once you do."
+message: "HR proposed a decision on {doc.vendor_name} ({doc.currency} {doc.annual_cost:,.0f} a year, renews {doc.next_renewal_date}). Approve? The next renewal date is then entered from the renewed contract."
 evidence: [doc.vendor_name, doc.annual_cost, doc.next_renewal_date]

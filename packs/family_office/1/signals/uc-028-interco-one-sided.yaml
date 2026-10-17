@@ -1,0 +1,32 @@
+# SUGGESTION. A transfer between entities is recorded on one side only (or on two dates). Card uc-028-interco, W1 cash builder (docs/v3/w1/build-cash.md). Fires only while a pair has an unmatched row; with several such pairs the engine cannot pick one and skips it with the reason.
+suggestion: true
+id: uc-028-interco-one-sided
+title: A transfer between entities is recorded on one side only
+pain_points:
+- PP-02
+row: exception
+trigger:
+  'on': run
+  chain: M
+inputs:
+- kind: figure
+  id: intercompany_balance
+  recipe: intercompany_balance
+  as: ic
+  by:
+    sides_agree: false
+condition: ic.unmatched_rows > 0 or ic.date_differs > 0
+subject: '{ic.lender} to {ic.borrower}'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: record
+  options:
+  - Record the other side
+hold:
+  blocks: close_intercompany
+  scope: '{ic.lender}'
+  until: both sides of the transfer are recorded
+message: 'The loan from {ic.lender} to {ic.borrower} ({ic.balance_outstanding:,.0f} {ic.currency}) has {ic.unmatched_rows} transfer row(s) with no row on the other side and {ic.date_differs} on another date. Record the other side before the balance is relied on.'
+evidence:
+- ic

@@ -86,8 +86,8 @@ def test_expression_language_is_safe():
 def test_the_library_is_five_valid_suggestions(env):
     _, plane = env
     lib = {s["id"]: s for s in SG.library(plane)}
-    assert sorted(lib) == IDS
-    assert all(s["error"] is None and s["suggestion"] and s["source"] == "pack" for s in lib.values()), {k: s["error"] for k, s in lib.items()}
+    assert set(IDS) <= set(lib)  # the UC01 five; the other use cases add their own
+    assert all(s["error"] is None and s["suggestion"] and s["source"] == "pack" for s in lib.values()), {k: s["error"] for k, s in lib.items() if s["error"]}
     assert lib["uc01-bank-changed"]["severity"] == "problem" and lib["uc01-bank-changed"]["hold"]["blocks"] == "prepare_payment"
 
 
@@ -152,7 +152,7 @@ def test_no_alarm_when_nothing_is_wrong_and_missing_input_is_skipped(env):
     assert SG.evaluate(plane, {"trigger": "action_done", "signal": "uc01-call-arrives", "doc": big, "facts": FACTS})["fired"] == []
     # the fund's commitment missing: skipped with the reason
     none = SG.evaluate(plane, {"trigger": "action_done", "signal": "uc01-call-arrives", "doc": {**NOTICE, "call_no": field("9")}, "facts": {}})
-    assert none["skipped"] and "commitments" in none["skipped"][0]["why"]
+    assert "commitments" in next(s["why"] for s in none["skipped"] if s["signal"] == "uc01-call-fits")
 
 
 def test_the_same_fund_under_another_spelling_matches(env):
@@ -177,7 +177,7 @@ def test_routes_desk_and_permissions(env):
     arrive(plane)
     sam, grace = login(app, "sam@evergreen.example.test"), login(app, "grace@evergreen.example.test")
     lib = sam.get("/api/v3/signals").json()
-    assert [s["id"] for s in lib] == IDS and next(s for s in lib if s["id"] == "uc01-bank-changed")["stats"]["open"] == 1
+    assert [s["id"] for s in lib if s["id"] in IDS] == IDS and next(s for s in lib if s["id"] == "uc01-bank-changed")["stats"]["open"] == 1
     open_ = sam.get("/api/v3/signals/fired?status=open").json()
     assert len(open_) == 2 and all(r["evidence"] for r in open_)
     assert any(n["kind"] == "signal" and n["severity"] == "problem" for n in H.desk(plane)["needs"])

@@ -5,11 +5,11 @@ title: A proposed limit with its breaches
 pain_points: [INT-RISK, INT-GOV, INT-DATAGOV]
 trigger: {on: figure_changed, figure: limit_changes}
 inputs:
-  - {kind: doc, fields: [portfolio, rule_code, version_number, approval_status, limit_pct, months_tested, breaches_in_period, is_latest]}
-subject: "{doc.rule_code} version {doc.version_number}"
+  - {kind: doc, fields: [portfolio, version_number, approval_status, limit_pct, months_tested, breaches_in_period, is_latest]}
+subject: "single-name limit version {doc.version_number} for {doc.portfolio}"
 condition: "doc.approval_status == 'proposed' and doc.is_latest == 1"
 severity: needs
 route_to: risk_officer
 action: {verb: approve, options: [Propose it to the committee]}
 message: "A limit of {doc.limit_pct:.0f} percent for {doc.portfolio} would have been breached in {doc.breaches_in_period:,.0f} of {doc.months_tested:,.0f} month ends. Propose it to the committee, or not."
-evidence: [doc.portfolio, doc.rule_code, doc.version_number, doc.approval_status, doc.limit_pct]
+evidence: [doc.portfolio, doc.version_number, doc.approval_status, doc.limit_pct]

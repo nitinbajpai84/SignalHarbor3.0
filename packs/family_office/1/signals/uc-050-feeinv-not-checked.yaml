@@ -1,0 +1,17 @@
+# SUGGESTION. Card 50, exception: the invoice could not be checked against the fee schedule (no rate on file, two rates, or the fee base in another currency).
+# Without this the invoice would fire no signal at all: its variance is empty. check_status says why (recipes/office.yaml, invoice_variance).
+suggestion: true
+id: uc-050-feeinv-not-checked
+title: A fee invoice cannot be checked against the fee schedule
+pain_points: [INT-OPS, PP-04, INT-GOV]
+trigger: {on: figure_changed, figure: invoice_variance}
+inputs:
+  - {kind: doc, fields: [invoice_no, vendor, currency, billed, check_status]}
+subject: "{doc.invoice_no} not checked"
+condition: doc.check_status != 'checked'
+severity: problem
+route_to: ops_lead
+action: {verb: record, options: [Record the fee rate on record for the vendor]}
+hold: {blocks: prepare_payment, scope: "{doc.invoice_no}", until: the invoice is checked against a fee rate on record}
+message: "{doc.vendor} invoice {doc.invoice_no} ({doc.currency} {doc.billed:,.2f}) cannot be checked: {doc.check_status}. Held until a fee rate on record is found."
+evidence: [doc.invoice_no, doc.billed, doc.check_status]

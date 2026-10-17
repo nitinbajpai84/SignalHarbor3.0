@@ -1,0 +1,16 @@
+# SUGGESTION. Card 49, the exception: a manager billed fees and the fund terms are not on record (or are not on the commitment), so what it should have charged cannot be stated. Never shown as nothing above terms.
+suggestion: true
+id: uc-049-feedrag-no-terms
+title: Fee terms are not on record for a manager's fees
+pain_points: [PP-03, INT-BENCH]
+trigger: {on: figure_changed, figure: fee_drag}
+inputs:
+  - {kind: doc, fields: [manager, currency, fees_paid, fee_rows_without_terms]}
+subject: "{doc.manager}"
+condition: doc.fee_rows_without_terms > 0
+severity: needs
+route_to: fund_accountant
+action: {verb: call_back, options: [Ask the manager for the fund terms]}
+hold: {blocks: accept_manager_fee, scope: "{doc.manager}", until: the fund terms are on record}
+message: "{doc.manager} billed {doc.currency} {doc.fees_paid:,.0f} in fees and the terms for {doc.fee_rows_without_terms:,.0f} of its fee lines are not on record, so it cannot be said whether they are above the terms. Ask the manager for the fund terms."
+evidence: [doc.fees_paid, doc.fee_rows_without_terms]

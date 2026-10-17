@@ -13,6 +13,8 @@ inputs:
   fields:
   - fund
   - call_no
+  - due_date
+  - amount
   - currency
 - kind: figure
   id: funding_plan
@@ -20,6 +22,8 @@ inputs:
   as: plan
   by:
     fund: doc.fund
+    due_date: doc.due_date
+    call_amount: doc.amount
     is_named: true
 condition: plan.transfer_needed and plan.best_other_spare > 0
 subject: '{doc.fund} call {doc.call_no}'

@@ -1,24 +1,26 @@
-# SUGGESTION. Called plus unfunded is not the commitment. Card uc6-uncalled, W1 cash builder (docs/v3/w1/build-cash.md).
+# SUGGESTION. A commitment is called beyond itself. Card uc6-uncalled, W1 cash builder (docs/v3/w1/build-cash.md). Called plus unfunded always equals the commitment by construction, so that is not tested; the test is whether what the register and the recorded calls say is called is more than the commitment.
 suggestion: true
 id: uc6-uncalled-adds-up
-title: Called plus unfunded is not the commitment
+title: A commitment is called beyond itself
 pain_points:
 - PP-02
 row: exception
 trigger:
   'on': action_done
-  signal: uc01-call-fits
+  signal: uc01-call-arrives
 inputs:
 - kind: doc
   fields:
   - fund
+  - investor
 - kind: figure
   id: called_to_date
   recipe: called_to_date
   as: calls
   by:
     fund: doc.fund
-condition: calls.called_after_notice + calls.unfunded_after_notice != calls.commitment or calls.unfunded_after_notice < 0
+    investor: doc.investor
+condition: calls.called_before_notice > calls.commitment
 subject: '{doc.fund} uncalled'
 severity: problem
 route_to: fund_accountant
@@ -30,6 +32,6 @@ hold:
   blocks: report_uncalled
   scope: '{doc.fund}'
   until: the record is corrected
-message: '{doc.fund}: called {calls.called_after_notice:,.0f} plus unfunded {calls.unfunded_after_notice:,.0f} is not the commitment {calls.commitment:,.0f}. Check the register and the calls recorded.'
+message: '{doc.fund}: {calls.called_before_notice:,.0f} is recorded as called before this notice, more than the commitment of {calls.commitment:,.0f}. Check the register and the calls recorded; the uncalled figure should not be reported until they agree.'
 evidence:
 - calls

@@ -1,16 +1,16 @@
 # SUGGESTION. Card 9 (month-end SOP), row 1: the process narrative and the handover email were read and every step has an owner and a check.
-# The narrative reader passes the counts as doc fields (steps, steps_without_owner, steps_without_check) with the file as the source.
+# The narrative reader passes the counts as doc fields (steps, steps_without_owner, steps_without_check, manual_steps) with the file as the source. The message claims only what those counts show.
 suggestion: true
 id: uc9-sop-steps-drawn
-title: The steps, lanes and checks are drawn
+title: The steps, owners and checks are read
 pain_points: [INT-OPS, INT-DATAGOV]
 trigger: {on: file_arrived, kind: process_narrative}
 inputs:
-  - {kind: doc, fields: [process_name, steps, steps_without_owner, steps_without_check]}
+  - {kind: doc, fields: [process_name, steps, steps_without_owner, steps_without_check, manual_steps]}
 subject: "{doc.process_name}"
 condition: doc.steps > 0 and doc.steps_without_owner == 0 and doc.steps_without_check == 0
 severity: needs
 route_to: hr_admin
 action: {verb: approve, options: [Accept the steps]}
-message: "{doc.process_name}: {doc.steps:,.0f} steps drawn with their lanes, hand-overs, checks and what happens when a step fails. Every step has an owner and a check. Accept?"
-evidence: [doc.process_name, doc.steps]
+message: "{doc.process_name}: {doc.steps:,.0f} steps read from the narrative. Every step has an owner and a check; {doc.manual_steps:,.0f} are done by hand and are flagged for automation. Accept?"
+evidence: [doc.process_name, doc.steps, doc.manual_steps]

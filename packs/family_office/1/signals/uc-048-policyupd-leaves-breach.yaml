@@ -6,7 +6,7 @@ pain_points: [INT-RISK, INT-GOV]
 trigger: {on: figure_changed, figure: limit_changes}
 inputs:
   - {kind: doc, fields: [rule_code, version_number, approval_status, limit_pct, largest_holding, exposure, largest_name_pct, over_limit, is_latest]}
-subject: "{doc.rule_code} version {doc.version_number} leaves {doc.largest_holding}"
+subject: "single-name limit version {doc.version_number} leaves {doc.largest_holding}"
 condition: "doc.approval_status == 'proposed' and doc.is_latest == 1 and doc.over_limit == 1"
 severity: problem
 route_to: cio

@@ -1,4 +1,4 @@
-# SUGGESTION. uc-038 row 2: the roll-forward ties within a cent. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-038 row 2: the roll-forward ties within a cent on a final or amended value. Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-038-navroll-ties
 title: The roll-forward ties within a cent
@@ -12,7 +12,7 @@ inputs:
   recipe: nav_rollforward
   as: rf
   by: {fund: doc.fund, latest: true}
-condition: abs(rf.unexplained) <= 0.01
+condition: abs(rf.unexplained) <= 0.01 and not rf.on_estimate
 subject: '{doc.fund} ties at {rf.period_end}'
 severity: info
 route_to: fund_accountant

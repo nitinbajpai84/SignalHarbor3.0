@@ -13,12 +13,12 @@ inputs:
   as: rf
   by: {fund: doc.fund, latest: true}
 condition: abs(rf.unexplained) > 0.01
-subject: '{doc.fund} unexplained {rf.unexplained} at {rf.period_end}'
+subject: '{doc.fund} unexplained {rf.unexplained:,.0f} at {rf.period_end}'
 severity: problem
 route_to: fund_accountant
 action:
   verb: call_back
   options: [Record the call to the manager]
 hold: {blocks: report_fund, scope: '{doc.fund}', until: the manager has explained the difference}
-message: '{doc.fund}, {rf.period_start} to {rf.period_end}: the manager reports a gain of {rf.reported_gain:,.0f}; prior value, calls and distributions leave {rf.implied_gain:,.0f}. {rf.unexplained:,.0f} is unexplained. The fund is held back from reports.'
+message: '{doc.fund}, {rf.period_start} to {rf.period_end} ({rf.closing_status} value): the manager reports a gain of {rf.reported_gain:,.0f}; prior value, calls and distributions leave {rf.implied_gain:,.0f}. {rf.unexplained:,.0f} is unexplained. The fund is held back from reports until the manager explains it.'
 evidence: [doc.fund, rf]

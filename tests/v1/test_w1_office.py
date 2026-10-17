@@ -5,6 +5,7 @@ import ast
 import csv
 import glob
 import re
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -15,6 +16,7 @@ import pytest
 import yaml
 
 from sh_platform.v1 import v3_recipes as R
+from sh_platform.v1 import v3_signals as S
 
 REPO = Path(__file__).resolve().parents[2]
 OFFICE = REPO / "tests" / "v1" / "fixtures" / "office6m"
@@ -29,7 +31,18 @@ def _key(card: str) -> dict:
 
 
 def _recipe(rid: str) -> dict:
-    return next(r for r in yaml.safe_load((PACK / "recipes" / "office.yaml").read_text(encoding="utf-8"))["recipes"] if r["id"] == rid)
+    """The recipe as the live loader serves it. allowance_due is the one exception: family.yaml's stub of the same id shadows it in the loader
+    (test_allowance_due_is_served_by_the_loader, xfail until the stub goes), so it is read from office.yaml."""
+    if rid == "allowance_due":
+        return next(r for r in yaml.safe_load((PACK / "recipes" / "office.yaml").read_text(encoding="utf-8"))["recipes"] if r["id"] == rid)
+    r = R.recipe(rid)
+    assert r, f"{rid} is not served by the recipe loader"
+    return r
+
+
+@pytest.mark.xfail(strict=True, reason="family.yaml's allowance_due stub sorts first and shadows office.yaml's recipe (build-office.md, Needs 1)")
+def test_allowance_due_is_served_by_the_loader():
+    assert R.recipe("allowance_due") is not None
 
 
 @pytest.fixture()
@@ -42,6 +55,7 @@ def con():
 def _build(con, rid: str) -> str:
     """Run the recipe's SQL on the copy, check it only reads its allowed tables, run its tie-out. -> the ready table's name."""
     r, name = _recipe(rid), "gold_" + rid
+    con.execute(f"drop table if exists {name}")
     assert r.get("status") != "stub" and r["sql"]
     sql = R.render(r, name)
     assert R.refusal(r, sql) is None, R.refusal(r, sql)
@@ -92,6 +106,29 @@ def test_renewals_vendors_match_the_key(con):
     assert all(g["decision_open"] == 1 for g in got)
 
 
+def _contract(con, vid: str, renewal: str, notice, auto: bool = True, recorded: str = "2026-10-13 09:00:00") -> None:
+    con.execute("insert into vendor_contracts (id, organization_id, source_record_id, received_at, recorded_at, vendor_name, service, next_renewal_date, auto_renews, notice_days, "
+                "annual_cost, currency, status) values (?, ?, ?, ?, ?, ?, 'Probe service', ?, ?, ?, 1000, 'USD', 'Active')", [vid, ORG, vid, recorded, recorded, vid, renewal, auto, notice])
+
+
+VENDOR_SIGNALS = ("uc-030-vendors-renewing", "uc-030-vendors-notice-near", "uc-030-vendors-notice-passed", "uc-030-vendors-renewal-passed")
+
+
+def test_vendor_signals_on_the_key_and_on_every_date_case(con):
+    """Key: both contracts come up; only Orchard (notice deadline 1 Nov, 19 days) is near. Probes: a notice deadline 10 days away on a renewal 100 days away
+    is listed and near; a passed notice deadline is its own exception (never "-40 days left"); a passed renewal date stays listed."""
+    _load_vendors(con)
+    _contract(con, "Probe far renewal", "2027-01-21", 90)   # renewal in 100 days, notice deadline in 10
+    _contract(con, "Probe notice passed", "2026-11-02", 60)  # renewal in 20 days, notice deadline 40 days ago
+    _contract(con, "Probe renewal passed", "2026-10-01", None)
+    rows = {r["vendor_name"]: r for r in _rows(con, _build(con, "renewals_vendors"), "vendor_name")}
+    got = {v: [s for s in VENDOR_SIGNALS if _fires(s, r)] for v, r in rows.items()}
+    assert got == {"Orchard IT Services": ["uc-030-vendors-renewing", "uc-030-vendors-notice-near"], "Quill Research Subscriptions": ["uc-030-vendors-renewing"],
+                   "Probe far renewal": ["uc-030-vendors-renewing", "uc-030-vendors-notice-near"], "Probe notice passed": ["uc-030-vendors-notice-passed"],
+                   "Probe renewal passed": ["uc-030-vendors-renewal-passed"]}
+    assert rows["Probe notice passed"]["days_to_notice_deadline"] == -40 and rows["Probe renewal passed"]["days_to_renewal"] == -12
+
+
 def test_renewals_vendors_status_and_supersede(con):
     _load_vendors(con)
     con.execute("update vendor_contracts set status = 'Renewal approved' where vendor_name = 'Orchard IT Services'")
@@ -138,8 +175,9 @@ def test_allowance_due_matches_the_key(con):
         assert owed[(member, "2026-10")] == amount
     earlier = [r for r in rows if r["earlier"] == 1 and r["owed"] > 0]
     assert [(r["member_name"], str(r["month"])[:7], float(r["owed"])) for r in earlier] == [(u["member"], u["month"], u["amount"]) for u in key["unpaid_earlier"]]
-    assert float(sum(r["owed"] for r in rows)) == key["total_owed"] == 28000
-    assert {r["entity"] for r in rows} == {"Evergreen Family Trust"}
+    assert {r["currency"] for r in rows} == {"USD"} and float(sum(r["owed"] for r in rows)) == key["total_owed"] == 28000
+    assert {r["entity"] for r in rows} == {"Evergreen Family Trust"} and {float(r["entity_owed"]) for r in rows} == {key["total_owed"]}
+    assert sorted(r["member_name"] for r in rows if _fires("uc-015-allowances-due", r)) == sorted(key["due_october"])
 
 
 def test_allowance_due_over_all_history_only_the_planted_gap(con):
@@ -151,15 +189,82 @@ def test_allowance_due_over_all_history_only_the_planted_gap(con):
     assert owed == {("Ethan Chen", "2026-09"): 5000.0, ("Lin Chen", "2026-10"): 8000.0, ("Maya Chen", "2026-10"): 6000.0, ("Ethan Chen", "2026-10"): 5000.0, ("Wen Chen", "2026-10"): 4000.0}
 
 
-def test_trust_cash_cannot_cover_the_allowances_after_the_buffer():
-    """The cash half of the card: the Trust's USD at 13 October (both banks, read from the daily balances) against the signed buffer."""
-    cash = Decimal("0")
-    for bank in ("HB", "TCB"):
-        ws = openpyxl.load_workbook(OFFICE / "2026-10" / "bank_statements" / f"{bank}_TRUST_USD_2026-10_mtd.xlsx")["Daily balances"]
-        cash += Decimal(str(list(ws.iter_rows(values_only=True))[-1][5]))
-    assert float(cash) == _key("uc-015-allowances")["trust_usd_cash"] == 213895.52
+OCT_MTD = sorted((OFFICE / "2026-10" / "bank_statements").glob("*_TRUST_USD_2026-10_mtd.xlsx"))
+SEP_HB = OFFICE / "2026-10" / "bank_statements" / "HB_TRUST_USD_2026-09.xlsx"
+
+
+def _trust_cash() -> Decimal:
+    """The Trust's USD at 13 October: both banks, the last daily balance of the October month-to-date statements."""
+    return sum((Decimal(str(list(openpyxl.load_workbook(f)["Daily balances"].iter_rows(values_only=True))[-1][5])) for f in OCT_MTD), Decimal("0"))
+
+
+def _buffer() -> dict:
+    """The signed office rule, as the signal reads it (buffer.amount)."""
     rules = {r["rule"]: r["value"] for r in csv.DictReader((OFFICE / "reference" / "office_rules.csv").open(encoding="utf-8"))}
-    assert float(cash) - float(rules["cash_buffer_usd"]) < _key("uc-015-allowances")["total_owed"]  # the signal holds the payment list
+    return {"amount": Decimal(rules["cash_buffer_usd"])}
+
+
+def _open_lines(con) -> list[dict]:
+    _load_trust(con, ["2026-09", "2026-10"], [SEP_HB])
+    return [r for r in _rows(con, _build(con, "allowance_due"), "month, member_name") if r["owed"] > 0]
+
+
+def test_trust_cash_cannot_cover_the_allowances_after_the_buffer(con):
+    """The cash half of the card on the key's own inputs: every open line is held, none goes to release."""
+    assert len(OCT_MTD) == 2 and float(_trust_cash()) == _key("uc-015-allowances")["trust_usd_cash"] == 213895.52
+    cash = {"cash": _trust_cash()}
+    rows = _open_lines(con)
+    assert all(_fires("uc-015-allowances-cash-short", r, cash=cash, buffer=_buffer()) for r in rows)
+    assert not any(_fires("uc-015-allowances-approved", r, cash=cash, buffer=_buffer()) for r in rows)
+
+
+def test_approvals_one_by_one_cannot_break_the_buffer_together(con):
+    """Cash 270,000 and a 250,000 buffer: each 4,000 to 8,000 line alone would fit, all 28,000 together do not, so none is released."""
+    rows, cash = _open_lines(con), {"cash": Decimal("270000")}
+    assert len(rows) == 5 and all(r["owed"] + _buffer()["amount"] <= cash["cash"] for r in rows)
+    assert not any(_fires("uc-015-allowances-approved", r, cash=cash, buffer=_buffer()) for r in rows)
+    assert all(_fires("uc-015-allowances-cash-short", r, cash=cash, buffer=_buffer()) for r in rows)
+    assert all(_fires("uc-015-allowances-approved", r, cash={"cash": Decimal("278000")}, buffer=_buffer()) for r in rows)
+
+
+def test_allowance_due_with_the_october_statement_shows_october_paid(con):
+    """The build also lists the October month-to-date statements: October was paid on 1 Oct, so only Ethan Chen's September is owed and no October line asks for approval."""
+    _load_trust(con, ["2026-09", "2026-10"], [SEP_HB, *OCT_MTD])
+    rows = _rows(con, _build(con, "allowance_due"), "month, member_name")
+    key = _key("uc-015-allowances")
+    oct_ = {r["member_name"]: r for r in rows if str(r["month"])[:7] == "2026-10"}
+    assert {m: float(r["paid"]) for m, r in oct_.items()} == key["due_october"] and all(r["owed"] == 0 for r in oct_.values())
+    assert [(r["member_name"], str(r["month"])[:7], float(r["owed"])) for r in rows if r["owed"] > 0] == \
+           [(u["member"], u["month"], u["amount"]) for u in key["unpaid_earlier"]]
+    assert not [r for r in rows if _fires("uc-015-allowances-due", r)]
+    assert [r["member_name"] for r in rows if _fires("uc-015-allowances-unpaid-earlier", r)] == ["Ethan Chen"]
+    ethan = next(r for r in rows if r["owed"] > 0)
+    assert float(ethan["entity_owed"]) == 5000 and ethan["month_name"] == "September 2026"
+    assert _fires("uc-015-allowances-cash-short", ethan, cash={"cash": _trust_cash()}, buffer=_buffer())  # 213,895.52 is already under the buffer
+
+
+def test_allowance_money_in_is_not_a_payment(con):
+    """A5: money out is negative. A +5,000 allowance movement (a refund) does not pay Ethan's September; a +8,000 reversal of Lin's payment makes hers owed again."""
+    _load_trust(con, ["2026-09", "2026-10"], [SEP_HB])
+    for mid, day, amount in (("rf1", "2026-09-20", 5000), ("rv1", "2026-09-22", 8000)):
+        con.execute("insert into cash_movements (id, organization_id, source_record_id, portfolio_id, movement_type, effective_date, received_at, recorded_at, amount, currency, "
+                    "confirmation_status) values (?, ?, ?, 'pf-trust', 'allowance', ?, ?, ?, ?, 'USD', 'confirmed')", [mid, ORG, mid, day, day, day, amount])
+    r = _recipe("allowance_due")
+    con.execute(R.render(r, "gold_allowance_due"))
+    owed = _owed(_rows(con, "gold_allowance_due", "month, member_name"))
+    assert owed[("Ethan Chen", "2026-09")] == 5000 and owed[("Lin Chen", "2026-09")] == 8000 and owed[("Maya Chen", "2026-09")] == 0
+    t = R.tie_out(con, r, "gold_allowance_due")  # the reversal cancels Lin's payment; the 5,000 refund matches nothing and shows as the difference
+    assert not t["ok"] and t["b"] - t["a"] == 5000
+
+
+def test_allowance_currencies_are_kept_apart(con):
+    """An SGD allowance line is owed in SGD: it is not added to the Trust's USD total, and a USD payment does not pay it."""
+    _load_trust(con, ["2026-09", "2026-10"], [SEP_HB])
+    con.execute("insert into family_members (id, organization_id, source_record_id, received_at, recorded_at, member_name, relationship, legal_entity_id, allowance_amount, "
+                "allowance_currency, allowance_frequency, allowance_from, allowance_to, paid_from_portfolio_id) values ('fm-sgd', ?, 'sr', '2026-10-01', '2026-10-01', 'Lin Chen', "
+                "'probe', 'le-trust', 8000, 'SGD', 'monthly', '2026-09-01', '2026-10-31', 'pf-trust')", [ORG])
+    rows = _rows(con, _build(con, "allowance_due"), "month, member_name")
+    assert {r["currency"]: float(r["entity_owed"]) for r in rows} == {"USD": 28000, "SGD": 16000}
 
 
 # ---- the card 50 data: fee invoices and the fee schedule read from PDF ----------------------------------------------------------------------
@@ -214,6 +319,49 @@ def test_invoice_without_a_schedule_rate_stays_in_with_no_variance(con):
     con.execute("delete from extracted_fields where field_name like 'service_fee_%' and value_text = 'Anchorage Custody'")
     got = {r["invoice_no"]: r for r in _rows(con, _build(con, "invoice_variance"), "invoice_no")}
     assert got["FEE-CUST-Q3"]["variance"] is None and got["FEE-CUST-Q3"]["expected"] is None and got["FEE-ADMIN-Q3"]["variance"] == 0
+    assert got["FEE-CUST-Q3"]["check_status"] == "no fee schedule on file for the vendor" and got["FEE-ADMIN-Q3"]["check_status"] == "checked"
+
+
+FEE_SIGNALS = ("uc-050-feeinv-arrives", "uc-050-feeinv-above-schedule", "uc-050-feeinv-below-schedule", "uc-050-feeinv-not-checked")
+
+
+def _invoice_signals(row: dict) -> list[str]:
+    return [s for s in FEE_SIGNALS if _fires(s, row)]
+
+
+def test_each_invoice_fires_exactly_one_signal(con):
+    _load_fee_invoices(con)
+    con.execute("update extracted_fields set value_numeric = 4900 where document_id = 'FEE-CUST-Q2' and field_name = 'amount_due'")  # below the schedule
+    got = {r["invoice_no"]: _invoice_signals(r) for r in _rows(con, _build(con, "invoice_variance"), "invoice_no")}
+    assert got == {"FEE-ADMIN-Q2": ["uc-050-feeinv-arrives"], "FEE-ADMIN-Q3": ["uc-050-feeinv-arrives"], "FEE-CUST-Q2": ["uc-050-feeinv-below-schedule"],
+                   "FEE-CUST-Q3": ["uc-050-feeinv-above-schedule"]}
+
+
+def test_invoice_not_checked_fires_and_holds(con):
+    """No schedule rate for the custodian, or the fee base in another currency: the invoice is held, never left without a signal."""
+    _load_fee_invoices(con)
+    con.execute("delete from extracted_fields where field_name like 'service_fee_%' and value_text = 'Anchorage Custody'")
+    con.execute("update extracted_fields set currency = 'SGD' where document_id = 'FEE-ADMIN-Q3' and field_name = 'fee_base'")
+    got = {r["invoice_no"]: r for r in _rows(con, _build(con, "invoice_variance"), "invoice_no")}
+    assert got["FEE-ADMIN-Q3"]["check_status"] == "the fee base and the amount due are in different currencies"
+    assert got["FEE-CUST-Q3"]["check_status"] == "no fee schedule on file for the vendor"
+    assert {i: _invoice_signals(r) for i, r in got.items()} == {"FEE-ADMIN-Q2": ["uc-050-feeinv-arrives"], "FEE-ADMIN-Q3": ["uc-050-feeinv-not-checked"],
+                                                                 "FEE-CUST-Q2": ["uc-050-feeinv-not-checked"], "FEE-CUST-Q3": ["uc-050-feeinv-not-checked"]}
+    assert SIGNALS["uc-050-feeinv-not-checked"]["hold"]["blocks"] == "prepare_payment"
+
+
+def test_fee_schedule_in_force_is_used_never_the_highest(con):
+    """An older dated schedule at 0.08 percent is not in force; two rates for one vendor in the schedule in force are not guessed between."""
+    _load_fee_invoices(con)
+    _doc(con, "old-schedule", "fee_schedule", "Old fee schedule", dated=date(2025, 1, 1))
+    _field(con, "old-schedule", "service_fee_rate", text="Anchorage Custody", num=Decimal("0.0008"))
+    _field(con, "old-schedule", "service_fee_periods", text="Anchorage Custody", num=Decimal(4))
+    got = {r["invoice_no"]: r for r in _rows(con, _build(con, "invoice_variance"), "invoice_no")}
+    assert float(got["FEE-CUST-Q3"]["expected"]) == 5150 and float(got["FEE-CUST-Q3"]["variance"]) == 1030
+    con.execute("insert into extracted_fields (id, organization_id, document_id, field_name, value_text, value_numeric, confidence, review_status) "
+                "values ('second-rate', ?, 'fee-schedule', 'service_fee_rate', 'Anchorage Custody', 0.0008, 'high', 'Accepted')", [ORG])
+    got = {r["invoice_no"]: r for r in _rows(con, _build(con, "invoice_variance"), "invoice_no")}
+    assert got["FEE-CUST-Q3"]["expected"] is None and got["FEE-CUST-Q3"]["check_status"] == "the fee schedule gives more than one rate for the vendor"
 
 
 # ---- card 9 (uc9-sop): no table holds a process, so the key is checked on the narrative itself ---------------------------------------------
@@ -225,6 +373,12 @@ def test_sop_steps_and_owners_match_the_key():
     assert len(steps) == key["steps"] == 6
     assert {s[0]: s[1] for s in steps} == key["owners"]
     assert not [s[0] for s in steps if not (s[1] and s[2] and s[4])]  # no step without an owner, a system and a check: the exception signal stays quiet
+    assert [i for i, s in enumerate(steps, 1) if s[3].lower() == "yes"] == key["manual_steps_flagged_for_automation"]
+    doc = {"process_name": "Month-end report", "steps": len(steps), "steps_without_owner": 0, "steps_without_check": 0,
+           "manual_steps": len(key["manual_steps_flagged_for_automation"])}
+    gap = {**doc, "steps_without_check": 1}
+    assert _fires("uc9-sop-steps-drawn", doc) and not _fires("uc9-sop-step-gap", doc)
+    assert _fires("uc9-sop-step-gap", gap) and not _fires("uc9-sop-steps-drawn", gap)
 
 
 # ---- the signals, the builds and the figures they point at ---------------------------------------------------------------------------------
@@ -235,6 +389,20 @@ for _s in SIGNALS.values():  # YAML reads a bare `on` as True; the engine rename
     _s["trigger"] = {("on" if k is True else k): v for k, v in _s["trigger"].items()}
 ROLES = {r["id"] for r in yaml.safe_load((PACK / "role_builds.yaml").read_text(encoding="utf-8"))["roles"]}
 FUNCS = {"abs", "min", "max", "round", "last4", "num", "same_fund"}
+
+
+def _fires(sid: str, row: dict, **inputs) -> bool | None:
+    """Run the signal's own condition the way the engine does (v3_signals.calc on doc, the named inputs and the lets in order).
+    None when a doc field it declares is empty: the engine skips the signal then."""
+    s = SIGNALS[sid]
+    fields = [f for i in s.get("inputs", []) if i["kind"] == "doc" for f in i["fields"]]
+    if any(row.get(f) in (None, "") for f in fields):
+        return None
+    ns = {"doc": {f: S.num(row[f]) for f in fields}, **{k: {c: S.num(v) for c, v in d.items()} for k, d in inputs.items()}}
+    funcs = {"abs": abs, "min": min, "max": max, "round": round, "num": S.num, "last4": S.last4}
+    for name, expr in (s.get("let") or {}).items():
+        ns[name] = S.calc(expr, ns, funcs)
+    return bool(S.calc(s["condition"], ns, funcs))
 
 
 def _names(expr: str) -> set[str]:
@@ -277,6 +445,17 @@ def test_figure_inputs_name_a_recipe_that_exists():
     assert {"renewals_vendors", "allowance_due", "invoice_variance"} <= here
 
 
+def _numbers(o):
+    if isinstance(o, dict):
+        for v in o.values():
+            yield from _numbers(v)
+    elif isinstance(o, list):
+        for v in o:
+            yield from _numbers(v)
+    elif isinstance(o, (int, float)) and not isinstance(o, bool):
+        yield float(o)
+
+
 def test_builds_exist_and_their_numbers_are_the_key():
     roles = yaml.safe_load((PACK / "builds" / "office.yaml").read_text(encoding="utf-8"))["roles"]
     builds = {b["id"]: (r["id"], b) for r in roles for b in r["builds"]}
@@ -286,7 +465,7 @@ def test_builds_exist_and_their_numbers_are_the_key():
         assert b["check"]["ask"].rstrip("?") == next(iter(KEYS[bid]["questions"])).rstrip("?")
         for f in b["files"]:
             assert f.startswith("office6m:") and glob.glob(str(OFFICE / f[len("office6m:"):])), f
-        flat = yaml.safe_dump(KEYS[bid]["questions"]).replace(",", "")
+        nums = set(_numbers(KEYS[bid]["questions"]))
         for e in b["check"]["expect"]:
-            assert e.replace(",", "") in flat, (bid, e)
+            assert float(e.replace(",", "")) in nums, (bid, e)  # a value of the key, not digits found somewhere in its text
     assert not [b for r in yaml.safe_load((PACK / "role_builds.yaml").read_text(encoding="utf-8"))["roles"] for b in r["builds"] if b["id"] in builds]

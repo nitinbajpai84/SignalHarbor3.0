@@ -5,12 +5,12 @@ title: An earlier allowance was never paid
 pain_points: [INT-LIQ, PP-01, INT-GOV]
 trigger: {on: figure_changed, figure: allowance_due}
 inputs:
-  - {kind: doc, fields: [member_name, month, scheduled, paid, owed, currency, entity, earlier]}
+  - {kind: doc, fields: [member_name, month, month_name, scheduled, paid, owed, currency, entity, earlier]}
 subject: "{doc.member_name} {doc.month}"
 condition: doc.owed > 0 and doc.earlier == 1
 severity: problem
 route_to: principal
 action: {verb: approve, options: [Pay it with this month, Skip it]}
 hold: {blocks: prepare_payment, scope: "{doc.member_name}", until: the Principal decides whether the earlier allowance is paid or skipped}
-message: "{doc.member_name}: the {doc.month} allowance of {doc.currency} {doc.scheduled:,.0f} has no payment from {doc.entity} (paid {doc.paid:,.0f}, owed {doc.owed:,.0f}). This month's payment waits for your decision."
+message: "{doc.member_name}: the {doc.month_name} allowance of {doc.currency} {doc.scheduled:,.0f} has no payment from {doc.entity} (paid {doc.paid:,.0f}, owed {doc.owed:,.0f}). This month's payment waits for your decision."
 evidence: [doc.member_name, doc.scheduled, doc.paid, doc.owed]

@@ -1,7 +1,7 @@
-# SUGGESTION. Card 50 row 2: the matching invoice moves to the payment run on its own; the Operations Lead only sees it.
+# SUGGESTION. Card 50 row 2: the matching invoice was approved for payment; it is only seen. The card says nobody; the engine needs a role, so it is an info card to ops_lead with verb see.
 suggestion: true
 id: uc-050-feeinv-matches
-title: A matched fee invoice moves to the payment run
+title: A matched fee invoice is approved for payment
 pain_points: [INT-OPS, INT-GOV]
 trigger: {on: action_done, signal: uc-050-feeinv-arrives}
 inputs:
@@ -11,5 +11,5 @@ condition: doc.billed > 0
 severity: info
 route_to: ops_lead
 action: {verb: see, options: [Seen]}
-message: "{doc.vendor} invoice {doc.invoice_no} ({doc.currency} {doc.billed:,.2f}) is in the payment run."
+message: "{doc.vendor} invoice {doc.invoice_no} ({doc.currency} {doc.billed:,.2f}) matches the fee schedule and is approved for payment. Nothing to do."
 evidence: [doc.invoice_no, doc.billed]

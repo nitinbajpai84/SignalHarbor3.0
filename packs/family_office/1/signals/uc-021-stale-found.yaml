@@ -12,10 +12,11 @@ inputs:
   by: {first_row: true}
 condition: age.stale_count > 0
 subject: 'stale values at {age.as_of}: {age.stale_names}'
-severity: info
+severity: needs
 route_to: risk_officer
 action:
-  verb: see
-  options: [Seen]
-message: '{age.stale_count} fund value(s) are older than {age.stale_after_days} days at {age.as_of}: {age.stale_names}. They are marked stale in the limits and report notes.'
+  verb: record
+  options: [Label them stale in the limits and report notes]
+hold: {blocks: use_stale_values, scope: '{age.stale_names}', until: the values are labelled stale in the limits and report notes}
+message: '{age.stale_count} fund value(s) are older than {age.stale_after_days} days at {age.as_of}: {age.stale_names}. Label them stale in the limits and report notes so nobody leans on them?'
 evidence: [age]

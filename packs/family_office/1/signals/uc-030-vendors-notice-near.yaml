@@ -8,7 +8,7 @@ trigger: {on: figure_changed, figure: renewals_vendors}
 inputs:
   - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date, days_to_renewal, days_to_notice_deadline, auto_renews, decision_open]}
 subject: "{doc.vendor_name} {doc.next_renewal_date} notice"
-condition: doc.auto_renews == 1 and doc.decision_open == 1 and doc.days_to_notice_deadline <= 30
+condition: doc.auto_renews == 1 and doc.decision_open == 1 and doc.days_to_notice_deadline >= 0 and doc.days_to_notice_deadline <= 30
 severity: problem
 route_to: hr_admin
 action: {verb: call_back, options: [Record the call with the vendor]}

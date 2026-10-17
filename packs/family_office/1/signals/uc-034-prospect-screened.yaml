@@ -11,5 +11,5 @@ condition: doc.ticket > 0
 severity: needs
 route_to: investment_analyst
 action: {verb: approve, options: [Go to diligence, Pass]}
-message: "{doc.deal_name} ({doc.asset_class}): minimum ticket {doc.currency} {doc.ticket:,.0f}, {doc.ticket_pct_of_uncalled:,.1f} percent of the {doc.uncalled_before:,.0f} still uncalled ({doc.uncalled_after:,.0f} after it). Policy limits: budget {doc.budget_status}, class {doc.class_status}. Go to diligence or pass?"
+message: "{doc.deal_name} ({doc.asset_class}): minimum commitment {doc.currency} {doc.ticket:,.0f}, {doc.ticket_pct_of_uncalled:,.1f} percent of the USD {doc.uncalled_before:,.0f} we can still be asked to pay in on existing commitments (USD {doc.uncalled_after:,.0f} with this one). Policy limits: budget {doc.budget_status}, class {doc.class_status}. Go to diligence or pass?"
 evidence: [doc.ticket, doc.uncalled_before, doc.budget_status, doc.class_status]

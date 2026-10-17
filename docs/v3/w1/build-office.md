@@ -3,7 +3,7 @@
 Cards of the domain "Run the office" and "Family and people" with priority 1 to 50: **9** (uc9-sop), **15** (uc-015-allowances), **30** (uc-030-vendors), **50** (uc-050-feeinv). Synthetic data only.
 
 Files: `packs/family_office/1/recipes/office.yaml`, `signals/uc9-sop-*`, `uc-015-allowances-*`, `uc-030-vendors-*`, `uc-050-feeinv-*`, `builds/office.yaml`, `tests/v1/test_w1_office.py`.
-Test run: `pytest tests/v1/test_w1_office.py` gives **27 passed, 0 failed**. All 13 signals also pass the engine's own `check()` (branch `sh3-signals`, with the roles of `role_builds.yaml`).
+Test run (wave 2): `pytest tests/v1/test_w1_office.py` gives **39 passed, 1 xfailed, 0 failed**. All 17 signals pass the engine's own `check()` with the roles of `role_builds.yaml` (run on main). Wave 2 fixes: see "Wave 2: the verifier's rows" at the end.
 
 ## Card 9, uc9-sop: Process map and SOP for the month-end report
 - **Recipes:** none. No table holds a process; the figure (steps with owner, system and check) is read from the narrative document.
@@ -14,7 +14,7 @@ Test run: `pytest tests/v1/test_w1_office.py` gives **27 passed, 0 failed**. All
 ## Card 15, uc-015-allowances: Family allowances and distributions due
 - **Recipe:** `allowance_due` (in `office.yaml`, ready), by member and month: scheduled, paid, owed, earlier. Tie-out: owed equals scheduled less every allowance paid in the same months.
 - **Signals:** `-due` (principal, approve), `-approved` (cfo, release, only when cash covers it after the buffer), `-cash-short` (exception, cfo, holds `prepare_payment` for the entity), `-unpaid-earlier` (exception for the planted gap, principal, holds `prepare_payment` for the member).
-- **Build:** `uc-015-allowances` under `principal`. Expect: 28,000; 8,000; 6,000; 5,000; 4,000; 213,895.52.
+- **Build:** `uc-015-allowances` under `principal`, with the October month-to-date Trust USD statements added to the key's inputs (wave 2, row 1). Expect: 8,000; 6,000; 5,000; 4,000; 213,895.52.
 - **Test:** pass. Key scenario (September and October schedules, September Trust statement): due October Lin 8,000, Maya 6,000, Ethan 5,000, Wen 4,000; unpaid earlier Ethan Chen September 5,000; total owed 28,000. Over all history (April to October schedules, April to September statements) the only unpaid earlier line is Ethan's September. Trust USD cash 213,895.52 (HB 153,864.62 + TCB 60,030.90 at 13 Oct) is below the signed 250,000 buffer, so the cash-short signal fires.
 
 ## Card 30, uc-030-vendors: Vendors and contract renewals
@@ -46,3 +46,36 @@ Test run: `pytest tests/v1/test_w1_office.py` gives **27 passed, 0 failed**. All
 8. **Narrative reader fields** for card 9: the document reader must emit `process_name`, `steps`, `steps_without_owner`, `steps_without_check` for kind `process_narrative`.
 9. **Invoice base is not independently checked.** `invoice_variance` trusts the fee base printed on the invoice; checking it against the administrator's NAV or the custodian's liquid book is a further figure, not built.
 10. **Hold names** `publish_sop`, `renew_contract` are new; `prepare_payment` already exists. Whatever performs those actions must refuse while `held()` is not empty.
+
+## Wave 2: the verifier's rows (docs/v3/w1/verify-office.md)
+
+Signals added: `uc-030-vendors-notice-passed`, `uc-030-vendors-renewal-passed`, `uc-050-feeinv-below-schedule`, `uc-050-feeinv-not-checked` (17 in all). Recipe columns added: `allowance_due.month_name`, `allowance_due.entity_owed`, `invoice_variance.check_status`. The tests now run each signal's own condition with `v3_signals.calc` on rows the recipes produced.
+
+| # | card | status | what was done, or why not |
+|---|---|---|---|
+| 1 | 15 | fixed | The build lists the October month-to-date Trust USD statements. With them October shows paid on 1 Oct (owed 0, no "due" card), and only Ethan Chen's September 5,000 is owed. Test `test_allowance_due_with_the_october_statement_shows_october_paid`. The key's `total_owed` 28,000 holds only without that statement, so 28,000 left the build's expect (the other expects are still key values). **Needs:** the key owner to restate `total_owed` for the build's inputs (5,000). |
+| 2 | 15 | fixed | New column `entity_owed`: everything the paying entity owes in the currency. `-approved` and `-cash-short` test `entity_owed + buffer` against cash, so approvals one by one cannot together break the buffer. Test with cash 270,000: each line alone fits, none is released, all are held. |
+| 3 | 15 | not fixed | Needs the owner of `recipes/family.yaml` to delete the `allowance_due` stub (outside my files). Renaming my recipe would leave the card's figure id behind a stub. Test `test_allowance_due_is_served_by_the_loader` is `xfail(strict=True)`: it turns red the day the stub goes, so the exception in `_recipe` gets removed. |
+| 4 | 15 | fixed | Money out is negative (A5): a payment is an allowance movement below zero. A movement above zero is a reversal and cancels the latest payment of the same portfolio, currency, month and amount; one that cancels nothing shows as the tie-out difference. Test: a +5,000 refund leaves Ethan owed 5,000 (tie-out differs by 5,000), a +8,000 reversal makes Lin's September owed again. |
+| 5 | 15 | not fixed | Needs the cash builder or the engine: `cash_by_entity` (recipes/cash.yaml) is by entity and position date, and the engine's `by` returns nothing when several dates match (the signal is skipped, not wrong). A latest-date row per entity in `cash_by_entity`, or a "latest" pick in `_pick`, fixes it. Also: that recipe reads the administrator's cash, while the key's 213,895.52 is the bank's daily balance. |
+| 6 | 15 | fixed | Payments match lines of the same currency, and `entity_owed` is partitioned by entity and currency. Test: an SGD line is owed in SGD (16,000) and the USD total stays 28,000. |
+| 7 | 15 | not fixed | Needs the model steward: a member link on `cash_movements`. Without it, two members with the same amount in one month cannot be told apart; nothing in the data says which was paid. |
+| 8 | 15 | fixed | Same as row 1: the October statements that give 213,895.52 are in the build's files. |
+| 9 | 30 | fixed | The window is on the notice deadline (renewal date when no notice is stated) up to 90 days. Test: renewal in 100 days with 90 days' notice is listed and fires notice-near. |
+| 10 | 30 | fixed | notice-near needs `days_to_notice_deadline >= 0`; a passed deadline goes to the new `-notice-passed` exception (call the vendor, holds `renew_contract`). `-renewing` fires only while the deadline is ahead. Test: renewal in 20 days with 60 days' notice fires only notice-passed. |
+| 11 | 30 | fixed | A still-active contract whose renewal date passed stays in the list (negative days) and fires the new `-renewal-passed` (record the next renewal date). Test: renewal 1 Oct 2026 fires only that. |
+| 12 | 30 | not fixed | Spec choice for Nitin: the card says "auto-renewal date within 30 days"; the signal counts to the notice deadline (safer for Orchard). One-line change if the card is meant literally. |
+| 13 | 30 | fixed | The approval message no longer claims the date is set; it says the next date is then entered from the renewed contract, and `-renewal-passed` catches it if nobody does. Setting the date as part of the approval action needs the platform's action code. |
+| 14 | 30 | fixed | Expects are compared as numbers with the key's numeric values, not as substrings of its text. |
+| 15 | 50 | fixed | New `check_status` column and `-not-checked` exception (holds `prepare_payment` for the invoice) when no schedule is on file, the schedule gives two rates, or the fee base is in another currency. Test: every invoice fires exactly one card-50 signal. |
+| 16 | 50 | fixed | New `-below-schedule` (ops_lead approves payment as billed; the message says the vendor may bill the difference later). |
+| 17 | 50 | fixed | The rate comes from the fee schedule in force on the invoice date: the latest schedule document not replaced, by its date (received date when undated), leaving out one dated after the invoice. Two different rates in that schedule give no expected fee and `check_status` says so. Test: an older 2025 schedule at 0.08 percent is ignored (5,150 stays); a second rate in the schedule in force gives "more than one rate". |
+| 18 | 50 | fixed | The fee base currency is compared with the amount due currency; different gives no variance and the not-checked exception. |
+| 19 | 50 | fixed | Messages no longer claim a drafted query or a payment run: above-schedule says "Held until the vendor answers a query"; matches says "approved for payment. Nothing to do." |
+| 20 | 50 | not fixed | The engine needs a role on every signal, so "nobody" is an info card to ops_lead with verb `see` (said in the signal's header). Needs an engine "no route" option if a card with no reader is wanted. |
+| 21 | 9 | partly fixed | The test reads the four hand steps (1 to 4) from the narrative and checks them against the key; `-steps-drawn` reads `manual_steps` and says how many are flagged. Producing it live needs the narrative reader (row 22). |
+| 22 | 9 | not fixed | Needs the platform's narrative reader to emit `process_name`, `steps`, `steps_without_owner`, `steps_without_check`, `manual_steps` for kind `process_narrative` (code outside my files). |
+| 23 | 9 | fixed | `-steps-drawn` and `-published` claim only what the counts show: steps read, each with an owner, a system and a check, and the hand steps. |
+| 24 | all | fixed | `_recipe` reads through the live loader (`v3_recipes.recipe`) except `allowance_due` (row 3, xfail test). Every signal's condition is now run on recipe rows in tests (cards 9, 15, 30, 50), and all 17 pass `check()`. |
+| 25 | all | not fixed, by design | The live loader also reads every recipe file, so a broken file elsewhere breaks these figures in production too; the test failing then is the right signal. |
+| 26 | all | fixed | Dashboard labels lost "Consume:"; allowance messages use `month_name` (September 2026). Subjects keep the ISO month as the once-only key. |

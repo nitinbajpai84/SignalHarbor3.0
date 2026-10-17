@@ -14,9 +14,14 @@ inputs:
   fields:
   - fund
   - call_no
-  - seen_before
+- kind: figure
+  id: call_notice_fields
+  as: n
+  by:
+    fund: doc.fund
+    call_no: doc.call_no
 subject: '{doc.fund} call {doc.call_no} again'
-condition: doc.seen_before == 1
+condition: n.copies > 1
 severity: info
 route_to: ops_clerk
 action:

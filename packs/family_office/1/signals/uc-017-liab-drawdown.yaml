@@ -1,4 +1,4 @@
-# SUGGESTION. uc-017 row 2: drawdown recorded, net worth after debt updates. Numbers come from the card's recipe; the office edits or switches it off.
+# SUGGESTION. uc-017 row 2: a loan statement shows more drawn than the one before (drawn_change > 0). Numbers come from the card's recipe; the office edits or switches it off.
 suggestion: true
 id: uc-017-liab-drawdown
 title: A drawdown is recorded
@@ -6,16 +6,16 @@ pain_points: [INT-SCOPE, PP-01, INT-LIQ]
 trigger: {on: file_arrived, kind: loan_statement}
 inputs:
 - kind: figure
-  id: net_worth_after_debt
-  recipe: net_worth_after_debt
-  as: nwd
-  by: {is_latest: true}
-condition: nwd.family_debt > 0
-subject: 'loan statement: owed {nwd.family_debt} at {nwd.position_date}'
+  id: facility_headroom
+  recipe: facility_headroom
+  as: fac
+  by: {first_row: true}
+condition: fac.drawdown_total > 0
+subject: 'drawdown on {fac.drawdown_facilities}: {fac.drawdown_total:,.0f}'
 severity: info
 route_to: principal
 action:
   verb: see
   options: [Seen]
-message: A loan statement was recorded. We owe {nwd.currency} {nwd.family_debt:,.0f}; net worth after debt is now {nwd.currency} {nwd.family_net_worth_after_debt:,.0f}.
-evidence: [nwd]
+message: 'More is drawn than at the previous loan statement: {fac.currency} {fac.drawdown_total:,.0f} on {fac.drawdown_facilities}. Net worth after debt falls by the same amount.'
+evidence: [fac]

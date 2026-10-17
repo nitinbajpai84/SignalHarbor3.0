@@ -226,13 +226,24 @@ def load_office(con) -> None:
             L.ins("rule_versions", {"business_rule_id": rid, "version_number": 2, "definition_text": code, "parameters": json.dumps({**params, "max_pct": 6}), "effective_from": "2026-10-13",
                                     "approval_status": "proposed"})
 
+    # Two rules the key assumes and the office files do not carry. They stand in for rules the office has still to sign (docs/v3/w1/build-report.md, Needs 4 and 8); the
+    # recipes read them like any signed rule, and without them the recipes say so (tests below remove them and look). Not in the policy text:
+    #   single_name_exempt  the key and the committee notes leave the sovereign treasury note out of the 5 percent single-name limit
+    #   benchmark_link      the key compares the liquid book with the office blend benchmark
+    for code, params in (("single_name_exemption_treasury", {"portfolio": "EG-LIQUID", "dimension": "single_name_exempt", "instrument": "Harbour Treasury Note 2029 (synthetic sovereign)"}),
+                         ("benchmark_link", {"portfolio": "EG-LIQUID", "benchmark_code": "EG-OFFICE-BLEND"})):
+        rid = L.uid("rule")
+        L.ins("business_rules", {"id": rid, "rule_code": code, "rule_type": "policy" if code.startswith("single") else "mapping", "owner_user_id": "u-sofia"})
+        L.ins("rule_versions", {"business_rule_id": rid, "version_number": 1, "definition_text": code, "parameters": json.dumps(params), "effective_from": "2026-01-01",
+                                "approval_status": "approved", "approved_by": "Daniel Foo", "approved_at": "2026-01-01 00:00:00+00"})
+
     # the pipeline (fund teaser: minimum commitment) and the capital call notice of 13 October (cash_movements, noticed)
     teaser = _pdf_text(next(OFFICE.glob("*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf")))
     L.ins("deal_pipeline", {"source_record_id": SRC, "deal_name": "Harborlight Ventures IV", "manager_name": "Harborlight Capital Partners", "strategy": "venture",
                             "target_commitment": float(re.search(r"Minimum commitment: USD ([\d,]+)", teaser)[1].replace(",", "")), "currency": "USD", "stage": "under review",
                             "stage_on": "2026-09-30", **stamp})
     notice = _pdf_text(next(OFFICE.glob("2026-10/notices/*call7.pdf")))
-    L.ins("cash_movements", {"source_record_id": SRC, "portfolio_id": pid["EG-PRIVATE"], "instrument_id": ibyname["Cedarpoint Ventures III"], "movement_type": "capital_call",
+    L.ins("cash_movements", {"source_record_id": SRC, "portfolio_id": pid["EG-PRIVATE"], "instrument_id": ibyname["Cedarpoint Ventures III"], "movement_type": "call",
                              "effective_date": "2026-10-23", "due_date": "2026-10-23", "notice_kind": "capital_call", "amount": -float(re.search(r"Amount to be paid by the investor\s+USD ([\d,]+)", notice)[1].replace(",", "")),
                              "currency": "USD", "confirmation_status": "noticed", **stamp})
 
@@ -305,9 +316,29 @@ def test_uc5_limits_the_largest_name_over_the_limit_is_5_75_and_a_holding_has_no
 
 
 def test_uc5_limits_data_finding_other_names_are_also_over_five_percent(con, built):
-    """The key and the committee notes name only the largest name. By the same data six more names are above 5 percent at 30 September (reported under Needs)."""
+    """The key and the committee notes name only the largest name. By the same data six more names are above 5 percent at 30 September (reported under Needs 6): the
+    key's 'real_breaches: 1' counts the largest name only, and no signed rule or committee decision in the files excuses the other six, so the pack says 7."""
     over = rows(con, built["single_name_breach"], "over_limit", "concentration_pct desc")
     assert len(over) == 7 and over[0]["holding"] == "Harborview Semiconductor" and all(o["status"] == "real breach" for o in over)
+
+
+def test_a_holding_is_exempt_only_when_a_signed_rule_says_so(con, built):
+    """The sovereign note is exempt through the signed exemption rule (stand-in row in the loader), not through its name. Without the row it is a breach like the rest."""
+    exempt = rows(con, built["single_name_breach"], "exempt")
+    assert [(x["holding"], x["exemption_rule"], x["status"]) for x in exempt] == [("Harbour Treasury Note 2029 (synthetic sovereign)", "single_name_exemption_treasury", "exempt")]
+    con.execute("update rule_versions set approval_status = 'proposed' where definition_text = 'single_name_exemption_treasury'")  # not signed
+    try:
+        n = build(con, "single_name_breach")
+        sov = rows(con, n, "holding ilike '%sovereign%'")[0]
+        assert sov["exempt"] is False and sov["status"] == "real breach" and num(sov["concentration_pct"]) == 7.08 and len(rows(con, n, "over_limit")) == 8
+        lc = rows(con, build(con, "limit_changes"), "version_number = 1 and not is_opening", "month_end")
+        assert {r["largest_holding"] for r in lc} == {"Harbour Treasury Note 2029 (synthetic sovereign)"} and all(r["over_limit"] == 1 for r in lc)  # the figures follow the rule on record
+        pack = {x["section"]: x for x in rows(con, build(con, "pack_items"))}
+        assert pack["Breaches"]["items"] == 8 and "Harbour Treasury Note 2029" in pack["Breaches"]["status"]
+    finally:
+        con.execute("update rule_versions set approval_status = 'approved' where definition_text = 'single_name_exemption_treasury'")
+        for rid in ("single_name_breach", "limit_changes", "pack_items"):
+            build(con, rid)
 
 
 def test_uc5_limits_a_breach_on_a_value_older_than_90_days_is_possibly_stale_not_real(con):
@@ -477,9 +508,14 @@ def test_uc046_effects_add_to_the_active_return_for_september(con, built):
         k["portfolio_pct"], k["liquid_benchmark_pct"], k["active_pct"], k["sum_of_effects_pct"], k["adds_up"])
 
 
-def test_uc046_a_month_with_flows_is_flagged_when_the_effects_do_not_add(con, built):
-    flagged = {x["month_end"].isoformat() for x in rows(con, built["attribution"], "not adds_up")}
-    assert flagged == {"2026-04-30", "2026-05-31", "2026-06-30", "2026-07-31"} and {x["portfolio"] for x in rows(con, built["attribution"])} == {"Evergreen Liquid Book"}
+def test_uc046_a_month_with_flows_adds_up_too(con, built):
+    """April to July have flows: the weights are average-capital weights, so the effects still add to the active return (this was a flagged break before)."""
+    at = rows(con, built["attribution"])
+    assert {x["portfolio"] for x in at} == {"Evergreen Liquid Book"} and all(x["adds_up"] for x in at)
+    assert {x["month_end"].isoformat() for x in at} == {"2026-04-30", "2026-05-31", "2026-06-30", "2026-07-31", "2026-08-31", "2026-09-30"}
+    april = {x["asset_class"]: x for x in rows(con, built["attribution"], "month_end = '2026-04-30'")}
+    r = list(april.values())[0]
+    assert abs(num(r["sum_of_effects_pct"]) - num(r["active_pct"])) <= 0.0001 and num(r["portfolio_return_pct"]) == -0.2944  # the same portfolio return as the return recipe
 
 
 # ---- card 47, uc-047-icpack ----------------------------------------------------------------------------------------------------------------
@@ -491,21 +527,24 @@ def test_uc047_the_pack_has_five_sections_with_owners_and_the_open_items(con, bu
     assert r["Report"]["amendments_open"] == k["amendments_open"] and num(r["Report"]["amount"]) == 57600000 and r["Report"]["status"] == "1 line(s) estimated"
     assert (r["Report"]["owner_role"], r["Attribution"]["owner_role"], r["Breaches"]["owner_role"], r["Proposals"]["owner_role"]) == ("cio", "investment_analyst", "risk_officer", "cfo")
     assert r["Performance"]["status"] == r["Attribution"]["status"] == "inputs ready"
-    assert r["Proposals"]["items"] == 2 and num(r["Proposals"]["amount"]) == 1250000 + 2000000  # call 7 noticed and the Harborlight ticket
-    assert r["Breaches"]["items"] == 7  # the key says 1 real breach; the data has 7 names above 5 percent (see Needs)
+    p = r["Proposals"]  # call 7 noticed and the Harborlight ticket: two amounts, never added (a call is owed, a ticket is a possible commitment)
+    assert p["items"] == 2 and (num(p["call_amount"]), num(p["deal_amount"]), p["amount"]) == (1250000, 2000000, None) and "1250000" in p["status"] and "2000000" in p["status"]
+    # the key's 'short USD 270,000' is the figure cash_after_calls (cash domain), not produced by this recipe
+    assert r["Breaches"]["items"] == 7 and "Harborview Semiconductor at 5.75" in r["Breaches"]["status"]  # the key counts the largest only (Needs 6)
 
 
 # ---- card 48, uc-048-policyupd -------------------------------------------------------------------------------------------------------------
 
 def test_uc048_largest_name_by_month_end_and_breaches_at_5_and_6_percent(con, built):
     k = key("uc-048-policyupd")
-    since_april = "month_end >= '2026-04-01'"  # the key covers the custodian files (from 1 April); the administrator also has the March pack
-    cur = rows(con, built["limit_changes"], f"version_number = 1 and {since_april}", "month_end")
+    t = built["limit_changes"]
+    cur = rows(con, t, "version_number = 1 and not is_opening", "month_end")  # the first position date (31 March) is the opening position: shown in the table, not counted
     assert {r["month_end"].isoformat(): num(r["largest_name_pct"]) for r in cur} == k["max_single_name_pct_by_month_end"]
-    assert sum(r["over_limit"] for r in cur) == k["breaches_at_5_pct"] and cur[0]["approval_status"] == "approved" and num(cur[0]["limit_pct"]) == k["current_limit"]
-    prop = rows(con, built["limit_changes"], f"version_number = 2 and {since_april}", "month_end")
-    assert sum(r["over_limit"] for r in prop) == k["breaches_at_6_pct"] and prop[0]["approval_status"] == "proposed" and num(prop[0]["limit_pct"]) == k["proposed_limit"]
-    assert [r["largest_holding"] for r in cur if r["month_end"].isoformat() >= "2026-05-01"] == ["Harborview Semiconductor"] * 5  # April's largest is a bond
+    assert len(rows(con, t, "version_number = 1")) == 7 and [r["month_end"].isoformat() for r in rows(con, t, "is_opening")] == ["2026-03-31"] * 2  # March is there, flagged
+    assert cur[0]["months_tested"] == 6 and cur[0]["breaches_in_period"] == k["breaches_at_5_pct"] and cur[0]["approval_status"] == "approved" and num(cur[0]["limit_pct"]) == k["current_limit"]
+    prop = rows(con, t, "version_number = 2 and not is_opening", "month_end")
+    assert prop[0]["breaches_in_period"] == k["breaches_at_6_pct"] and prop[0]["months_tested"] == 6 and prop[0]["approval_status"] == "proposed" and num(prop[0]["limit_pct"]) == k["proposed_limit"]
+    assert [r["largest_holding"] for r in cur[1:]] == ["Harborview Semiconductor"] * 5  # April's largest is a bond
 
 
 def test_uc048_the_proposed_limit_never_changes_the_signed_checks(con, built):
@@ -641,7 +680,8 @@ def test_signals_of_performance_attribution_and_the_report_pack(con, built):
     q = [m for m in (fire(sg["uc-044-twr-periods"], r) for r in tw) if m]
     assert len(q) == 2 and "returned 3.5148 percent in 2026Q3 against 5.0052 percent" in q[1]
     assert len([m for m in (fire(sg["uc-044-twr-flow-timing"], r) for r in tw) if m]) == 5  # April to August had a flow; September had none
-    br = {"portfolio": "Evergreen Liquid Book", "period_label": "2026Q3", "linked_return_pct": 3.5148, "stated_return_pct": 3.51}
+    q3 = [r for r in tw if r["period_label"] == "2026Q3"][0]
+    br = {**q3, "stated_return_pct": 3.51}  # the linked figure is the recipe's own column; the stated one is what the report being checked says
     assert fire(sg["uc-044-twr-no-link"], br) and fire(sg["uc-044-twr-no-link"], {**br, "stated_return_pct": 3.5148}) is False
     sg = signals("uc-045-reportpack")
     rr = rows(con, built["report_ready"])
@@ -651,7 +691,8 @@ def test_signals_of_performance_attribution_and_the_report_pack(con, built):
     assert "has no source figure" in fire(sg["uc-045-reportpack-no-source"], {**rr[0], "source_value": None, "has_source": 0})
     sg = signals("uc-046-attrib")
     at = rows(con, built["attribution"], "true", "month_end, asset_class")
-    assert len([m for m in (fire(sg["uc-046-attrib-effects"], r) for r in at) if m]) == 2 * 3 and len([m for m in (fire(sg["uc-046-attrib-does-not-add"], r) for r in at) if m]) == 4 * 3
+    assert len([m for m in (fire(sg["uc-046-attrib-effects"], r) for r in at) if m]) == 6 * 3 and not [m for m in (fire(sg["uc-046-attrib-does-not-add"], r) for r in at) if m]  # an exception signal: silent on good data
+    assert fire(sg["uc-046-attrib-does-not-add"], {**at[0], "adds_up": 0, "sum_of_effects_pct": 1.0, "active_pct": 1.2})
 
 
 def test_signals_of_the_committee_pack_and_the_policy_update(con, built):
@@ -665,7 +706,7 @@ def test_signals_of_the_committee_pack_and_the_policy_update(con, built):
     sg = signals("uc-048-policyupd")
     lc = rows(con, built["limit_changes"], "true", "version_number, month_end")
     rev = [m for m in (fire(sg["uc-048-policyupd-review"], r) for r in lc) if m]
-    assert len(rev) == 1 and "limit of 6 percent for Evergreen Liquid Book would have been breached in 2 of 7 month ends" in rev[0]
+    assert len(rev) == 1 and "limit of 6 percent for Evergreen Liquid Book would have been breached in 1 of 6 month ends" in rev[0]
     assert not [m for m in (fire(sg["uc-048-policyupd-leaves-breach"], r) for r in lc) if m]  # at 6 percent the September name (5.75) is inside
     tight = {**[r for r in lc if r["version_number"] == 2 and r["is_latest"] == 1][0], "limit_pct": 5.5, "over_limit": 1}
     assert "Harborview Semiconductor (2,368,000, 5.75 percent) would still be in breach" in fire(sg["uc-048-policyupd-leaves-breach"], tight)
@@ -698,3 +739,59 @@ def test_every_top_50_report_card_has_signals_and_a_build():
     mine = {b["id"] for r in yaml.safe_load((PACK / "builds" / "report.yaml").read_text(encoding="utf-8"))["roles"] for b in r["builds"]}
     for c in cards:
         assert c["id"] in base | mine and len(signals(c["id"])) == len(c["signals"]) == 3, c["id"]
+
+
+# ---- the return recipe is right for every portfolio, not only the keyed one ----------------------------------------------------------------
+
+def test_a_portfolio_with_carried_forward_or_estimated_values_has_no_return_and_says_why(con, built):
+    tw = built["time_weighted_return"]
+    others = rows(con, tw, "portfolio <> 'Evergreen Liquid Book'")
+    assert others and all(r["portfolio_return_pct"] is None and r["months_not_usable"] == r["months"] for r in others)  # no 0.0000 and no start-value gap
+    assert {r["data_note"] for r in others} == {"a value is carried forward or estimated"}
+    assert all(r["benchmark_linked"] is False and r["benchmark_return_pct"] is None for r in others)  # no signed link to a benchmark: no benchmark return
+    liquid = rows(con, tw, "portfolio = 'Evergreen Liquid Book' and period_kind = 'month'")
+    assert all(r["benchmark_linked"] and r["months_not_usable"] == 0 and r["data_note"] is None for r in liquid)
+
+
+def test_a_holding_change_with_no_trade_on_record_is_not_a_return(con):
+    """A holding is missing at the end of September and no trade explains it (there are none in September): that month has no return, not a start-value gap."""
+    iid = con.execute("select id from instruments where canonical_name = 'Harborview Semiconductor'").fetchone()[0]
+    con.execute("create temp table held_snap as select * from position_snapshots where instrument_id = ? and position_date = '2026-09-30'", [iid])
+    con.execute("delete from position_snapshots where instrument_id = ? and position_date = '2026-09-30'", [iid])
+    try:
+        r = rows(con, build(con, "time_weighted_return"), "portfolio = 'Evergreen Liquid Book' and period_label = '2026-09'")[0]
+        assert r["portfolio_return_pct"] is None and r["data_note"] == "the holdings changed with no trade on record"
+    finally:
+        con.execute("insert into position_snapshots select * from held_snap")
+        con.execute("drop table held_snap")
+        build(con, "time_weighted_return")
+
+
+def test_without_a_signed_benchmark_link_there_is_no_benchmark_return(con):
+    con.execute("update rule_versions set approval_status = 'proposed' where definition_text = 'benchmark_link'")
+    try:
+        r = rows(con, build(con, "time_weighted_return"), "portfolio = 'Evergreen Liquid Book' and period_label = '2026-09'")[0]
+        assert num(r["portfolio_return_pct"]) == 4.1667 and r["benchmark_return_pct"] is None and r["benchmark_linked"] is False
+    finally:
+        con.execute("update rule_versions set approval_status = 'approved' where definition_text = 'benchmark_link'")
+        build(con, "time_weighted_return")
+
+
+def test_income_is_shown_beside_the_return_not_inside_it(con, built):
+    r = rows(con, built["time_weighted_return"], "portfolio = 'Evergreen Liquid Book' and period_label = '2026-04'")[0]
+    assert num(r["income"]) > 100000 and num(r["portfolio_return_pct"]) == -0.2944  # the key's method (income is not in the return); the amount is visible
+
+
+def test_a_trace_matches_a_line_with_a_note_in_brackets_when_the_figure_is_the_same(con):
+    """The planted item 8 reads 'Evergreen Growth I (as sampled)'; a sample item with that note and the report's own figure still traces."""
+    f = con.execute("select id from extracted_fields where field_name = 'line' and value_text like '%(as sampled)' ").fetchone()[0]
+    fig = con.execute("select value_numeric from extracted_fields where document_id = (select document_id from extracted_fields where id = ?) and line_number = 8 and field_name = 'figure'", [f]).fetchone()
+    doc = con.execute("select document_id, line_number from extracted_fields where id = ?", [f]).fetchone()
+    real = con.execute("select f.value_numeric from extracted_fields f join documents d on d.id = f.document_id where d.document_type = 'investment_report' and d.document_date = '2026-07-31' and f.field_name = 'Evergreen Growth I'").fetchone()[0]
+    con.execute("update extracted_fields set value_numeric = ? where document_id = ? and line_number = ? and field_name = 'figure'", [real, doc[0], doc[1]])
+    try:
+        r = rows(con, build(con, "trace_coverage"), "item = 8")[0]
+        assert r["traced"] is True and r["share_traced_pct"] == 100
+    finally:
+        con.execute("update extracted_fields set value_numeric = ? where document_id = ? and line_number = ? and field_name = 'figure'", [fig[0], doc[0], doc[1]])
+        build(con, "trace_coverage")

@@ -32,7 +32,7 @@ action:
   - Mark it as an error
 hold:
   blocks: close_cash_day
-  scope: '{doc.entity}'
+  scope: '{doc.entity} {doc.day}'
   until: the break is explained or handed to Finance
 message: '{doc.entity} on {doc.day}: the {doc.source} shows {doc.other_cash:,.2f} and the bank {doc.bank_cash:,.2f}, a break of {doc.cash_break:,.2f}, over the {doc.tolerance:,.0f} tolerance. Look for an
   item the bank shows that the {doc.source} has not booked.'

@@ -42,24 +42,28 @@ recipes:
     formula: 'The close checklist steps of one close (exceptions of type close_item; the close month and the step number are the first words of the description, "2026-09 close, step 3"): done (resolved_at set), open (not resolved), and late (due_at passed and not resolved, or resolved after due_at). The date used for "passed" is the latest date any document was received. Owner is the user the step is assigned to.'
     grain: By close month and step
     sql: >-
-      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents)
-      select regexp_extract(x.description, '^(\d{4}-\d{2})', 1) as close_month,
-      cast(regexp_extract(x.description, 'step (\d+)', 1) as integer) as step, x.title as step_name, u.display_name as owner,
-      cast(x.due_at as date) as due_on, cast(x.resolved_at as date) as done_on,
-      cast(case when x.resolved_at is not null then 1 else 0 end as integer) as done,
-      cast(case when x.resolved_at is null then 1 else 0 end as integer) as open,
-      cast(case when (x.resolved_at is null and cast(x.due_at as date) < (select d from asat))
-      or cast(x.resolved_at as date) > cast(x.due_at as date) then 1 else 0 end as integer) as late
-      from exceptions as x left join users as u on u.id = x.owner_user_id where x.exception_type = 'close_item'
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      s as (select coalesce(nullif(regexp_extract(x.description, '^(\d{4}-\d{2})', 1), ''), 'not stated') as close_month,
+      try_cast(nullif(regexp_extract(x.description, 'step (\d+)', 1), '') as integer) as step, x.title as step_name, u.display_name as owner,
+      cast(x.due_at as date) as due_on, cast(x.resolved_at as date) as done_on, (select d from asat) as as_of
+      from exceptions as x left join users as u on u.id = x.owner_user_id where x.exception_type = 'close_item')
+      select close_month, step, step_name, owner, due_on, done_on,
+      cast(case when done_on is not null then 1 else 0 end as integer) as done,
+      cast(case when done_on is null then 1 else 0 end as integer) as open,
+      cast(case when (done_on is null and due_on < as_of) or done_on > due_on then 1 else 0 end as integer) as late,
+      cast(case when done_on is null and due_on < as_of then date_diff('day', due_on, as_of) when done_on > due_on then date_diff('day', due_on, done_on) end as integer) as days_late
+      from s
     measure: late
     columns:
       done: 1 when the step is resolved.
       open: 1 when the step is not resolved.
       late: 1 when the step is open past its due date, or was resolved after it.
+      days_late: Days past the due date, to the latest date a document was received (open step) or to the day it was done; empty when not late.
     tie_out:
-      label: Every close step appears once, done and open add up to the steps
+      label: Every close step names its close month and step number, and done and open add up to the steps
       sql: >-
-        select (select coalesce(sum(done + open), 0) from {name}), (select count(*) from exceptions where exception_type = 'close_item')
+        select (select coalesce(sum(case when step is not null and close_month <> 'not stated' then done + open else 0 end), 0) from {name}),
+        (select count(*) from exceptions where exception_type = 'close_item')
 
   - id: position_break
     label: Custodian against administrator positions
@@ -117,13 +121,15 @@ recipes:
     may_read: [documents, extracted_fields, instruments]
     never_read: [commitments, position_snapshots, transactions]
     why: What a notice asks for is what the notice says, read with its page and line. The commitment register and the bank say nothing about what was called.
-    formula: For each capital call notice (documents of type capital_call_notice that no later document replaces), the fund, the investor, the call number, the amount and currency, the due date, the purpose split (new investments and management fee) and the last four characters of the wire account, from the notice's extracted fields (a reviewer's correction wins over the reading). The page of the amount is kept for the receipt.
+    formula: For each capital call notice (documents of type capital_call_notice that no later document replaces; the same fund and call number received twice is listed once, with copies counting the documents), the fund, the investor, the call number, the amount and currency, the due date, the purpose split (new investments and management fee) and the last four characters of the wire account, from the notice's extracted fields (a reviewer's correction wins over the reading, text or number; a correction that is not a number leaves the figure empty). The page of the amount is kept for the receipt.
     grain: By notice
     sql: >-
       create table {name} as with d as (select d.* from documents as d where d.document_type = 'capital_call_notice'
       and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
-      f as (select f.document_id, f.field_name, coalesce(f.corrected_value_text, f.value_text) as t, f.value_numeric as n, f.currency, f.page_number from extracted_fields as f)
-      select i.canonical_name as fund, max(case when f.field_name = 'investor' then f.t end) as investor,
+      f as (select f.document_id, f.field_name, coalesce(f.corrected_value_text, f.value_text) as t,
+      case when f.corrected_value_text is not null then try_cast(replace(f.corrected_value_text, ',', '') as decimal(18,2)) else f.value_numeric end as n,
+      f.currency, f.page_number from extracted_fields as f),
+      r as (select d.id, d.received_at, i.canonical_name as fund, max(case when f.field_name = 'investor' then f.t end) as investor,
       cast(max(case when f.field_name = 'call_no' then f.n end) as integer) as call_no,
       cast(max(case when f.field_name = 'amount' then f.n end) as decimal(18,2)) as amount,
       max(case when f.field_name = 'amount' then f.currency end) as currency,
@@ -132,7 +138,10 @@ recipes:
       cast(max(case when f.field_name = 'management_fee' then f.n end) as decimal(18,2)) as management_fee,
       right(max(case when f.field_name = 'bank_account' then f.t end), 4) as account_ending,
       max(case when f.field_name = 'amount' then f.page_number end) as amount_page
-      from d join instruments as i on i.id = d.instrument_id join f on f.document_id = d.id group by d.id, i.canonical_name
+      from d join instruments as i on i.id = d.instrument_id join f on f.document_id = d.id group by d.id, d.received_at, i.canonical_name)
+      select fund, investor, call_no, amount, currency, due_date, new_investments, management_fee, account_ending, amount_page,
+      cast(count(*) over (partition by fund, call_no, case when call_no is null then id end) as integer) as copies from r
+      qualify row_number() over (partition by fund, call_no, case when call_no is null then id end order by received_at, id) = 1
     measure: amount
     columns:
       amount: The amount the notice asks the investor to pay.
@@ -140,6 +149,7 @@ recipes:
       new_investments: The part of the amount for new investments.
       management_fee: The part of the amount that is the management fee.
       account_ending: The last four characters of the account the notice asks to be paid into.
+      copies: How many notice documents carry the same fund and call number; more than 1 means the notice came in again. Only the first is listed.
     tie_out:
       label: The purpose split adds up to the amount called
       sql: >-
@@ -178,7 +188,7 @@ recipes:
     may_read: [sheet_mappings, sheet_mapping_columns, source_batches, source_systems]
     never_read: [position_snapshots, cash_movements, transactions]
     why: The mapping the office last approved is the record of what the file used to look like. A file is compared with that mapping, not with a guess of what it should contain.
-    formula: For each sheet, the columns of the latest proposed mapping (the one Harbor drew up for the file that just arrived) set against the latest approved mapping. A target field with a different source column is renamed; one only in the proposal is added; one only in the approved mapping is dropped. batches_on_old_name counts the batches already loaded under the approved mapping.
+    formula: For each sheet, the columns of the latest proposed mapping (the one Harbor drew up for the file that just arrived) set against the latest approved mapping. A target field with a different source column is renamed; one only in the proposal is added; one only in the approved mapping is dropped. batches_on_old_name counts the batches already loaded under the approved mapping of the same source system and sheet.
     grain: By sheet and target field
     sql: >-
       create table {name} as with cur as (select m.* from sheet_mappings as m where m.mapping_status = 'approved' and not exists
@@ -186,14 +196,16 @@ recipes:
       nxt as (select m.* from sheet_mappings as m join cur as c on c.source_system_id = m.source_system_id and c.sheet_name = m.sheet_name
       where m.mapping_status = 'proposed' and m.version_number > c.version_number and not exists
       (select 1 from sheet_mappings as x where x.source_system_id = m.source_system_id and x.sheet_name = m.sheet_name and x.mapping_status = 'proposed' and x.version_number > m.version_number)),
-      o as (select c.id as mapping_id, c.sheet_name, k.source_column, coalesce(k.target_table || '.' || k.target_field, 'column ' || k.source_column) as k
-      from cur as c join sheet_mapping_columns as k on k.sheet_mapping_id = c.id),
-      n as (select c.sheet_name, k.source_column, coalesce(k.target_table || '.' || k.target_field, 'column ' || k.source_column) as k
+      o as (select c.source_system_id as src, c.sheet_name, k.source_column, coalesce(k.target_table || '.' || k.target_field, 'column ' || k.source_column) as k
+      from cur as c join sheet_mapping_columns as k on k.sheet_mapping_id = c.id
+      where exists (select 1 from nxt as q where q.source_system_id = c.source_system_id and q.sheet_name = c.sheet_name)),
+      n as (select c.source_system_id as src, c.sheet_name, k.source_column, coalesce(k.target_table || '.' || k.target_field, 'column ' || k.source_column) as k
       from nxt as c join sheet_mapping_columns as k on k.sheet_mapping_id = c.id)
       select coalesce(o.sheet_name, n.sheet_name) as sheet, coalesce(o.k, n.k) as target_field, o.source_column as old_name, n.source_column as new_name,
       case when o.k is null then 'added' when n.k is null then 'dropped' else 'renamed' end as change, cast(1 as integer) as columns_changed,
-      cast((select count(*) from source_batches as b where b.sheet_mapping_id = (select mapping_id from o limit 1)) as integer) as batches_on_old_name
-      from o full join n on n.k = o.k and n.sheet_name = o.sheet_name where o.k is null or n.k is null or o.source_column <> n.source_column
+      cast((select count(*) from source_batches as b join cur as c on c.id = b.sheet_mapping_id
+      where c.source_system_id = coalesce(o.src, n.src) and c.sheet_name = coalesce(o.sheet_name, n.sheet_name)) as integer) as batches_on_old_name
+      from o full join n on n.k = o.k and n.sheet_name = o.sheet_name and n.src = o.src where o.k is null or n.k is null or o.source_column <> n.source_column
     measure: columns_changed
     columns:
       old_name: The column name in the approved mapping; empty for an added column.
@@ -215,15 +227,15 @@ recipes:
     may_read: [expected_statements, documents, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: A statement is late only against what was expected (expected_statements), and the first one received counts; an amended re-issue is a correction, not a delivery.
-    formula: For each expected statement (the latest row for the instrument and period), the first statement received for that month, not counting amended re-issues (documents of type manager_statement or bank_statement). Status is on_time, late (first received after the due date) or missing (none received). Business days (Monday to Friday) late run from the day after the due date to the day it was received; business days overdue run to the latest date any document was received.
+    formula: For each expected statement (the latest row for the instrument and period), the first statement received for that month (by the period date on the statement; a statement with no period date is not matched to a month, so its month shows missing), not counting amended re-issues (documents of type manager_statement or bank_statement). Status is on_time, late (first received after the due date) or missing (none received). Business days (Monday to Friday) late run from the day after the due date to the day it was received; business days overdue run to the latest date any document was received.
     grain: By fund or account and period
     sql: >-
       create table {name} as with due as (select e.* from expected_statements as e where not exists
       (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
       asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
-      got as (select d.instrument_id, date_trunc('month', coalesce(d.valuation_date, cast(d.received_at as date))) as m,
+      got as (select d.instrument_id, date_trunc('month', d.valuation_date) as m,
       min(cast(d.received_at as date)) as first_received from documents as d
-      where d.document_type in ('manager_statement', 'bank_statement') and coalesce(d.document_status, '') <> 'amended' group by all),
+      where d.document_type in ('manager_statement', 'bank_statement') and d.valuation_date is not null and coalesce(d.document_status, '') <> 'amended' group by all),
       j as (select i.canonical_name as statement_of, case when i.instrument_type = 'cash' then 'bank statement' else 'manager statement' end as kind,
       e.period_end, e.due_date, g.first_received, (select d from asat) as as_of from due as e join instruments as i on i.id = e.instrument_id
       left join got as g on g.instrument_id = e.instrument_id and g.m = date_trunc('month', e.period_end))
@@ -294,14 +306,16 @@ recipes:
       where v.valuation_type in ('manager_final', 'manager_estimate') and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id))
       select i.canonical_name as fund, s.valuation_date as statement_date, a.position_date as administrator_date, a.currency,
       cast(s.value_amount as decimal(18,2)) as statement_value, cast(a.admin_value as decimal(18,2)) as administrator_value,
-      cast(s.value_amount - a.admin_value as decimal(18,2)) as difference, a.data_status as administrator_status,
+      s.currency as statement_currency,
+      cast(case when s.currency = a.currency then s.value_amount - a.admin_value end as decimal(18,2)) as difference, a.data_status as administrator_status,
       case when s.supersedes_valuation_id is not null then 'amended' when s.valuation_type = 'manager_estimate' then 'estimate' else 'final' end as statement_kind
-      from adm as a join stm as s on s.instrument_id = a.instrument_id and s.rn = 1 and s.currency = a.currency join instruments as i on i.id = a.instrument_id
+      from adm as a join stm as s on s.instrument_id = a.instrument_id and s.rn = 1 join instruments as i on i.id = a.instrument_id
     measure: difference
     columns:
       statement_value: The latest manager statement value the office has received.
       administrator_value: The administrator's value at its latest position date.
-      difference: Statement value less administrator value. Zero when they agree.
+      statement_currency: The currency of the statement value; the difference is empty when it is not the administrator's currency.
+      difference: Statement value less administrator value. Zero when they agree; empty when the two are in different currencies (not compared).
       administrator_status: The status the administrator gives its own value.
       statement_kind: final, estimate or amended.
     tie_out:
@@ -318,28 +332,36 @@ recipes:
     may_read: [position_snapshots, source_records, source_batches, source_systems, instruments, portfolios, legal_entities, business_rules, rule_versions]
     never_read: [commitments, transactions, cash_movements]
     why: The bank statement is the cash that is really there. The administrator's and the desk's cash are checked against it, entity by entity and day by day, and a difference is a break only above the signed tolerance.
-    formula: For each entity, currency and day, the cash the bank, the administrator (source type administrator) and the trading desk (source type oms) report (position snapshots of cash instruments, by the source system of their batch; a snapshot a later one supersedes is out). Where the administrator or the desk differs from the bank, difference = their cash less the bank's; over_tolerance is 1 when its size is above the signed cash_tolerance rule (limit in rule_versions.parameters).
+    formula: For each entity, currency and day, the cash the bank, the administrator (source type administrator) and the trading desk (source type oms) report (position snapshots of cash instruments, by the source system of their batch; a snapshot a later one supersedes is out). Where the administrator or the desk differs from the bank, difference = their cash less the bank's; over_tolerance is 1 when its size is above the signed cash_tolerance rule of the same currency (rule code starting cash_tolerance, limit and currency in rule_versions.parameters); with no signed rule for the currency the tolerance and over_tolerance are empty. A day on which the bank statement lacks an account the bank showed on other days is listed with the break and over_tolerance empty.
     grain: By entity, day and source
     sql: >-
-      create table {name} as with tol as (select cast(json_extract_string(v.parameters, '$.limit') as decimal(18,2)) as lim from business_rules as r
-      join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_tolerance' and v.approval_status = 'approved' order by v.version_number desc limit 1),
-      src as (select e.entity_name as entity, l.position_date as day, l.currency, y.source_type, sum(l.source_market_value) as cash from position_snapshots as l
+      create table {name} as with tol as (select json_extract_string(v.parameters, '$.currency') as ccy, cast(json_extract_string(v.parameters, '$.limit') as decimal(18,2)) as lim
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'cash_tolerance') and v.approval_status = 'approved'
+      qualify row_number() over (partition by json_extract_string(v.parameters, '$.currency') order by v.version_number desc, v.effective_from desc) = 1),
+      s0 as (select e.entity_name as entity, l.position_date as day, l.currency, y.source_type, l.instrument_id, sum(l.source_market_value) as cash from position_snapshots as l
       join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
       join legal_entities as e on e.id = p.legal_entity_id join source_records as sr on sr.id = l.source_record_id
       join source_batches as sb on sb.id = sr.source_batch_id join source_systems as y on y.id = sb.source_system_id
-      where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = l.id) group by all)
+      where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = l.id) group by all),
+      src as (select entity, day, currency, source_type, sum(cash) as cash, count(distinct instrument_id) as accounts from s0 group by all),
+      acc as (select entity, currency, count(distinct instrument_id) as n from s0 where source_type = 'bank' group by all)
       select o.entity, o.day, o.currency, case o.source_type when 'oms' then 'desk' else o.source_type end as source,
-      cast(b.cash as decimal(18,2)) as bank_cash, cast(o.cash as decimal(18,2)) as other_cash, cast(o.cash - b.cash as decimal(18,2)) as cash_break,
-      (select lim from tol) as tolerance, cast(case when abs(o.cash - b.cash) > (select lim from tol) then 1 else 0 end as integer) as over_tolerance
+      cast(b.cash as decimal(18,2)) as bank_cash, cast(o.cash as decimal(18,2)) as other_cash,
+      cast(case when b.accounts = a.n then 1 else 0 end as integer) as bank_complete,
+      cast(case when b.accounts = a.n then o.cash - b.cash end as decimal(18,2)) as cash_break,
+      t.lim as tolerance,
+      cast(case when b.accounts = a.n and t.lim is not null then case when abs(o.cash - b.cash) > t.lim then 1 else 0 end end as integer) as over_tolerance
       from src as o join src as b on b.entity = o.entity and b.day = o.day and b.currency = o.currency and b.source_type = 'bank'
+      join acc as a on a.entity = b.entity and a.currency = b.currency left join tol as t on t.ccy = o.currency
       where o.source_type in ('administrator', 'oms') and o.cash <> b.cash
     measure: cash_break
     columns:
       bank_cash: The bank's closing cash for the entity, currency and day.
       other_cash: The administrator's or the desk's closing cash.
-      cash_break: Their cash less the bank's. Zero rows are not listed.
-      tolerance: The signed daily cash tolerance.
-      over_tolerance: 1 when the size of the difference is above the tolerance.
+      bank_complete: 1 when the bank statement of the day holds every account of the entity and currency the bank has ever shown; 0 when an account's statement is missing for the day.
+      cash_break: Their cash less the bank's. Zero rows are not listed. Empty when the bank day is incomplete (the bank total is not the bank's cash).
+      tolerance: The signed daily cash tolerance for the currency; empty when the office has signed none for that currency (the rule is not on record).
+      over_tolerance: 1 when the size of the difference is above the tolerance, 0 when inside; empty when the bank day is incomplete or no tolerance is signed for the currency.
     tie_out:
       label: The bank cash in the breaks equals the bank cash of the same entity-days in the position snapshots
       sql: >-
@@ -352,4 +374,4 @@ recipes:
     needs:
       - why: No signed cash_tolerance rule is on file, so a difference cannot be called a break.
         sql: >-
-          select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_tolerance' and v.approval_status = 'approved'
+          select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'cash_tolerance') and v.approval_status = 'approved'
