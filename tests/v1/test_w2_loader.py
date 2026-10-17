@@ -121,6 +121,7 @@ def test_every_file_kind_of_the_office_is_read_and_the_count_of_files_matches_th
 
 def test_nothing_in_the_office_folders_is_left_without_a_reader(office):
     from tools.gen_office6m.more import NEW_KINDS  # the kinds of the other 49 cards wait for their readers and recipes
+    NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     NEW_KINDS = [k for k in NEW_KINDS if k not in ("custody_statements", "insurance_schedule", "property_valuations", "title_deeds")]  # read by v3_pack_readers_assets
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     kinds = {p.parts[-2] for p in OFFICE.glob("20??-??/*/*") if p.is_file()} - set(NEW_KINDS)
@@ -570,7 +571,7 @@ def test_trades_against_the_administrator_the_two_october_breaks_are_in_the_load
     breaks = key("uc8-trades-vs-admin")["october_trade_breaks"]
     admin = {r["field_name"][len("trade:"):]: r["value_numeric"] for r in office.rows(
         "select f.field_name, f.value_numeric from extracted_fields f join documents d on d.id = f.document_id where d.document_type = 'administrator_trades' and f.field_name like 'trade:%'")}
-    desk = office.rows("select external_trade_id, abs(quantity_delta) q from transactions where trade_date >= date '2026-10-01' and transaction_type in ('buy', 'sell')")
+    desk = office.rows("select external_trade_id, abs(quantity_delta) q from transactions where trade_date >= date '2026-10-01' and transaction_type in ('buy', 'sell') and status <> 'failed'")  # the desk export; the settlement report's failed trades are the broker's
     differs = [(r["external_trade_id"], float(r["q"]), float(admin[r["external_trade_id"]])) for r in desk if r["external_trade_id"] in admin and r["q"] != admin[r["external_trade_id"]]]
     missing = [r["external_trade_id"] for r in desk if r["external_trade_id"] not in admin]
     assert differs == [(b["trade"], float(b["ours"]), float(b["administrator"])) for b in breaks if b["kind"] == "quantity differs"]

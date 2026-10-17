@@ -458,13 +458,14 @@ recipes:
     label: Payment batch by approval state
     cards: [8]
     names: [payment batch, payment run, payments awaiting approval, payments to release]
-    may_read: [cash_movements, approvals, bank_accounts, users, business_rules, rule_versions, documents, extracted_fields]
+    may_read: [cash_movements, approvals, bank_accounts, users, business_rules, rule_versions, documents, extracted_fields, source_records]
     never_read: [position_snapshots, commitments]
     why: A payment is a cash movement of type payment that is still expected; its approvals are rows of approvals that name the movement. Cash balances and commitments do not say whether it may be released.
     formula: The payments still to be released (cash movements of type payment, status expected), each in one state. Hold when an open approval of type payment_hold names it (its rationale is the reason), or when the office has signed the rule invoice_above_fee_schedule (parameters action hold, tolerance_amount) and the payment's invoice (the invoice document read from the same source record as the payment) bills more than its fee schedule allows by more than the tolerance, the fee variance worked out as in invoice_variance (billed less fee base times the schedule rate over the billing periods, from the schedule in force on the invoice date; an invoice that cannot be checked is not held by it); with no such rule signed no payment is held for its fee; waiting for approval when an approval requested for it is not yet approved; hold on an unverified changed account when the payment goes to an account that replaced an earlier payee account and has no call-back (verified_on); otherwise ready. release_blocked is true while any of these stands, and blocked_by lists them all. The run window (days from the latest movement date) is the signed rule payment_run_window_days; with no signed rule in_window is empty and every expected payment is listed. Totals are by currency, never across currencies.
     grain: By payment
     sql: >-
       create table {name} as with pay as (select m.* from cash_movements as m where m.movement_type = 'payment' and m.confirmation_status = 'expected'
+      and coalesce((select r.record_type from source_records as r where r.id = m.source_record_id), '') <> 'schedule_line'
       and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
       refd as (select max(m.effective_date) as d from cash_movements as m),
       win as (select cast(json_extract_string(v.parameters, '$.days') as integer) as days from business_rules as r join rule_versions as v on v.business_rule_id = r.id
@@ -531,6 +532,7 @@ recipes:
       label: Every expected payment is in the batch once
       sql: >-
         select (select count(*) from {name}), (select count(*) from cash_movements as m where m.movement_type = 'payment' and m.confirmation_status = 'expected'
+        and coalesce((select r.record_type from source_records as r where r.id = m.source_record_id), '') <> 'schedule_line'
         and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
 
   - id: cash_by_bank

@@ -343,7 +343,7 @@ class Office:
         steps = [self.reference_state if shadow else self.reference, self.registers, (lambda: None) if shadow else self.benchmark, self.admin_nav, self.admin_cash, self.custodian_positions, self.bank_statements, self.trading_and_custody,
                  self.administrator_trades, self.market, self.manager_statements, self.notices, self.fx_confirmations, self.emails, self.invoices, self.payroll, self.loans,
                  self.vendor_contracts, self.allowances, self.insurance_and_property, self.approvals_and_close, self.reports_and_audit, self.diligence_and_notes,
-                 self.expected_statements, self.links]
+                 self.expected_statements, self.links, self.treasury]
         for step in steps:
             kinds = [k for k in STEP_KINDS.get(step.__name__, ()) if self.staged.get(k)]
             fn = step
@@ -1869,3 +1869,6 @@ def monthly(x) -> tuple[set[str], int, list[dict]]:
 
 from sh_platform.v1 import v3_pack_readers_assets as _assets  # noqa: E402 - the assets kinds register themselves in the tables above
 _assets.register(__import__("sys").modules[__name__])
+
+from sh_platform.v1 import v3_pack_readers_treasury as _treasury  # noqa: E402 - the treasury kinds register themselves in the tables above
+_treasury.install(__import__('sys').modules[__name__])

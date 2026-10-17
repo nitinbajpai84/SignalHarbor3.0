@@ -23,7 +23,7 @@ MISSING = {"uc-054-ladder": "payment_schedule", "uc-070-idle": "payment_schedule
 STUBS = {"liquidity_ladder": 54, "cash_forecast": 72}
 
 
-@pytest.mark.parametrize("kind", ["payment_schedule", "income_calendar", "manager_outlook", "expense_ledger"])
+@pytest.mark.parametrize("kind", ["expense_ledger"])  # the other three are read since v3_pack_readers_treasury
 def test_the_loader_has_no_reader_for_the_sources_of_the_four_cards(office, kind):
     assert "no reader for this kind" in office.report[kind]["not_loaded"], office.report.get(kind)
     assert office.one("select count(*) from source_batches where coalesce(storage_uri, '') like ?", f"%/{kind}/%") == 0
@@ -39,7 +39,7 @@ def test_the_ladder_and_forecast_recipes_stay_honest_stubs(rid):
 def test_nothing_in_the_plane_is_an_expense_or_a_scheduled_payment_of_the_schedule_file(office):
     assert office.one("select count(*) from cash_movements where movement_type in ('expense', 'scheduled_payment')") == 0
     refs = [r["ref"] for r in csv.DictReader((W2.OFFICE / "2026-10" / "payment_schedule" / "payment_schedule_2026-10-13.csv").open(encoding="utf-8"))]
-    assert refs and office.one("select count(*) from source_records where external_record_id in (select unnest(?))", refs) == 0
+    assert refs and office.one("select count(*) from cash_movements where reference in (select unnest(?))", refs) == len(refs)  # the schedule is read now: one payment per line
 
 
 def test_the_legs_the_plane_does_give_agree_with_the_ladder_and_idle_keys(office):
