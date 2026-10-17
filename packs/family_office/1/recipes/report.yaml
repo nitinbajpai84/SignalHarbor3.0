@@ -254,7 +254,7 @@ recipes:
   - id: drift_vs_target
     label: Drift from the policy band and target
     cards: [32]
-    names: [drift from policy target, drift against policy target, policy band drift, outside the policy band, asset class outside its band, drift from the policy band]
+    names: [drift from policy target, drift against policy target, policy band drift, outside the policy band, asset class outside its band, drift from the policy band, allocation drift, policy band breach, band breach, outside its band, outside their band]
     may_read: [position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: A policy band is a share of one portfolio by asset class or by manager, so it reads the positions, the instrument's class and manager, and the signed limits.
@@ -341,7 +341,7 @@ recipes:
   - id: report_tie_out
     label: Issued report against the administrator
     cards: [23]
-    names: [report tie out, report tie-out, report total against administrator, issued report against the administrator, report agrees with the administrator]
+    names: [report tie out, report tie-out, report total against administrator, issued report against the administrator, report agrees with the administrator, issued report with the administrator, agree with the administrator, agrees with the administrator]
     may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, valuation_observations]
     never_read: [commitments, cash_movements, transactions]
     why: The issued report is a document whose lines are read as fields (assumption A3); the administrator's side is the position snapshots that came from the administrator. A report is checked against what the administrator held on the same month end, not against anything else.
@@ -444,7 +444,7 @@ recipes:
   - id: trace_coverage
     label: Share of sampled figures traced
     cards: [24]
-    names: [sampled figures traced, trace coverage, share of sampled figures traced, audit sample traced, auditor sample traced to source]
+    names: [sampled figures traced, trace coverage, share of sampled figures traced, audit sample traced, auditor sample traced to source, items traced, items traced to source, missing trace, cannot trace]
     may_read: [documents, extracted_fields]
     never_read: [commitments, cash_movements, transactions]
     why: The auditor's sample is a loaded file whose items are read as fields; an item is traced when an issued report's line has the same month, name and figure, with the file and page it was read from.

@@ -68,15 +68,15 @@ def test_a_figure_is_matched_to_its_recipe_by_name_and_words_and_a_count_is_not_
     ids = {n: (R.match({"name": n}) or {}).get("id") for n in names}
     assert ids == {"Net worth": "net_worth", "Net worth by portfolio": "net_worth", "NAV": "net_worth", "Cash break": "cash_break", "Cash balance per entity": "cash_by_entity",
                    "Statements missing by fund": "missing_statements", "Single-issuer concentration": "concentration", "Change since the issued report": "change_since_report",
-                   "FX forward confirmation variance": "fx_confirmation_variance", "Allocation drift": None, "Breaks over 5,000": None}
+                   "FX forward confirmation variance": "fx_confirmation_variance", "Allocation drift": "drift_vs_target", "Breaks over 5,000": None}
     bad = [r["id"] for r in R.recipes() if not (r.get("may_read") and r.get("never_read") is not None and r.get("formula") and r.get("grain") and r["sql"])]
     assert not bad, f"malformed pack recipes (for the domain fixers): {bad}"
 
 
 def test_a_figure_with_a_recipe_is_placed_from_it_and_loses_its_could_not_place_note(plane):
     plan, notes = _plan(), ["Span could not place the KPI 'Net worth' on a table that holds data."]
-    left = R.place(plane, None, "prj-1", [NW, {"name": "Allocation drift"}], "t", {"dims": []}, plan, notes)
-    assert [k["name"] for k in left] == ["Allocation drift"]  # the model is asked only for the figure with no recipe
+    left = R.place(plane, None, "prj-1", [NW, {"name": "Cash drag"}], "t", {"dims": []}, plan, notes)
+    assert [k["name"] for k in left] == ["Cash drag"]  # the model is asked only for the figure with no recipe
     t = plan["tables"][0]
     assert t["name"] == "gold_t_net_worth_by_portfolio" and t["kpis"] == ["Net worth"] and t["purpose"].startswith("Recipe net_worth:")
     assert set(t["depends_on"]) == {"position_snapshots", "portfolios", "legal_entities"} and not notes
@@ -89,7 +89,7 @@ def test_a_design_that_reads_a_table_the_figure_must_never_read_is_refused_with_
     assert R.refusal(r, "create table g as with p as (select * from position_snapshots) select sum(source_market_value) from p join portfolios using (id)") is None
     notes = []
     kept = R.allowed([{"name": "gold_t_a", "kpis": ["Net worth"], "sql": "create table gold_t_a as select sum(commitment_amount) from commitments"},
-                      {"name": "gold_t_b", "kpis": ["Allocation drift"], "sql": "create table gold_t_b as select 1 from commitments"}], notes)
+                      {"name": "gold_t_b", "kpis": ["Cash drag"], "sql": "create table gold_t_b as select 1 from commitments"}], notes)
     assert [g["name"] for g in kept] == ["gold_t_b"] and notes[0].startswith("Span dropped gold_t_a: Net worth reads only")
 
 
@@ -111,15 +111,15 @@ def test_a_model_design_that_worked_is_saved_and_the_next_build_reuses_it_word_f
     sql = ("create table gold_old_slug_nw as select p.portfolio_name as portfolio, sum(s.source_market_value) as net_worth "
            "from position_snapshots as s join portfolios as p on p.id = s.portfolio_id group by all")
     g = {"name": "gold_old_slug_nw", "sql": sql, "depends_on": ["position_snapshots", "portfolios"], "grain": "Portfolio", "keys": ["portfolio"], "purpose": "Net worth"}
-    figure = {"name": "Allocation drift", "definition": "x"}
-    assert R.saved(plane, "Allocation drift") is None
-    assert R.remember(plane, "Allocation drift", g, "gold_old_slug_") and not R.remember(plane, "Allocation drift", g, "gold_old_slug_")  # saved once
-    assert SK.read(plane, "office.design-allocation-drift")["status"] == "in_use"
-    plan, notes = {**_plan(), "project_slug": "new_slug"}, ["Span could not place the KPI 'Allocation drift' on a table that holds data."]
+    figure = {"name": "Cash drag", "definition": "x"}
+    assert R.saved(plane, "Cash drag") is None
+    assert R.remember(plane, "Cash drag", g, "gold_old_slug_") and not R.remember(plane, "Cash drag", g, "gold_old_slug_")  # saved once
+    assert SK.read(plane, "office.design-cash-drag")["status"] == "in_use"
+    plan, notes = {**_plan(), "project_slug": "new_slug"}, ["Span could not place the KPI 'Cash drag' on a table that holds data."]
     left = R.place(plane, None, "prj-1", [figure], "new_slug", {"dims": []}, plan, notes)
     assert left == [] and plan["tables"][0]["name"] == "gold_new_slug_nw"
     assert plan["tables"][0]["sql"] == " ".join(sql.split()).replace("gold_old_slug_nw", "gold_new_slug_nw")  # the same words, the new name
-    assert plan["tables"][0]["purpose"].startswith("Saved design Allocation drift")
+    assert plan["tables"][0]["purpose"].startswith("Saved design Cash drag")
 
 
 def test_the_same_figure_built_twice_on_the_same_data_gives_the_same_sql_and_the_same_number(plane):
@@ -153,7 +153,7 @@ def test_the_design_call_runs_at_temperature_zero_is_kept_by_its_input_and_asks_
 def test_a_figure_with_a_recipe_is_built_from_it_also_when_the_rules_table_already_covers_it():
     rules = [{"name": "gold_p_net_worth_entity_monthly", "purpose": "Net worth by entity", "kpis": []}]
     mine = [{"name": "gold_p_net_worth_by_portfolio", "purpose": "Recipe net_worth: Net worth from the pack's recipe", "kpis": ["Net worth"]}]
-    assert R.stale(NW, rules) and not R.stale(NW, mine + rules) and not R.stale({"name": "Allocation drift"}, rules)
+    assert R.stale(NW, rules) and not R.stale(NW, mine + rules) and not R.stale({"name": "Cash drag"}, rules)
 
 
 # ---- Decision 1: a figure is bound to its recipe by meaning, once, and every later step reads the binding (round 7) ------------------------------
@@ -282,3 +282,52 @@ def test_the_top_50_figures_bind_to_the_recipe_that_answers_their_key():
                 yield from figs(v)
     got = {f["id"]: (R.match(f) or {}).get("id") for f in figs(cards)}
     assert got == want
+
+
+# ---- live r1 (uc-001, uc-015, uc-023, uc-024, uc-028, uc-032): the figures North wrote in those threads, names and definitions as on the brief ----
+
+R1_FIGURES = {
+    "uc-015": [("Known obligations due", "Sum of current, unpaid approved obligations within each monthly bucket after notice supersession; converted with approved FX basis"),
+               ("Cash availability", "Opening cash plus approved inflows minus known obligations, scenario\u2011only calls and reserve"),
+               ("Funding headroom (six\u2011month)", "Minimum across six closing\u2011month headrooms of opening cash + approved inflows \u2013 known obligations \u2013 scenario\u2011only calls \u2013 proposed funding \u2013 reserve")],
+    "uc-023": [("Allocation drift", "Difference between actual asset allocation and policy ranges."), ("Cash drag", "Cash holding as a percentage of total assets."),
+               ("Fee ratio", "Total fees as a proportion of assets under management."), ("Liquidity runway", "Months of cash available to meet known calls and costs.")],
+    "uc-024": [("Total items traced", "Count of auditor numbers successfully linked to a source file and page."),
+               ("Missing trace count", "Count of auditor numbers for which no source file or page could be found.")],
+    "uc-028": [("Allocation drift", "Current asset allocation versus policy target ranges"), ("Cash drag", "Cash held relative to total assets, indicating opportunity cost"),
+               ("Liquidity runway", "Months of known cash outflows that can be covered by cash balances")],
+    "uc-032": [("Policy\u2011band breach", "Asset\u2011class or manager value outside the limits set in the signed policy."), ("Old\u2011value alert", "Value that has not been refreshed for more than the allowed data\u2011age window.")],
+    "uc-001": [("Allocation drift", "Difference between actual asset allocation and policy ranges."), ("Single\u2011issuer concentration", "Direct exposure to any single issuer as % of total assets.")],
+}
+
+
+def _r1(case):
+    return [{"name": n, "definition": d, "period": "monthly"} for n, d in R1_FIGURES[case]]
+
+
+def test_the_figures_north_wrote_in_the_r1_threads_bind_by_name_to_the_recipe_that_computes_them():
+    """Live r1 class a: a figure with a recipe in the library was left unbound because the name North used was not one the recipe answered to. The names and
+    definitions are the brief's own. A count is still not a recipe's amount (the rule of test_a_figure_is_matched...), so "Missing trace count" stays unbound."""
+    got = {case: {k["name"]: (R.match(k) or {}).get("id") for k in _r1(case)} for case in R1_FIGURES}
+    assert got == {
+        "uc-015": {"Known obligations due": "allowance_due", "Cash availability": None, "Funding headroom (six\u2011month)": None},
+        "uc-023": {"Allocation drift": "drift_vs_target", "Cash drag": None, "Fee ratio": None, "Liquidity runway": None},
+        "uc-024": {"Total items traced": "trace_coverage", "Missing trace count": None},
+        "uc-028": {"Allocation drift": "drift_vs_target", "Cash drag": None, "Liquidity runway": None},
+        "uc-032": {"Policy\u2011band breach": "drift_vs_target", "Old\u2011value alert": "value_age_days"},
+        "uc-001": {"Allocation drift": "drift_vs_target", "Single\u2011issuer concentration": "concentration"},
+    }
+
+
+def test_the_question_North_was_asked_adds_the_tie_out_and_the_intercompany_figure_when_the_brief_has_none():
+    """uc-023 and uc-028: the brief's figures do not name the tie-out or the loans; the person's own words do, so the recipe is added as a suggested figure."""
+    ask23 = ("Before the monthly report goes out I check it line by line. Compare each number on our issued report with the administrator's pack for the same month end, "
+             "show me every line that does not agree and by how much, so I can explain it or correct it before Raj signs.")
+    k23 = _r1("uc-023")
+    R.bind(None, None, k23, ask23, [], ask23)
+    added = [k for k in k23 if k.get("pack_suggested")]
+    assert [(k["name"], k["built_from"]) for k in added] == [("Issued report against the administrator", "report_tie_out")]
+    said28 = "We moved money between entities in August. Show me which entity lent to which, the amount, the date, the reference and whether the approval is on record."
+    k28 = _r1("uc-028")
+    R.bind(None, None, k28, "We moved money between entities in August.", [], said28)
+    assert [(k["name"], k["built_from"]) for k in k28 if k.get("pack_suggested")] == [("Intercompany balance", "intercompany_balance")]
