@@ -412,7 +412,16 @@ keys:
           pct_of_portfolio: 5.75
           limit_pct: 5
           breach: true
-        how: largest position other than the sovereign note, over the EG-LIQUID total at 30 Sep
+          over_limit:
+          - Harborview Semiconductor
+          - Coastal Rail Holdings
+          - Larkspur Health
+          - Juniper Consumer Brands
+          - Evermore Banking Group
+          - Atlas Harbour Shipping
+          - Northwind Logistics
+        how: 'largest position other than the sovereign note (exempt by the signed rule single_name_exempt_htn29), over the EG-LIQUID total at 30 Sep; over_limit:
+          every name above 5 percent'
       Other limits:
         expected:
           listed_equity_pct: 80.61
@@ -489,8 +498,8 @@ keys:
           file: administrator_export_2026-06.xlsx
           old_name: Market Value
           new_name: Valuation Amount (USD)
-          months_with_old_name: 5
-        how: the 30 June pack (released in July) renames one column; the other packs keep 'Market Value'
+          months_with_old_name: 6
+        how: the 30 June pack (released in July) renames one column; the other six packs (31 March to 30 September, June left out) keep 'Market Value'
   uc-017-liab:
     title: 'What we owe: loans and facilities, and net worth after debt'
     priority: 17
@@ -1457,11 +1466,11 @@ keys:
             status: computed
           - section: Breaches
             owner: Tom Hale
-            status: 1 real breach (Harborview Semiconductor 5.75%)
+            status: 7 real breaches (largest Harborview Semiconductor 5.75%)
           - section: Proposals
             owner: Daniel Foo
             status: fund Cedarpoint call 7 (short USD 270,000); Harborlight Ventures IV ticket 2,000,000
-          real_breaches: 1
+          real_breaches: 7
           amendments_open: 1
         how: sections drawn from the other keys of this file
   uc-048-policyupd:

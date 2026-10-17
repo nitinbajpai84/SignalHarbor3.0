@@ -1,0 +1,39 @@
+# SUGGESTION. A payment held because its invoice bills above the fee schedule (signed rule invoice_above_fee_schedule, M15). Card uc-008-payrun.
+suggestion: true
+id: uc-008-payrun-fee-hold
+title: A payment is held because its invoice is above the fee schedule
+pain_points:
+- PP-02
+row: exception
+trigger:
+  'on': file_arrived
+  kind: invoice
+inputs:
+- kind: doc
+  fields:
+  - payee
+  - amount
+  - currency
+  - due_date
+- kind: figure
+  id: payment_batch
+  recipe: payment_batch
+  as: pay
+  by:
+    payee: doc.payee
+    amount: doc.amount
+condition: "pay.state == 'hold: invoice above fee schedule' and pay.fee_variance > 0"
+subject: '{doc.payee} {doc.due_date}'
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call with the vendor
+hold:
+  blocks: release_payment
+  scope: '{doc.payee}'
+  until: the vendor corrects the invoice or the call is recorded
+message: The invoice behind the payment to {doc.payee} ({doc.currency} {doc.amount:,.0f}, due {doc.due_date}) bills {doc.currency} {pay.fee_variance:,.2f} above the fee schedule. It is held from the payment run under the signed office rule until the vendor corrects it.
+evidence:
+- pay

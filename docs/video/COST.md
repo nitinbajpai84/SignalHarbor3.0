@@ -54,3 +54,32 @@ Budget: 5 USD for the whole film across OpenRouter (agents) and OpenAI (voice), 
 | 2026-10-15 11:40 | voice, film 9 scene 2, 6 words, 2.2 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0006 |
 | 2026-10-15 11:47 | voice, film 9 scene 11, 21 words, 7.7 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0019 |
 | 2026-10-15 11:47 | voice, film 9 scene 11, 21 words, 7.5 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0019 |
+| 2026-10-17 10:03 | voice, UC01 scene 1, 5 words, 2.5 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0006 |
+| 2026-10-17 10:03 | voice, UC01 scene 1, 19 words, 7.5 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0019 |
+| 2026-10-17 10:03 | voice, UC01 scene 2, 13 words, 6.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0015 |
+| 2026-10-17 10:03 | voice, UC01 scene 2, 21 words, 9.7 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0024 |
+| 2026-10-17 10:03 | voice, UC01 scene 2, 9 words, 4.0 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0010 |
+| 2026-10-17 10:04 | voice, UC01 scene 2, 6 words, 2.7 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0007 |
+| 2026-10-17 10:04 | voice, UC01 scene 3, 7 words, 3.0 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0007 |
+| 2026-10-17 10:04 | voice, UC01 scene 3, 19 words, 8.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0020 |
+| 2026-10-17 10:04 | voice, UC01 scene 3, 11 words, 4.2 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0011 |
+| 2026-10-17 10:04 | voice, UC01 scene 4, 4 words, 1.8 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0005 |
+| 2026-10-17 10:04 | voice, UC01 scene 4, 17 words, 6.9 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0017 |
+| 2026-10-17 10:04 | voice, UC01 scene 4, 23 words, 8.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0020 |
+| 2026-10-17 10:04 | voice, UC01 scene 4, 16 words, 6.9 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0017 |
+| 2026-10-17 10:04 | voice, UC01 scene 5, 17 words, 6.8 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0017 |
+| 2026-10-17 10:04 | voice, UC01 scene 5, 11 words, 5.2 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0013 |
+| 2026-10-17 10:04 | voice, UC01 scene 5, 8 words, 3.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0008 |
+| 2026-10-17 10:04 | voice, UC01 scene 6, 14 words, 5.6 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0014 |
+| 2026-10-17 10:04 | voice, UC01 scene 6, 10 words, 6.2 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0015 |
+| 2026-10-17 10:04 | voice, UC01 scene 6, 11 words, 4.3 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0011 |
+| 2026-10-17 10:04 | voice, UC01 scene 6, 12 words, 4.8 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0012 |
+| 2026-10-17 10:04 | voice, UC01 scene 6, 19 words, 8.4 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0021 |
+| 2026-10-17 10:04 | voice, UC01 scene 7, 11 words, 7.3 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0018 |
+| 2026-10-17 10:04 | voice, UC01 scene 7, 6 words, 3.6 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0009 |
+| 2026-10-17 10:04 | voice, UC01 scene 7, 14 words, 6.6 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0016 |
+| 2026-10-17 10:04 | voice, UC01 scene 8, 18 words, 7.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0018 |
+| 2026-10-17 10:04 | voice, UC01 scene 8, 10 words, 4.5 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0011 |
+| 2026-10-17 10:04 | voice, UC01 scene 9, 3 words, 2.1 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0005 |
+| 2026-10-17 10:04 | voice, UC01 scene 9, 2 words, 1.5 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0004 |
+| 2026-10-17 10:04 | voice, UC01 scene 9, 7 words, 4.0 s | OpenAI gpt-4o-mini-tts (ash), estimate | 0.0010 |

@@ -88,6 +88,12 @@ def write_xlsx(p, sheets, money_cols=()):
             zout.writestr(zi, data)
 
 
+def copy_lf(src, dst):
+    """Copy a file; a text file (.md, .txt, .csv) gets LF line ends, so a CRLF checkout (core.autocrlf) gives the same bytes as any other."""
+    b = src.read_bytes()
+    dst.write_bytes(b.replace(b"\r\n", b"\n") if src.suffix in (".md", ".txt", ".csv") else b)
+
+
 def write_csv(p, header, rows):
     with open(p, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, lineterminator="\n"); w.writerow(header); w.writerows(rows)

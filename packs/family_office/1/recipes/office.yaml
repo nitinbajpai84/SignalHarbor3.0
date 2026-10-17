@@ -45,6 +45,8 @@ recipes:
     cards: [15]
     names: [allowance due, allowances due, family allowances]
     may_read: [family_members, cash_movements, portfolios, legal_entities]
+    never_read: [position_snapshots]
+    why: What is owed comes from the allowance schedule and the allowance payments; a cash balance does not say which allowance was paid.
     formula: 'For each member and each month from the allowance start up to the month of the as-at date (the latest day a schedule was received): the allowance for the month (allowance_amount, monthly) less the allowance paid for it. Money out is negative (A5): a payment is an allowance cash movement below zero; a movement above zero is a reversal and cancels the latest payment of the same portfolio, currency, month and amount. A payment is matched to a schedule line of the same paying portfolio, currency, month and amount; equal lines pair one to one. Owed is scheduled less paid; entity_owed is everything owed by the paying entity in that currency; earlier = 1 for a month before the current one.'
     grain: By member and month
     sql: >-

@@ -9,7 +9,7 @@ import yaml
 
 from .files import RECV, month_end, months, pname, report_lines, status_word
 from .files2 import CONTRACTS, cash_breaks, close_items
-from .world import (ACCT, BANK, DAYS, END, ENT, FUND, MGR, OFFICE_RULES, PRIVATE, ROOT, TERMS, U, ADMIN_RATE, CUST_RATE, add_bd, bdays, d, is_bd, lastbd, q2, ym)
+from .world import (ACCT, BANK, DAYS, END, ENT, FUND, MGR, OFFICE_RULES, PRIVATE, ROOT, SINGLE_NAME_EXEMPT, TERMS, U, ADMIN_RATE, CUST_RATE, add_bd, bdays, d, is_bd, lastbd, q2, ym)
 
 PACK = ROOT / "packs/family_office/1/use_cases_100.yaml"
 KEYS = {}
@@ -174,13 +174,26 @@ def k011(w):
     return Q("What was the Evergreen Liquid portfolio worth at 30 September 2026?", dict(evergreen_liquid=nav["EG-LIQUID"], net_worth_by_portfolio=nav), "sum of position market values per portfolio in the 30 Sep administrator pack (equals the custodian positions)")
 
 
+def single_names(w, x):
+    """Each holding of the liquid book at x other than one a signed exemption names (the sovereign note): {key: value}."""
+    return {k: w.value(k, x) for k in w.sec if w.sec[k]["canonical_name"] not in SINGLE_NAME_EXEMPT}
+
+
+def breaches(w, x):
+    """The names above the 5 percent single-name limit at x, largest first: [(key, value)]."""
+    tot = w.book(x)
+    return sorted(((k, v) for k, v in single_names(w, x).items() if v * 100 / tot > OFFICE_RULES["single_name_pct"]), key=lambda kv: -kv[1])
+
+
 @uc("uc5-limits", ["*/administrator_nav/administrator_export_2026-09.xlsx", "reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "reference/EG_security_master_20261008.xlsx"])
 def k012(w):
-    x = d("2026-09-30"); tot = w.book(x); name = {k: w.value(k, x) for k in w.sec if w.sec[k]["sector"] != "Government bond"}  # a sovereign note is not a single-name exposure
+    x = d("2026-09-30"); tot = w.book(x); name = single_names(w, x)  # the sovereign note is exempt by the signed rule single_name_exempt_htn29
     top = max(name, key=name.get); eq = sum((v for k, v in name.items() if w.sec[k]["asset_class"] == "listed_equity"), D(0))
     rows = admin_rows(w, "2026-09-30"); funds = {p: sum((v for k, (pp, v, s) in rows.items() if pp == p), D(0)) for p in ("EG-FUNDS", "EG-B-OPS")}
     hedge = rows["H1"][1] + rows["H2"][1]
-    return {**Q("Which holding is over its single-name limit?", dict(holding=w.sec[top]["canonical_name"], value=name[top], pct_of_portfolio=pct(name[top], tot, 2), limit_pct=5, breach=pct(name[top], tot, 2) > 5), "largest position other than the sovereign note, over the EG-LIQUID total at 30 Sep"),
+    return {**Q("Which holding is over its single-name limit?", dict(holding=w.sec[top]["canonical_name"], value=name[top], pct_of_portfolio=pct(name[top], tot, 2), limit_pct=5, breach=pct(name[top], tot, 2) > 5,
+                                                                      over_limit=[w.sec[k]["canonical_name"] for k, v in breaches(w, x)]),
+               "largest position other than the sovereign note (exempt by the signed rule single_name_exempt_htn29), over the EG-LIQUID total at 30 Sep; over_limit: every name above 5 percent"),
             **Q("Other limits", dict(listed_equity_pct=pct(eq, tot, 2), listed_equity_band="60-90", hedge_funds_pct_of_eg_funds=pct(hedge, funds["EG-FUNDS"], 2), hedge_band="20-60",
                                     cedarpoint_pct_of_eg_b_ops=pct(rows["D"][1], funds["EG-B-OPS"], 2), cedarpoint_max=55), "values from the 30 Sep administrator pack (Cedarpoint Ventures in EG-B-OPS is fund D only; fund C sits in Holdings)")}
 
@@ -207,7 +220,7 @@ def k015(w):
 
 @uc("uc-016-schemadrift", ["*/administrator_nav/administrator_export_2026-06.xlsx", "*/administrator_nav/administrator_export_2026-05.xlsx"])
 def k016(w):
-    return Q("The administrator renamed a column. What breaks, and is the new mapping safe?", dict(file="administrator_export_2026-06.xlsx", old_name="Market Value", new_name="Valuation Amount (USD)", months_with_old_name=5), "the 30 June pack (released in July) renames one column; the other packs keep 'Market Value'")
+    return Q("The administrator renamed a column. What breaks, and is the new mapping safe?", dict(file="administrator_export_2026-06.xlsx", old_name="Market Value", new_name="Valuation Amount (USD)", months_with_old_name=6), "the 30 June pack (released in July) renames one column; the other six packs (31 March to 30 September, June left out) keep 'Market Value'")
 
 
 @uc("uc-017-liab", ["*/loan_statements/loan_statement_TL-B-01_2026-09.xlsx", "reference/loan_agreement_TL-B-01.pdf", "*/bank_statements/HB_B_USD_2026-09.xlsx"])
@@ -498,16 +511,17 @@ def k046(w):
 
 @uc("uc-047-icpack", ["*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf", "*/meeting_notes/ic_note_2026-08-19.md", "*/meeting_notes/08_investment_committee_note_2026-10-08.md"])
 def k047(w):
+    x = d("2026-09-30"); br = breaches(w, x); top = br[0]
     return Q("Which matters to put to the committee and what to recommend", dict(sections=[dict(section="Report", owner="Raj Patel", status="issued 3 Oct (A estimated)"), dict(section="Performance", owner="Raj Patel", status="liquid book +4.1667% against 2.7072%"),
-                                                                                         dict(section="Attribution", owner="Sofia Reyes", status="computed"), dict(section="Breaches", owner="Tom Hale", status="1 real breach (Harborview Semiconductor 5.75%)"),
-                                                                                         dict(section="Proposals", owner="Daniel Foo", status="fund Cedarpoint call 7 (short USD 270,000); Harborlight Ventures IV ticket 2,000,000")], real_breaches=1, amendments_open=1), "sections drawn from the other keys of this file")
+                                                                                         dict(section="Attribution", owner="Sofia Reyes", status="computed"), dict(section="Breaches", owner="Tom Hale", status=f"{len(br)} real breaches (largest {w.sec[top[0]]['canonical_name']} {pct(top[1], w.book(x), 2)}%)"),
+                                                                                         dict(section="Proposals", owner="Daniel Foo", status="fund Cedarpoint call 7 (short USD 270,000); Harborlight Ventures IV ticket 2,000,000")], real_breaches=len(br), amendments_open=1), "sections drawn from the other keys of this file")
 
 
 @uc("uc-048-policyupd", ["reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "*/custodian_positions/positions_20260630.csv", "*/meeting_notes/ic_note_2026-06-17.md"])
 def k048(w):
     rows = {}
     for me in [month_end(m) for m in months("2026-04", "2026-09")]:
-        tot = w.book(me); rows[me.isoformat()] = max(pct(w.value(k, me), tot, 2) for k in w.sec if w.sec[k]["sector"] != "Government bond")
+        tot = w.book(me); rows[me.isoformat()] = max(pct(v, tot, 2) for v in single_names(w, me).values())
     return Q("Which limits to change and by how much", dict(max_single_name_pct_by_month_end=rows, breaches_at_5_pct=sum(1 for v in rows.values() if v > 5), breaches_at_6_pct=sum(1 for v in rows.values() if v > 6), current_limit=5, proposed_limit=6),
              "largest single name over the liquid book at each month end from custodian positions (6 months of data, not 12); count above the limit")
 

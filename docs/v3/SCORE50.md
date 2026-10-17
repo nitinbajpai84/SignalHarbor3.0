@@ -1,6 +1,6 @@
 # Score of the top 50 use cases
 
-Written by `python tools/score50.py` on 2026-10-17 16:25. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 58 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 33 s, whole run 78 s.
+Written by `python tools/score50.py` on 2026-10-17 16:45. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 59 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 33 s, whole run 74 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -8,36 +8,36 @@ PASS: every key value matches and the signals behave. FAIL: a number is wrong, o
 
 | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|
-| 39 | 8 | 2 | 1 | 50 |
+| 44 | 6 | 0 | 0 | 50 |
 
-Key values compared: 560, matching: 541.
+Key values compared: 565, matching: 549.
 
 ## By domain
 
 | Domain | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
+| Family and people | 1 | 0 | 0 | 0 | 1 |
+| Hold and maintain | 6 | 0 | 0 | 0 | 6 |
+| Invest | 8 | 0 | 0 | 0 | 8 |
+| Operate and control | 8 | 0 | 0 | 0 | 8 |
+| Run the office | 3 | 0 | 0 | 0 | 3 |
 | Cash and treasury | 10 | 1 | 0 | 0 | 11 |
-| Invest | 7 | 0 | 1 | 0 | 8 |
-| Operate and control | 7 | 1 | 0 | 0 | 8 |
-| Hold and maintain | 5 | 0 | 1 | 0 | 6 |
-| Run the office | 2 | 0 | 0 | 1 | 3 |
 | Report and govern | 8 | 5 | 0 | 0 | 13 |
-| Family and people | 0 | 1 | 0 | 0 | 1 |
 
 ## By person (card owner)
 
 | Person | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
+| Anita Rao | 4 | 0 | 0 | 0 | 4 |
 | Daniel Foo | 5 | 0 | 0 | 0 | 5 |
+| Helen Foo | 8 | 0 | 0 | 0 | 8 |
+| Mei Chen | 3 | 0 | 0 | 0 | 3 |
+| Priya Nair | 2 | 0 | 0 | 0 | 2 |
 | Sam Lee | 2 | 0 | 0 | 0 | 2 |
 | Sofia Reyes | 6 | 0 | 0 | 0 | 6 |
 | Grace Ong | 5 | 1 | 0 | 0 | 6 |
-| Anita Rao | 3 | 1 | 0 | 0 | 4 |
-| Helen Foo | 6 | 0 | 2 | 0 | 8 |
-| Mei Chen | 2 | 1 | 0 | 0 | 3 |
 | Tom Hale | 4 | 2 | 0 | 0 | 6 |
 | Raj Patel | 5 | 3 | 0 | 0 | 8 |
-| Priya Nair | 1 | 0 | 0 | 1 | 2 |
 
 ## Failures by root cause, worst first
 
@@ -45,13 +45,8 @@ A card can sit under more than one cause. The cause is what the expected-against
 
 1. **No benchmark is linked to the liquid book; 'since 1 April' runs to 13 Oct**. FAIL, 2 card(s): 42, 44. Recipes: time_weighted_return.
 2. **The sovereign note counts as a single name (no signed exemption), so every month breaches**. FAIL, 2 card(s): 47, 48. Recipes: limit_changes, pack_items.
-3. **no recipe reads the process narrative into steps and owners (figure process_steps; signals need doc.process_name, steps, steps_without_owner)**. BLOCKED, 1 card(s): 9.
-4. **An invoice above its fee schedule is not held in the payment run**. FAIL, 1 card(s): 8. Recipes: payment_batch.
-5. **Reads the latest day (13 Oct), not the 30 Sep month end the key reads**. FAIL, 1 card(s): 12. Recipes: single_name_breach.
-6. **The renamed-column count is of batches, not months**. FAIL, 1 card(s): 16. Recipes: columns_changed.
-7. **recipe allowance_due gives a wrong number**. FAIL, 1 card(s): 15. Recipes: allowance_due.
-8. **exception signal fires on a clean row: uc-038-navroll-unexplained**. SIGNAL, 1 card(s): 38.
-9. **exception signal fires on a clean row: uc-049-feedrag-above-terms**. SIGNAL, 1 card(s): 49.
+3. **An invoice above its fee schedule is not held in the payment run**. FAIL, 1 card(s): 8. Recipes: payment_batch.
+4. **Reads the latest day (13 Oct), not the 30 Sep month end the key reads**. FAIL, 1 card(s): 12. Recipes: single_name_breach.
 
 ## Every card
 
@@ -65,14 +60,14 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 6 | uc-006-fxneed: FX needed to pay a call in another currency | Cash and treasury | Grace Ong | **PASS** | 53/53 | all key values match; signals behave |
 | 7 | uc-007-pacing: Commitment pacing: where we stand after the call | Invest | Raj Patel | **PASS** | 27/27 | all key values match; signals behave |
 | 8 | uc-008-payrun: Weekly payment run with two approvals | Cash and treasury | Grace Ong | **FAIL** | 15/17 | items[Anchorage Custody (synthetic)].state: expected 'hold: invoice above fee schedule', got 'ready' (payment_batch); states: expected {'hold: invoice above fee schedule': 1, 'ready': 2, 'waiting for approval': 1}, got {'ready': 3, 'waiting for approval': 1} (payment_batch) |
-| 9 | uc9-sop: Process map and SOP for the month-end report | Run the office | Priya Nair | **BLOCKED** | 0/0 | no recipe reads the process narrative into steps and owners (figure process_steps; signals need doc.process_name, steps, steps_without_owner) |
+| 9 | uc9-sop: Process map and SOP for the month-end report | Run the office | Priya Nair | **PASS** | 3/3 | all key values match; signals behave |
 | 10 | uc-010-bankexp: Cash held at each bank against the bank limit | Cash and treasury | Tom Hale | **PASS** | 5/5 | all key values match; signals behave |
 | 11 | uc10-pipeline: A monthly pipeline and insight from the administrator and trading files | Operate and control | Anita Rao | **PASS** | 6/6 | all key values match; signals behave |
-| 12 | uc5-limits: Allocation and limit monitoring | Report and govern | Tom Hale | **FAIL** | 9/10 | holding: expected 'Harborview Semiconductor', got "8 rows where portfolio='Evergreen Liquid Book', position_date='2026-09-30', status='real breach'" (single_name_breach) |
+| 12 | uc5-limits: Allocation and limit monitoring | Report and govern | Tom Hale | **FAIL** | 9/11 | holding: expected 'Harborview Semiconductor', got 'Harbour Treasury Note 2029 (synthetic sovereign)' (single_name_breach); over_limit: expected ['Harborview Semiconductor', 'Coastal Rail Holdings', 'Larkspur Health', 'Juniper Consumer Brands', 'Evermore Banking Group', 'Atlas Harbour Shipping', 'Northwind Logistics'], got ['Atlas Harbour Shipping', 'Coastal Rail Holdings', 'Evermore Banking Group', 'Harborview Semiconductor', 'Harbour Treasury Note 2029 (synthetic sovereign)', 'Juniper Consumer Brands', 'Larkspur Health', 'Northwind Logistics'] (single_name_breach) |
 | 13 | uc-013-secgaps: Securities with no asset class or identifier | Hold and maintain | Anita Rao | **PASS** | 3/3 | all key values match; signals behave |
 | 14 | morning-networth-note: A morning note on what we are worth | Report and govern | Mei Chen | **PASS** | 7/7 | all key values match; signals behave |
-| 15 | uc-015-allowances: Family member allowances and distributions due | Family and people | Mei Chen | **FAIL** | 0/4 | due_october.Lin Chen: expected 8000, got 0 (allowance_due); due_october.Maya Chen: expected 6000, got 0 (allowance_due); due_october.Ethan Chen: expected 5000, got 0 (allowance_due); due_october.Wen Chen: expected 4000, got 0 (allowance_due) |
-| 16 | uc-016-schemadrift: A source file arrives with a new or renamed column | Operate and control | Anita Rao | **FAIL** | 2/3 | months_with_old_name: expected 5, got 6 (columns_changed) |
+| 15 | uc-015-allowances: Family member allowances and distributions due | Family and people | Mei Chen | **PASS** | 4/4 | all key values match; signals behave |
+| 16 | uc-016-schemadrift: A source file arrives with a new or renamed column | Operate and control | Anita Rao | **PASS** | 3/3 | all key values match; signals behave |
 | 17 | uc-017-liab: What we owe: loans and facilities, and net worth after debt | Hold and maintain | Mei Chen | **PASS** | 7/7 | all key values match; signals behave |
 | 18 | uc-018-fundplan: Which entity pays this call and from where | Cash and treasury | Daniel Foo | **PASS** | 7/7 | all key values match; signals behave |
 | 19 | uc3-statements-inbox: Manager statements: expected against received, and late | Operate and control | Helen Foo | **PASS** | 18/18 | all key values match; signals behave |
@@ -94,7 +89,7 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 35 | uc-035-ddq: Compare manager questionnaires | Invest | Sofia Reyes | **PASS** | 11/11 | all key values match; signals behave |
 | 36 | uc6-uncalled: How much of our commitments is still uncalled? | Cash and treasury | Daniel Foo | **PASS** | 10/10 | all key values match; signals behave |
 | 37 | uc-037-distrack: Distributions expected against received | Cash and treasury | Sam Lee | **PASS** | 21/21 | all key values match; signals behave |
-| 38 | uc-038-navroll: Private fund value roll-forward | Hold and maintain | Helen Foo | **SIGNAL** | 1/1 | uc-038-navroll-unexplained fires on a clean row (Evergreen Growth I unexplained -12,500 at 2026-09-30) |
+| 38 | uc-038-navroll: Private fund value roll-forward | Hold and maintain | Helen Foo | **PASS** | 1/1 | all key values match; signals behave |
 | 39 | uc-039-irr: Return of each private fund since we invested | Invest | Sofia Reyes | **PASS** | 40/40 | all key values match; signals behave |
 | 40 | uc-040-icmemo: Investment committee memo for a new commitment | Invest | Sofia Reyes | **PASS** | 8/8 | all key values match; signals behave |
 | 41 | uc-041-commitappr: Approve a new commitment within policy | Invest | Raj Patel | **PASS** | 4/4 | all key values match; signals behave |
@@ -103,9 +98,9 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 44 | uc-044-twr: Return for the year against the benchmark | Report and govern | Raj Patel | **FAIL** | 4/5 | benchmark_since_1_apr_pct: expected 5.7563, got None (time_weighted_return) |
 | 45 | uc-045-reportpack: Monthly investment report: assemble and sign | Report and govern | Raj Patel | **PASS** | 4/4 | all key values match; signals behave |
 | 46 | uc-046-attrib: Where did the return come from | Report and govern | Sofia Reyes | **PASS** | 14/14 | all key values match; signals behave |
-| 47 | uc-047-icpack: Investment committee pack | Report and govern | Raj Patel | **FAIL** | 6/7 | real_breaches: expected 1, got 8 (pack_items) |
-| 48 | uc-048-policyupd: Update the allocation policy and its limits | Report and govern | Tom Hale | **FAIL** | 2/9 | max_single_name_pct_by_month_end.2026-04-30: expected 6.13, got 7.17 (limit_changes); max_single_name_pct_by_month_end.2026-05-31: expected 5.89, got 7.3 (limit_changes); max_single_name_pct_by_month_end.2026-06-30: expected 5.74, got 7.34 (limit_changes); max_single_name_pct_by_month_end.2026-07-31: expected 5.71, got 7.28 (limit_changes); max_single_name_pct_by_month_end.2026-08-31: expected 5.71, got 7.35 (limit_changes); max_single_name_pct_by_month_end.2026-09-30: expected 5.75, got 7.08 (limit_changes); and 1 more |
-| 49 | uc-049-feedrag: Fees paid to each manager | Invest | Helen Foo | **SIGNAL** | 16/16 | uc-049-feedrag-above-terms fires on a clean row (Bluewater Capital) |
+| 47 | uc-047-icpack: Investment committee pack | Report and govern | Raj Patel | **FAIL** | 6/7 | real_breaches: expected 7, got 8 (pack_items) |
+| 48 | uc-048-policyupd: Update the allocation policy and its limits | Report and govern | Tom Hale | **FAIL** | 2/10 | max_single_name_pct_by_month_end.2026-04-30: expected 6.13, got 7.17 (limit_changes); max_single_name_pct_by_month_end.2026-05-31: expected 5.89, got 7.3 (limit_changes); max_single_name_pct_by_month_end.2026-06-30: expected 5.74, got 7.34 (limit_changes); max_single_name_pct_by_month_end.2026-07-31: expected 5.71, got 7.28 (limit_changes); max_single_name_pct_by_month_end.2026-08-31: expected 5.71, got 7.35 (limit_changes); max_single_name_pct_by_month_end.2026-09-30: expected 5.75, got 7.08 (limit_changes); and 2 more |
+| 49 | uc-049-feedrag: Fees paid to each manager | Invest | Helen Foo | **PASS** | 16/16 | all key values match; signals behave |
 | 50 | uc-050-feeinv: Administrator and custodian invoices against the fee schedule | Run the office | Grace Ong | **PASS** | 17/17 | all key values match; signals behave |
 
 ## Per card detail
@@ -173,13 +168,11 @@ Signals fired: uc-008-payrun-changed-account x1; uc-008-payrun-waiting x1.
 
 Signal problems: planted mess not caught by any signal: M15 invoice above schedule.
 
-### 9. uc9-sop: BLOCKED
+### 9. uc9-sop: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: process_steps -> process_steps. Answered from: process_steps.
 
-Blocked: no recipe reads the process narrative into steps and owners (figure process_steps; signals need doc.process_name, steps, steps_without_owner)
-
-Signals that cannot run on the loaded data: uc9-sop-published cannot run: no reader gives doc.process_name, doc.steps; uc9-sop-step-gap cannot run: no reader gives doc.process_name, doc.steps, doc.steps_without_check, doc.steps_without_owner; uc9-sop-steps-drawn cannot run: no reader gives doc.manual_steps, doc.process_name, doc.steps, doc.steps_without_check, doc.steps_without_owner.
+Signals fired: uc9-sop-published x1; uc9-sop-steps-drawn x1.
 
 ### 10. uc-010-bankexp: PASS
 
@@ -203,7 +196,8 @@ Figures bound: single_name_concentration -> concentration. Answered from: concen
 
 | Key value | Expected | Got | Recipe |
 |---|---|---|---|
-| q1 holding | 'Harborview Semiconductor' | "8 rows where portfolio='Evergreen Liquid Book', position_date='2026-09-30', status='real breach'" | single_name_breach |
+| q1 holding | 'Harborview Semiconductor' | 'Harbour Treasury Note 2029 (synthetic sovereign)' | single_name_breach |
+| q1 over_limit | ['Harborview Semiconductor', 'Coastal Rail Holdings', 'Larkspur Health', 'Juniper Consumer Brands', 'Evermore Banking Group', 'Atlas Harbour Shipping', 'Northwind Logistics'] | ['Atlas Harbour Shipping', 'Coastal Rail Holdings', 'Evermore Banking Group', 'Harborview Semiconductor', 'Harbour Treasury Note 2029 (synthetic sovereign)', 'Juniper Consumer Brands', 'Larkspur Health', 'Northwind Logistics'] | single_name_breach |
 
 Signals fired: uc5-limits-breach x8; uc5-limits-no-class x1.
 
@@ -223,16 +217,9 @@ Signals fired: morning-networth-note-today x1.
 
 Signals that cannot run on the loaded data: morning-networth-note-call-uncovered cannot run: recipe cash_after_calls has no column call_amount, due_in_days; morning-networth-note-report-old cannot run: no reader gives doc.days_since_issue.
 
-### 15. uc-015-allowances: FAIL
+### 15. uc-015-allowances: PASS
 
 Figures bound: allowance_due -> allowance_due. Answered from: allowance_due.
-
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 due_october.Lin Chen | 8000 | 0 | allowance_due |
-| q1 due_october.Maya Chen | 6000 | 0 | allowance_due |
-| q1 due_october.Ethan Chen | 5000 | 0 | allowance_due |
-| q1 due_october.Wen Chen | 4000 | 0 | allowance_due |
 
 Key values not compared (no column answers them yet): q1.unpaid_earlier, q1.total_owed, q1.trust_usd_cash.
 
@@ -240,13 +227,9 @@ Signals fired: uc-015-allowances-unpaid-earlier x1.
 
 Signals that cannot run on the loaded data: uc-015-allowances-approved cannot run: figure cash_by_entity for {'entity': 'doc.entity', 'currency': 'doc.currency'} on every row; uc-015-allowances-cash-short cannot run: figure cash_by_entity for {'entity': 'doc.entity', 'currency': 'doc.currency'} on every row.
 
-### 16. uc-016-schemadrift: FAIL
+### 16. uc-016-schemadrift: PASS
 
 Figures bound: columns_changed -> columns_changed. Answered from: columns_changed.
-
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 months_with_old_name | 5 | 6 | columns_changed |
 
 Key values not compared (no column answers them yet): q1.file.
 
@@ -340,7 +323,7 @@ Figures bound: close_items_done -> close_items_done. Answered from: close_items_
 
 Signals fired: uc-029-closeck-item-late x2.
 
-Signals that cannot run on the loaded data: uc-029-closeck-report-can-start cannot run: no reader gives doc.steps; uc-029-closeck-sign-close cannot run: no reader gives doc.steps.
+Signals that cannot run on the loaded data: uc-029-closeck-report-can-start cannot run: no reader gives doc.close_month, doc.steps, doc.open; uc-029-closeck-sign-close cannot run: no reader gives doc.close_month, doc.steps, doc.done, doc.open, doc.late.
 
 ### 30. uc-030-vendors: PASS
 
@@ -398,13 +381,11 @@ Signals fired: uc-037-distrack-no-credit x1.
 
 Signals that cannot run on the loaded data: uc-037-distrack-logged cannot run: no reader gives doc.fund, doc.amount, doc.currency, doc.pay_date.
 
-### 38. uc-038-navroll: SIGNAL
+### 38. uc-038-navroll: PASS
 
 Figures bound: nav_rollforward -> nav_rollforward. Answered from: nav_rollforward.
 
 Signals fired: uc-038-navroll-statement x12; uc-038-navroll-ties x10; uc-038-navroll-unexplained x2.
-
-Signal problems: uc-038-navroll-unexplained fires on a clean row (Evergreen Growth I unexplained -12,500 at 2026-09-30).
 
 ### 39. uc-039-irr: PASS
 
@@ -475,7 +456,7 @@ Figures bound: pack_items -> pack_items. Answered from: pack_items.
 
 | Key value | Expected | Got | Recipe |
 |---|---|---|---|
-| q1 real_breaches | 1 | 8 | pack_items |
+| q1 real_breaches | 7 | 8 | pack_items |
 
 Signals fired: uc-047-icpack-assembled x1.
 
@@ -493,21 +474,18 @@ Figures bound: limit_changes -> limit_changes. Answered from: limit_changes.
 | q1 max_single_name_pct_by_month_end.2026-07-31 | 5.71 | 7.28 | limit_changes |
 | q1 max_single_name_pct_by_month_end.2026-08-31 | 5.71 | 7.35 | limit_changes |
 | q1 max_single_name_pct_by_month_end.2026-09-30 | 5.75 | 7.08 | limit_changes |
+| q1 breaches_at_6_pct | 1 | 0 | limit_changes |
 | q1 proposed_limit | 6 | "0 rows where approval_status='proposed', is_latest=1" | limit_changes |
-
-Key values not compared (no column answers them yet): q1.breaches_at_6_pct.
 
 Signals fired: none.
 
 Signals that cannot run on the loaded data: uc-048-policyupd-approved cannot run: no reader gives doc.decided_on, doc.effective_from, doc.outcome.
 
-### 49. uc-049-feedrag: SIGNAL
+### 49. uc-049-feedrag: PASS
 
 Figures bound: fee_drag -> fee_drag. Answered from: fee_drag.
 
 Signals fired: uc-049-feedrag-above-terms x1; uc-049-feedrag-share x4.
-
-Signal problems: uc-049-feedrag-above-terms fires on a clean row (Bluewater Capital).
 
 ### 50. uc-050-feeinv: PASS
 

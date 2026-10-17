@@ -3,8 +3,8 @@ import datetime as dt
 import shutil
 from decimal import Decimal as D
 
-from .world import (ACCT, BANK, DAYS, END, ENT, FUND, MGR, PRIVATE, SHORT, START, TERMS, U, World, add_bd, bdays, d, is_bd, next_bd, q2, ym, ROOT, OFFICE_RULES, COMMIT_DATE, VENDORS)
-from .writers import Registry, write_csv, write_eml, write_pdf, write_xlsx, pdf_bytes
+from .world import (ACCT, BANK, DAYS, END, ENT, FUND, MGR, PRIVATE, SHORT, START, TERMS, U, World, add_bd, bdays, d, is_bd, next_bd, q2, ym, ROOT, OFFICE_RULES, SIGNED_RULES, COMMIT_DATE, VENDORS)
+from .writers import Registry, copy_lf, write_csv, write_eml, write_pdf, write_xlsx, pdf_bytes
 
 OPS = "ops@evergreen-office.example.test"
 MESS = []  # filled while writing: dict(id, kind, where, what)
@@ -353,16 +353,16 @@ def notes_and_mail(w, R):
     for f in sorted(src.glob("0*.md")):
         day = d(f.stem[-10:])
         if START <= day <= END:
-            p = R.path(ym(day), "meeting_notes", f.name); shutil.copyfile(f, p)
+            p = R.path(ym(day), "meeting_notes", f.name); copy_lf(f, p)
             R.add(p, "meeting_notes", ym(day), "Meeting note (reused from the 10-use-case set): " + f.stem[3:-11].replace("_", " "))
     ic = [("2026-04-15", "Call 5 of Cedarpoint Ventures III (USD 1,000,000, due 21 April) is within the commitment. Daniel Foo approves the funding by converting SGD."),
           ("2026-05-20", "Entity B call from Saltmarsh Infrastructure Fund II approved (USD 600,000). Raj Patel asks for a weekly cash view per entity."),
-          ("2026-06-17", "Fund A call 11 (USD 500,000) paid. Tom Hale reminds the committee that Harborview Semiconductor must stay below the 5 percent single-name limit."),
+          ("2026-06-17", "Fund A call 11 (USD 500,000) paid. Tom Hale reminds the committee that Harborview Semiconductor must stay below the 5 percent single-name limit, and proposes raising the limit of the liquid book to 6 percent; the proposal goes to Daniel Foo to sign."),
           ("2026-07-15", "Call 6 of Cedarpoint Ventures III (USD 1,500,000) paid. Grace Ong to chase Cedarpoint Opportunities II for the missing 30 June statement."),
           ("2026-08-19", "Trust lends Holdings USD 600,000 (IC-2026-08-01) for the Evergreen Growth II call. Approval record to be filed.")]
     for day, text in ic:
         x = d(day); p = R.path(ym(x), "meeting_notes", f"ic_note_{day}.md")
-        p.write_text(f"# Investment committee note, {dlong(x)}\n\n| | |\n|---|---|\n| Chair | Raj Patel (Chief Investment Officer) |\n| Present | Daniel Foo, Mei Chen, Grace Ong, Tom Hale |\n\n## Decisions\n- {text}\n\n## Actions\n- [ ] Grace Ong: file the payment records by Friday\n- [ ] Helen Foo: update the commitments register\n- [x] Daniel Foo: approve payments over 500,000\n", encoding="utf-8")
+        p.write_text(f"# Investment committee note, {dlong(x)}\n\n| | |\n|---|---|\n| Chair | Raj Patel (Chief Investment Officer) |\n| Present | Daniel Foo, Mei Chen, Grace Ong, Tom Hale |\n\n## Decisions\n- {text}\n\n## Actions\n- [ ] Grace Ong: file the payment records by Friday\n- [ ] Helen Foo: update the commitments register\n- [x] Daniel Foo: approve payments over 500,000\n", encoding="utf-8", newline="\n")
         R.add(p, "meeting_notes", ym(x), f"Investment committee note {day} (generated)")
     d_stmt = next(s for s in w.stmts if s["fund"] == "D" and s["status"] == "missing")
     for day, who, subj, body in [("2026-07-28", "Helen Foo", "Cedarpoint Opportunities II - 30 June statement", "Dear Hana,\n\nWe have not yet received the 30 June 2026 statement for Cedarpoint Opportunities II (due 14 July). Could you send it this week?\n\nHelen"),
@@ -430,17 +430,18 @@ def reference(w, R):
               [[f, pname(f), FUND[f]["legal_entity"], TERMS[f][0], COMMIT_DATE[f], TERMS[f][1], TERMS[f][2], " ".join(map(str, TERMS[f][3]))] for f in PRIVATE])
     write_csv(ref / "vendor_master.csv", ["vendor", "category", "currency", "account_last4"], [list(v) for v in VENDORS])
     write_csv(ref / "accounts.csv", ["account_id", "bank", "entity", "currency", "account_number"], [[a, BANK[v["bank"]], ENT[v["ent"]], v["ccy"], v["no"]] for a, v in ACCT.items()])
-    write_csv(ref / "office_rules.csv", ["rule", "value", "text"], [["approval_over_usd", 500000, "Payments over 500,000 need the Head of Finance's approval"], ["bank_detail_change", "call-back", "Changed bank details need a call-back on a known number before payment"],
-                                                                     ["cash_buffer_usd", 250000, "Keep a 250,000 USD cash buffer per entity"], ["single_name_limit_pct", 5, "No single name above 5 percent of the liquid portfolio"], ["cash_tolerance_usd", 5000, "Daily cash may differ by up to 5,000 per entity before it is a break"]])
     import json
+    write_csv(ref / "office_rules.csv", ["rule", "value", "text", "rule_type", "parameters", "approval_status", "version"], [[*r, "", "", "", ""] for r in [["approval_over_usd", 500000, "Payments over 500,000 need the Head of Finance's approval"], ["bank_detail_change", "call-back", "Changed bank details need a call-back on a known number before payment"],
+              ["cash_buffer_usd", 250000, "Keep a 250,000 USD cash buffer per entity"], ["single_name_limit_pct", 5, "No single name above 5 percent of the liquid portfolio"], ["cash_tolerance_usd", 5000, "Daily cash may differ by up to 5,000 per entity before it is a break"]]]
+              + [[c, v, t, k, json.dumps(p, sort_keys=True), s, n] for c, v, t, k, p, s, n in SIGNED_RULES])
     from .world import PEOPLE
     md = dict(office="Evergreen Office (synthetic)", period=["2026-04-01", "2026-10-13"], entities={k: v for k, v in ENT.items()},
               accounts={a: dict(bank=BANK[v["bank"]], entity=v["ent"], currency=v["ccy"], number=v["no"]) for a, v in ACCT.items()},
               funds={f: dict(name=pname(f), manager=mgr(f)["name"], entity=FUND[f]["legal_entity"], portfolio=FUND[f]["portfolio"], asset_class=FUND[f]["asset_class"], statement_frequency=FUND[f]["statement_frequency"],
                              **({"commitment_usd": TERMS[f][0], "called_before_2026_04_01": TERMS[f][1], "committed_on": COMMIT_DATE[f], "fee_pct_per_billing": TERMS[f][2], "billing_months": list(TERMS[f][3]), "standing_account_last4": TERMS[f][4]} if f in TERMS else {}))
                      for f in FUND}, people=[dict(name=n, title=t) for n, t, g in PEOPLE], rules=OFFICE_RULES)
-    (ref / "master_data.json").write_text(json.dumps(md, indent=1, sort_keys=True, default=str) + chr(10), encoding="utf-8")
+    (ref / "master_data.json").write_text(json.dumps(md, indent=1, sort_keys=True, default=str) + chr(10), encoding="utf-8", newline="\n")
     for src in ["benchmark_workbook", "policy", "process_narrative", "research_docs", "security_master"]:
         for f in sorted((ROOT / "tests/v1/fixtures/10uc" / src).glob("*")):
-            if f.name != "MANIFEST.md": shutil.copyfile(f, ref / f.name)
+            if f.name != "MANIFEST.md": copy_lf(f, ref / f.name)
     for f in sorted(ref.glob("*")): R.rows.append(dict(path=f.relative_to(R.out).as_posix(), kind="reference", month="reference", desc="Reference or policy file: " + f.stem.replace("_", " "), mess=["M05a"] if f.name == "standing_instructions.csv" else []))

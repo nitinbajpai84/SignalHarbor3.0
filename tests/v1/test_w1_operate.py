@@ -342,7 +342,7 @@ def test_card16_renamed_column_is_found_and_the_old_name_counted():
     assert exp["file"] == "administrator_export_2026-06.xlsx" and headers("2026-06")[5] == exp["new_name"]
     # the key says 5; the fixture has six packs (March, April, May, July, August, September) that keep the old name: reported under Needs
     assert r["batches_on_old_name"] == on_old  # counted from the files, not typed
-    assert on_old == 6 != exp["months_with_old_name"]  # the key says 5; the files say 6 (the key generator is wrong; see build-operate.md)
+    assert on_old == 6 == exp["months_with_old_name"]  # 31 March to 30 September with June left out: the key now counts the opening pack too
     assert o.tie("columns_changed")["ok"]
 
 

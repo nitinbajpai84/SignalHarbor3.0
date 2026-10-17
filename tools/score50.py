@@ -287,6 +287,11 @@ CHECKS: dict[str, list] = {
         V(0, "cedarpoint_iii_unfunded", "commitments_by_fund", "unfunded", fund=CV3),
         F(1, "private_markets_budget", ["private_markets_budget"], lambda x: x["private_markets_budget"][0]["budget"] if x["private_markets_budget"] else None),
     ],
+    "uc9-sop": [  # read by v3_process from the narrative and the hand-over email (READERS)
+        V(0, "steps", "process_steps", "steps"),
+        F(0, "owners", ["process_steps"], lambda x: x["process_steps"][0]["owners"] if x["process_steps"] else None),
+        F(0, "manual_steps_flagged_for_automation", ["process_steps"], lambda x: x["process_steps"][0]["manual_step_numbers"] if x["process_steps"] else None),
+    ],
     "uc-008-payrun": [
         L(0, "items", "payment_batch", {"payee": "payee"}, {"amount": "amount", "ccy": "currency", "due": "due_date", "state": "state"}),
         F(0, "states", ["payment_batch"], lambda x: dict(Counter(r["state"] for r in x["payment_batch"]))),
@@ -301,7 +306,9 @@ CHECKS: dict[str, list] = {
         D(0, "net_worth_by_portfolio", "net_worth", "portfolio", "net_worth", alias={"EG-LIQUID": LIQUID}, position_date=SEP30, currency="USD"),
     ],
     "uc5-limits": [
-        V(0, "holding", "single_name_breach", "holding", portfolio=LIQUID, position_date=SEP30, status="real breach"),
+        F(0, "holding", ["single_name_breach"], lambda x: max((r for r in x["single_name_breach"] if r["portfolio"] == LIQUID and str(r["position_date"]) == SEP30
+                                                               and r["status"] == "real breach"), key=lambda r: r["concentration_pct"], default={}).get("holding")),
+        S(0, "over_limit", "single_name_breach", "holding", portfolio=LIQUID, position_date=SEP30, status="real breach"),
         V(0, "value", "concentration", "exposure", portfolio=LIQUID, position_date=SEP30, issuer=K("holding")),
         V(0, "pct_of_portfolio", "concentration", "concentration_pct", portfolio=LIQUID, position_date=SEP30, issuer=K("holding")),
         F(0, "limit_pct", ["single_name_breach"], lambda x: (lambda v: v[0] if len(v) == 1 else v)(sorted({float(r["limit_pct"]) for r in x["single_name_breach"] if r["limit_pct"] is not None}))),
@@ -323,7 +330,7 @@ CHECKS: dict[str, list] = {
         D(0, "lines", "report_ready", "section", "report_value"),
     ],
     "uc-015-allowances": [
-        D(0, "due_october", "allowance_due", "member_name", "owed", month=lambda r: str(r["month"])[:7] == TODAY[:7]),
+        D(0, "due_october", "allowance_due", "member_name", "scheduled", month=lambda r: str(r["month"])[:7] == TODAY[:7]),  # due for October = scheduled; it was paid on 1 Oct (the October statement), so owed is 0
     ],
     "uc-016-schemadrift": [
         V(0, "old_name", "columns_changed", "old_name"),
@@ -512,8 +519,9 @@ CHECKS: dict[str, list] = {
         V(0, "amendments_open", "pack_items", "amendments_open", section="Report"),
     ],
     "uc-048-policyupd": [
-        D(0, "max_single_name_pct_by_month_end", "limit_changes", "month_end", "largest_name_pct", is_opening=False),
-        F(0, "breaches_at_5_pct", ["limit_changes"], lambda x: sum(1 for r in x["limit_changes"] if r["over_limit"] and not r["is_opening"] and str(r["month_end"]) <= SEP30)),
+        D(0, "max_single_name_pct_by_month_end", "limit_changes", "month_end", "largest_name_pct", is_opening=False, approval_status="approved"),
+        *[F(0, f"breaches_at_{n}_pct", ["limit_changes"], lambda x, st=st: sum(1 for r in x["limit_changes"] if r["over_limit"] and not r["is_opening"] and r["approval_status"] == st
+                                                                              and str(r["month_end"]) <= SEP30)) for n, st in ((5, "approved"), (6, "proposed"))],
         V(0, "current_limit", "limit_changes", "limit_pct", is_latest=1, approval_status="approved"),
         V(0, "proposed_limit", "limit_changes", "limit_pct", approval_status="proposed", is_latest=1),
     ],
@@ -534,9 +542,21 @@ NOT_A_FIGURE = {
 }
 
 # card -> what blocks it: a figure no recipe or reader answers yet.
-BLOCKED = {
-    "uc9-sop": "no recipe reads the process narrative into steps and owners (figure process_steps; signals need doc.process_name, steps, steps_without_owner)",
-}
+BLOCKED: dict[str, str] = {}
+
+
+def _process_steps() -> list[dict]:
+    """Card 9: the process narrative and the hand-over email read into steps and owners by v3_process, the reader live Harbor uses for a process thread."""
+    from sh_platform.v1 import v3_process as P
+    names = ("month_end_process_narrative.md", "handover_email_mei_to_raj.txt")
+    fig = P.figures([{"file": n, "text": (OFFICE / "reference" / n).read_text(encoding="utf-8")} for n in names])
+    return [fig] if fig else []
+
+
+# figure -> a reader (not a recipe) that answers it; its rows sit beside the recipe rows
+READERS = {"process_steps": _process_steps}
+
+OVER_LIMIT = next(iter(yaml.safe_load((OFFICE / "answer_keys.yaml").read_text(encoding="utf-8"))["keys"]["uc5-limits"]["questions"].values()))["expected"]["over_limit"]
 
 # The planted mess each card is about: rows (a selector on any recipe row that has those columns) a signal of the card must catch.
 # From the MANIFEST's "Mess planted on purpose" (M-codes) and the items the key itself flags.
@@ -546,7 +566,7 @@ MESS: dict[str, list[tuple[dict, str]]] = {
     "uc-006-fxneed": [({"trade_reference": "FXS-20260602-HOLD"}, "M09 conversion with no confirmation")],
     "uc-008-payrun": [({"payee": CV3}, "M05a changed account on call 7"), ({"payee": "Anchorage Custody (synthetic)"}, "M15 invoice above schedule")],
     "uc10-pipeline": [({"old_name": "Market Value"}, "M18 column renamed")],
-    "uc5-limits": [({"holding": "Harborview Semiconductor", "position_date": SEP30}, "key: Harborview over its single-name limit at 30 Sep")],
+    "uc5-limits": [({"holding": OVER_LIMIT, "position_date": SEP30}, "key: the names over the single-name limit at 30 Sep (Harborview the largest)")],
     "uc-013-secgaps": [({"instrument": "Pacific Rim Convertible 2029 note"}, "M17 missing class")],
     "uc-015-allowances": [({"member_name": "Ethan Chen"}, "M19b unpaid allowance")],
     "uc-016-schemadrift": [({"old_name": "Market Value"}, "M18 column renamed")],
@@ -571,6 +591,8 @@ MESS: dict[str, list[tuple[dict, str]]] = {
     "uc-037-distrack": [({"fund": "Evergreen Growth I", "pay_date": "2026-07-16"}, "M19 short-paid distribution")],
     "uc-041-commitappr": [({"deal_name": "Harborlight Ventures Iv"}, "key: no private-markets budget in the policy")],
     "uc-050-feeinv": [({"invoice_no": "FEE-CUST-Q3"}, "M15 invoice above schedule")],
+    "uc-038-navroll": [({"fund": "Evergreen Growth I"}, "M19 short-paid distribution (12,500 less, in its latest roll-forward, the quarter to 30 Sep)")],
+    "uc-049-feedrag": [({"manager": "Bluewater Capital"}, "M08 fee above terms (Evergreen Credit III call 3)")],
 }
 
 # A signal whose document is a row of a recipe under other column names (the event the live loader would raise carries these fields).
@@ -647,7 +669,7 @@ def bound(card: dict) -> dict[str, str | None]:
     when a recipe has it (the live model question settles those; ponytail: 12 such cards would FAIL on rules alone, w4 follow-up). A rules match wins
     over the id: a figure id can equal a recipe id and still be another figure (cash_break)."""
     from sh_platform.v1 import v3_recipes as R
-    ids = {r["id"] for r in R._file()["recipes"]}
+    ids = {r["id"] for r in R._file()["recipes"]} | set(READERS)
     return {f["id"]: (R.match(f) or {}).get("id") or (f["id"] if f["id"] in ids else None) for f in card["figures"]}
 
 
@@ -778,6 +800,7 @@ def score() -> dict:
         plane, con, report = load(Path(tmp))
         t_load = time.time() - t0
         rows, errors, ties = run_recipes(con)
+        rows.update({fid: fn() for fid, fn in READERS.items()})
         out = []
         for c in cards:
             out.append(score_card(c, keys.get(c["id"]), rows, errors, ties, stubs, lib, plane, people))

@@ -1,6 +1,10 @@
-rule,value,text
-approval_over_usd,500000,"Payments over 500,000 need the Head of Finance's approval"
-bank_detail_change,call-back,Changed bank details need a call-back on a known number before payment
-cash_buffer_usd,250000,"Keep a 250,000 USD cash buffer per entity"
-single_name_limit_pct,5,No single name above 5 percent of the liquid portfolio
-cash_tolerance_usd,5000,"Daily cash may differ by up to 5,000 per entity before it is a break"
+rule,value,text,rule_type,parameters,approval_status,version
+approval_over_usd,500000,"Payments over 500,000 need the Head of Finance's approval",,,,
+bank_detail_change,call-back,Changed bank details need a call-back on a known number before payment,,,,
+cash_buffer_usd,250000,"Keep a 250,000 USD cash buffer per entity",,,,
+single_name_limit_pct,5,No single name above 5 percent of the liquid portfolio,,,,
+cash_tolerance_usd,5000,"Daily cash may differ by up to 5,000 per entity before it is a break",,,,
+single_name_exempt_htn29,Harbour Treasury Note 2029 (synthetic sovereign),The sovereign note Harbour Treasury Note 2029 is exempt from the 5 percent single-name limit of the liquid book (EG-LIQUID): a government issuer is not a single-name exposure,policy,"{""dimension"": ""single_name_exempt"", ""instrument"": ""Harbour Treasury Note 2029 (synthetic sovereign)"", ""portfolio"": ""EG-LIQUID""}",approved,1
+benchmark_link,EG-OFFICE-BLEND,The liquid book (EG-LIQUID) is measured against the EG-OFFICE-BLEND benchmark,policy,"{""benchmark_code"": ""EG-OFFICE-BLEND"", ""portfolio"": ""EG-LIQUID""}",approved,1
+invoice_above_fee_schedule,hold,An invoice above its fee schedule is held from the payment run until the vendor corrects it,policy,"{""action"": ""hold"", ""tolerance_amount"": 0}",approved,1
+limit_single_name_liquid,6,"Proposed by Tom Hale at the 17 June committee, not yet signed: EG-LIQUID: any single name 0% to 6% of the portfolio, measured at the month end",policy,"{""bucket"": ""any single name"", ""dimension"": ""single_name"", ""max_pct"": 6, ""min_pct"": 0, ""portfolio"": ""EG-LIQUID""}",proposed,2

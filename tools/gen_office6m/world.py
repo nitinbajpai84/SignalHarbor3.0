@@ -14,6 +14,16 @@ ROOT = Path(__file__).resolve().parents[2]
 U = json.loads((ROOT / "docs/test/10uc_universe.json").read_text(encoding="utf-8"))
 START, END = dt.date(2026, 4, 1), dt.date(2026, 10, 13)
 OFFICE_RULES = dict(approval_over_usd=500000, buffer_usd=250000, single_name_pct=5, cash_tolerance=5000)
+# Office rules the answer keys rely on (docs/v3/ASSUMPTIONS.md A28-A31): (rule code, value, text, rule type, parameters as the recipes read them, approval status, version)
+SIGNED_RULES = [
+    ("single_name_exempt_htn29", "Harbour Treasury Note 2029 (synthetic sovereign)", "The sovereign note Harbour Treasury Note 2029 is exempt from the 5 percent single-name limit of the liquid book (EG-LIQUID): a government issuer is not a single-name exposure",
+     "policy", dict(portfolio="EG-LIQUID", dimension="single_name_exempt", instrument="Harbour Treasury Note 2029 (synthetic sovereign)"), "approved", 1),
+    ("benchmark_link", "EG-OFFICE-BLEND", "The liquid book (EG-LIQUID) is measured against the EG-OFFICE-BLEND benchmark", "policy", dict(portfolio="EG-LIQUID", benchmark_code="EG-OFFICE-BLEND"), "approved", 1),
+    ("invoice_above_fee_schedule", "hold", "An invoice above its fee schedule is held from the payment run until the vendor corrects it", "policy", dict(action="hold", tolerance_amount=0), "approved", 1),
+    ("limit_single_name_liquid", 6, "Proposed by Tom Hale at the 17 June committee, not yet signed: EG-LIQUID: any single name 0% to 6% of the portfolio, measured at the month end", "policy",
+     dict(portfolio="EG-LIQUID", dimension="single_name", bucket="any single name", min_pct=0, max_pct=6), "proposed", 2),
+]
+SINGLE_NAME_EXEMPT = {p["instrument"] for c, v, t, k, p, s, n in SIGNED_RULES if p.get("dimension") == "single_name_exempt" and s == "approved"}
 
 
 def q2(x): return D(x).quantize(D("0.01"), ROUND_HALF_UP)
