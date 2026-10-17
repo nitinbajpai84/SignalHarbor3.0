@@ -1,0 +1,5889 @@
+# 100 family-office use cases for testing Harbor and watching the office picture grow. Every item here is a SUGGESTION (industry practice), never enforced; the person decides.
+# Written to docs/v3/USE-CASES-100.md (method, matrix, cards). Model card: docs/v3/use-cases/UC01-CAPITAL-CALL.md.
+# order: build-up order (a card only builds on lower orders). priority 1..50: the ranked top 50 we test first (capital-call story 1..7, then by shared pain).
+# status: tested = already in role_builds.yaml (id kept); proposed = new. layer: 1 + deepest card it builds on (1 = basics).
+# answer keys are computed by the data generator from the universe (docs/test/make_10uc_universe.py, extended); never typed by hand. Fixture people/figures: Evergreen office, synthetic.
+# pain_points: ids from packs/family_office/1/painpoints_sample.yaml (PP-xx) and problems.yaml (INT-xx); kpis from kpi_tree.yaml. signals: top 50 only.
+suggestion: true
+template: family_office@1
+count: 100
+people:
+- id: cio
+  person: Raj Patel
+- id: cfo
+  person: Daniel Foo
+- id: head_of_data
+  person: Anita Rao
+- id: principal
+  person: Mei Chen
+- id: investment_analyst
+  person: Sofia Reyes
+- id: ops_lead
+  person: Grace Ong
+- id: fund_accountant
+  person: Helen Foo
+- id: risk_officer
+  person: Tom Hale
+- id: hr_admin
+  person: Priya Nair
+- id: ops_clerk
+  person: Sam Lee
+domains:
+- id: INV
+  name: Invest
+- id: HOLD
+  name: Hold and maintain
+- id: CASH
+  name: Cash and treasury
+- id: REP
+  name: Report and govern
+- id: OPS
+  name: Operate and control
+- id: FAM
+  name: Family and people
+- id: RUN
+  name: Run the office
+use_cases:
+- id: uc-001-noticelog
+  order: 1
+  priority: 1
+  status: proposed
+  story: capital-call
+  title: Log an incoming capital call notice
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - fund_accountant
+  - ops_lead
+  cadence: event
+  trigger: Tuesday 09:12, an email with Capital Call Notice No. 7 for Cedarpoint Ventures III
+  decision_served: Whether the notice is complete and which fund, amount and due date it carries, so it can go to the Fund Accountant
+  question: A Cedarpoint call notice just came in by email. Which fund, how much and by when?
+  kind: act
+  centre: Action
+  inputs:
+  - capital call notice pdf
+  - email
+  figures:
+  - id: call_notice_amount
+    name: Call notice amount, due date, purpose, wire account
+    formula: 'Read from the PDF: investor, amount, due date, purpose split, account ending; each with page and quoted line'
+    answer_key: 'Generator prints the notice: USD 1,250,000, due 23 Oct 2026, 900,000 investments + 350,000 fee, account ending 4471'
+  - id: notices_open
+    name: Notices logged and not yet recorded
+    formula: Count of notices logged with no call recorded against a commitment
+    answer_key: Generated notices minus notices marked recorded
+  action: Clerk logs the notice (fund, amount, due date, page quote) and hands it to the Fund Accountant
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - data.recognise-file
+    - data.read-pdf-fields
+    - data.match-identity
+    - data.detect-duplicate
+    - action.route-owner
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:fund_notices
+  - skill:read-capital-call-notice
+  pain_points:
+  - PP-02
+  - INT-DOC
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K14
+  signals:
+  - arrives: Email with 'Cedarpoint Ventures III, Capital Call Notice No. 7' PDF
+    signal: A capital call notice of a layout seen before; investor, amount, due date, purpose and wire account read with page and quote; two checks agree
+    acts: Sam Lee
+    effort: 1 click (Log)
+    type: normal
+  - arrives: Same PDF forwarded a second time by the manager
+    signal: Duplicate of notice 7, nothing new logged
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Notice carries a different amount in the body and in the table
+    signal: Fields disagree, notice is not logged as read; both quotes shown
+    acts: Sam Lee
+    effort: 1 decision (which one is right) or 1 call
+    type: exception
+- id: uc-002-callrecord
+  order: 2
+  priority: 2
+  status: proposed
+  story: capital-call
+  title: Record a capital call against the commitment
+  domain: Cash and treasury
+  owner: fund_accountant
+  involved:
+  - ops_clerk
+  - cfo
+  cadence: event
+  trigger: A logged notice is handed over
+  decision_served: Whether the call is within the commitment and can be recorded as called, with uncalled falling by the same amount
+  question: Does call 7 fit what we committed to Cedarpoint Ventures III, and what is left after it?
+  kind: act
+  centre: Action
+  inputs:
+  - capital call notice pdf
+  - commitments register xlsx
+  figures:
+  - id: called_to_date
+    name: Called to date by fund
+    formula: Called before the notice + this notice
+    answer_key: 'Generator: 6,000,000 before call 7, 7,250,000 after'
+  - id: unfunded_after_call
+    name: Unfunded after the call
+    formula: Commitment less called to date
+    answer_key: Commitment 10,000,000 minus 7,250,000 = 2,750,000
+  - id: fee_part_check
+    name: Fee part against fund terms
+    formula: Fee on the notice against the fee rate in the fund terms
+    answer_key: 350,000 equals the fee rate on file times the base; boolean from generator
+  action: Fund Accountant records the call; a call larger than the uncalled amount stops and goes to the CFO
+  signs: fund_accountant
+  reuses:
+    recipes: []
+    skills:
+    - data.match-identity
+    - check.adds-up
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - call_notice_amount
+    - notices_open
+  builds_on:
+  - uc-001-noticelog
+  layer: 2
+  needs_new:
+  - recipe:called_to_date
+  - table:fund_notices
+  pain_points:
+  - PP-02
+  - INT-LIQ
+  - INT-DOC
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K14
+  signals:
+  - arrives: Logged notice 7 for USD 1,250,000
+    signal: Evergreen Holdings committed 10,000,000, called 6,000,000; after this call 7,250,000 called, 2,750,000 unfunded; fee part 350,000 matches the fund terms
+    acts: Helen Foo
+    effort: 1 click (Record)
+    type: normal
+  - arrives: Call recorded
+    signal: Commitments figure updates and the open-notices count falls by one
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: A call larger than the unfunded amount, or a fee part off the fund terms
+    signal: Record is blocked and routed to the CFO with the difference
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc6-liquidity
+  order: 3
+  priority: 3
+  status: tested
+  story: capital-call
+  title: Can each entity meet its capital calls?
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - principal
+  - cio
+  cadence: daily
+  trigger: Every morning, and when a call is recorded
+  decision_served: Whether each entity has cash for the calls due in 30 and 60 days, or needs a transfer
+  question: What is our cash by entity today?
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator cash csv
+  - commitments register xlsx
+  - capital call notice pdf
+  figures:
+  - id: cash_by_entity
+    name: Cash by entity
+    formula: 'Cash recipe: market value of cash positions summed by entity and date'
+    answer_key: 'Existing key: 2,305,906.48 / 1,252,492.34 (10UC / UC6 answer key)'
+  - id: calls_due
+    name: Calls due in 30 and 60 days
+    formula: Sum of recorded call notices with due date inside the window, per entity
+    answer_key: 'Existing key: 905,000; generator sums notices by due date'
+  action: CFO decides whether to fund from cash, move cash or ask for time
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - intent.restate-ask
+    - data.match-identity
+    - check.against-source
+    - action.detect-exception
+    - consume.answer-question
+    figures:
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+  builds_on:
+  - uc-002-callrecord
+  layer: 3
+  needs_new: []
+  pain_points:
+  - PP-01
+  - PP-02
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  brief_say: 'I want to know every morning whether each entity can meet its capital calls from cash: cash by entity, calls due in 30 and 60 days, and uncalled commitments. Mei and Raj read it; I decide.
+    Monthly refresh.'
+  fixture_files:
+  - uc6:2026-07
+  existing_check:
+    ask: What is our cash by entity today?
+    expect:
+    - 2,305,906.48
+    - 1,252,492.34
+    - 905,000
+  signals:
+  - arrives: Daily administrator cash file and recorded calls
+    signal: Cash by entity and calls due in 30 and 60 days per entity
+    acts: Daniel Foo
+    effort: see it, no work
+    type: normal
+  - arrives: Call 7 recorded, due 23 Oct
+    signal: Holdings has 1,230,000 USD against 1,250,000 due
+    acts: Daniel Foo
+    effort: 1 decision (see next card)
+    type: normal
+  - arrives: Administrator cash file missing at 10:00
+    signal: Figure shown as stale with its date, no answer given as if fresh
+    acts: Grace Ong
+    effort: 1 call to the administrator
+    type: exception
+- id: uc-004-callcheck
+  order: 4
+  priority: 4
+  status: proposed
+  story: capital-call
+  title: Check a call against cash and approve the payment
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - fund_accountant
+  - ops_lead
+  - principal
+  cadence: event
+  trigger: A call is recorded and falls due within 30 days
+  decision_served: Approve the payment of the call from the entity cash, or refuse and ask for a transfer
+  question: Can Holdings pay the Cedarpoint call on the 23rd?
+  kind: act
+  centre: Action
+  inputs:
+  - capital call notice pdf
+  - commitments register xlsx
+  - administrator cash csv
+  figures:
+  - id: cash_after_calls
+    name: Cash after calls due, by entity
+    formula: Cash by entity (per currency at the planning rate) less calls due by the due date less the 250,000 buffer from the signed office rule; negative means short
+    answer_key: 'Holdings USD 1,230,000 vs call 1,250,000 + buffer 250,000: short USD 270,000'
+  - id: sgd_to_convert
+    name: SGD to convert to cover the shortfall
+    formula: Shortfall x USD/SGD WMR 4pm
+    answer_key: 270,000 x 1.3400 = 361,800
+  - id: call_vs_commitment_check
+    name: Notice against commitment
+    formula: Notice amount <= unfunded before the call
+    answer_key: Boolean from generator rows
+  action: CFO approves the payment instruction; a short entity routes to the transfer or FX step
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - check.against-source
+    - action.size-impact
+    - action.suggest-next-step
+    - action.route-owner
+    figures:
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc-002-callrecord
+  - uc6-liquidity
+  layer: 4
+  needs_new:
+  - table:payments
+  - recipe:cash_after_calls
+  - table:office_rules
+  pain_points:
+  - PP-02
+  - INT-LIQ
+  - INT-GOV
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Daniel asks 'Can Holdings pay the Cedarpoint call on the 23rd?'
+    signal: Short USD 270,000 after the 250,000 buffer; convert about SGD 361,800 at 1.3400; each number has its source
+    acts: Daniel Foo
+    effort: 1 decision (Approve, Change or Fund from another entity)
+    type: normal
+  - arrives: Approval over 500,000 USD
+    signal: The signed office rule asks for Daniel's name and time on the record
+    acts: Daniel Foo
+    effort: 1 click
+    type: normal
+  - arrives: The buffer rule would be broken by paying from the proposed source
+    signal: Harbor shows the breach and does not propose that source
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc-005-benefcheck
+  order: 5
+  priority: 5
+  status: proposed
+  story: capital-call
+  title: Hold a payment when the bank details changed
+  domain: Cash and treasury
+  owner: ops_lead
+  involved:
+  - ops_clerk
+  - cfo
+  cadence: event
+  trigger: A payment instruction is prepared and the wire account differs from the standing instructions
+  decision_served: Whether the changed bank details are genuine before any money moves
+  question: Cedarpoint now says to wire to an account ending 4471. Is that really them?
+  kind: act
+  centre: Action
+  inputs:
+  - capital call notice pdf
+  - email
+  - standing instructions record
+  figures:
+  - id: bank_details_changed
+    name: Bank details changed against standing instructions
+    formula: Account on the notice versus the standing instruction on file; yes/no with old and new ending
+    answer_key: 'Notice account ending 4471 vs 2209 on file: yes (generator)'
+  - id: payments_on_hold
+    name: Payments on hold awaiting call-back
+    formula: Payments to a changed account with no call-back recorded
+    answer_key: 1 until the call-back note is recorded
+  action: Grace calls a known number from the April subscription pack, records the call-back, and the standing instructions update with history
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.route-owner
+    - action.close-with-reason
+    figures:
+    - call_notice_amount
+    - notices_open
+    - cash_after_calls
+    - sgd_to_convert
+    - call_vs_commitment_check
+  builds_on:
+  - uc-001-noticelog
+  - uc-004-callcheck
+  layer: 5
+  needs_new:
+  - table:standing_instructions
+  - recipe:bank_details_changed
+  pain_points:
+  - PP-02
+  - INT-GOV
+  - INT-DOC
+  kpis:
+  - K04
+  - K05
+  - K14
+  signals:
+  - arrives: Payment instruction prepared for the notice
+    signal: Wire account ends 4471; standing instructions on file end 2209
+    acts: nobody yet
+    effort: Harbor holds the payment
+    type: normal
+  - arrives: Changed bank details on a call notice
+    signal: 'Payment held; no suggestion to pay the new account; office rule: call back on a known number'
+    acts: Grace Ong
+    effort: 1 call (known number from the April subscription pack)
+    type: exception
+  - arrives: Call-back recorded
+    signal: Standing instructions update, old ones kept in history, hold released
+    acts: Grace Ong
+    effort: 1 click
+    type: normal
+- id: uc-006-fxneed
+  order: 6
+  priority: 6
+  status: proposed
+  story: capital-call
+  title: FX needed to pay a call in another currency
+  domain: Cash and treasury
+  owner: ops_lead
+  involved:
+  - cfo
+  - ops_clerk
+  cadence: event
+  trigger: 'Thursday: the approved plan converts SGD to USD'
+  decision_served: How much to convert and at what rate, and whether to book a spot or a forward
+  question: We hold SGD and need USD for the call. How much do we convert, and did the bank trade at the right rate?
+  kind: act
+  centre: Action
+  inputs:
+  - fx rate csv
+  - administrator cash csv
+  - fx confirmation pdf
+  figures:
+  - id: fx_plan_match
+    name: FX confirmation against approved conversion
+    formula: Confirmed amount and rate against the plan, within 0.1 percent
+    answer_key: Plan SGD 361,800 at 1.3400; confirmation 1.3405, SGD 361,935 = within 0.1 percent
+  - id: call_paid_match
+    name: Call 7 status after the bank statement
+    formula: Statement line matches amount and date
+    answer_key: Paid when a USD 1,250,000 debit on 23 Oct is found
+  action: Treasury books the conversion after the CFO signs; confirmation is later checked by the Clerk
+  signs: cfo
+  reuses:
+    recipes: []
+    skills:
+    - data.recognise-file
+    - check.against-source
+    - action.size-impact
+    - action.draft-message
+    figures:
+    - cash_after_calls
+    - sgd_to_convert
+    - call_vs_commitment_check
+    - bank_details_changed
+    - payments_on_hold
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc-004-callcheck
+  - uc-005-benefcheck
+  - uc6-liquidity
+  layer: 6
+  needs_new:
+  - recipe:fx_required
+  - table:bank_accounts
+  pain_points:
+  - PP-02
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: 'Approved plan: convert SGD to USD on Thursday'
+    signal: Trade to be booked for about SGD 361,800 at the planning rate
+    acts: Daniel Foo
+    effort: 1 click (release the trade)
+    type: normal
+  - arrives: FX confirmation PDF arrives
+    signal: 'Rate 1.3405, SGD 361,935, within 0.1 percent of the plan: green'
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Confirmation differs from the plan by more than 0.1 percent
+    signal: Match goes red with the difference in SGD
+    acts: Grace Ong
+    effort: 1 call to the bank
+    type: exception
+- id: uc-007-pacing
+  order: 7
+  priority: 7
+  status: proposed
+  story: capital-call
+  title: 'Commitment pacing: where we stand after the call'
+  domain: Invest
+  owner: cio
+  involved:
+  - cfo
+  - investment_analyst
+  cadence: quarterly
+  trigger: A call is recorded, and each quarter
+  decision_served: Whether we are on pace to deploy the private markets budget or need to commit more or slow down
+  question: What's our unfunded commitment across all funds?
+  kind: answer
+  centre: Consume
+  inputs:
+  - commitments register xlsx
+  - capital call notice pdf
+  - allocation policy pdf
+  figures:
+  - id: commitments_by_fund
+    name: Committed, called, unfunded by fund
+    formula: Sum by fund of commitment, called and unfunded
+    answer_key: 'Cedarpoint III: 10,000,000 / 7,250,000 / 2,750,000; all funds 14.6m unfunded'
+  - id: budget_headroom
+    name: Room to commit
+    formula: Private markets budget in policy less commitments
+    answer_key: Budget in the policy fixture less the generator sum
+  action: CIO reads the updated commitments and decides whether to bring a new commitment to the committee
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - intent.define-figure
+    - consume.answer-question
+    - consume.explain-number
+    figures:
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc-002-callrecord
+  - uc6-liquidity
+  layer: 4
+  needs_new:
+  - figure:private_markets_budget
+  - recipe:commitments_by_fund
+  pain_points:
+  - INT-LIQ
+  - PP-02
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Call 7 recorded
+    signal: Unfunded across all funds is 14.6m; Cedarpoint 2,750,000
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: Raj asks 'What is our unfunded commitment across all funds?'
+    signal: Answer in about a second with the funds and the file each comes from
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: Total commitments plus the proposed new commitment exceed the private markets budget in the policy
+    signal: Flag on the pacing view with the amount over
+    acts: Raj Patel
+    effort: 1 decision
+    type: exception
+- id: uc-008-payrun
+  order: 8
+  priority: 8
+  status: proposed
+  title: Weekly payment run with two approvals
+  domain: Cash and treasury
+  owner: ops_lead
+  involved:
+  - cfo
+  - ops_clerk
+  cadence: weekly
+  trigger: Every Thursday
+  decision_served: Which invoices and calls are ready to pay, and who has approved them?
+  question: Which payments to release
+  kind: act
+  centre: Action
+  inputs:
+  - invoice pdf
+  - capital call notice pdf
+  figures:
+  - id: payment_batch
+    name: Payments ready, approved, waiting
+    formula: Payments grouped by approval state, with total
+    answer_key: 'Generator: universe payments table with 3 approval states'
+  action: Two people approve; Operations releases at the bank
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - action.route-owner
+    - action.close-with-reason
+    figures:
+    - cash_by_entity
+    - calls_due
+    - cash_after_calls
+    - sgd_to_convert
+    - call_vs_commitment_check
+  builds_on:
+  - uc6-liquidity
+  - uc-004-callcheck
+  layer: 5
+  needs_new:
+  - table:payments
+  - recipe:payment_batch
+  pain_points:
+  - PP-01
+  - INT-GOV
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Thursday
+    signal: Payments ready, approved, and waiting, with total
+    acts: Grace Ong
+    effort: 1 click (prepare)
+    type: normal
+  - arrives: Second approval given
+    signal: Moves to ready to release
+    acts: Daniel Foo
+    effort: 1 click (release)
+    type: normal
+  - arrives: A payment to an account changed since the last payment
+    signal: Held until the call-back is recorded
+    acts: Grace Ong
+    effort: 1 call
+    type: exception
+- id: uc9-sop
+  order: 9
+  priority: 9
+  status: tested
+  title: Process map and SOP for the month-end report
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - principal
+  - ops_lead
+  cadence: event
+  trigger: A process is done from memory
+  decision_served: Whether the written procedure is right to hand to a new joiner
+  question: What are the steps of the month-end report process and who does each one?
+  kind: process
+  centre: Knowledge
+  inputs:
+  - process narrative md
+  - email
+  figures:
+  - id: process_steps
+    name: Steps, owners and checks
+    formula: Count of steps with a named owner, system and check
+    answer_key: 'Existing: the SOP exists and names the steps and owners'
+  action: HR Manager publishes the SOP
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.read-company-doc
+    - intent.draw-process-lanes
+    - intent.draw-process-steps
+    - intent.map-decision-path
+    - intent.write-sop
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new: []
+  pain_points:
+  - INT-OPS
+  - INT-DATAGOV
+  - INT-GOV
+  kpis:
+  - K03
+  - K19
+  brief_say: 'We do the month-end investment report from memory and from Mei''s email. I want the steps written down properly: who does what, in which system, what is checked, what happens when it goes
+    wrong, and a procedure document I can hand a new joiner.'
+  fixture_files:
+  - process_narrative
+  existing_check:
+    ask: What are the steps of the month-end report process and who does each one?
+    expect: []
+  signals:
+  - arrives: Process narrative and the handover email
+    signal: Steps, lanes, hand-overs, checks and failure handling drawn
+    acts: Priya Nair
+    effort: 1 click (accept)
+    type: normal
+  - arrives: SOP drafted
+    signal: Procedure document for a new joiner
+    acts: Priya Nair
+    effort: 1 click (publish)
+    type: normal
+  - arrives: A step with no owner or no check
+    signal: Listed as a gap before the SOP can be signed
+    acts: Priya Nair
+    effort: 1 call to Mei
+    type: exception
+- id: uc-010-bankexp
+  order: 10
+  priority: 10
+  status: proposed
+  title: Cash held at each bank against the bank limit
+  domain: Cash and treasury
+  owner: risk_officer
+  involved:
+  - cfo
+  cadence: monthly
+  trigger: Month-end and when an account is opened
+  decision_served: How much cash do we have at each bank, and is any over its limit?
+  question: Whether too much cash sits at one bank
+  kind: answer
+  centre: Consume
+  inputs:
+  - bank statement xlsx
+  - allocation policy pdf
+  figures:
+  - id: cash_by_bank
+    name: Cash by bank and account
+    formula: Closing balance per account summed by bank
+    answer_key: Generator bank statements closing balances
+  action: Risk Officer raises an over-limit bank to the CFO
+  signs: none
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - data.match-identity
+    - action.detect-exception
+    - consume.answer-question
+    figures:
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc6-liquidity
+  layer: 4
+  needs_new:
+  - table:bank_accounts
+  - table:counterparties
+  - recipe:cash_by_bank
+  pain_points:
+  - PP-01
+  - INT-RISK
+  - INT-SCOPE
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: Month-end bank files
+    signal: Cash by bank against the bank limit
+    acts: Tom Hale
+    effort: see it, no work
+    type: normal
+  - arrives: New account opened
+    signal: Appears in the table once its first statement arrives
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Cash at one bank above its limit
+    signal: Flag with the excess
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc10-pipeline
+  order: 11
+  priority: 11
+  status: tested
+  title: A monthly pipeline and insight from the administrator and trading files
+  domain: Operate and control
+  owner: head_of_data
+  involved:
+  - ops_clerk
+  - fund_accountant
+  cadence: monthly
+  trigger: Administrator export and trading files arrive after month end
+  decision_served: Whether the pipeline can be trusted and put live, and what happens when a column changes
+  question: What was the Evergreen Liquid portfolio worth at 30 September 2026?
+  kind: process
+  centre: Build
+  inputs:
+  - administrator export xlsx
+  - trade export csv
+  figures:
+  - id: net_worth
+    name: Net worth by portfolio
+    formula: 'Net worth recipe: sum of position market values per portfolio and date'
+    answer_key: 'Existing key: Evergreen Liquid 41,200,000 at 30 Sep 2026'
+  action: Head of Data approves the pipeline design and go-live
+  signs: head_of_data
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - data.profile-file
+    - model.find-reusable
+    - model.design-ready-table
+    - map.map-file
+    - build.write-ready-sql
+    - run.on-copy
+    - check.adds-up
+    - consume.build-board
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new: []
+  pain_points:
+  - PP-01
+  - INT-TRUST
+  - INT-DATAGOV
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K19
+  brief_say: I want a monthly pipeline that takes the administrator's positions and the trading export, cleans them, and gives me net worth by portfolio on a board that shows where every number came from.
+    The administrator file changed a column name once, so it has to cope with that.
+  fixture_files:
+  - admin_exports
+  - trading_export/trading_export_2026100*.csv
+  existing_check:
+    ask: What was the Evergreen Liquid portfolio worth at 30 September 2026?
+    expect:
+    - 41,200,000
+  signals:
+  - arrives: Administrator export and trading files arrive after month end
+    signal: Files recognised, mapped to the usual tables, rows in equal rows out
+    acts: Anita Rao
+    effort: 1 click (go live) the first time, none after
+    type: normal
+  - arrives: A month of data loaded
+    signal: 'Net worth by portfolio for 30 Sep: Evergreen Liquid 41,200,000, each figure with its trail'
+    acts: everyone
+    effort: see it, no work
+    type: normal
+  - arrives: A column name in the administrator file changed
+    signal: Load is held; the new name is shown against the old
+    acts: Anita Rao
+    effort: 1 decision
+    type: exception
+- id: uc5-limits
+  order: 12
+  priority: 12
+  status: tested
+  title: Allocation and limit monitoring
+  domain: Report and govern
+  owner: risk_officer
+  involved:
+  - cio
+  cadence: monthly
+  trigger: After the September administrator export
+  decision_served: Which breaches are real and which are stale data, and what to tell the committee
+  question: Which holding is over its single-name limit?
+  kind: watch
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - administrator export xlsx
+  - security master xlsx
+  figures:
+  - id: single_name_concentration
+    name: Single-name concentration
+    formula: 'Concentration recipe: issuer value over portfolio total'
+    answer_key: 'Existing key: 5.75 percent'
+  action: Risk officer tells the committee about a real breach
+  signs: cio
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - intent.read-company-doc
+    - build.write-formula-table
+    - action.detect-exception
+    - action.size-impact
+    - check.explain-difference
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new: []
+  pain_points:
+  - INT-RISK
+  - INT-GOV
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K08
+  - K09
+  - K10
+  - K11
+  - K12
+  brief_say: 'I want to test the liquid book against our signed limits every month: no single name over 5 percent, listed equity between 60 and 90. Tell me what is a real breach and what is just a stale
+    or missing value, and anything that has no asset class.'
+  fixture_files:
+  - policy
+  - admin_exports/administrator_export_2026-09.xlsx
+  - security_master
+  existing_check:
+    ask: Which holding is over its single-name limit?
+    expect:
+    - '5.75'
+  signals:
+  - arrives: Month-end administrator export and the signed allocation policy
+    signal: One holding at 5.75 percent against a 5 percent single-name limit
+    acts: Tom Hale
+    effort: 1 decision (real breach or stale value)
+    type: normal
+  - arrives: Holding with no asset class
+    signal: Listed on the 'no class' list instead of being silently dropped
+    acts: Tom Hale
+    effort: 1 call to the data owner
+    type: normal
+  - arrives: A breach that rests on a value older than 90 days
+    signal: Marked 'possibly stale', not sent to the committee as real
+    acts: Tom Hale
+    effort: 1 decision
+    type: exception
+- id: uc-013-secgaps
+  order: 13
+  priority: 13
+  status: proposed
+  title: Securities with no asset class or identifier
+  domain: Hold and maintain
+  owner: head_of_data
+  involved:
+  - ops_clerk
+  - risk_officer
+  cadence: weekly
+  trigger: A new holding appears in the administrator file
+  decision_served: Which holdings have no asset class, and which have no identifier?
+  question: Which instruments need a class or identifier before limits and allocation can be trusted
+  kind: watch
+  centre: Action
+  inputs:
+  - security master xlsx
+  - administrator export xlsx
+  figures:
+  - id: unclassified_holdings
+    name: Holdings without class or identifier
+    formula: Count and value of instruments with null asset class or no identifier
+    answer_key: 'Generator: universe has one convertible note with no class (PRC29 1,122,000)'
+  action: Head of Data asks the owner of the security master to complete it
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - data.match-identity
+    - action.detect-exception
+    - action.size-impact
+    figures:
+    - net_worth
+    - single_name_concentration
+  builds_on:
+  - uc10-pipeline
+  - uc5-limits
+  layer: 3
+  needs_new:
+  - table:instrument_identifiers_gaps
+  pain_points:
+  - INT-RISK
+  - INT-TRUST
+  - INT-DATAGOV
+  kpis:
+  - K02
+  - K07
+  - K08
+  - K09
+  - K10
+  - K11
+  - K12
+  - K19
+  signals:
+  - arrives: New holding appears in the administrator file
+    signal: Holdings with no asset class or identifier, value 1,122,000 for the convertible
+    acts: Anita Rao
+    effort: 1 click (ask the owner)
+    type: normal
+  - arrives: Owner supplies the class
+    signal: Allocation and limits recompute
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Unclassified holdings above 1 percent of net worth
+    signal: Limits figure marked incomplete
+    acts: Anita Rao
+    effort: 1 call
+    type: exception
+- id: morning-networth-note
+  order: 14
+  priority: 14
+  status: tested
+  title: A morning note on what we are worth
+  domain: Report and govern
+  owner: principal
+  involved:
+  - cfo
+  - cio
+  cadence: daily
+  trigger: Each morning
+  decision_served: What needs her decision today
+  question: What are we worth in the latest report?
+  kind: answer
+  centre: Consume
+  inputs:
+  - issued report pdf
+  - fx rate csv
+  figures:
+  - id: networth_usd_sgd
+    name: Net worth in USD and SGD
+    formula: Report total, and total at the WMR USD/SGD rate
+    answer_key: 'Existing key: 57,600,000'
+  action: Principal reads and decides what to tell the board of the family
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - intent.restate-ask
+    - build.write-formula-table
+    - consume.write-morning-note
+    - consume.explain-number
+    figures:
+    - net_worth
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc10-pipeline
+  - uc6-liquidity
+  layer: 4
+  needs_new: []
+  pain_points:
+  - PP-01
+  - INT-TRUST
+  - INT-LIQ
+  kpis:
+  - K01
+  - K02
+  - K04
+  - K05
+  - K06
+  - K07
+  - K12
+  brief_say: 'Each morning I would like a short note: what we are worth, in dollars and in Singapore dollars, what changed since last time, and anything that needs me. Plain words, no jargon, one page.'
+  fixture_files:
+  - issued_reports/*2026-09*
+  - market_data/fx_usdsgd_wmr4pm.csv
+  existing_check:
+    ask: What are we worth in the latest report?
+    expect:
+    - 57,600,000
+  signals:
+  - arrives: Each morning
+    signal: What we are worth in USD and SGD, what changed, what needs her
+    acts: Mei Chen
+    effort: see it, no work
+    type: normal
+  - arrives: Issued report is a month old
+    signal: Note says so with the date
+    acts: Mei Chen
+    effort: see it, no work
+    type: normal
+  - arrives: A cash call due within 7 days that the entity cannot cover
+    signal: Top line of the note, with Daniel's plan
+    acts: Mei Chen
+    effort: 1 decision
+    type: exception
+- id: uc-015-allowances
+  order: 15
+  priority: 15
+  status: proposed
+  title: Family member allowances and distributions due
+  domain: Family and people
+  owner: principal
+  involved:
+  - cfo
+  - fund_accountant
+  cadence: monthly
+  trigger: Month start
+  decision_served: Which family distributions to approve this month and whether cash supports them
+  question: What do we owe each family member this month, and do we have the cash?
+  kind: act
+  centre: Action
+  inputs:
+  - family allowance schedule xlsx
+  - administrator cash csv
+  figures:
+  - id: allowance_due
+    name: Allowance due by member
+    formula: Scheduled amount per member for the month less paid to date
+    answer_key: Generator schedule rows; paid from generated cash movements
+  action: Principal approves, Finance pays
+  signs: principal
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - data.recognise-file
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - cash_by_entity
+    - calls_due
+    - networth_usd_sgd
+  builds_on:
+  - uc6-liquidity
+  - morning-networth-note
+  layer: 5
+  needs_new:
+  - table:family_members
+  - recipe:allowance_due
+  pain_points:
+  - INT-LIQ
+  - PP-01
+  - INT-GOV
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Month start
+    signal: Allowance due per family member against paid to date
+    acts: Mei Chen
+    effort: 1 click (approve all)
+    type: normal
+  - arrives: Approved
+    signal: Payment list to Finance
+    acts: Daniel Foo
+    effort: 1 click (release)
+    type: normal
+  - arrives: An allowance that the entity cash cannot cover after the buffer
+    signal: Held with the shortfall
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc-016-schemadrift
+  order: 16
+  priority: 16
+  status: proposed
+  title: A source file arrives with a new or renamed column
+  domain: Operate and control
+  owner: head_of_data
+  involved:
+  - ops_clerk
+  cadence: event
+  trigger: The administrator file changes a column name
+  decision_served: Whether to accept the mapping change or hold the load
+  question: The administrator renamed a column. What breaks, and is the new mapping safe?
+  kind: act
+  centre: Build
+  inputs:
+  - administrator export xlsx
+  figures:
+  - id: columns_changed
+    name: Columns added, renamed or dropped
+    formula: Profile of this file less the profile of the last accepted file
+    answer_key: Generator renames one column in a copy; key = that column
+  action: Head of Data approves the new mapping before the load runs
+  signs: head_of_data
+  reuses:
+    recipes: []
+    skills:
+    - data.profile-file
+    - map.map-file
+    - map.explain-doubt
+    - check.adds-up
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new: []
+  pain_points:
+  - INT-DOC
+  - INT-DATAGOV
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K14
+  - K19
+  signals:
+  - arrives: Administrator file with a renamed column
+    signal: Old and new columns lined up; mapping proposed
+    acts: Anita Rao
+    effort: 1 click (accept)
+    type: normal
+  - arrives: Mapping accepted
+    signal: Next loads use it, old files unchanged
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: The new column changes a number type or a unit
+    signal: Load held, rows not loaded
+    acts: Anita Rao
+    effort: 1 decision
+    type: exception
+- id: uc-017-liab
+  order: 17
+  priority: 17
+  status: proposed
+  title: 'What we owe: loans and facilities, and net worth after debt'
+  domain: Hold and maintain
+  owner: principal
+  involved:
+  - cfo
+  cadence: monthly
+  trigger: Month end and when a loan is drawn
+  decision_served: What do we owe, and what are we worth after it?
+  question: Whether net worth after debt is what the family expects
+  kind: answer
+  centre: Consume
+  inputs:
+  - loan agreement pdf
+  - bank statement xlsx
+  figures:
+  - id: net_worth_after_debt
+    name: Net worth less liabilities
+    formula: Net worth less loan balances in the same currency and date
+    answer_key: 'Generator: universe loans table, balances at month end'
+  action: Principal notes it for the board
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - data.read-pdf-fields
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth
+    - networth_usd_sgd
+  builds_on:
+  - uc10-pipeline
+  - morning-networth-note
+  layer: 5
+  needs_new:
+  - table:credit_facilities
+  - recipe:net_worth_after_debt
+  pain_points:
+  - INT-SCOPE
+  - PP-01
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Loan statements and bank files
+    signal: What we owe and net worth after debt
+    acts: Mei Chen
+    effort: see it, no work
+    type: normal
+  - arrives: Drawdown recorded
+    signal: Net worth after debt updates
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Facility headroom below the covenant line
+    signal: Flag with the margin
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc-018-fundplan
+  order: 18
+  priority: 18
+  status: proposed
+  title: Which entity pays this call and from where
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - ops_lead
+  - principal
+  cadence: event
+  trigger: A call needs funding and the paying entity is short or a better entity exists
+  decision_served: The call is 905,000. Which entity should pay it, and from which account?
+  question: Which entity pays and whether a transfer is needed first
+  kind: act
+  centre: Action
+  inputs:
+  - administrator cash csv
+  - commitments register xlsx
+  figures:
+  - id: funding_plan
+    name: Funding source per call
+    formula: Entity named in the commitment, else the entity with the most cash cover after calls
+    answer_key: call_cover for each entity from the generator
+  action: CFO approves the funding plan; Operations executes
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - action.suggest-next-step
+    - action.size-impact
+    - action.route-owner
+    figures:
+    - cash_after_calls
+    - sgd_to_convert
+    - call_vs_commitment_check
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc-004-callcheck
+  - uc6-liquidity
+  layer: 5
+  needs_new:
+  - recipe:funding_plan
+  pain_points:
+  - PP-02
+  - INT-LIQ
+  - PP-01
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Call recorded and falling due
+    signal: Which entity should pay and from which account
+    acts: Daniel Foo
+    effort: 1 click (accept the plan)
+    type: normal
+  - arrives: Plan accepted
+    signal: Payment instruction drafted
+    acts: Grace Ong
+    effort: 1 click
+    type: normal
+  - arrives: The proposed entity ends up under the buffer
+    signal: Another entity proposed, or a transfer
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc3-statements-inbox
+  order: 19
+  priority: 19
+  status: tested
+  title: 'Manager statements: expected against received, and late'
+  domain: Operate and control
+  owner: fund_accountant
+  involved:
+  - ops_lead
+  - investment_analyst
+  cadence: monthly
+  trigger: Each month end, and daily after the due date
+  decision_served: Which managers to chase and when
+  question: Which statement is missing and how overdue is it?
+  kind: watch
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - email
+  figures:
+  - id: missing_statements
+    name: Missing and late statements
+    formula: 'Missing statements recipe: expected less received by fund and month'
+    answer_key: 'Existing key: 63 days overdue'
+  action: Fund Accountant sends the chase email herself
+  signs: none
+  reuses:
+    recipes:
+    - missing_statements
+    skills:
+    - data.recognise-file
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.draft-message
+    - consume.answer-question
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:expected_statements_schedule
+  pain_points:
+  - PP-05
+  - INT-TRUST
+  - INT-DOC
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K14
+  brief_say: For every fund I want to see the statement we expect each month against what has arrived, who is late and by how many days, and any that never came. For the missing one, draft me the chase
+    email, I will send it myself.
+  fixture_files:
+  - emails
+  - manager_statements/*_2026-0[6-9]-*
+  existing_check:
+    ask: Which statement is missing and how overdue is it?
+    expect:
+    - '63'
+  signals:
+  - arrives: Month end passes
+    signal: Statements expected from each manager against those received; two late, one missing 63 days
+    acts: Helen Foo
+    effort: 1 click (send the chase draft)
+    type: normal
+  - arrives: A statement arrives
+    signal: Matched to the fund and month, tick on the tracker
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: A statement arrives for a fund with no expectation set
+    signal: Held as 'unknown fund' with the name seen
+    acts: Helen Foo
+    effort: 1 decision
+    type: exception
+- id: uc1-why-nav-moved
+  order: 20
+  priority: 20
+  status: tested
+  title: Why did the NAV move since the issued report?
+  domain: Report and govern
+  owner: cio
+  involved:
+  - principal
+  - fund_accountant
+  cadence: monthly
+  trigger: A manager sends an amended statement
+  decision_served: Whether a manager revision needs the committee
+  question: Why did Fund A move since the issued September report?
+  kind: answer
+  centre: Consume
+  inputs:
+  - issued report pdf
+  - manager statement pdf
+  - email
+  - administrator export xlsx
+  figures:
+  - id: change_since_report
+    name: Change since the issued report
+    formula: Amended value less the value it replaces
+    answer_key: 'Existing key: 10,180,000 and 180,000'
+  action: CIO reads, Mei checks, revision goes to the committee if material
+  signs: principal
+  reuses:
+    recipes:
+    - change_since_report
+    skills:
+    - intent.restate-ask
+    - data.read-pdf-fields
+    - check.against-source
+    - check.explain-difference
+    - consume.answer-question
+    figures:
+    - net_worth
+    - missing_statements
+  builds_on:
+  - uc10-pipeline
+  - uc3-statements-inbox
+  layer: 2
+  needs_new: []
+  pain_points:
+  - PP-04
+  - INT-TRUST
+  - INT-PERF
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K13
+  - K15
+  brief_say: Every month I want to know why our number moved between the report we issued and what we know now. Fund A sent an amended September statement, so show me what changed and by how much, and who
+    needs to look at it. I read it, Mei checks it.
+  fixture_files:
+  - issued_reports/*2026-09*
+  - admin_exports/administrator_export_2026-09.xlsx
+  - emails/04_revision_notice_A_2026-09-30_amended.eml
+  - manager_statements/northgate_A_2026-09-30_*
+  existing_check:
+    ask: Why did Fund A move since the issued September report?
+    expect:
+    - 10,180,000
+    - 180,000
+  signals:
+  - arrives: Manager emails an amended September statement for Fund A
+    signal: Issued 10,000,000 now 10,180,000; the change 180,000 and the reason
+    acts: Raj Patel
+    effort: 1 decision (does it go to the committee)
+    type: normal
+  - arrives: Amended statement filed
+    signal: Bridge from issued to known now updates
+    acts: Mei Chen
+    effort: see it, no work
+    type: normal
+  - arrives: The amended value is larger than the materiality line on the report
+    signal: Revision case opened to the CIO with the amount
+    acts: Raj Patel
+    effort: 1 decision
+    type: exception
+- id: uc-021-stale
+  order: 21
+  priority: 21
+  status: proposed
+  title: Valuations that are stale
+  domain: Hold and maintain
+  owner: risk_officer
+  involved:
+  - fund_accountant
+  - investment_analyst
+  cadence: monthly
+  trigger: Month-end values are loaded
+  decision_served: Which of our values are more than 90 days old?
+  question: Which fund values are older than 90 days and so not safe to use in limits and reports
+  kind: watch
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - administrator export xlsx
+  figures:
+  - id: value_age_days
+    name: Age of the latest value per fund
+    formula: As-of date less the latest valuation date, flagged above 90 days
+    answer_key: 'Generator: universe says C and D are stale at 9 Oct 2026'
+  action: Risk Officer marks the value as stale in the limits and report notes
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - check.explain-difference
+    - consume.answer-question
+    figures:
+    - net_worth
+    - missing_statements
+    - change_since_report
+  builds_on:
+  - uc10-pipeline
+  - uc3-statements-inbox
+  - uc1-why-nav-moved
+  layer: 3
+  needs_new:
+  - recipe:value_age_days
+  pain_points:
+  - INT-TRUST
+  - INT-RISK
+  - PP-04
+  kpis:
+  - K02
+  - K07
+  - K08
+  - K09
+  - K10
+  - K11
+  - K12
+  signals:
+  - arrives: Month-end values
+    signal: Funds with a value older than 90 days (C and D at 9 Oct)
+    acts: Tom Hale
+    effort: see it, no work
+    type: normal
+  - arrives: Fresh statement arrives
+    signal: Fund leaves the stale list
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: A limit breach that rests on a stale value
+    signal: Breach labelled 'possibly stale'
+    acts: Tom Hale
+    effort: 1 decision
+    type: exception
+- id: uc-022-amendlog
+  order: 22
+  priority: 22
+  status: proposed
+  title: Amended statements and what they replace
+  domain: Operate and control
+  owner: fund_accountant
+  involved:
+  - ops_clerk
+  - cio
+  cadence: event
+  trigger: An amended statement arrives
+  decision_served: Which statements have been amended, and which issued report used the old number?
+  question: Which earlier value is replaced and whether reports already issued need a note
+  kind: watch
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - email
+  - issued report pdf
+  figures:
+  - id: amendments_open
+    name: Amendments not yet reflected in a report
+    formula: Amended statements dated after the last issued report
+    answer_key: 'Generator: universe amended statements (A Sep, C Jun, H1 Jul) vs report dates'
+  action: Fund Accountant flags the report note to the CIO
+  signs: cio
+  reuses:
+    recipes:
+    - change_since_report
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - missing_statements
+    - change_since_report
+  builds_on:
+  - uc3-statements-inbox
+  - uc1-why-nav-moved
+  layer: 3
+  needs_new: []
+  pain_points:
+  - PP-04
+  - INT-DOC
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K14
+  signals:
+  - arrives: Amended statement arrives
+    signal: The value it replaces and the issued report that used it
+    acts: Helen Foo
+    effort: 1 click (note the report)
+    type: normal
+  - arrives: Log updated
+    signal: Amendment listed with old and new value
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Amended after the report was issued to the family
+    signal: Flag with the amount
+    acts: Raj Patel
+    effort: 1 decision
+    type: exception
+- id: uc-023-tieout
+  order: 23
+  priority: 23
+  status: proposed
+  title: Does the issued report tie to the administrator
+  domain: Report and govern
+  owner: fund_accountant
+  involved:
+  - cio
+  - principal
+  cadence: monthly
+  trigger: Before the report is issued
+  decision_served: Whether the report can be signed
+  question: Does each number on the report agree with the administrator?
+  kind: watch
+  centre: Action
+  inputs:
+  - issued report xlsx
+  - administrator export xlsx
+  figures:
+  - id: report_tie_out
+    name: Report total against administrator
+    formula: Report total less administrator total, per portfolio
+    answer_key: 'Generator: issued report totals less administrator totals; planted difference is the key'
+  action: Fund Accountant signs the tie-out
+  signs: cio
+  reuses:
+    recipes:
+    - net_worth
+    - change_since_report
+    skills:
+    - check.against-source
+    - check.adds-up
+    - check.explain-difference
+    figures:
+    - change_since_report
+    - net_worth
+  builds_on:
+  - uc1-why-nav-moved
+  - uc10-pipeline
+  layer: 3
+  needs_new: []
+  pain_points:
+  - PP-04
+  - PP-07
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+  signals:
+  - arrives: Draft monthly report
+    signal: Each portfolio total against the administrator total; ties except Fund A by 180,000
+    acts: Helen Foo
+    effort: 1 decision (explain or correct)
+    type: normal
+  - arrives: All lines tie
+    signal: Report marked ready to sign
+    acts: Raj Patel
+    effort: 1 click (sign)
+    type: normal
+  - arrives: Report total differs and the cause is not an amendment or timing
+    signal: Report held back with the unexplained amount
+    acts: Helen Foo
+    effort: 1 call to the administrator
+    type: exception
+- id: uc-024-audit
+  order: 24
+  priority: 24
+  status: proposed
+  title: 'Auditor sample: trace a figure to its file'
+  domain: Report and govern
+  owner: head_of_data
+  involved:
+  - fund_accountant
+  cadence: yearly
+  trigger: Auditor sends a sample request
+  decision_served: The auditor picked 12 numbers. Can we show where each came from?
+  question: Whether every sampled figure traces to a source
+  kind: act
+  centre: Action
+  inputs:
+  - audit request xlsx
+  - issued report pdf
+  figures:
+  - id: trace_coverage
+    name: Share of sampled figures traced
+    formula: Sample items with file, page and run recorded over all items
+    answer_key: 'Generator: sample drawn from generated report lines'
+  action: Head of Data signs the trace pack for the auditor
+  signs: fund_accountant
+  reuses:
+    recipes: []
+    skills:
+    - consume.explain-number
+    - check.against-source
+    figures:
+    - report_tie_out
+    - net_worth
+  builds_on:
+  - uc-023-tieout
+  - uc10-pipeline
+  layer: 4
+  needs_new:
+  - table:audit_requests
+  pain_points:
+  - INT-TRUST
+  - INT-GOV
+  - PP-07
+  kpis:
+  - K02
+  - K07
+  - K12
+  signals:
+  - arrives: Auditor sends a sample of 12 numbers
+    signal: Each traced to file, page, run and definition
+    acts: Anita Rao
+    effort: see it, no work
+    type: normal
+  - arrives: Trace pack ready
+    signal: One page per number
+    acts: Anita Rao
+    effort: 1 click (send)
+    type: normal
+  - arrives: A sampled number with no source file
+    signal: Listed as untraced with where it was used
+    acts: Anita Rao
+    effort: 1 decision
+    type: exception
+- id: uc7-manager-diligence
+  order: 25
+  priority: 25
+  status: tested
+  title: What changed at Kestrel Ridge since we last met?
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cio
+  cadence: event
+  trigger: A manager meeting is booked
+  decision_served: What to ask the manager and what view to take to the committee
+  question: What changed at Kestrel Ridge since the last meeting?
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - newsletter pdf
+  - meeting notes md
+  - ddq pdf
+  figures:
+  - id: manager_timeline
+    name: Manager timeline since the last meeting
+    formula: Items dated after the last meeting, newest first, each with its source
+    answer_key: 'Existing key: 7,012,500'
+  action: Analyst writes up a view for the committee
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - intent.read-company-doc
+    - data.read-pdf-fields
+    - data.match-identity
+    - check.against-source
+    - consume.answer-question
+    figures:
+    - missing_statements
+    - change_since_report
+  builds_on:
+  - uc3-statements-inbox
+  - uc1-why-nav-moved
+  layer: 3
+  needs_new: []
+  pain_points:
+  - PP-05
+  - INT-TRUST
+  - INT-DOC
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K14
+  brief_say: 'Before I see Kestrel Ridge again I want one page of what changed since our last meeting on 12 June: statements, restatements, team changes in their newsletter. Newest first, each item with
+    where it came from. No opinions, I''ll bring those.'
+  fixture_files:
+  - research_docs
+  - notes/04_kestrel_ridge_onsite_2026-06-12.md
+  - manager_statements/kestrel_H1_2026-0[7-9]*
+  existing_check:
+    ask: What changed at Kestrel Ridge since the last meeting?
+    expect:
+    - 7,012,500
+  signals:
+  - arrives: A meeting with Kestrel Ridge is booked
+    signal: 'One page of what changed since 12 June: statements, restatements, newsletter team changes, newest first, each with source'
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: New newsletter from the manager
+    signal: Team change picked out with page and quote
+    acts: Sofia Reyes
+    effort: 1 click (add to the page)
+    type: normal
+  - arrives: A restated value in a statement that disagrees with the one we hold
+    signal: Item shown at the top with both values
+    acts: Sofia Reyes
+    effort: 1 decision
+    type: exception
+- id: uc-026-stmtadmin
+  order: 26
+  priority: 26
+  status: proposed
+  title: Manager statement against the administrator value
+  domain: Operate and control
+  owner: fund_accountant
+  involved:
+  - ops_lead
+  - cio
+  cadence: monthly
+  trigger: Both the statement and the administrator value are in
+  decision_served: Does the value the administrator shows for Fund A agree with the manager statement?
+  question: Whether to accept the administrator value or ask the administrator to correct it
+  kind: watch
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - administrator export xlsx
+  figures:
+  - id: statement_vs_admin
+    name: Statement value less administrator value
+    formula: Latest statement value less administrator value, same fund and date
+    answer_key: 'Generator: universe statements vs administrator rows; planted difference is the key'
+  action: Fund Accountant writes the reason and asks the administrator to correct
+  signs: ops_lead
+  reuses:
+    recipes:
+    - change_since_report
+    skills:
+    - data.read-pdf-fields
+    - check.against-source
+    - check.explain-difference
+    figures:
+    - change_since_report
+    - missing_statements
+  builds_on:
+  - uc1-why-nav-moved
+  - uc3-statements-inbox
+  layer: 3
+  needs_new: []
+  pain_points:
+  - PP-04
+  - PP-05
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+  signals:
+  - arrives: Manager statement and administrator value
+    signal: Fund value on the statement against the administrator
+    acts: Helen Foo
+    effort: see it, no work
+    type: normal
+  - arrives: Difference explained by an amendment
+    signal: Closes with the link
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Difference not explained by timing or amendment
+    signal: Query draft to the administrator
+    acts: Helen Foo
+    effort: 1 click (send)
+    type: exception
+- id: uc2-recon-break-desk
+  order: 27
+  priority: 27
+  status: tested
+  title: Daily cash reconciliation and break desk
+  domain: Operate and control
+  owner: ops_lead
+  involved:
+  - ops_clerk
+  - cfo
+  cadence: daily
+  trigger: Every morning, bank and administrator files arrive
+  decision_served: Which breaks are timing and which are errors, and which go to Finance
+  question: Which entity has a cash break on 8 October and by how much?
+  kind: watch
+  centre: Action
+  inputs:
+  - bank statement xlsx
+  - administrator cash csv
+  - trade export csv
+  figures:
+  - id: cash_break
+    name: Cash break by entity and day
+    formula: 'Cash break recipe: administrator change in cash less movements'
+    answer_key: 'Existing key: 12,400 (Entity B, 8 Oct)'
+  action: Grace closes each break with a reason or hands it to Finance
+  signs: ops_lead
+  reuses:
+    recipes:
+    - cash_break
+    - cash_by_entity
+    skills:
+    - data.recognise-file
+    - data.match-identity
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    - action.route-owner
+    figures:
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc6-liquidity
+  layer: 4
+  needs_new: []
+  pain_points:
+  - PP-01
+  - PP-06
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+  brief_say: 'Every morning I check cash for each entity: administrator against the bank and our trading desk. Anything over 5,000 I want as a break with the likely cause, and the ones that are just timing
+    marked as timing. Entity B was off on the 8th, start there.'
+  fixture_files:
+  - uc6:2026-10/administrator_cash_2026-10.csv
+  - bank_cash
+  - trading_export/cash_movements_trading_export_2026-09-09_to_2026-10-08.csv
+  existing_check:
+    ask: Which entity has a cash break on 8 October and by how much?
+    expect:
+    - 12,400
+  signals:
+  - arrives: Bank, administrator and trading cash files
+    signal: Cash difference per entity per day; Entity B 12,400 on 8 Oct
+    acts: Grace Ong
+    effort: 1 click (mark timing or error)
+    type: normal
+  - arrives: Break explained as timing
+    signal: Closes itself when the item clears
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Break over 5,000 with no explaining item
+    signal: Open break with likely cause
+    acts: Grace Ong
+    effort: 1 call to the bank
+    type: exception
+- id: uc-028-interco
+  order: 28
+  priority: 28
+  status: proposed
+  title: Move cash between entities
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - ops_lead
+  cadence: event
+  trigger: An entity is short for a call or payment
+  decision_served: Entity B is short. Can the Trust lend it the cash, and how do we record it?
+  question: Which entity lends to which, and how it is recorded
+  kind: act
+  centre: Action
+  inputs:
+  - administrator cash csv
+  - bank statement xlsx
+  figures:
+  - id: intercompany_balance
+    name: Intercompany balance
+    formula: Transfers out less transfers in per entity pair
+    answer_key: 'Generator: planted loan Trust to Entity B'
+  action: CFO signs the transfer; Operations executes and records it
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - action.suggest-next-step
+    - action.size-impact
+    - action.route-owner
+    figures:
+    - funding_plan
+    - cash_break
+  builds_on:
+  - uc-018-fundplan
+  - uc2-recon-break-desk
+  layer: 6
+  needs_new:
+  - table:intercompany
+  - recipe:intercompany_balance
+  pain_points:
+  - INT-SCOPE
+  - INT-LIQ
+  - PP-01
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  signals:
+  - arrives: Entity B short for a call
+    signal: The Trust can lend the amount and stay above its buffer
+    acts: Daniel Foo
+    effort: 1 click (approve)
+    type: normal
+  - arrives: Transfer made
+    signal: Intercompany balance recorded on both sides
+    acts: Grace Ong
+    effort: 1 click
+    type: normal
+  - arrives: Transfer would leave the lender under its buffer
+    signal: Not offered
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc-029-closeck
+  order: 29
+  priority: 29
+  status: proposed
+  title: Month-end close checklist
+  domain: Operate and control
+  owner: ops_lead
+  involved:
+  - fund_accountant
+  - cfo
+  - hr_admin
+  cadence: monthly
+  trigger: Last business day of the month
+  decision_served: Is everything we need for the month-end report in and checked?
+  question: Whether the close is complete and the report can start
+  kind: process
+  centre: Knowledge
+  inputs:
+  - process narrative md
+  - exception log
+  figures:
+  - id: close_items_done
+    name: Close items done and open
+    formula: Count of checklist steps done, open, and late
+    answer_key: 'Generator: checklist from the SOP; steps marked by generated events'
+  action: Operations Lead signs the close
+  signs: ops_lead
+  reuses:
+    recipes:
+    - missing_statements
+    - cash_break
+    skills:
+    - intent.write-sop
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - process_steps
+    - cash_break
+    - missing_statements
+    - statement_vs_admin
+  builds_on:
+  - uc9-sop
+  - uc2-recon-break-desk
+  - uc3-statements-inbox
+  - uc-026-stmtadmin
+  layer: 5
+  needs_new:
+  - recipe:close_items_done
+  pain_points:
+  - PP-07
+  - INT-OPS
+  - PP-04
+  kpis:
+  - K03
+  signals:
+  - arrives: Last business day
+    signal: Checklist of close items done, open and late
+    acts: Grace Ong
+    effort: 1 click (sign close)
+    type: normal
+  - arrives: All items done
+    signal: Report can start
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: An item open past its due date
+    signal: Owner named and reminded
+    acts: Grace Ong
+    effort: 1 call
+    type: exception
+- id: uc-030-vendors
+  order: 30
+  priority: 30
+  status: proposed
+  title: Vendors and contract renewals
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - cfo
+  cadence: monthly
+  trigger: A contract renewal is within 90 days
+  decision_served: Which vendor contracts renew in the next 90 days and what do they cost?
+  question: Which contracts to renew, renegotiate or end
+  kind: watch
+  centre: Action
+  inputs:
+  - vendor contract pdf
+  figures:
+  - id: renewals_vendors
+    name: Contracts renewing in 90 days
+    formula: Contracts with renewal date inside 90 days; annual cost
+    answer_key: 'Generator: universe vendor table'
+  action: HR proposes; CFO approves
+  signs: cfo
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - action.detect-exception
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:vendor_contracts
+  - recipe:renewals_vendors
+  pain_points:
+  - INT-OPS
+  - INT-GOV
+  kpis:
+  - K03
+  signals:
+  - arrives: Vendor contracts loaded
+    signal: Contracts renewing in 90 days with annual cost
+    acts: Priya Nair
+    effort: 1 click (propose)
+    type: normal
+  - arrives: Renewal approved
+    signal: Next renewal date set
+    acts: Daniel Foo
+    effort: 1 click
+    type: normal
+  - arrives: Auto-renewal date within 30 days and no decision
+    signal: Flag with the notice deadline
+    acts: Priya Nair
+    effort: 1 call
+    type: exception
+- id: uc-031-alloc
+  order: 31
+  priority: 31
+  status: proposed
+  title: 'Where is the money: allocation by asset class and entity'
+  domain: Hold and maintain
+  owner: fund_accountant
+  involved:
+  - risk_officer
+  - cio
+  cadence: monthly
+  trigger: Month-end positions are loaded
+  decision_served: Whether the mix of the office is what the family intended
+  question: What share of the family is in each asset class, and in each entity?
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator export xlsx
+  - security master xlsx
+  figures:
+  - id: allocation_pct
+    name: Allocation by asset class and entity
+    formula: Market value by class and entity over total, same date and currency
+    answer_key: 'Generator: sum of universe holdings by asset class over the total'
+  action: Share with the CIO and the Risk Officer
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    - concentration
+    skills:
+    - model.find-reusable
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth
+    - single_name_concentration
+  builds_on:
+  - uc10-pipeline
+  - uc5-limits
+  layer: 3
+  needs_new:
+  - recipe:allocation
+  pain_points:
+  - INT-RISK
+  - INT-SCOPE
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: Month-end positions loaded
+    signal: Share of the family by asset class and entity, total ties to net worth
+    acts: Helen Foo
+    effort: 1 click (share)
+    type: normal
+  - arrives: Entity or class with no mapping
+    signal: '''Unclassified'' row with the amount'
+    acts: Helen Foo
+    effort: 1 call to the data owner
+    type: normal
+  - arrives: Parts do not add up to net worth
+    signal: Figure not published, difference shown
+    acts: Helen Foo
+    effort: 1 decision
+    type: exception
+- id: uc-032-driftrep
+  order: 32
+  priority: 32
+  status: proposed
+  title: Allocation drift against the policy targets
+  domain: Report and govern
+  owner: risk_officer
+  involved:
+  - cio
+  cadence: monthly
+  trigger: After month-end positions
+  decision_served: Whether drift is large enough to ask the CIO to rebalance
+  question: Which asset classes are outside their policy band?
+  kind: watch
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - administrator export xlsx
+  figures:
+  - id: drift_vs_target
+    name: Drift from policy target
+    formula: Allocation percent less target percent, flagged outside the band
+    answer_key: Generator allocation less the policy target from the policy fixture
+  action: Risk Officer raises drift to the CIO
+  signs: cio
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - intent.read-company-doc
+    - action.detect-exception
+    - action.size-impact
+    figures:
+    - single_name_concentration
+    - allocation_pct
+  builds_on:
+  - uc5-limits
+  - uc-031-alloc
+  layer: 4
+  needs_new:
+  - table:policy_limits
+  pain_points:
+  - INT-RISK
+  - INT-GOV
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: Month-end positions
+    signal: Listed equity at 91 percent against a 60 to 90 band
+    acts: Tom Hale
+    effort: 1 click (send to Raj)
+    type: normal
+  - arrives: Back inside the band
+    signal: Item closes on its own with the date
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Drift caused by one stale value
+    signal: Marked stale, not raised as drift
+    acts: Tom Hale
+    effort: 1 decision
+    type: exception
+- id: uc-033-breachesc
+  order: 33
+  priority: 33
+  status: proposed
+  title: A real breach goes to the committee
+  domain: Report and govern
+  owner: risk_officer
+  involved:
+  - cio
+  cadence: event
+  trigger: A breach is confirmed real
+  decision_served: The single-name limit is breached. What is the cost to cure and who must decide?
+  question: Whether to waive, cure or escalate the breach
+  kind: act
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - administrator export xlsx
+  figures:
+  - id: cost_to_cure
+    name: Amount to sell to return inside the limit
+    formula: (exposure - limit * total) / (1 - limit)
+    answer_key: 'Generator: universe liquid book; same formula'
+  action: Risk Officer writes the note; CIO decides to cure or ask for a waiver
+  signs: cio
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - action.size-impact
+    - action.suggest-next-step
+    - action.route-owner
+    figures:
+    - single_name_concentration
+    - drift_vs_target
+  builds_on:
+  - uc5-limits
+  - uc-032-driftrep
+  layer: 5
+  needs_new:
+  - table:committee_decisions
+  pain_points:
+  - INT-RISK
+  - INT-GOV
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: A breach confirmed real
+    signal: 'Cost to cure: the amount to sell to be back inside the limit'
+    acts: Tom Hale
+    effort: 1 click (send note)
+    type: normal
+  - arrives: Committee waives the breach
+    signal: Waiver recorded with name and date, expiry set
+    acts: Raj Patel
+    effort: 1 decision
+    type: normal
+  - arrives: Waiver past its expiry date and the breach still open
+    signal: Breach reopens in the Action list
+    acts: Tom Hale
+    effort: 1 click
+    type: exception
+- id: uc-034-prospect
+  order: 34
+  priority: 34
+  status: proposed
+  title: Screen a new fund against the mandate
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cio
+  - risk_officer
+  cadence: event
+  trigger: A new fund teaser arrives
+  decision_served: A new infrastructure fund sent a teaser. Does it fit our mandate and room to commit?
+  question: Whether to take the fund to diligence
+  kind: act
+  centre: Action
+  inputs:
+  - fund teaser pdf
+  - allocation policy pdf
+  figures:
+  - id: mandate_fit
+    name: Fit against class, size, liquidity limits
+    formula: Fund class and ticket size against policy limits and budget headroom
+    answer_key: 'Generator: teaser terms in generator; policy limits in fixture'
+  action: Analyst proposes to go ahead; CIO decides
+  signs: cio
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - intent.read-company-doc
+    - data.read-pdf-fields
+    - action.size-impact
+    figures:
+    - allocation_pct
+    - commitments_by_fund
+    - budget_headroom
+  builds_on:
+  - uc-031-alloc
+  - uc-007-pacing
+  layer: 5
+  needs_new:
+  - table:deal_pipeline
+  pain_points:
+  - INT-RISK
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: New fund teaser PDF arrives
+    signal: Class, size and liquidity read and compared with policy and room to commit
+    acts: Sofia Reyes
+    effort: 1 decision (go to diligence or pass)
+    type: normal
+  - arrives: Teaser from a manager we already hold
+    signal: Linked to the existing fund page
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: Ticket would push the class over its policy limit
+    signal: Flag with the amount over, before any meeting is booked
+    acts: Raj Patel
+    effort: 1 decision
+    type: exception
+- id: uc-035-ddq
+  order: 35
+  priority: 35
+  status: proposed
+  title: Compare manager questionnaires
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - risk_officer
+  cadence: event
+  trigger: A DDQ comes back
+  decision_served: How do the Cedarpoint and Kestrel questionnaires compare on team, fees and controls?
+  question: Which answers differ from what the manager told us or from peers
+  kind: answer
+  centre: Consume
+  inputs:
+  - ddq pdf
+  figures:
+  - id: ddq_compare
+    name: Answers side by side
+    formula: Answers to the same question, matched by topic
+    answer_key: 'Generator: two generated DDQs with 5 planted differences'
+  action: Analyst takes the differences to the meeting
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - intent.read-company-doc
+    - data.read-pdf-fields
+    - consume.answer-question
+    figures:
+    - manager_timeline
+    - mandate_fit
+  builds_on:
+  - uc7-manager-diligence
+  - uc-034-prospect
+  layer: 6
+  needs_new:
+  - recipe:ddq_compare
+  pain_points:
+  - INT-TRUST
+  - INT-DOC
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K14
+  signals:
+  - arrives: Second DDQ returned by a manager
+    signal: Answers matched by topic against the other managers; five differences listed
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: Fee answer differs from the term sheet
+    signal: Quoted both ways
+    acts: Sofia Reyes
+    effort: 1 call to the manager
+    type: normal
+  - arrives: An answer missing or marked 'to follow' on a control question
+    signal: Listed as an open item for the meeting
+    acts: Sofia Reyes
+    effort: 1 decision
+    type: exception
+- id: uc6-uncalled
+  order: 36
+  priority: 36
+  status: tested
+  title: How much of our commitments is still uncalled?
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - principal
+  - cio
+  cadence: monthly
+  trigger: Month end and after each recorded call
+  decision_served: How much cash to plan for the year
+  question: How much is uncalled across all commitments?
+  kind: answer
+  centre: Consume
+  inputs:
+  - commitments register xlsx
+  figures:
+  - id: uncalled_total
+    name: Uncalled by fund and total
+    formula: Commitment less called, summed
+    answer_key: 'Existing key: 13,450,000'
+  action: CFO plans the cash for the year
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - data.recognise-file
+    - check.adds-up
+    - consume.understand-words
+    - consume.answer-question
+    figures:
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+  builds_on:
+  - uc-002-callrecord
+  layer: 3
+  needs_new: []
+  pain_points:
+  - INT-LIQ
+  - PP-02
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  brief_say: Show me, fund by fund, what we committed, what has been called and what is still to come, so I can plan the cash for the year.
+  fixture_files:
+  - uc6:2026-07
+  existing_check:
+    ask: How much is uncalled across all commitments?
+    expect:
+    - 13,450,000
+  signals:
+  - arrives: Register and recorded calls
+    signal: Committed, called, unfunded by fund; 13,450,000 unfunded in total
+    acts: Daniel Foo
+    effort: see it, no work
+    type: normal
+  - arrives: Month end
+    signal: Unfunded by year for planning
+    acts: Daniel Foo
+    effort: 1 click (share with Mei)
+    type: normal
+  - arrives: Called plus unfunded does not equal the commitment
+    signal: Fund shown in red with the difference
+    acts: Helen Foo
+    effort: 1 decision
+    type: exception
+- id: uc-037-distrack
+  order: 37
+  priority: 37
+  status: proposed
+  title: Distributions expected against received
+  domain: Cash and treasury
+  owner: ops_clerk
+  involved:
+  - fund_accountant
+  - cfo
+  cadence: event
+  trigger: A distribution notice arrives, and weekly after its pay date
+  decision_served: Cedarpoint said it would pay a distribution on 1 September. Did it arrive?
+  question: Whether money promised by a fund has arrived
+  kind: watch
+  centre: Action
+  inputs:
+  - distribution notice pdf
+  - bank statement xlsx
+  figures:
+  - id: distribution_gap
+    name: Distribution notice less cash received
+    formula: Notice amount less matching bank credit by fund and pay date
+    answer_key: 'Generator: notices minus bank credits; planted gap is the key'
+  action: Clerk chases the manager through the Fund Accountant
+  signs: fund_accountant
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.draft-message
+    figures:
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+    - uncalled_total
+  builds_on:
+  - uc-002-callrecord
+  - uc6-uncalled
+  layer: 4
+  needs_new:
+  - table:fund_notices
+  - recipe:distribution_gap
+  pain_points:
+  - PP-02
+  - INT-LIQ
+  - INT-DOC
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K14
+  signals:
+  - arrives: Distribution notice PDF arrives
+    signal: Amount, fund and pay date read; expected bank credit set up
+    acts: Sam Lee
+    effort: 1 click (Log)
+    type: normal
+  - arrives: Pay date passes
+    signal: Credit found on the bank statement and matched
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Pay date passed and no credit found
+    signal: Gap shown with the notice amount and a chase draft
+    acts: Helen Foo
+    effort: 1 click (send)
+    type: exception
+- id: uc-038-navroll
+  order: 38
+  priority: 38
+  status: proposed
+  title: Private fund value roll-forward
+  domain: Hold and maintain
+  owner: fund_accountant
+  involved:
+  - cio
+  cadence: quarterly
+  trigger: A quarterly statement arrives
+  decision_served: Is the change in Fund C explained by the calls, distributions and the gain the manager reports?
+  question: Whether the new value is explained by calls, distributions and gain
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - capital call notice pdf
+  figures:
+  - id: nav_rollforward
+    name: Prior value + calls - distributions + gain = new value
+    formula: Roll-forward by fund and quarter; unexplained difference
+    answer_key: 'Generator: universe statement values and notices; unexplained difference is the key'
+  action: Fund Accountant explains any unexplained difference to the CIO
+  signs: none
+  reuses:
+    recipes:
+    - change_since_report
+    skills:
+    - check.adds-up
+    - check.explain-difference
+    figures:
+    - change_since_report
+    - uncalled_total
+    - distribution_gap
+  builds_on:
+  - uc1-why-nav-moved
+  - uc6-uncalled
+  - uc-037-distrack
+  layer: 5
+  needs_new:
+  - recipe:nav_rollforward
+  pain_points:
+  - INT-PERF
+  - INT-TRUST
+  - PP-03
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K13
+  - K15
+  signals:
+  - arrives: Quarterly statement arrives
+    signal: Prior value + calls - distributions + gain = new value for each fund
+    acts: Helen Foo
+    effort: see it, no work
+    type: normal
+  - arrives: Roll-forward ties within a cent
+    signal: Green tick on the fund
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: The roll-forward leaves an unexplained difference
+    signal: Fund held back from reports with the amount
+    acts: Helen Foo
+    effort: 1 call to the manager
+    type: exception
+- id: uc-039-irr
+  order: 39
+  priority: 39
+  status: proposed
+  title: Return of each private fund since we invested
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - fund_accountant
+  - cio
+  cadence: quarterly
+  trigger: Quarterly statements
+  decision_served: What have we made on each private fund since we first invested?
+  question: Which funds earned their place and which to stop adding to
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - capital call notice pdf
+  figures:
+  - id: fund_irr_tvpi
+    name: IRR, TVPI, DPI by fund
+    formula: IRR from dated calls, distributions, latest value; TVPI = (distributions + value) / called
+    answer_key: 'Generator: universe notices and values; IRR solved in code'
+  action: Analyst presents to the CIO
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - nav_rollforward
+    - distribution_gap
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+  builds_on:
+  - uc-038-navroll
+  - uc-037-distrack
+  - uc-002-callrecord
+  layer: 6
+  needs_new:
+  - recipe:fund_irr_tvpi
+  pain_points:
+  - PP-03
+  - INT-BENCH
+  - INT-PERF
+  kpis:
+  - K13
+  - K15
+  - K16
+  - K17
+  signals:
+  - arrives: Statements and notices loaded
+    signal: IRR, TVPI and DPI by private fund since the first call
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: Quarter end
+    signal: League table of funds by IRR next to the fee drag
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: A fund with a missing call or distribution in its history
+    signal: IRR shown as 'incomplete' with the missing dates
+    acts: Sofia Reyes
+    effort: 1 call to Helen
+    type: exception
+- id: uc-040-icmemo
+  order: 40
+  priority: 40
+  status: proposed
+  title: Investment committee memo for a new commitment
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cio
+  - risk_officer
+  cadence: event
+  trigger: A deal passes diligence
+  decision_served: Write up the recommendation for the committee.
+  question: Whether to recommend the commitment
+  kind: act
+  centre: Action
+  inputs:
+  - ddq pdf
+  - manager statement pdf
+  - allocation policy pdf
+  figures:
+  - id: memo_support
+    name: Figures cited in the memo
+    formula: Each figure with source and run
+    answer_key: 'Generator: values from earlier cards'
+  action: Analyst submits to the CIO
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - intent.read-company-doc
+    - consume.explain-number
+    figures:
+    - ddq_compare
+    - fund_irr_tvpi
+    - single_name_concentration
+  builds_on:
+  - uc-035-ddq
+  - uc-039-irr
+  - uc5-limits
+  layer: 7
+  needs_new:
+  - table:committee_decisions
+  pain_points:
+  - INT-OPS
+  - PP-07
+  - INT-RISK
+  kpis:
+  - K03
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: A deal passes diligence
+    signal: Memo draft with each figure traced to a file, the policy fit and the cash cover
+    acts: Sofia Reyes
+    effort: 1 click (send to Raj)
+    type: normal
+  - arrives: Memo cites a figure
+    signal: Source and run shown beside it
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: A figure in the memo cannot be traced to a file
+    signal: Struck out of the draft with the reason
+    acts: Sofia Reyes
+    effort: 1 decision
+    type: exception
+- id: uc-041-commitappr
+  order: 41
+  priority: 41
+  status: proposed
+  title: Approve a new commitment within policy
+  domain: Invest
+  owner: cio
+  involved:
+  - risk_officer
+  - cfo
+  - principal
+  cadence: event
+  trigger: The committee agrees
+  decision_served: Can we commit 5 million to this fund and still meet our calls?
+  question: Whether the commitment fits the budget, limits and cash
+  kind: act
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - commitments register xlsx
+  figures:
+  - id: commit_check
+    name: Budget, limit and cash tests
+    formula: Headroom, concentration after, and 24 month cash cover after the commitment
+    answer_key: 'Generator: same arithmetic on generator rows'
+  action: CIO and Principal sign; Finance records the commitment
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - action.size-impact
+    - action.route-owner
+    - check.adds-up
+    figures:
+    - commitments_by_fund
+    - budget_headroom
+    - single_name_concentration
+    - memo_support
+    - cash_by_entity
+    - calls_due
+  builds_on:
+  - uc-007-pacing
+  - uc5-limits
+  - uc-040-icmemo
+  - uc6-liquidity
+  layer: 8
+  needs_new: []
+  pain_points:
+  - INT-LIQ
+  - INT-RISK
+  - INT-GOV
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: Committee agrees a 5 million commitment
+    signal: Budget room, single-name and class limits, and 24 month cash cover after the commitment
+    acts: Raj Patel
+    effort: 1 decision
+    type: normal
+  - arrives: Principal asked to co-sign
+    signal: One page with the four tests green or red
+    acts: Mei Chen
+    effort: 1 click (sign)
+    type: normal
+  - arrives: Cash cover after the commitment falls below the ladder need
+    signal: Approval button replaced by the shortfall and the options
+    acts: Daniel Foo
+    effort: 1 decision
+    type: exception
+- id: uc4-vs-benchmark
+  order: 42
+  priority: 42
+  status: tested
+  title: How did the portfolio do against its benchmark?
+  domain: Report and govern
+  owner: cio
+  involved:
+  - investment_analyst
+  cadence: monthly
+  trigger: Month-end administrator export
+  decision_served: What to tell the committee about active return
+  question: How did the liquid portfolio do against the benchmark in September 2026?
+  kind: answer
+  centre: Consume
+  inputs:
+  - benchmark workbook xlsx
+  - index levels csv
+  - administrator export xlsx
+  figures:
+  - id: active_return
+    name: Portfolio against blended benchmark
+    formula: Portfolio return less blended benchmark return
+    answer_key: 'Existing key: 4.1667 and 2.7072'
+  action: CIO puts one line in front of the committee
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - intent.define-figure
+    - build.write-formula-table
+    - check.adds-up
+    - consume.attribution
+    - consume.answer-question
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new:
+  - recipe:time_weighted_return
+  pain_points:
+  - PP-03
+  - INT-BENCH
+  - INT-PERF
+  kpis:
+  - K13
+  - K15
+  - K16
+  - K17
+  brief_say: I need to see how the Evergreen Liquid portfolio did last month against our blended benchmark, in one line I can put in front of the committee. The benchmark definition is in the workbook,
+    the index levels are in the market data.
+  fixture_files:
+  - benchmark_workbook
+  - market_data
+  - admin_exports/administrator_export_2026-08.xlsx
+  - admin_exports/administrator_export_2026-09.xlsx
+  existing_check:
+    ask: How did the liquid portfolio do against the benchmark in September 2026?
+    expect:
+    - '4.1667'
+    - '2.7072'
+  signals:
+  - arrives: Month-end administrator export and index levels
+    signal: Portfolio 4.1667 against blended benchmark 2.7072 for September
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: Benchmark definition changed in the workbook
+    signal: Version change shown against last month
+    acts: Raj Patel
+    effort: 1 decision
+    type: normal
+  - arrives: Index level missing for a month end
+    signal: Return not computed, missing date named
+    acts: Sofia Reyes
+    effort: 1 call to the data provider
+    type: exception
+- id: uc-043-liquidpnl
+  order: 43
+  priority: 43
+  status: proposed
+  title: Liquid book gain or loss so far this month
+  domain: Hold and maintain
+  owner: cio
+  involved:
+  - investment_analyst
+  cadence: daily
+  trigger: Each day after prices
+  decision_served: How much has the liquid book made or lost since the start of the month?
+  question: Whether to act on a large move in the liquid book
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator export xlsx
+  - market data csv
+  figures:
+  - id: liquid_pnl_mtd
+    name: Liquid book gain/loss month to date
+    formula: Value today less value at last month end less net trades
+    answer_key: 'Generator: universe daily values from month-end anchors; 2 dp'
+  action: CIO notes it for the committee
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth
+    - active_return
+  builds_on:
+  - uc10-pipeline
+  - uc4-vs-benchmark
+  layer: 3
+  needs_new:
+  - recipe:liquid_pnl_mtd
+  pain_points:
+  - PP-03
+  - INT-PERF
+  kpis:
+  - K13
+  - K15
+  signals:
+  - arrives: Daily prices and positions
+    signal: Liquid book gain or loss since the start of the month
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: Month rolls over
+    signal: Start value resets with a link to the last close
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: A price that moved more than 10 percent in a day
+    signal: Held for review before it enters the figure
+    acts: Sam Lee
+    effort: 1 click (confirm or correct)
+    type: exception
+- id: uc-044-twr
+  order: 44
+  priority: 44
+  status: proposed
+  title: Return for the year against the benchmark
+  domain: Report and govern
+  owner: cio
+  involved:
+  - investment_analyst
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How did we do this quarter and this year against the benchmark?
+  question: What to report on performance for the quarter and the year
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator export xlsx
+  - index levels csv
+  - benchmark workbook xlsx
+  figures:
+  - id: twr_periods
+    name: Time-weighted return by period
+    formula: 'Chain-linked monthly returns: QTD, YTD, 1y'
+    answer_key: 'Generator: universe month-end values and cash flows; returns computed in code'
+  action: CIO puts it in the committee pack
+  signs: none
+  reuses:
+    recipes:
+    - time_weighted_return
+    skills:
+    - build.write-formula-table
+    - consume.attribution
+    - consume.answer-question
+    figures:
+    - active_return
+    - liquid_pnl_mtd
+  builds_on:
+  - uc4-vs-benchmark
+  - uc-043-liquidpnl
+  layer: 4
+  needs_new:
+  - recipe:twr_periods
+  pain_points:
+  - PP-03
+  - INT-BENCH
+  - INT-PERF
+  kpis:
+  - K13
+  - K15
+  - K16
+  - K17
+  signals:
+  - arrives: Month-end values and cash flows
+    signal: Time-weighted return for the quarter, year to date and one year against the benchmark
+    acts: Raj Patel
+    effort: see it, no work
+    type: normal
+  - arrives: Large contribution mid-month
+    signal: Flow timing used so the return is not distorted
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Monthly returns do not link to the stated quarter
+    signal: Figure held with the break
+    acts: Sofia Reyes
+    effort: 1 decision
+    type: exception
+- id: uc-045-reportpack
+  order: 45
+  priority: 45
+  status: proposed
+  title: 'Monthly investment report: assemble and sign'
+  domain: Report and govern
+  owner: cio
+  involved:
+  - principal
+  - fund_accountant
+  - investment_analyst
+  cadence: monthly
+  trigger: Month-end close done
+  decision_served: Is the monthly report ready to sign?
+  question: Whether to sign off and issue the report
+  kind: act
+  centre: Action
+  inputs:
+  - issued report xlsx
+  - administrator export xlsx
+  figures:
+  - id: report_ready
+    name: Report sections ready
+    formula: Share of sections with their figures traced, tied out and approved
+    answer_key: 'Generator: sections from the SOP; states from events'
+  action: CIO signs; Principal checks; pack goes to the family
+  signs: principal
+  reuses:
+    recipes:
+    - net_worth
+    - change_since_report
+    skills:
+    - consume.make-monthly-pack
+    - check.adds-up
+    - action.route-owner
+    figures:
+    - report_tie_out
+    - twr_periods
+    - drift_vs_target
+    - networth_usd_sgd
+  builds_on:
+  - uc-023-tieout
+  - uc-044-twr
+  - uc-032-driftrep
+  - morning-networth-note
+  layer: 5
+  needs_new: []
+  pain_points:
+  - PP-07
+  - INT-OPS
+  - INT-TRUST
+  kpis:
+  - K02
+  - K03
+  - K07
+  - K12
+  signals:
+  - arrives: Month-end close done
+    signal: 'Report sections drafted from traced figures: net worth, performance, drift, changes'
+    acts: Raj Patel
+    effort: 1 click (open)
+    type: normal
+  - arrives: Every section green
+    signal: Pack ready for the family
+    acts: Mei Chen
+    effort: 1 click (check)
+    type: normal
+  - arrives: A section based on a figure with no source
+    signal: Section withheld, the gap named
+    acts: Helen Foo
+    effort: 1 decision
+    type: exception
+- id: uc-046-attrib
+  order: 46
+  priority: 46
+  status: proposed
+  title: Where did the return come from
+  domain: Report and govern
+  owner: investment_analyst
+  involved:
+  - cio
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How much of the return came from asset class mix and how much from picking?
+  question: Which allocation or selection decision to change
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator export xlsx
+  - benchmark workbook xlsx
+  figures:
+  - id: attribution
+    name: Allocation and selection effect
+    formula: 'Brinson: allocation + selection + interaction = active return'
+    answer_key: 'Generator: effects add to active return within 1 cent'
+  action: Analyst presents to the CIO
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - consume.attribution
+    - check.adds-up
+    figures:
+    - twr_periods
+  builds_on:
+  - uc-044-twr
+  layer: 5
+  needs_new:
+  - recipe:attribution
+  pain_points:
+  - PP-03
+  - INT-PERF
+  - INT-BENCH
+  kpis:
+  - K13
+  - K15
+  - K16
+  - K17
+  signals:
+  - arrives: Quarter end
+    signal: Allocation, selection and interaction effects that add to the active return
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: Effects ready
+    signal: Slide for the committee pack
+    acts: Raj Patel
+    effort: 1 click (include)
+    type: normal
+  - arrives: Effects do not add to the active return
+    signal: Table not shown, difference named
+    acts: Sofia Reyes
+    effort: 1 decision
+    type: exception
+- id: uc-047-icpack
+  order: 47
+  priority: 47
+  status: proposed
+  title: Investment committee pack
+  domain: Report and govern
+  owner: cio
+  involved:
+  - risk_officer
+  - investment_analyst
+  - principal
+  cadence: quarterly
+  trigger: Committee date is set
+  decision_served: What goes in this quarter committee pack?
+  question: Which matters to put to the committee and what to recommend
+  kind: act
+  centre: Action
+  inputs:
+  - issued report pdf
+  - meeting notes md
+  figures:
+  - id: pack_items
+    name: Pack sections and their owners
+    formula: Report, performance, attribution, breaches and proposals with owner and status
+    answer_key: 'Generator: sections from generated events'
+  action: CIO approves the pack for the committee
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - consume.make-monthly-pack
+    - action.route-owner
+    figures:
+    - report_ready
+    - attribution
+    - cost_to_cure
+  builds_on:
+  - uc-045-reportpack
+  - uc-046-attrib
+  - uc-033-breachesc
+  layer: 6
+  needs_new:
+  - table:committee_decisions
+  pain_points:
+  - PP-07
+  - INT-OPS
+  - INT-RISK
+  kpis:
+  - K03
+  - K08
+  - K09
+  - K10
+  - K11
+  signals:
+  - arrives: Committee date set
+    signal: Pack of report, performance, attribution, breaches and proposals with owners
+    acts: Raj Patel
+    effort: 1 click (approve)
+    type: normal
+  - arrives: Section owner marks done
+    signal: Status tick
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: A section still open 2 days before the committee
+    signal: Owner named and reminded
+    acts: Raj Patel
+    effort: 1 call
+    type: exception
+- id: uc-048-policyupd
+  order: 48
+  priority: 48
+  status: proposed
+  title: Update the allocation policy and its limits
+  domain: Report and govern
+  owner: risk_officer
+  involved:
+  - cio
+  - principal
+  cadence: yearly
+  trigger: Annual review or a committee request
+  decision_served: Do our limits still fit, and what would the committee change?
+  question: Which limits to change and by how much
+  kind: act
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - meeting notes md
+  figures:
+  - id: limit_changes
+    name: Proposed against current limits
+    formula: Proposed minus current limit, with the number of breaches each would have caused in 12 months
+    answer_key: 'Generator: re-run limit check on 12 months of universe positions'
+  action: Principal signs the new policy
+  signs: principal
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - intent.read-company-doc
+    - action.size-impact
+    - intent.map-decision-path
+    figures:
+    - single_name_concentration
+    - drift_vs_target
+    - pack_items
+  builds_on:
+  - uc5-limits
+  - uc-032-driftrep
+  - uc-047-icpack
+  layer: 7
+  needs_new:
+  - table:policy_limits
+  pain_points:
+  - INT-RISK
+  - INT-GOV
+  - INT-DATAGOV
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+  - K19
+  signals:
+  - arrives: Annual review
+    signal: Each limit with the breaches it would have caused over 12 months
+    acts: Tom Hale
+    effort: 1 decision (propose)
+    type: normal
+  - arrives: Committee approves a change
+    signal: New limit version with date and signer; the limits check uses it from that date
+    acts: Mei Chen
+    effort: 1 click (sign)
+    type: normal
+  - arrives: A proposal that would leave an existing holding in breach
+    signal: Shown with the holding and amount
+    acts: Raj Patel
+    effort: 1 decision
+    type: exception
+- id: uc-049-feedrag
+  order: 49
+  priority: 49
+  status: proposed
+  title: Fees paid to each manager
+  domain: Invest
+  owner: fund_accountant
+  involved:
+  - investment_analyst
+  - cfo
+  cadence: yearly
+  trigger: Year end
+  decision_served: How much have we paid each manager in fees and what share of the gain is that?
+  question: Whether a manager earns its fees
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - fee schedule pdf
+  figures:
+  - id: fee_drag
+    name: Fees as share of gain
+    formula: Management plus performance fees over gross gain, by manager
+    answer_key: 'Generator: universe fee schedules and statements'
+  action: Fund Accountant gives the analyst the numbers
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - build.write-formula-table
+    - check.adds-up
+    figures:
+    - fund_irr_tvpi
+  builds_on:
+  - uc-039-irr
+  layer: 7
+  needs_new:
+  - table:fee_schedules
+  - table:fee_charges
+  - recipe:fee_drag
+  pain_points:
+  - PP-03
+  - INT-BENCH
+  kpis:
+  - K15
+  - K16
+  - K17
+  signals:
+  - arrives: Statements and fee schedules
+    signal: Fees as a share of gain by manager
+    acts: Helen Foo
+    effort: see it, no work
+    type: normal
+  - arrives: Year end
+    signal: Fee drag next to IRR
+    acts: Sofia Reyes
+    effort: see it, no work
+    type: normal
+  - arrives: Fees charged above the schedule
+    signal: Listed with the overcharge
+    acts: Helen Foo
+    effort: 1 call to the manager
+    type: exception
+- id: uc-050-feeinv
+  order: 50
+  priority: 50
+  status: proposed
+  title: Administrator and custodian invoices against the fee schedule
+  domain: Run the office
+  owner: ops_lead
+  involved:
+  - fund_accountant
+  - cfo
+  cadence: monthly
+  trigger: An invoice arrives
+  decision_served: Does the administrator invoice match the fee schedule?
+  question: Whether to pay the invoice as billed
+  kind: act
+  centre: Action
+  inputs:
+  - invoice pdf
+  - vendor contract pdf
+  figures:
+  - id: invoice_variance
+    name: Invoice less expected fee
+    formula: Invoice amount less fee schedule rate times base
+    answer_key: 'Generator: invoice from generator with 1 planted overcharge'
+  action: Operations queries; CFO approves the payment
+  signs: cfo
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - check.against-source
+    - action.draft-message
+    figures:
+    - renewals_vendors
+    - fee_drag
+  builds_on:
+  - uc-030-vendors
+  - uc-049-feedrag
+  layer: 8
+  needs_new: []
+  pain_points:
+  - INT-OPS
+  - PP-04
+  - INT-GOV
+  kpis:
+  - K03
+  signals:
+  - arrives: Administrator invoice arrives
+    signal: Invoice against the fee schedule rate times base
+    acts: Grace Ong
+    effort: 1 click (approve)
+    type: normal
+  - arrives: Invoice matches
+    signal: Moves to the payment run
+    acts: nobody
+    effort: see it, no work
+    type: normal
+  - arrives: Invoice higher than the schedule
+    signal: Held with the difference and a query draft
+    acts: Grace Ong
+    effort: 1 click (send query)
+    type: exception
+- id: uc8-trades-vs-admin
+  order: 51
+  status: tested
+  title: Trades and FX forwards against the administrator and the confirmations
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - ops_lead
+  cadence: daily
+  trigger: Each day, after the desk file arrives
+  decision_served: Which unmatched trades to send to the Operations Lead
+  question: How much does the FX forward confirmation differ from our record?
+  kind: watch
+  centre: Action
+  inputs:
+  - trade export csv
+  - fx confirmation pdf
+  - administrator export xlsx
+  figures:
+  - id: fx_confirmation_variance
+    name: FX forward confirmation variance
+    formula: Confirmation leg less the desk trade amount
+    answer_key: 'Existing key: 8,100'
+  action: Clerk raises a break and sends it to Grace
+  signs: ops_lead
+  reuses:
+    recipes:
+    - fx_confirmation_variance
+    skills:
+    - data.recognise-file
+    - data.read-pdf-fields
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    - action.route-owner
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new: []
+  pain_points:
+  - PP-06
+  - INT-DOC
+  kpis:
+  - K14
+  brief_say: Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record. Show me what matches and what does not, by how much, and
+    which ones I should send to Grace.
+  fixture_files:
+  - trading_export/trading_export_2026100*.csv
+  - trading_export/trading_export_20260915.csv
+  - otc_confirms
+  - admin_exports/administrator_export_2026-09.xlsx
+  existing_check:
+    ask: How much does the FX forward confirmation differ from our record?
+    expect:
+    - 8,100
+- id: uc-052-insurance
+  order: 52
+  status: proposed
+  title: Insurance policies and renewals
+  domain: Family and people
+  owner: hr_admin
+  involved:
+  - principal
+  - cfo
+  cadence: monthly
+  trigger: A renewal date is within 60 days
+  decision_served: Which policies to renew, change or let lapse
+  question: Which policies expire in the next 60 days and what is each worth?
+  kind: watch
+  centre: Action
+  inputs:
+  - insurance schedule pdf
+  figures:
+  - id: renewals_due
+    name: Policies expiring in 60 days
+    formula: Policies with end date within 60 days of today
+    answer_key: Generator policy table; date arithmetic
+  action: HR drafts the renewal request for Principal approval
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - action.detect-exception
+    - action.draft-message
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:insurance_policies
+  - recipe:renewals_due
+  pain_points:
+  - PP-08
+  - INT-GOV
+  kpis: []
+- id: uc-053-watchlist
+  order: 53
+  status: proposed
+  title: 'Manager watchlist: late, restated or changed'
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cio
+  - fund_accountant
+  cadence: monthly
+  trigger: Month end after statements are logged
+  decision_served: Which managers to put on watch or to meet early
+  question: Which managers have given us a late, restated or changed statement this quarter?
+  kind: watch
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - email
+  - newsletter pdf
+  figures:
+  - id: watch_flags
+    name: Flags per manager
+    formula: Count of late, amended and personnel-change items in the last 90 days
+    answer_key: Generator events per manager over 90 days
+  action: Analyst proposes the watch list; CIO decides
+  signs: cio
+  reuses:
+    recipes:
+    - missing_statements
+    - change_since_report
+    skills:
+    - action.detect-exception
+    - consume.answer-question
+    figures:
+    - manager_timeline
+    - missing_statements
+  builds_on:
+  - uc7-manager-diligence
+  - uc3-statements-inbox
+  layer: 4
+  needs_new:
+  - recipe:watch_flags
+  pain_points:
+  - PP-05
+  - INT-TRUST
+  - INT-BENCH
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K15
+  - K16
+  - K17
+- id: uc-054-ladder
+  order: 54
+  status: proposed
+  title: 30, 60, 90 day liquidity ladder
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - principal
+  - cio
+  cadence: weekly
+  trigger: Monday, and after a recorded call
+  decision_served: Whether to raise cash, sell, or draw on a facility before the 90 day window
+  question: How much cash do we have against calls and payments in the next 30, 60 and 90 days?
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator cash csv
+  - capital call notice pdf
+  - commitments register xlsx
+  figures:
+  - id: liquidity_ladder
+    name: Cash less calls in 30, 60, 90 days
+    formula: Cash by entity less calls due and approved payments within each window
+    answer_key: Generator cash and notices by due date
+  action: CFO reports the ladder to the Principal
+  signs: none
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - check.adds-up
+    - consume.answer-question
+    figures:
+    - cash_by_entity
+    - calls_due
+    - cash_after_calls
+    - sgd_to_convert
+    - call_vs_commitment_check
+  builds_on:
+  - uc6-liquidity
+  - uc-004-callcheck
+  layer: 5
+  needs_new:
+  - recipe:liquidity_ladder
+  pain_points:
+  - PP-02
+  - PP-01
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-055-corpact
+  order: 55
+  status: proposed
+  title: Corporate actions and income calendar
+  domain: Hold and maintain
+  owner: ops_clerk
+  involved:
+  - ops_lead
+  cadence: daily
+  trigger: The administrator or a notice announces a dividend, coupon or split
+  decision_served: Which dividends, coupons or splits are coming for the liquid book in the next two weeks?
+  question: Which actions need a decision or a booking
+  kind: watch
+  centre: Action
+  inputs:
+  - corporate action notice pdf
+  - security master xlsx
+  figures:
+  - id: actions_next_14d
+    name: Actions due in 14 days
+    formula: Corporate actions with ex-date or pay date in the next 14 days
+    answer_key: 'Generator: universe schedules coupons on the three bonds'
+  action: Clerk books the action, Operations Lead approves any election
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new:
+  - table:corporate_actions
+  - recipe:actions_next_14d
+  pain_points:
+  - PP-06
+  - INT-DOC
+  kpis:
+  - K14
+- id: uc-056-custrecon
+  order: 56
+  status: proposed
+  title: Custodian positions against administrator positions
+  domain: Operate and control
+  owner: ops_lead
+  involved:
+  - ops_clerk
+  - risk_officer
+  cadence: daily
+  trigger: Custodian and administrator files both arrive
+  decision_served: Do the custodian and the administrator agree on what we hold?
+  question: Which holdings differ between the custodian and the administrator, and why
+  kind: watch
+  centre: Action
+  inputs:
+  - custody statement pdf
+  - administrator export xlsx
+  - trade export csv
+  figures:
+  - id: position_break
+    name: Quantity difference per holding
+    formula: Administrator quantity less custodian quantity, per holding and date
+    answer_key: 'Generator: custodian file copied from universe with 2 planted quantity changes'
+  action: Operations Lead closes with a reason or chases the custodian
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - data.recognise-file
+    - data.match-identity
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    figures:
+    - net_worth
+    - fx_confirmation_variance
+  builds_on:
+  - uc10-pipeline
+  - uc8-trades-vs-admin
+  layer: 3
+  needs_new:
+  - table:custody_positions
+  - recipe:position_break
+  pain_points:
+  - PP-06
+  - PP-04
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+- id: uc-057-pricecheck
+  order: 57
+  status: proposed
+  title: Prices against a second source
+  domain: Operate and control
+  owner: ops_lead
+  involved:
+  - risk_officer
+  - ops_clerk
+  cadence: daily
+  trigger: Daily prices arrive
+  decision_served: Which of our prices are off from the market by more than 0.5 percent?
+  question: Which prices differ from a second source by more than tolerance
+  kind: watch
+  centre: Action
+  inputs:
+  - market data csv
+  - administrator export xlsx
+  figures:
+  - id: price_gap_pct
+    name: Price difference to second source
+    formula: Administrator price less second-source price over second-source price
+    answer_key: 'Generator: second source = universe price with 2 planted changes'
+  action: Operations Lead asks the administrator to confirm
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    figures:
+    - net_worth
+    - fx_confirmation_variance
+  builds_on:
+  - uc10-pipeline
+  - uc8-trades-vs-admin
+  layer: 3
+  needs_new:
+  - table:prices_second_source
+  - recipe:price_gap_pct
+  pain_points:
+  - PP-04
+  - INT-TRUST
+  - PP-06
+  kpis:
+  - K02
+  - K07
+  - K12
+- id: uc-058-settle
+  order: 58
+  status: proposed
+  title: Trades not settled on time
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - ops_lead
+  cadence: daily
+  trigger: Each day after settlement date
+  decision_served: Which trades should have settled by now and have not?
+  question: Which trades failed to settle and whom to chase
+  kind: watch
+  centre: Action
+  inputs:
+  - trade export csv
+  - custody statement pdf
+  figures:
+  - id: unsettled_trades
+    name: Trades past settlement date with no cash
+    formula: Trades with settlement date before today and no matching cash movement
+    answer_key: 'Generator: universe trades with 2 planted fails'
+  action: Clerk chases the broker and informs Operations Lead
+  signs: ops_lead
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.size-impact
+    - action.draft-message
+    figures:
+    - fx_confirmation_variance
+  builds_on:
+  - uc8-trades-vs-admin
+  layer: 3
+  needs_new:
+  - table:settlements
+  - recipe:unsettled_trades
+  pain_points:
+  - PP-06
+  - PP-01
+  kpis: []
+- id: uc-059-breakage
+  order: 59
+  status: proposed
+  title: Open breaks by age
+  domain: Operate and control
+  owner: ops_lead
+  involved:
+  - cfo
+  - ops_clerk
+  cadence: weekly
+  trigger: Every Monday
+  decision_served: Which cash breaks are still open and how long have they been open?
+  question: Which breaks are older than five days and go to Finance
+  kind: watch
+  centre: Action
+  inputs:
+  - exception log
+  figures:
+  - id: break_age
+    name: Open breaks by age
+    formula: Open exceptions of type cash break, age in business days from detection
+    answer_key: Exceptions table from the generator with planted detection dates
+  action: Operations Lead hands unresolved breaks to Finance
+  signs: cfo
+  reuses:
+    recipes:
+    - cash_break
+    skills:
+    - action.route-owner
+    - action.close-with-reason
+    - consume.answer-question
+    figures:
+    - cash_break
+  builds_on:
+  - uc2-recon-break-desk
+  layer: 5
+  needs_new: []
+  pain_points:
+  - PP-01
+  - PP-06
+  - INT-OPS
+  kpis:
+  - K03
+- id: uc-060-docinbox
+  order: 60
+  status: proposed
+  title: Documents the office could not recognise
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - head_of_data
+  cadence: daily
+  trigger: A file lands in the dropbox and is not recognised
+  decision_served: Which files in the dropbox did Harbor not recognise?
+  question: Where each unrecognised file belongs or whether to refuse it
+  kind: watch
+  centre: Action
+  inputs:
+  - email
+  - mixed pdf and xlsx
+  figures:
+  - id: unrecognised_files
+    name: Files not recognised
+    formula: Count of files with no recognised source after the recognise step
+    answer_key: 'Generator: a pack of 5 files, 2 of unknown type'
+  action: Clerk names the source; Head of Data decides on a new source
+  signs: head_of_data
+  reuses:
+    recipes: []
+    skills:
+    - data.recognise-file
+    - data.detect-duplicate
+    - map.explain-doubt
+    figures:
+    - missing_statements
+  builds_on:
+  - uc3-statements-inbox
+  layer: 2
+  needs_new: []
+  pain_points:
+  - INT-DOC
+  - INT-GOV
+  kpis:
+  - K14
+- id: uc-061-dqscore
+  order: 61
+  status: proposed
+  title: Data quality score for each source
+  domain: Operate and control
+  owner: head_of_data
+  involved:
+  - ops_lead
+  cadence: monthly
+  trigger: Month end
+  decision_served: Which of our sources is the least reliable this month?
+  question: Which source to fix first
+  kind: answer
+  centre: Consume
+  inputs:
+  - all loaded files
+  figures:
+  - id: source_quality
+    name: Quality score per source
+    formula: Share of loads that passed adds-up, were on time, and needed no manual fix
+    answer_key: 'Generator: run log with planted failures per source'
+  action: Head of Data raises the worst source with its owner
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - check.adds-up
+    - consume.build-board
+    figures:
+    - net_worth
+    - columns_changed
+    - unclassified_holdings
+  builds_on:
+  - uc10-pipeline
+  - uc-016-schemadrift
+  - uc-013-secgaps
+  layer: 4
+  needs_new:
+  - recipe:source_quality
+  pain_points:
+  - INT-TRUST
+  - INT-DATAGOV
+  kpis:
+  - K02
+  - K07
+  - K12
+  - K19
+- id: uc-062-fxlife
+  order: 62
+  status: proposed
+  title: 'FX forwards: upcoming value dates and mark to market'
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - cfo
+  - ops_lead
+  cadence: weekly
+  trigger: Weekly, and 5 days before a value date
+  decision_served: Which FX forwards settle in the next 30 days and what are they worth now?
+  question: Which forwards need settlement cash or a roll
+  kind: watch
+  centre: Action
+  inputs:
+  - fx confirmation pdf
+  - fx rate csv
+  - trade export csv
+  figures:
+  - id: fx_mtm
+    name: Forward mark to market
+    formula: Buy amount over spot less sell amount, per forward
+    answer_key: 'Generator: universe rule: buy / spot - sell; two forwards'
+  action: Clerk tells the CFO the cash needed on the value date
+  signs: cfo
+  reuses:
+    recipes:
+    - fx_confirmation_variance
+    skills:
+    - data.read-pdf-fields
+    - check.against-source
+    - action.size-impact
+    figures:
+    - fx_confirmation_variance
+  builds_on:
+  - uc8-trades-vs-admin
+  layer: 3
+  needs_new:
+  - recipe:fx_mtm
+  pain_points:
+  - PP-06
+  - INT-RISK
+  - PP-01
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-063-cashcode
+  order: 63
+  status: proposed
+  title: Unexplained bank lines
+  domain: Operate and control
+  owner: ops_clerk
+  involved:
+  - ops_lead
+  cadence: daily
+  trigger: Bank file arrives
+  decision_served: Which lines on the bank statement do we not know what they are?
+  question: Which bank lines have no purpose and need coding
+  kind: watch
+  centre: Action
+  inputs:
+  - bank statement xlsx
+  figures:
+  - id: uncoded_bank_lines
+    name: Bank lines with no purpose
+    formula: Bank lines not matched to any movement or notice
+    answer_key: 'Generator: bank lines minus matched lines; planted 3 unmatched'
+  action: Clerk codes each line or asks Finance
+  signs: ops_lead
+  reuses:
+    recipes:
+    - cash_break
+    skills:
+    - data.match-identity
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - cash_break
+    - called_to_date
+    - unfunded_after_call
+    - fee_part_check
+  builds_on:
+  - uc2-recon-break-desk
+  - uc-002-callrecord
+  layer: 5
+  needs_new: []
+  pain_points:
+  - PP-01
+  - PP-06
+  kpis: []
+- id: uc-064-fxexp
+  order: 64
+  status: proposed
+  title: Currency exposure of the family
+  domain: Hold and maintain
+  owner: risk_officer
+  involved:
+  - cfo
+  - cio
+  cadence: monthly
+  trigger: Month-end positions
+  decision_served: How much of what we own is in each currency, and how much is hedged?
+  question: Whether to hedge a currency exposure
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator export xlsx
+  - fx confirmation pdf
+  - fx rate csv
+  figures:
+  - id: currency_exposure
+    name: Net exposure by currency
+    formula: Holdings by currency plus forwards (bought less sold), at WMR rate
+    answer_key: 'Generator: universe holdings by currency and 2 forwards'
+  action: Risk Officer raises an unhedged exposure above the limit
+  signs: cio
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - build.write-formula-table
+    - action.detect-exception
+    - consume.answer-question
+    figures:
+    - net_worth
+    - networth_usd_sgd
+  builds_on:
+  - uc10-pipeline
+  - morning-networth-note
+  layer: 5
+  needs_new:
+  - recipe:currency_exposure
+  pain_points:
+  - INT-RISK
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-065-realassets
+  order: 65
+  status: proposed
+  title: Real assets register
+  domain: Hold and maintain
+  owner: principal
+  involved:
+  - fund_accountant
+  - hr_admin
+  cadence: yearly
+  trigger: Year end, and when an asset is bought or sold
+  decision_served: What property, art and other real assets do we hold and what is each worth?
+  question: What real assets we own, their values and who holds them
+  kind: answer
+  centre: Consume
+  inputs:
+  - property valuation pdf
+  - title deed pdf
+  figures:
+  - id: real_asset_value
+    name: Real assets by type and holder
+    formula: Latest appraisal per asset summed by type and entity
+    answer_key: 'Generator: universe real asset table: 6 assets with appraisal dates'
+  action: Principal confirms the register
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - consume.answer-question
+    figures:
+    - net_worth
+  builds_on:
+  - uc10-pipeline
+  layer: 2
+  needs_new:
+  - table:real_assets
+  - recipe:real_asset_value
+  pain_points:
+  - INT-SCOPE
+  - INT-TRUST
+  kpis:
+  - K02
+  - K07
+  - K12
+- id: uc-066-propreval
+  order: 66
+  status: proposed
+  title: Appraisal due on a real asset
+  domain: Hold and maintain
+  owner: principal
+  involved:
+  - fund_accountant
+  - hr_admin
+  cadence: yearly
+  trigger: An appraisal is more than 12 months old
+  decision_served: Which of our properties has not been appraised for more than a year?
+  question: Whether to order a new appraisal
+  kind: act
+  centre: Action
+  inputs:
+  - property valuation pdf
+  figures:
+  - id: appraisal_age
+    name: Age of latest appraisal
+    formula: Today less latest appraisal date, flagged above 365 days
+    answer_key: 'Generator: universe appraisal dates'
+  action: Fund Accountant drafts the request; Principal approves the spend
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.draft-message
+    - action.route-owner
+    figures:
+    - real_asset_value
+  builds_on:
+  - uc-065-realassets
+  layer: 3
+  needs_new: []
+  pain_points:
+  - INT-TRUST
+  - INT-RISK
+  kpis:
+  - K02
+  - K07
+  - K08
+  - K09
+  - K10
+  - K11
+  - K12
+- id: uc-067-unrl
+  order: 67
+  status: proposed
+  title: Unrealised gain by lot
+  domain: Hold and maintain
+  owner: fund_accountant
+  involved:
+  - cfo
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: What gain are we sitting on in each holding, by purchase lot?
+  question: Which lots to sell for a tax or rebalance reason
+  kind: answer
+  centre: Consume
+  inputs:
+  - trade export csv
+  - administrator export xlsx
+  figures:
+  - id: unrealised_gain
+    name: Unrealised gain by lot
+    formula: Market value less cost for each open lot
+    answer_key: 'Generator: universe trades build lots; value at quarter end'
+  action: Fund Accountant gives the CFO the list
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth
+    - fx_confirmation_variance
+  builds_on:
+  - uc10-pipeline
+  - uc8-trades-vs-admin
+  layer: 3
+  needs_new:
+  - table:tax_lots
+  - recipe:unrealised_gain
+  pain_points:
+  - PP-08
+  - INT-PERF
+  kpis:
+  - K13
+  - K15
+- id: uc-068-incomef
+  order: 68
+  status: proposed
+  title: Dividend and coupon income forecast
+  domain: Hold and maintain
+  owner: fund_accountant
+  involved:
+  - cfo
+  - cio
+  cadence: quarterly
+  trigger: Quarter start
+  decision_served: How much income will the liquid book pay us over the next 12 months?
+  question: How much income to plan for next year
+  kind: answer
+  centre: Consume
+  inputs:
+  - corporate action notice pdf
+  - security master xlsx
+  figures:
+  - id: income_forecast
+    name: Income next 12 months
+    formula: Coupon rate times face for bonds plus dividend per share times quantity for equities
+    answer_key: 'Generator: universe coupon and dividend fields'
+  action: Fund Accountant gives the CFO the forecast
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth
+    - actions_next_14d
+  builds_on:
+  - uc10-pipeline
+  - uc-055-corpact
+  layer: 3
+  needs_new:
+  - recipe:income_forecast
+  pain_points:
+  - INT-LIQ
+  - PP-03
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-069-lookthru
+  order: 69
+  status: proposed
+  title: What the private funds really own
+  domain: Hold and maintain
+  owner: investment_analyst
+  involved:
+  - cio
+  cadence: quarterly
+  trigger: Quarterly statements
+  decision_served: Through all our funds, which companies do we own the most of?
+  question: Whether the family is over-exposed to one company or sector through funds
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - ddq pdf
+  figures:
+  - id: lookthrough_exposure
+    name: Look-through exposure by company
+    formula: Fund value times fund holding weight, summed by company
+    answer_key: 'Generator: universe fund holding lists'
+  action: Analyst flags overlap to the CIO
+  signs: none
+  reuses:
+    recipes:
+    - concentration
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - consume.answer-question
+    figures:
+    - net_worth
+    - allocation_pct
+    - missing_statements
+  builds_on:
+  - uc10-pipeline
+  - uc-031-alloc
+  - uc3-statements-inbox
+  layer: 4
+  needs_new:
+  - table:fund_holdings
+  - recipe:lookthrough_exposure
+  pain_points:
+  - INT-RISK
+  - INT-SCOPE
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-070-idle
+  order: 70
+  status: proposed
+  title: Idle cash above what we need
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - cio
+  cadence: monthly
+  trigger: Month-end cash
+  decision_served: How much cash is sitting idle above what we need for 90 days?
+  question: Whether to invest, repay or hold the surplus
+  kind: watch
+  centre: Action
+  inputs:
+  - administrator cash csv
+  figures:
+  - id: idle_cash
+    name: Cash above 90 day need
+    formula: Cash by entity less 90 day ladder outflow less buffer
+    answer_key: 'Generator: cash less ladder; buffer from policy'
+  action: CFO proposes deployment to the CIO
+  signs: cio
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - action.detect-exception
+    - action.size-impact
+    figures:
+    - cash_by_entity
+    - calls_due
+    - liquidity_ladder
+  builds_on:
+  - uc6-liquidity
+  - uc-054-ladder
+  layer: 6
+  needs_new: []
+  pain_points:
+  - PP-01
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-071-expdist
+  order: 71
+  status: proposed
+  title: Distributions we expect in the next year
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cfo
+  - fund_accountant
+  cadence: quarterly
+  trigger: Quarter start
+  decision_served: How much will the funds pay back to us over the next 12 months?
+  question: How much money to expect back from the funds
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - ddq pdf
+  - capital call notice pdf
+  figures:
+  - id: expected_distributions
+    name: Expected distributions
+    formula: Fund value times manager projected payout rate, by quarter
+    answer_key: 'Generator: universe projected payout rates'
+  action: Analyst hands it to the CFO for the forecast
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - distribution_gap
+    - nav_rollforward
+  builds_on:
+  - uc-037-distrack
+  - uc-038-navroll
+  layer: 6
+  needs_new:
+  - recipe:expected_distributions
+  pain_points:
+  - INT-LIQ
+  - PP-02
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-072-cashfc
+  order: 72
+  status: proposed
+  title: 12 month cash forecast
+  domain: Cash and treasury
+  owner: cfo
+  involved:
+  - principal
+  - cio
+  cadence: quarterly
+  trigger: Quarter start
+  decision_served: Over the next 12 months, where will cash come from and where will it go?
+  question: Whether the family needs to raise cash
+  kind: answer
+  centre: Consume
+  inputs:
+  - commitments register xlsx
+  - administrator cash csv
+  figures:
+  - id: cash_forecast
+    name: Cash in, cash out, closing by month
+    formula: Opening cash + distributions + income - calls - expenses
+    answer_key: 'Generator: sum of generator inflows and outflows by month'
+  action: CFO presents to the Principal
+  signs: none
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - liquidity_ladder
+    - income_forecast
+    - distribution_gap
+    - expected_distributions
+  builds_on:
+  - uc-054-ladder
+  - uc-068-incomef
+  - uc-037-distrack
+  - uc-071-expdist
+  layer: 7
+  needs_new:
+  - recipe:cash_forecast
+  pain_points:
+  - INT-LIQ
+  - PP-02
+  - PP-01
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-073-runway
+  order: 73
+  status: proposed
+  title: How many months the family can spend
+  domain: Cash and treasury
+  owner: principal
+  involved:
+  - cfo
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: At our current spending, how many months of cash do we have?
+  question: Whether spending is sustainable
+  kind: answer
+  centre: Consume
+  inputs:
+  - administrator cash csv
+  - expense ledger xlsx
+  figures:
+  - id: cash_runway
+    name: Months of spending covered
+    formula: Liquid cash over average monthly spending of the last 6 months
+    answer_key: 'Generator: cash / mean expenses'
+  action: Principal reviews with the CFO
+  signs: none
+  reuses:
+    recipes:
+    - cash_by_entity
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - liquidity_ladder
+    - allowance_due
+    - payment_batch
+  builds_on:
+  - uc-054-ladder
+  - uc-015-allowances
+  - uc-008-payrun
+  layer: 6
+  needs_new:
+  - table:office_expenses
+  - recipe:cash_runway
+  pain_points:
+  - INT-LIQ
+  - PP-01
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-074-boardpack
+  order: 74
+  status: proposed
+  title: Family board pack
+  domain: Report and govern
+  owner: principal
+  involved:
+  - cio
+  - cfo
+  cadence: quarterly
+  trigger: Board date is set
+  decision_served: What should I tell the family at the board this quarter?
+  question: What to tell the board of the family
+  kind: answer
+  centre: Consume
+  inputs:
+  - issued report pdf
+  - meeting notes md
+  figures:
+  - id: board_summary
+    name: Net worth, return, liquidity, decisions
+    formula: Headline figures from the report pack with their sources
+    answer_key: 'Generator: values from earlier cards; traces to files'
+  action: Principal reviews and issues
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - consume.write-morning-note
+    - consume.build-board
+    - consume.explain-number
+    figures:
+    - report_ready
+    - pack_items
+    - networth_usd_sgd
+  builds_on:
+  - uc-045-reportpack
+  - uc-047-icpack
+  - morning-networth-note
+  layer: 7
+  needs_new: []
+  pain_points:
+  - PP-07
+  - INT-OPS
+  kpis:
+  - K03
+- id: uc-075-yearwalk
+  order: 75
+  status: proposed
+  title: What happened to our worth this year
+  domain: Report and govern
+  owner: principal
+  involved:
+  - cio
+  - cfo
+  cadence: yearly
+  trigger: Year end
+  decision_served: Why are we worth more or less than a year ago?
+  question: What to tell the family about the year
+  kind: answer
+  centre: Consume
+  inputs:
+  - issued report pdf
+  - administrator export xlsx
+  figures:
+  - id: networth_walk
+    name: Net worth walk
+    formula: Opening + gains + income + contributions - spending = closing
+    answer_key: 'Generator: universe 12 months of values and flows; walk adds to closing'
+  action: Principal presents at the annual meeting
+  signs: none
+  reuses:
+    recipes:
+    - net_worth
+    skills:
+    - check.adds-up
+    - consume.explain-number
+    - consume.answer-question
+    figures:
+    - board_summary
+    - report_tie_out
+  builds_on:
+  - uc-074-boardpack
+  - uc-023-tieout
+  layer: 8
+  needs_new:
+  - recipe:networth_walk
+  pain_points:
+  - PP-03
+  - INT-PERF
+  - PP-07
+  kpis:
+  - K13
+  - K15
+- id: uc-076-scorecard
+  order: 76
+  status: proposed
+  title: Manager scorecard
+  domain: Invest
+  owner: cio
+  involved:
+  - investment_analyst
+  - fund_accountant
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How does each manager score on return, fees, reporting and service?
+  question: Which managers to keep, add to, or exit
+  kind: answer
+  centre: Consume
+  inputs:
+  - manager statement pdf
+  - meeting notes md
+  figures:
+  - id: manager_score
+    name: Manager score
+    formula: Weighted score of return, fee drag, timeliness and watch flags
+    answer_key: 'Generator: weights fixed in the pack; inputs from earlier figures'
+  action: CIO decides on the watch list and the next meeting
+  signs: none
+  reuses:
+    recipes:
+    - missing_statements
+    skills:
+    - consume.answer-question
+    - consume.build-board
+    figures:
+    - fund_irr_tvpi
+    - fee_drag
+    - watch_flags
+    - missing_statements
+  builds_on:
+  - uc-039-irr
+  - uc-049-feedrag
+  - uc-053-watchlist
+  - uc3-statements-inbox
+  layer: 8
+  needs_new:
+  - recipe:manager_score
+  pain_points:
+  - INT-BENCH
+  - PP-05
+  - INT-PAY
+  kpis:
+  - K15
+  - K16
+  - K17
+  - K18
+- id: uc-077-deals
+  order: 77
+  status: proposed
+  title: Pipeline of deals under review
+  domain: Invest
+  owner: investment_analyst
+  involved:
+  - cio
+  cadence: weekly
+  trigger: Every Monday
+  decision_served: Where is each deal we are looking at, and what is stuck?
+  question: Which deals to move forward or drop
+  kind: watch
+  centre: Action
+  inputs:
+  - email
+  - fund teaser pdf
+  - meeting notes md
+  figures:
+  - id: deal_stage
+    name: Deals by stage and age
+    formula: Count and days in stage per deal
+    answer_key: 'Generator: universe deal table'
+  action: Analyst updates; CIO decides
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - consume.answer-question
+    figures:
+    - mandate_fit
+  builds_on:
+  - uc-034-prospect
+  layer: 6
+  needs_new:
+  - table:deal_pipeline
+  pain_points:
+  - INT-OPS
+  kpis:
+  - K03
+- id: uc-078-redemption
+  order: 78
+  status: proposed
+  title: Redeem from a hedge fund within notice and lock-up
+  domain: Invest
+  owner: ops_lead
+  involved:
+  - cio
+  - cfo
+  cadence: event
+  trigger: The CIO decides to reduce a hedge fund
+  decision_served: We want out of part of Kestrel Macro. By when must we give notice and when do we get the cash?
+  question: When the notice must be sent and the cash to expect
+  kind: act
+  centre: Action
+  inputs:
+  - manager statement pdf
+  - ddq pdf
+  figures:
+  - id: redemption_dates
+    name: Notice date and cash date
+    formula: Dealing date less notice days; cash after settlement days
+    answer_key: 'Generator: terms in universe fund table'
+  action: Operations drafts; CIO signs the notice
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - action.draft-message
+    - action.route-owner
+    figures:
+    - cash_by_entity
+    - calls_due
+    - allocation_pct
+  builds_on:
+  - uc6-liquidity
+  - uc-031-alloc
+  layer: 4
+  needs_new:
+  - table:fund_terms
+  pain_points:
+  - INT-LIQ
+  - PP-02
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-079-rebalance
+  order: 79
+  status: proposed
+  title: Rebalancing proposal
+  domain: Invest
+  owner: cio
+  involved:
+  - risk_officer
+  - cfo
+  cadence: monthly
+  trigger: Drift is outside the band
+  decision_served: We are over in listed equity. What do we sell to be back in range?
+  question: Which holdings to sell or buy and how much
+  kind: act
+  centre: Action
+  inputs:
+  - allocation policy pdf
+  - administrator export xlsx
+  figures:
+  - id: rebalance_trades
+    name: Amounts to trade to reach target
+    formula: Target value less current value by class
+    answer_key: 'Generator: universe allocation and targets'
+  action: CIO approves; trading desk executes
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - action.size-impact
+    - action.suggest-next-step
+    - action.route-owner
+    figures:
+    - drift_vs_target
+    - allocation_pct
+  builds_on:
+  - uc-032-driftrep
+  - uc-031-alloc
+  layer: 5
+  needs_new: []
+  pain_points:
+  - INT-RISK
+  - INT-GOV
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-080-vintage
+  order: 80
+  status: proposed
+  title: Spread of private commitments by year
+  domain: Invest
+  owner: risk_officer
+  involved:
+  - cio
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How much have we committed in each vintage year?
+  question: Whether commitments are too bunched in one year
+  kind: answer
+  centre: Consume
+  inputs:
+  - commitments register xlsx
+  figures:
+  - id: vintage_split
+    name: Commitments by vintage year
+    formula: Commitment amount by commitment date year
+    answer_key: 'Generator: universe commitment dates'
+  action: Risk Officer shows the CIO
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - consume.answer-question
+    figures:
+    - uncalled_total
+    - allocation_pct
+  builds_on:
+  - uc6-uncalled
+  - uc-031-alloc
+  layer: 4
+  needs_new: []
+  pain_points:
+  - INT-RISK
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-081-payroll
+  order: 81
+  status: proposed
+  title: Household and office payroll
+  domain: Family and people
+  owner: hr_admin
+  involved:
+  - cfo
+  cadence: monthly
+  trigger: Payroll date approaches
+  decision_served: Is payroll ready to approve and does the cash cover it?
+  question: Whether to release the pay file
+  kind: act
+  centre: Action
+  inputs:
+  - payroll register xlsx
+  - bank statement xlsx
+  figures:
+  - id: payroll_total
+    name: Payroll total against last month
+    formula: Sum of net pay and employer costs; change from last month
+    answer_key: 'Generator: universe staff table; sums by month'
+  action: HR prepares; CFO approves; Operations pays
+  signs: cfo
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - payment_batch
+  builds_on:
+  - uc-008-payrun
+  layer: 6
+  needs_new:
+  - table:staff_payroll
+  - recipe:payroll_total
+  pain_points:
+  - INT-PAY
+  - INT-GOV
+  kpis:
+  - K16
+  - K18
+- id: uc-082-covergap
+  order: 82
+  status: proposed
+  title: Insurance cover against what we own
+  domain: Family and people
+  owner: hr_admin
+  involved:
+  - fund_accountant
+  - principal
+  cadence: yearly
+  trigger: Annual renewal
+  decision_served: Are our properties and art insured for what they are worth?
+  question: Whether to raise or lower cover
+  kind: answer
+  centre: Consume
+  inputs:
+  - insurance schedule pdf
+  - property valuation pdf
+  figures:
+  - id: cover_gap
+    name: Insured value less asset value
+    formula: Sum insured less latest appraisal per asset
+    answer_key: 'Generator: universe policies and appraisals'
+  action: HR takes the gap to the Principal
+  signs: principal
+  reuses:
+    recipes:
+    - real_asset_value
+    skills:
+    - check.against-source
+    - consume.answer-question
+    figures:
+    - renewals_due
+    - real_asset_value
+  builds_on:
+  - uc-052-insurance
+  - uc-065-realassets
+  layer: 3
+  needs_new: []
+  pain_points:
+  - INT-RISK
+  - PP-08
+  kpis:
+  - K08
+  - K09
+  - K10
+  - K11
+- id: uc-083-taxcal
+  order: 83
+  status: proposed
+  title: Tax calendar
+  domain: Family and people
+  owner: fund_accountant
+  involved:
+  - cfo
+  - hr_admin
+  cadence: weekly
+  trigger: Every Monday
+  decision_served: Which tax filings and payments fall due in the next 60 days?
+  question: Which filings and payments are due and who prepares them
+  kind: watch
+  centre: Action
+  inputs:
+  - tax notice pdf
+  figures:
+  - id: tax_due
+    name: Tax items due in 60 days
+    formula: Items with due date inside 60 days, by entity
+    answer_key: 'Generator: universe tax calendar'
+  action: Fund Accountant confirms preparer; CFO approves payment
+  signs: cfo
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.route-owner
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:tax_obligations
+  - recipe:tax_due
+  pain_points:
+  - PP-08
+  - INT-GOV
+  kpis: []
+- id: uc-084-taxest
+  order: 84
+  status: proposed
+  title: Estimated tax for the year
+  domain: Family and people
+  owner: cfo
+  involved:
+  - fund_accountant
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How much tax do we expect to owe this year?
+  question: How much cash to set aside for tax
+  kind: answer
+  centre: Consume
+  inputs:
+  - trade export csv
+  - tax notice pdf
+  figures:
+  - id: tax_estimate
+    name: Estimated tax
+    formula: Realised gains and income times rate by entity, less credits
+    answer_key: 'Generator: generator rates and realised trades'
+  action: CFO sets cash aside
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - unrealised_gain
+    - income_forecast
+    - tax_due
+  builds_on:
+  - uc-067-unrl
+  - uc-068-incomef
+  - uc-083-taxcal
+  layer: 4
+  needs_new:
+  - recipe:tax_estimate
+  pain_points:
+  - PP-08
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-085-grants
+  order: 85
+  status: proposed
+  title: 'Philanthropy: budget used'
+  domain: Family and people
+  owner: principal
+  involved:
+  - cfo
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: How much of this year giving budget have we spent and pledged?
+  question: Whether to approve more grants this year
+  kind: answer
+  centre: Consume
+  inputs:
+  - grant ledger xlsx
+  figures:
+  - id: grants_used
+    name: Paid and pledged against budget
+    formula: Paid plus pledged grants over the annual budget
+    answer_key: 'Generator: universe grant table'
+  action: Principal decides new grants
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - consume.answer-question
+    figures:
+    - liquidity_ladder
+  builds_on:
+  - uc-054-ladder
+  layer: 6
+  needs_new:
+  - table:grants
+  - recipe:grants_used
+  pain_points:
+  - INT-LIQ
+  - INT-GOV
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-086-grantappr
+  order: 86
+  status: proposed
+  title: Approve a grant payment
+  domain: Family and people
+  owner: principal
+  involved:
+  - cfo
+  - hr_admin
+  cadence: event
+  trigger: A grant request arrives
+  decision_served: This charity asked for 50,000. Is it within the budget and have we checked it?
+  question: Whether to pay the grant
+  kind: act
+  centre: Action
+  inputs:
+  - grant request pdf
+  - email
+  figures:
+  - id: grant_check
+    name: Budget, charity check, cash
+    formula: Grant against remaining budget; registration date; cash cover
+    answer_key: 'Generator: grant table and cash'
+  action: Principal approves; Finance pays
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - action.size-impact
+    - action.route-owner
+    figures:
+    - grants_used
+    - liquidity_ladder
+  builds_on:
+  - uc-085-grants
+  - uc-054-ladder
+  layer: 7
+  needs_new:
+  - table:grants
+  pain_points:
+  - INT-GOV
+  - INT-LIQ
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-087-trustdist
+  order: 87
+  status: proposed
+  title: Trust distributions to beneficiaries
+  domain: Family and people
+  owner: fund_accountant
+  involved:
+  - principal
+  - cfo
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: What can the Family Trust pay each beneficiary this quarter under the deed?
+  question: Whether the trust pays what its deed allows
+  kind: act
+  centre: Action
+  inputs:
+  - trust deed pdf
+  - administrator cash csv
+  figures:
+  - id: trust_distribution_room
+    name: Distribution room per beneficiary
+    formula: Deed share times distributable income less paid
+    answer_key: 'Generator: universe trust deed terms and paid'
+  action: Principal signs; trustee pays
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.read-company-doc
+    - action.size-impact
+    - action.route-owner
+    figures:
+    - nav_rollforward
+  builds_on:
+  - uc-038-navroll
+  layer: 6
+  needs_new:
+  - table:succession_plan
+  - table:family_members
+  pain_points:
+  - INT-SCOPE
+  - INT-GOV
+  kpis: []
+- id: uc-088-estateliq
+  order: 88
+  status: proposed
+  title: Cash for an estate or transfer tax
+  domain: Family and people
+  owner: principal
+  involved:
+  - cfo
+  cadence: yearly
+  trigger: Year end
+  decision_served: If the worst happened, could we pay the tax without selling the property?
+  question: Whether the family could meet a transfer tax from liquid assets
+  kind: answer
+  centre: Consume
+  inputs:
+  - trust deed pdf
+  figures:
+  - id: estate_cash_need
+    name: Tax need against liquid assets
+    formula: Estimated tax on estate value against liquid assets after debt
+    answer_key: 'Generator: universe values and rate'
+  action: Principal reviews with the family advisers
+  signs: none
+  reuses:
+    recipes:
+    - net_worth_after_debt
+    - real_asset_value
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - net_worth_after_debt
+    - real_asset_value
+    - liquidity_ladder
+  builds_on:
+  - uc-017-liab
+  - uc-065-realassets
+  - uc-054-ladder
+  layer: 6
+  needs_new:
+  - recipe:estate_cash_need
+  pain_points:
+  - INT-LIQ
+  - INT-SCOPE
+  kpis:
+  - K01
+  - K04
+  - K05
+  - K06
+- id: uc-089-expapp
+  order: 89
+  status: proposed
+  title: Expense approval and sign-off rules
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - cfo
+  - principal
+  cadence: yearly
+  trigger: Annual review
+  decision_served: Who can approve what amount, and are we following it?
+  question: Which approval limits to set and who may approve
+  kind: process
+  centre: Knowledge
+  inputs:
+  - expense ledger xlsx
+  - policy pdf
+  figures:
+  - id: approval_exceptions
+    name: Payments over their approval limit
+    formula: Payments above the approver limit
+    answer_key: 'Generator: payment table with 2 planted over-limit'
+  action: HR updates the rules; Principal signs
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.map-decision-path
+    - intent.write-sop
+    - action.detect-exception
+    figures:
+    - payment_batch
+  builds_on:
+  - uc-008-payrun
+  layer: 6
+  needs_new: []
+  pain_points:
+  - INT-GOV
+  kpis: []
+- id: uc-090-offcost
+  order: 90
+  status: proposed
+  title: What the office costs
+  domain: Run the office
+  owner: cfo
+  involved:
+  - hr_admin
+  - principal
+  cadence: monthly
+  trigger: Month end
+  decision_served: What does it cost to run the office, by type, against budget?
+  question: Whether the office costs more than planned
+  kind: answer
+  centre: Consume
+  inputs:
+  - expense ledger xlsx
+  - payroll register xlsx
+  - invoice pdf
+  figures:
+  - id: office_cost
+    name: Cost by type against budget
+    formula: Sum of staff, vendors, fees, other, over budget
+    answer_key: 'Generator: universe expenses by category'
+  action: CFO reports to the Principal
+  signs: none
+  reuses:
+    recipes:
+    - payroll_total
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    figures:
+    - payroll_total
+    - renewals_vendors
+  builds_on:
+  - uc-081-payroll
+  - uc-030-vendors
+  layer: 7
+  needs_new:
+  - table:office_expenses
+  - recipe:office_cost
+  pain_points:
+  - INT-OPS
+  - INT-PAY
+  kpis:
+  - K03
+  - K16
+  - K18
+- id: uc-091-jml
+  order: 91
+  status: proposed
+  title: Joiner, mover, leaver access
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - head_of_data
+  cadence: event
+  trigger: A person joins, moves or leaves
+  decision_served: A new analyst starts Monday. What should they see?
+  question: Which access to give or remove
+  kind: act
+  centre: Action
+  inputs:
+  - access request email
+  figures:
+  - id: access_open
+    name: Access given but not approved
+    formula: Grants with no approver recorded
+    answer_key: 'Generator: planted 2 grants without approver'
+  action: HR requests; Head of Data grants; Principal approves sensitive access
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.set-access
+    - action.route-owner
+    - action.close-with-reason
+    figures: []
+  builds_on: []
+  layer: 1
+  needs_new:
+  - table:access_grants
+  pain_points:
+  - INT-GOV
+  - INT-DATAGOV
+  kpis:
+  - K19
+- id: uc-092-accessrev
+  order: 92
+  status: proposed
+  title: Quarterly access review
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - head_of_data
+  - principal
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: Who can see what, and does each person still need it?
+  question: Which access to remove
+  kind: act
+  centre: Action
+  inputs:
+  - access review csv
+  figures:
+  - id: stale_access
+    name: Access not used in 90 days
+    formula: Grants with no use in 90 days
+    answer_key: 'Generator: planted 3 unused grants'
+  action: Principal attests; Head of Data removes
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.set-access
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - access_open
+  builds_on:
+  - uc-091-jml
+  layer: 2
+  needs_new:
+  - table:access_grants
+  pain_points:
+  - INT-GOV
+  - INT-DATAGOV
+  kpis:
+  - K19
+- id: uc-093-onbmgr
+  order: 93
+  status: proposed
+  title: Onboard a new manager
+  domain: Run the office
+  owner: ops_lead
+  involved:
+  - risk_officer
+  - investment_analyst
+  - fund_accountant
+  cadence: event
+  trigger: A commitment is approved
+  decision_served: We just committed to a new fund. What do we need before the first call?
+  question: Whether every document and feed is in place before the first call
+  kind: act
+  centre: Action
+  inputs:
+  - kyc pack pdf
+  - subscription document pdf
+  figures:
+  - id: onboarding_items
+    name: Items complete and outstanding
+    formula: Checklist for contacts, KYC, bank details, statement schedule
+    answer_key: 'Generator: checklist plus planted 2 missing items'
+  action: Operations Lead signs off the manager as ready
+  signs: cio
+  reuses:
+    recipes: []
+    skills:
+    - intent.write-sop
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - mandate_fit
+    - ddq_compare
+  builds_on:
+  - uc-034-prospect
+  - uc-035-ddq
+  layer: 7
+  needs_new:
+  - table:kyc_records
+  - table:expected_statements_schedule
+  pain_points:
+  - INT-DOC
+  - INT-GOV
+  - PP-05
+  kpis:
+  - K14
+- id: uc-094-onbbank
+  order: 94
+  status: proposed
+  title: Open or change a bank or custody account
+  domain: Run the office
+  owner: cfo
+  involved:
+  - risk_officer
+  - ops_lead
+  cadence: event
+  trigger: A new account is needed
+  decision_served: We want to open an account at a new bank. What must be done and who signs?
+  question: Whether the account and its signatories are approved
+  kind: act
+  centre: Action
+  inputs:
+  - bank form pdf
+  - policy pdf
+  figures:
+  - id: account_setup
+    name: Setup steps and signatories
+    formula: Checklist; signatories against the signing policy
+    answer_key: 'Generator: planted 1 missing signatory'
+  action: CFO and Principal sign
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.write-sop
+    - action.route-owner
+    figures:
+    - cash_by_bank
+    - onboarding_items
+  builds_on:
+  - uc-010-bankexp
+  - uc-093-onbmgr
+  layer: 8
+  needs_new:
+  - table:bank_accounts
+  - table:kyc_records
+  pain_points:
+  - INT-GOV
+  - INT-SCOPE
+  kpis: []
+- id: uc-095-sopreview
+  order: 95
+  status: proposed
+  title: SOPs not reviewed in a year
+  domain: Run the office
+  owner: hr_admin
+  involved:
+  - head_of_data
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: Which of our written procedures are out of date?
+  question: Which procedures to review
+  kind: watch
+  centre: Action
+  inputs:
+  - sop md
+  figures:
+  - id: sop_age
+    name: SOPs by last review
+    formula: Age of last review; flagged above 365 days
+    answer_key: 'Generator: universe SOP table'
+  action: HR assigns the review
+  signs: none
+  reuses:
+    recipes:
+    - process_steps
+    skills:
+    - action.detect-exception
+    - action.route-owner
+    figures:
+    - process_steps
+  builds_on:
+  - uc9-sop
+  layer: 2
+  needs_new: []
+  pain_points:
+  - INT-OPS
+  - INT-DATAGOV
+  kpis:
+  - K03
+  - K19
+- id: uc-096-automation
+  order: 96
+  status: proposed
+  title: Which processes to automate next
+  domain: Run the office
+  owner: head_of_data
+  involved:
+  - hr_admin
+  - ops_lead
+  cadence: quarterly
+  trigger: Quarter end
+  decision_served: Which manual steps take the most time and fail the most?
+  question: Which process to automate
+  kind: answer
+  centre: Consume
+  inputs:
+  - sop md
+  - exception log
+  figures:
+  - id: automation_score
+    name: Time and failures per step
+    formula: Minutes per run times runs, plus failures, by SOP step
+    answer_key: 'Generator: step durations in the process map and failures in the exception log'
+  action: Head of Data proposes; Principal approves the build
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.draw-process-steps
+    - consume.build-board
+    figures:
+    - process_steps
+    - source_quality
+    - break_age
+  builds_on:
+  - uc9-sop
+  - uc-061-dqscore
+  - uc-059-breakage
+  layer: 6
+  needs_new:
+  - recipe:automation_score
+  pain_points:
+  - INT-OPS
+  - INT-DATAGOV
+  kpis:
+  - K03
+  - K19
+- id: uc-097-kycrefresh
+  order: 97
+  status: proposed
+  title: Know-your-client documents expiring
+  domain: Run the office
+  owner: risk_officer
+  involved:
+  - hr_admin
+  - ops_lead
+  cadence: yearly
+  trigger: A document is within 90 days of expiry
+  decision_served: Which KYC documents expire soon?
+  question: Which documents to refresh before the bank or manager freezes the account
+  kind: watch
+  centre: Action
+  inputs:
+  - kyc pack pdf
+  figures:
+  - id: kyc_expiry
+    name: Documents expiring in 90 days
+    formula: Expiry date minus today
+    answer_key: 'Generator: universe KYC table'
+  action: Risk Officer asks the owner to supply
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - action.detect-exception
+    - action.draft-message
+    figures:
+    - onboarding_items
+    - account_setup
+  builds_on:
+  - uc-093-onbmgr
+  - uc-094-onbbank
+  layer: 9
+  needs_new:
+  - table:kyc_records
+  pain_points:
+  - INT-GOV
+  - PP-08
+  kpis: []
+- id: uc-098-wordlist
+  order: 98
+  status: proposed
+  title: Keep the office words in step with the model
+  domain: Run the office
+  owner: head_of_data
+  involved:
+  - principal
+  cadence: monthly
+  trigger: A new term appears in a question or a document
+  decision_served: The team keeps saying dry powder. Is that the same as uncalled?
+  question: Whether to add a word to the language list
+  kind: process
+  centre: Knowledge
+  inputs:
+  - email
+  - meeting notes md
+  figures:
+  - id: terms_proposed
+    name: Terms proposed and accepted
+    formula: Count of new words proposed and accepted
+    answer_key: 'Generator: planted 4 terms, 2 already in the list'
+  action: Head of Data accepts or rejects
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - consume.understand-words
+    - knowledge.learn-word
+    figures:
+    - net_worth
+    - columns_changed
+  builds_on:
+  - uc10-pipeline
+  - uc-016-schemadrift
+  layer: 3
+  needs_new: []
+  pain_points:
+  - INT-DATAGOV
+  kpis:
+  - K19
+- id: uc-099-newfeed
+  order: 99
+  status: proposed
+  title: Bring in a new source file
+  domain: Operate and control
+  owner: head_of_data
+  involved:
+  - ops_clerk
+  cadence: event
+  trigger: A new kind of file is to be used
+  decision_served: We will get a new custodian file. How will it fit the model?
+  question: Whether the new feed is designed, mapped and safe to go live
+  kind: act
+  centre: Build
+  inputs:
+  - custody statement pdf
+  - custodian export csv
+  figures:
+  - id: feed_mapping
+    name: Columns mapped and in doubt
+    formula: Share of columns mapped with confidence
+    answer_key: 'Generator: planted file with 2 ambiguous columns'
+  action: Head of Data approves the mapping
+  signs: none
+  reuses:
+    recipes: []
+    skills:
+    - data.profile-file
+    - map.map-file
+    - map.explain-doubt
+    - model.propose-clean-table
+    figures:
+    - columns_changed
+    - source_quality
+  builds_on:
+  - uc-016-schemadrift
+  - uc-061-dqscore
+  layer: 5
+  needs_new: []
+  pain_points:
+  - INT-DOC
+  - INT-DATAGOV
+  kpis:
+  - K14
+  - K19
+- id: uc-100-famaccess
+  order: 100
+  status: proposed
+  title: What each family member can see
+  domain: Family and people
+  owner: hr_admin
+  involved:
+  - principal
+  - head_of_data
+  cadence: event
+  trigger: A family member is added to reports
+  decision_served: Our daughter wants to see her trust. What should she see?
+  question: What each family member may see
+  kind: act
+  centre: Action
+  inputs:
+  - access request email
+  figures:
+  - id: member_access
+    name: Access per family member
+    formula: Reports and entities shown against the policy
+    answer_key: 'Generator: member table with planted 1 over-grant'
+  action: Principal approves
+  signs: principal
+  reuses:
+    recipes: []
+    skills:
+    - intent.set-access
+    - action.route-owner
+    figures:
+    - stale_access
+    - allowance_due
+    - board_summary
+  builds_on:
+  - uc-092-accessrev
+  - uc-015-allowances
+  - uc-074-boardpack
+  layer: 8
+  needs_new:
+  - table:family_members
+  - table:access_grants
+  pain_points:
+  - INT-GOV
+  - INT-DATAGOV
+  kpis:
+  - K19
