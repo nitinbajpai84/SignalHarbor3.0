@@ -6,13 +6,13 @@ import KnowledgePage from "../KnowledgePage";
 import * as k from "./api";
 import { dependencies } from "./people";
 import { flowLinks } from "./kinds";
-import { forceLayout } from "./Network";
+import { forceLayout, placeLabels } from "./Network";
 import { pathOf } from "./Lineage";
 
 vi.mock("../../Frame", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("../../../api/client", () => ({ getCompany: vi.fn() }));
 vi.mock("./api", () => ({ getKnowledge: vi.fn() }));
-const made = vi.hoisted(() => ({ calls: [] as unknown[], fail: false }));
+const made = vi.hoisted(() => ({ calls: [] as unknown[], fail: false, cam: [] as unknown[][], nodes: [] as { id: string }[] }));
 vi.mock("3d-force-graph", () => ({
   default: class {
     private self: unknown;
@@ -22,7 +22,12 @@ vi.mock("3d-force-graph", () => ({
       const stub: Record<string, unknown> = {
         controls: () => ({ autoRotate: false, autoRotateSpeed: 0, addEventListener: () => undefined }), _destructor: () => undefined,
       };
-      this.self = new Proxy(stub, { get: (t, p) => (p in t ? t[p as string] : (...a: unknown[]) => { if (p === "graphData") made.calls.push({ graphData: a[0] }); return this.self; }) });
+      this.self = new Proxy(stub, { get: (t, p) => (p in t ? t[p as string] : (...a: unknown[]) => {
+        if (p === "graphData" && !a.length) return { nodes: made.nodes.map((n) => ({ ...n, x: 10, y: 20, z: 30 })) };
+        if (p === "graphData") { made.calls.push({ graphData: a[0] }); made.nodes = (a[0] as { nodes: { id: string }[] }).nodes; }
+        if (p === "cameraPosition") made.cam.push(a);
+        return this.self;
+      }) });
       return this.self as this;
     }
   },
@@ -63,7 +68,7 @@ const data = (): k.Knowledge => ({
 });
 const phone = (on: boolean) => Object.defineProperty(window, "matchMedia", { configurable: true, writable: true, value: (q: string) => ({ matches: on && q.includes("max-width"), addEventListener: () => undefined, removeEventListener: () => undefined }) });
 beforeEach(() => {
-  vi.resetAllMocks(); made.calls.length = 0; made.fail = false; phone(false);
+  vi.resetAllMocks(); made.calls.length = 0; made.cam.length = 0; made.nodes = []; made.fail = false; phone(false);
   vi.mocked(client.getCompany).mockResolvedValue({ company_id: "evergreen", name: "Evergreen", industry: "" });
   m.getKnowledge.mockResolvedValue(data());
 });
@@ -97,6 +102,33 @@ test("the Atlas loads the 3D library lazily, legend toggles hide a kind, and a d
   expect(within(panel).getByText("Capital calls uses Cash")).toBeInTheDocument();
   fireEvent.click(within(panel).getByRole("button", { name: "Cash by entity" }));  // the chain can be followed
   expect(within(screen.getByRole("complementary", { name: "Selected" })).getByRole("heading", { name: "Cash by entity" })).toBeInTheDocument();
+});
+
+test("the camera flies to a figure picked from the search or the side panel; reduced motion jumps there", async () => {
+  await open();
+  await waitFor(() => expect(made.nodes.length).toBe(11));
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search knowledge" }), { target: { value: "cash" } });
+  fireEvent.click(screen.getByRole("button", { name: "Figure: Cash" }));
+  await waitFor(() => expect(made.cam.at(-1)?.[1]).toMatchObject({ id: "figure:cash" }));
+  expect(made.cam.at(-1)?.[2]).toBe(900);
+  fireEvent.click(within(screen.getByRole("complementary", { name: "Selected" })).getByRole("button", { name: "Cash by entity" }));
+  await waitFor(() => expect(made.cam.at(-1)?.[1]).toMatchObject({ id: "recipe:cash" }));
+});
+
+test("with reduced motion the camera jumps instead of flying", async () => {
+  Object.defineProperty(window, "matchMedia", { configurable: true, writable: true, value: (q: string) => ({ matches: q.includes("reduce"), addEventListener: () => undefined, removeEventListener: () => undefined }) });
+  await open();
+  await waitFor(() => expect(made.nodes.length).toBe(11));
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search knowledge" }), { target: { value: "cash" } });
+  fireEvent.click(screen.getByRole("button", { name: "Figure: Cash" }));
+  await waitFor(() => expect(made.cam.at(-1)?.[2]).toBe(0));
+});
+
+test("Network cluster names never sit on one another, even when the clusters pile up", () => {
+  const nodes = data().nodes, pos = new Map(nodes.map((n) => [n.id, { id: n.id, x: 500, y: 300, r: 6 }]));
+  const ls = placeLabels(nodes, pos);
+  expect(ls.length).toBe(new Set(nodes.map((n) => n.kind)).size);
+  for (const a of ls) for (const b of ls) if (a !== b) expect(Math.abs(a.y - b.y) >= 15 || a.x !== b.x).toBe(true);
 });
 
 test("without WebGL the Atlas falls back to the flat network", async () => {

@@ -27,11 +27,26 @@ export function forceLayout(nodes: KNode[], edges: KEdge[]): { pos: Map<string, 
   return { pos: new Map(sim.map((d) => [d.id, { id: d.id, x: Math.max(14, Math.min(W - 14, d.x)), y: Math.max(14, Math.min(H - 14, d.y)), r: d.r }])), centres };
 }
 
+/** Cluster names above each cluster's own dots; a name that would sit on an earlier one moves a line up or down, nearest clear line first (one pass, in kind order). */
+export function placeLabels(nodes: KNode[], pos: Map<string, P>): { kind: Kind; x: number; y: number }[] {
+  const out: { kind: Kind; x: number; y: number; w: number }[] = [];
+  for (const k of KINDS) {
+    const ps = nodes.filter((n) => n.kind === k).map((n) => pos.get(n.id)).filter((p): p is P => !!p);
+    if (!ps.length) continue;
+    const w = KIND_LABEL[k].length * 8.5 + 8, x = Math.max(w / 2, Math.min(W - w / 2, ps.reduce((s, p) => s + p.x, 0) / ps.length));
+    const y0 = Math.max(14, Math.min(...ps.map((p) => p.y - p.r)) - 6);
+    const clear = (y: number) => y >= 12 && y <= H - 4 && !out.some((o) => Math.abs(o.x - x) < (o.w + w) / 2 && Math.abs(o.y - y) < 15);
+    const y = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -6, 6].map((i) => y0 + i * 15).find(clear) ?? y0;
+    out.push({ kind: k, x, y, w });
+  }
+  return out;
+}
+
 interface Props { nodes: KNode[]; edges: KEdge[]; query: string; selected: string | null; onSelect: (id: string) => void; legend?: boolean }
 
 /** View 1, Network: a map clustered by kind. Hover a dot to light its neighbours; click to focus it. */
 export default function Network({ nodes, edges, query, selected, onSelect, legend = true }: Props) {
-  const { pos, centres } = useMemo(() => forceLayout(nodes, edges), [nodes, edges]);
+  const { pos, labels } = useMemo(() => { const l = forceLayout(nodes, edges); return { pos: l.pos, labels: placeLabels(nodes, l.pos) }; }, [nodes, edges]);
   const [hover, setHover] = useState<string | null>(null);
   const focus = hover ?? selected;
   const lit = useMemo(() => (focus ? neighbours(edges, focus) : null), [edges, focus]);
@@ -41,7 +56,6 @@ export default function Network({ nodes, edges, query, selected, onSelect, legen
   return (
     <div className="kg-scroll">
       <svg className="kg-net" viewBox={`0 0 ${W} ${H}`} role="group" aria-label="Network map">
-        {[...centres].map(([k, c]) => <text key={k} x={c.x} y={c.y - 46} textAnchor="middle" fontSize="12" className="kg-cluster">{KIND_LABEL[k]}</text>)}
         {edges.map((e, i) => {
           const a = pos.get(e.from), b = pos.get(e.to);
           if (!a || !b) return null;
@@ -62,6 +76,7 @@ export default function Network({ nodes, edges, query, selected, onSelect, legen
             </g>
           );
         })}
+        {labels.map((l) => <text key={l.kind} x={l.x} y={l.y} textAnchor="middle" fontSize="12" className="kg-cluster" style={{ stroke: "var(--card)" }} strokeWidth={3} paintOrder="stroke" pointerEvents="none">{KIND_LABEL[l.kind]}</text>)}
       </svg>
       {legend && <Legend nodes={nodes} />}
     </div>

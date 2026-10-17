@@ -595,6 +595,22 @@ def coverage(plane, members: set[str]) -> str:
     return best
 
 
+CODE = re.compile(r"[^\s]*[\d_\-/.:#][^\s]*|[A-Z0-9]{2,}")  # no space and a digit or separator (EG-HOLD, FX-0007, a uuid), or all capitals (SGD)
+
+
+def words_of(v, name=None) -> set[str]:
+    """The words a member is known by: its name's, and its own when it is itself a name. A code or id has no words: "hold" in "we hold SGD" is not
+    EG-HOLD (a code only matches whole, see named_in)."""
+    return (set() if v is None or CODE.fullmatch(str(v)) else _tokens(v)) | (_tokens(name) if name else set())
+
+
+def named_in(v, name, q: set[str], text: str) -> bool:
+    """The question names this member: a word of its name (stop words aside: "all" is not "All funds"), or the whole code ("EG-HOLD", "SGD") standing on its
+    own in the question."""
+    whole = bool(v) and bool(CODE.fullmatch(str(v))) and not re.fullmatch(r"[0-9a-f-]{36}", str(v)) and bool(re.search(r"(?<![a-z0-9])" + re.escape(str(v).lower()) + r"(?![a-z0-9])", text.lower()))
+    return bool(whole or (words_of(v, name) & q) - GENERIC)
+
+
 def match_values(values: list[str], names: dict[str, str], q: set[str], text: str = "") -> list[str]:
     """The values of a dimension the question names (the value's own words or its name's); [] when it names none or all alike. A value whose whole
     name is in the question's own words ("Fund A") wins over a partial match: a one-letter name is no word."""
@@ -603,8 +619,8 @@ def match_values(values: list[str], names: dict[str, str], q: set[str], text: st
         best = 0.0
         if any(c and re.search(r"(?<![a-z0-9])" + re.escape(str(c).lower()) + r"(?![a-z0-9])", text.lower()) for c in (None if re.fullmatch(r"[0-9a-f-]{36}", v) else v, names.get(v))):
             best = 2.0
-        for c in (None if re.fullmatch(r"[0-9a-f-]{36}", v) else v, names.get(v)):
-            t = _tokens(c) if c else set()
+        for c in (v, names.get(v)):
+            t = words_of(c) if c else set()
             if t and (t & q) - GENERIC:
                 best = max(best, len(t & q) / len(t))
         if best >= .5:
@@ -1070,7 +1086,7 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         texts = [c for c, ty in cols.items() if ty.startswith(("varchar", "text", "char")) and c not in META and not c.endswith("_id") and not c.startswith("run")]
         _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
         for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
-            hit = [x for x in rows if x.get(c) is not None and (_tokens(f"{x[c]} {names.get(str(x[c]), '')}") & q) - GENERIC]
+            hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
             rows = hit or rows
         money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META and not RATE_COL.search(c)]  # never a rate
 

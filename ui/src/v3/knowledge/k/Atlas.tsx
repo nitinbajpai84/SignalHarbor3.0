@@ -6,7 +6,7 @@ import Network from "./Network";
 
 /** The few calls this view makes on 3d-force-graph; the library itself is loaded only when the Atlas opens. */
 interface G3 {
-  graphData(d: { nodes: A3[]; links: L3[] }): G3; nodeColor(f: (n: A3) => string): G3; nodeVal(f: (n: A3) => number): G3; nodeLabel(f: (n: A3) => string): G3; nodeOpacity(o: number): G3;
+  graphData(d: { nodes: A3[]; links: L3[] }): G3; graphData(): { nodes: A3[] }; nodeColor(f: (n: A3) => string): G3; nodeVal(f: (n: A3) => number): G3; nodeLabel(f: (n: A3) => string): G3; nodeOpacity(o: number): G3;
   nodeResolution(r: number): G3; linkColor(f: (l: L3) => string): G3; linkOpacity(o: number): G3; linkWidth(f: (l: L3) => number): G3; linkDirectionalParticles(f: (l: L3) => number): G3;
   linkDirectionalParticleWidth(w: number): G3; onNodeClick(f: (n: A3) => void): G3; onBackgroundClick(f: () => void): G3; backgroundColor(c: string): G3; showNavInfo(b: boolean): G3;
   width(w: number): G3; height(h: number): G3; warmupTicks(n: number): G3; cooldownTicks(n: number): G3; cameraPosition(p: { x: number; y: number; z: number }, look?: { x?: number; y?: number; z?: number }, ms?: number): G3;
@@ -22,7 +22,7 @@ interface Props { nodes: KNode[]; edges: KEdge[]; company: string; query: string
 export default function Atlas({ nodes, edges, company, query, selected, phone, onSelect }: Props) {
   const [off, setOff] = useState<Set<Kind>>(new Set());
   const [mode, setMode] = useState<"loading" | "3d" | "flat">(phone ? "flat" : "loading");
-  const stage = useRef<HTMLDivElement>(null), g = useRef<G3 | null>(null), sel = useRef<string | null>(selected), pick = useRef(onSelect), near = useRef<Set<string> | null>(null);
+  const stage = useRef<HTMLDivElement>(null), g = useRef<G3 | null>(null), calmRef = useRef(false), sel = useRef<string | null>(selected), pick = useRef(onSelect), near = useRef<Set<string> | null>(null);
   sel.current = selected; pick.current = onSelect;
   near.current = useMemo(() => (selected ? neighbours(edges, selected) : null), [edges, selected]);
   const shown = useMemo(() => nodes.filter((n) => !off.has(n.kind)), [nodes, off]);
@@ -46,6 +46,7 @@ export default function Atlas({ nodes, edges, company, query, selected, phone, o
         if (dead) return;
         const css = (v: string) => getComputedStyle(el).getPropertyValue(v).trim() || "#888";
         const calm = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        calmRef.current = calm;
         const lit = (id: string) => !near.current || near.current.has(id);
         const graph = new Force(el, { controlType: "orbit" })
           .nodeColor((n) => (lit(n.id) ? css(KIND_VAR[n.kind]) : css("--line-2"))).nodeVal((n) => (n.id === sel.current ? 14 : 1.5 + Math.min(8, n.deg * 0.5))).nodeLabel((n) => `${KIND_ONE[n.kind]}: ${n.label}`)
@@ -53,11 +54,7 @@ export default function Atlas({ nodes, edges, company, query, selected, phone, o
           .linkColor((l) => (sel.current && (l.from === sel.current || l.to === sel.current) ? css("--act") : css("--line-2"))).linkOpacity(0.4)
           .linkWidth((l) => (sel.current && (l.from === sel.current || l.to === sel.current) ? 1.4 : 0.2))
           .linkDirectionalParticles((l) => (!calm && sel.current && (l.from === sel.current || l.to === sel.current) ? 3 : 0)).linkDirectionalParticleWidth(1.6)
-          .onNodeClick((n) => {
-            pick.current(n.id);
-            const r = 1 + 110 / Math.max(1, Math.hypot(n.x ?? 0, n.y ?? 0, n.z ?? 0));
-            graph.cameraPosition({ x: (n.x ?? 0) * r, y: (n.y ?? 0) * r, z: (n.z ?? 0) * r }, n, calm ? 0 : 900);
-          })
+          .onNodeClick((n) => pick.current(n.id))  // the camera follows the selection, below
           .onEngineStop(() => { if (!sel.current) graph.zoomToFit(calm ? 0 : 600, 30); }).onBackgroundClick(() => pick.current(null)).warmupTicks(calm ? 120 : 40).cooldownTicks(calm ? 0 : 200);
         const ctl = graph.controls();
         ctl.autoRotate = !calm; ctl.autoRotateSpeed = 0.5;
@@ -78,7 +75,15 @@ export default function Atlas({ nodes, edges, company, query, selected, phone, o
   }, [phone]);
 
   useEffect(() => { if (mode === "3d") g.current?.graphData(JSON.parse(JSON.stringify(data)) as typeof data); }, [mode, data]);
-  useEffect(() => { if (mode === "3d") g.current?.refresh(); }, [mode, selected]);
+  useEffect(() => {  // whatever picked the figure (a click, the search, the side panel), the camera flies to it; reduced motion jumps there
+    const graph = g.current;
+    if (mode !== "3d" || !graph) return;
+    graph.refresh();
+    const ns = graph.graphData().nodes, n = Array.isArray(ns) ? ns.find((d) => d.id === selected) : undefined;
+    if (!n || n.x === undefined) return;
+    const r = 1 + 110 / Math.max(1, Math.hypot(n.x ?? 0, n.y ?? 0, n.z ?? 0));
+    graph.cameraPosition({ x: (n.x ?? 0) * r, y: (n.y ?? 0) * r, z: (n.z ?? 0) * r }, n, calmRef.current ? 0 : 900);
+  }, [mode, selected]);
 
   const q = query.trim().toLowerCase();
   const hits = q ? nodes.filter((n) => n.label.toLowerCase().includes(q)).slice(0, 6) : [];

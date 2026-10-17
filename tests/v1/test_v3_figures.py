@@ -78,6 +78,20 @@ def test_the_question_names_the_month_the_figure_and_the_dimension():
     assert F.match_values(list(names), names, F._tokens("What are the Evergreen portfolios worth")) == []  # all alike: no filter
 
 
+
+def test_question_words_never_match_fragments_of_codes():
+    """uc-006: "we hold SGD" kept only Evergreen Holdings' conversions, because "hold" matched the code EG-HOLD. Words match names whole; a code only whole."""
+    names = {"EG-HOLD": "Evergreen Holdings", "EG-TRUST": "Evergreen Family Trust", "EG-B": "Entity B"}
+    ask = "We hold SGD and need USD for the call. How much do we convert?"
+    q = F._tokens(ask)
+    assert F.match_values(list(names), names, q, ask) == []
+    assert not any(F.named_in(c, n, q, ask) for c, n in names.items())
+    assert not F.named_in("FX-0007-HOLD", None, q, ask)
+    assert F.named_in("EG-HOLD", None, F._tokens("Can EG-HOLD pay?"), "Can EG-HOLD pay?")  # the whole code
+    assert F.named_in("EG-HOLD", "Evergreen Holdings", F._tokens("Can Holdings pay?"), "Can Holdings pay?")  # the name's word
+    assert not F.named_in("All funds", None, F._tokens("unfunded across all funds"), "unfunded across all funds")  # a stop word names nothing
+    assert F.named_in("SGD", None, q, ask) and F.named_in("Cedarpoint Ventures III", None, F._tokens("the Cedarpoint call"), "the Cedarpoint call")
+
 def _ready(plane, rows):
     with wh.connect(plane) as con:
         con.execute("create table gold_p_position_snapshots_monthly_by_portfolio (month date, portfolio varchar, net_worth decimal(18,2))")
