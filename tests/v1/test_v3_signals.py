@@ -190,3 +190,88 @@ def test_routes_desk_and_permissions(env):
     assert sam.post(f"/api/v3/signals/{c1['id']}/act", json={"choice": "Log it"}).status_code == 200
     assert [r["signal"] for r in sam.get("/api/v3/signals/fired?status=open").json()] == ["uc01-call-fits"]  # acting on a card starts the next
     assert sam.post("/api/v3/signals/sg-nope/act", json={}).status_code == 404
+
+
+# ---- the four wiring gaps -------------------------------------------------------------------------------------------------------------
+
+def _office_signal(plane, name, text):
+    d = SG._dir(plane) / "office"
+    d.mkdir(exist_ok=True)
+    (d / f"{name}.yaml").write_text(text, encoding="utf-8")
+
+
+def test_a_figure_input_fires_from_the_verified_figures_rows(env):
+    from sh_platform.v1 import v3_figstore as FS, wh
+    _, plane = env
+    with wh.connect(plane) as con:  # the figure's ready table on the live warehouse
+        con.execute("create table gold_cash_ready (entity varchar, cash decimal(18,2))")
+        con.execute("insert into gold_cash_ready values ('Evergreen Holdings', 90000), ('Other Co', 5)")
+    H.save(plane, {"id": "th-1", "figures": [{"kpi": "Cash balance", "table": "gold_cash_ready"}]})
+    FS._save(plane, {"id": "fig-cash-balance", "name": "Cash balance", "current_v": 1, "used_by": [{"thread": "th-1"}], "definition": "", "grain": [],
+                     "versions": [{"v": 1, "status": "verified", "approved_by": "Helen", "runs": [{"run_id": "run-9", "ok": True, "rows": 2}]},
+                                  {"v": 2, "status": "held", "runs": []}]})
+    _office_signal(plane, "low-cash", "id: low-cash\ntitle: Cash is low\ntrigger: {on: run, chain: M}\ninputs:\n"
+                   "  - {kind: figure, id: fig-cash-balance, as: cash, by: {entity: Evergreen Holdings}}\n"
+                   "condition: cash.cash < 100000\nsubject: low cash\nseverity: needs\nroute_to: ops_lead\naction: {verb: see}\nmessage: 'Cash is {cash.cash:,.0f}'\n")
+    got = SG.evaluate(plane, {"trigger": "run", "chain": "M"})
+    assert [r["signal"] for r in got["fired"]] == ["low-cash"] and "90,000" in got["fired"][0]["message"], got
+    rc = got["fired"][0]["evidence"][0]
+    assert rc["v"] == 1 and rc["run_id"] == "run-9" and rc["table"] == "gold_cash_ready" and rc["status"] == "verified"  # the held v2 is not used
+
+
+def test_csv_and_eml_trigger_arrival_once(env):
+    _, plane = env
+    _office_signal(plane, "any-file", "id: any-file\ntitle: A file came\ntrigger: {on: file_arrived, kind: %s}\ncondition: 1 > 0\nsubject: '{file}'\n"
+                   "severity: info\nroute_to: ops_clerk\naction: {verb: see}\nmessage: x\n")
+    for kind in ("csv", "xlsx", "eml"):
+        _office_signal(plane, f"any-{kind}", f"id: any-{kind}\ntitle: A {kind} came\ntrigger: {{on: file_arrived, kind: {kind}}}\ncondition: 1 > 0\n"
+                       f"subject: 'a {kind}'\nseverity: info\nroute_to: ops_clerk\naction: {{verb: see}}\nmessage: x\n")
+    (SG._dir(plane) / "office" / "any-file.yaml").unlink()
+    H.drop(plane, "a.csv", b"x")
+    H.drop(plane, "b.eml", b"x")
+    H.drop(plane, "c.pdf", b"x")
+    (plane.path("v3") / "files.json").write_text('[{"name": "a.csv", "status": "recognised"}, {"name": "b.eml", "status": "recognised"}, {"name": "c.pdf", "status": "recognised"}]')
+    for n in ("a.csv", "b.eml", "b.eml", "c.pdf"):  # b.eml is marked loaded twice; the pdf has its own path
+        H.set_status(plane, n, "loaded")
+    H.set_status(plane, "a.csv", "loaded")
+    assert sorted(r["signal"] for r in SG.fired(plane)) == ["any-csv", "any-eml"]
+    assert SG.on_file(plane, "d.xlsx")["fired"][0]["signal"] == "any-xlsx"
+    assert SG.on_file(plane, "d.xlsx")["fired"] == []
+
+
+def test_a_due_date_fires_on_the_daily_tick(env):
+    import json
+    _, plane = env
+    _office_signal(plane, "overdue", "id: overdue\ntitle: Call is due\ntrigger: {on: date_passed, kind: capital_call_notice}\ninputs:\n"
+                   "  - {kind: doc, fields: [fund, due_date, days_past]}\ncondition: doc.days_past >= 0\nsubject: '{doc.fund} due {doc.due_date}'\n"
+                   "severity: needs\nroute_to: ops_lead\naction: {verb: see}\nmessage: '{doc.fund} was due {doc.due_date}'\n")
+    ex = plane.path("extractions")
+    ex.mkdir(parents=True, exist_ok=True)
+    for i, due in enumerate(("2026-10-23", "2026-12-01")):
+        (ex / f"doc-{i}.json").write_text(json.dumps({"file": f"n{i}.pdf", "type_name": "Capital call notice", "status": "ok",
+                                                      "values": {"Fund": field(FUND), "Due date": field(due)}}), encoding="utf-8")
+    assert SG.tick(plane, "2026-10-20")["fired"] == []
+    got = SG.tick(plane, "2026-10-24")["fired"]
+    assert [r["signal"] for r in got] == ["overdue"] and FUND in got[0]["message"] and "2026-10-23" in got[0]["message"]
+    assert SG.tick(plane, "2026-10-25")["fired"] == []  # once
+
+
+def test_prepare_payment_is_refused_while_held_and_allowed_after_the_call_back(env):
+    _, plane = env
+    arrive(plane)
+    with pytest.raises(ValueError, match="held"):
+        SG.prepare_payment(plane, FUND, "Helen Foo")
+    assert SG.prepare_payment(plane, "Other Fund", "Helen Foo")["status"] == "prepared"  # another fund is not held
+    SG.act(plane, card(plane, "uc01-bank-changed")["id"], "Grace Ong", "Record the call-back", "Confirmed by call-back, 13 Oct")
+    p = SG.prepare_payment(plane, FUND, "Helen Foo", "sg-1")
+    assert p["status"] == "prepared" and "waiting for release" in p["note"]
+
+
+def test_approving_the_shortfall_leads_to_prepare_payment_and_the_hold_still_refuses(env):
+    _, plane = env
+    arrive(plane)
+    SG.act(plane, card(plane, "uc01-call-arrives")["id"], "Sam Lee", "Log it")
+    SG.act(plane, card(plane, "uc01-call-fits")["id"], "Helen Foo", "Record it")
+    c3 = card(plane, "uc01-cash-shortfall")
+    out = SG.act(plane, c3["id"], "Daniel Foo", "Approve")
+    assert out["payment"]["status"] == "refused" and "held" in out["payment"]["why"] and out["status"] == "acted"

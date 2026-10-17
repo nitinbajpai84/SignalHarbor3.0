@@ -16,6 +16,6 @@ condition: short > 0
 subject: "{doc.fund} call {doc.call_no}"
 severity: needs
 route_to: cfo
-action: {verb: approve, options: [Approve, Change, Fund from another entity]}
+action: {verb: approve, options: [Approve, Change, Fund from another entity], then: {choice: Approve, do: prepare_payment}}
 message: "{doc.investor} is short {doc.currency} {short:,.0f} after the {buffer.amount:,.0f} buffer. It can cover this by converting about SGD {convert:,.0f} at {fx.rate}. Approve?"
 evidence: [cash, fx, buffer, doc.amount]

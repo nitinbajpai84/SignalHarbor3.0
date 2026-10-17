@@ -962,10 +962,18 @@ def read_files(plane) -> list[dict]:
 def set_status(plane, name, status) -> None:
     with LOCK:
         fs = read_files(plane)
+        first = False
         for f in fs:
             if f["name"] == name:
+                first = status == "loaded" and f["status"] != "loaded"
                 f["status"] = status
         _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
+    if first and not V.is_pdf(name):  # the common load point: a csv, xlsx or eml that loaded is a file arriving, once (a PDF does it with its layout, v3_pdf)
+        try:
+            from sh_platform.v1 import v3_signals as SG
+            SG.on_file(plane, name)
+        except Exception:  # noqa: BLE001 - a signal never breaks a load
+            log.warning("signals for %s failed", name, exc_info=True)
 
 
 def drop(plane, name: str, data: bytes) -> None:

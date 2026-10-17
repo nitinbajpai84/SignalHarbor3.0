@@ -64,7 +64,7 @@ Messages take `{name}` or `{name:,.0f}`.
 - Record per signal and office: `fired`, `acted` (hit), `dismissed` (miss), `open`, `hit_rate = acted / (acted + dismissed)`. A signal that keeps missing is a candidate to edit or switch off.
 
 ## Facts
-The condition reads facts, in this order: `signals.PROVIDER(plane, kind, ref, event)` if set; `event["facts"]`; the figure record's current version `value`
+The condition reads facts, in this order: `signals.PROVIDER(plane, kind, ref, event)` (default `figure_provider`: the latest verified version of the figure, its rows read from the ready table on the live warehouse; the receipt names figure, version, run and table); `event["facts"]`; the figure record's current version `value`
 (v3_figstore); the signed rule from `e3_rules.current`. The figure record does not hold values yet, so the chain steps that build a figure's ready table should
 pass them as `facts` (or set PROVIDER). That wiring is the next step.
 

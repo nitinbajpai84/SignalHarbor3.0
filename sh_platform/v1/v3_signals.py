@@ -30,7 +30,7 @@ LOCK = threading.RLock()
 TRIGGERS = {"file_arrived", "figure_changed", "date_passed", "schedule", "run", "action_done"}
 SEVERITY = {"info", "needs", "problem"}
 VERBS = {"log", "record", "approve", "call_back", "see"}
-PROVIDER = None  # optional hook (plane, kind, ref, event) -> {"value": ..., "receipt": {...}} | None, tried before the event's own facts
+PROVIDER = None  # hook (plane, kind, ref, event) -> {"value": ..., "receipt": {...}} | None, tried before the event's own facts; set to figure_provider below
 
 
 class Missing(Exception):
@@ -302,6 +302,35 @@ def _fact(plane, ev: dict, kind: str, ref: str):
     return None
 
 
+def figure_provider(plane, kind: str, ref: str, ev: dict):
+    """`figure:<id>` -> the rows of the figure's latest verified version, read from its ready table on the live warehouse (v3_figures' answer path:
+    cx_dash.run_sql). The receipt names the figure version, the run and the table. The signal's `by` then scopes the rows to its fund, entity or date."""
+    if kind != "figure":
+        return None
+    from sh_platform.v1 import cx_dash as CD, v3_figstore as FS, v3_harbor as H
+    rec = FS.read(plane, ref) or FS.read(plane, FS.fid(ref))
+    ok = [x for x in (rec or {}).get("versions", []) if x["status"] == "verified"]
+    if not ok:
+        return None
+    ver = max(ok, key=lambda x: x["v"])
+    for use in reversed(rec.get("used_by") or []):  # the newest thread that uses the figure and knows its ready table
+        try:
+            table = next((f.get("table") for f in H.load(plane, use["thread"]).get("figures") or [] if f.get("kpi") == rec["name"] and f.get("table")), None)
+        except (KeyError, OSError, ValueError):
+            continue
+        if table and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", table):
+            try:
+                _, rows, _ = CD.run_sql(plane, f'select * from "{table}"')
+            except Exception:  # noqa: BLE001 - no warehouse or no table yet is no value
+                return None
+            run = next((r.get("run_id") for r in reversed(ver.get("runs") or []) if r.get("ok")), None)
+            return {"value": rows, "receipt": {"figure": rec["id"], "v": ver["v"], "status": "verified", "run_id": run, "table": table, "approved_by": ver.get("approved_by")}}
+    return None
+
+
+PROVIDER = figure_provider
+
+
 def _key(v):
     return _norm_name(v) if isinstance(v, str) else num(v)
 
@@ -438,14 +467,65 @@ def on_document(plane, file: str, kind: str, values: dict) -> dict:
     return evaluate(plane, {"trigger": "file_arrived", "kind": kind, "file": file, "doc": {re.sub(r"[^a-z0-9]+", "_", k.lower()).strip("_"): v for k, v in values.items()}})
 
 
+def on_file(plane, file: str) -> dict:
+    """A file that is not a PDF finished loading (v3_harbor.set_status): csv, xlsx, eml ... arrive with their extension as `kind` and no document fields.
+    The PDF loader calls on_document with the layout instead."""
+    return evaluate(plane, {"trigger": "file_arrived", "kind": file.rsplit(".", 1)[-1].lower() if "." in file else "file", "file": file, "doc": {}})
+
+
 def on_run(plane, chain: str, thread: str | None = None) -> dict:
     """A chain (B, C or M) finished. Signals that read figures run here."""
     return evaluate(plane, {"trigger": "run", "chain": chain, "subject": f"{thread or ''} {now()[:10]}"})
 
 
+def _day(v):
+    try:
+        return date.fromisoformat(str(v)[:10])
+    except ValueError:
+        return None
+
+
+def dated_items(plane, today: str) -> list[dict]:
+    """What has a date on it today or earlier, from what exists: a `due` field of a document read (fund notices, capital call notices), the capital calls
+    of the capital_calls figure, and the statements the managers inbox expects and has not received. Each is {kind, file, doc: {..., days_past}, subject}."""
+    now_ = _day(today)
+    out = []
+
+    def add(kind, file, fields, field, v):
+        if (d := _day(v)) and d <= now_:
+            out.append({"kind": kind, "file": file, "subject": f"{file} {field} {d}", "doc": {**fields, field: str(d), "days_past": (now_ - d).days}})
+    slug = lambda t: re.sub(r"[^a-z0-9]+", "_", str(t).lower()).strip("_")  # noqa: E731
+    for p in sorted(plane.path("extractions").glob("*.json")) if plane.path("extractions").is_dir() else []:
+        try:
+            rec = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        vals = rec.get("values") or {}
+        if rec.get("status") == "ok":
+            for f in [f for f in vals if "due" in f.lower()]:
+                add(slug(rec.get("type_name") or "document"), rec.get("file") or p.stem, {slug(k): (v.get("value") if isinstance(v, dict) else v) for k, v in vals.items()}, slug(f),
+                    vals[f].get("value") if isinstance(vals[f], dict) else vals[f])
+    got = PROVIDER and PROVIDER(plane, "figure", "capital_calls", {})
+    for r in (got or {}).get("value") or []:
+        add("capital_call", f"{r.get('fund')} call {r.get('call_no')}", {k: v for k, v in r.items() if k != "due_date"}, "due_date", r.get("due_date"))
+    try:
+        from sh_platform.v1 import k5_managers as K5
+        from sh_platform.profile.view import Viewer
+        box = K5.inbox(plane, Viewer("Harbor", frozenset({"company_admin"}), False, None), now_)
+        for m in box.get("managers") or []:
+            for f in m.get("funds") or []:
+                if f.get("state") == "late":
+                    add("expected_statement", f"{f['fund_name']} statement {f['period_end']}", {"fund": f["fund_name"], "period_end": f["period_end"]}, "due_date", f.get("due"))
+    except Exception:  # noqa: BLE001 - no managers inbox yet is no expected statements
+        log.info("no expected statements to watch", exc_info=True)
+    return out
+
+
 def tick(plane, today: str | None = None, items: list[dict] | None = None) -> dict:
-    """The daily tick: schedule signals, then date_passed signals over `items` ([{subject, doc, facts}] from whatever watches dates)."""
+    """The daily tick: schedule signals, then date_passed signals over `items` (default: dated_items, from what exists)."""
     today = today or now()[:10]
+    if items is None:
+        items = dated_items(plane, today)
     res = evaluate(plane, {"trigger": "schedule", "every": "daily", "today": today, "subject": today})
     for it in items or []:
         r = evaluate(plane, {**it, "trigger": "date_passed", "today": today})
@@ -474,7 +554,30 @@ def act(plane, fired_id: str, by: str, choice: str | None = None, note: str = ""
         card.update(status="dismissed" if dismiss else "acted", by=by, done_at=now(), choice=choice, note=(note or "").strip())
         _put(plane, card)
     follow = {"fired": []} if dismiss else evaluate(plane, {**card["event"], "trigger": "action_done", "signal": card["signal"], "choice": choice})
-    return {**card, "next": [r["id"] for r in follow["fired"]]}
+    out = {**card, "next": [r["id"] for r in follow["fired"]]}
+    then = card["action"].get("then") or {}
+    if not dismiss and then.get("do") == "prepare_payment" and choice == then.get("choice"):  # an approve that leads to a payment being prepared
+        fund = ((card["event"].get("doc") or {}).get("fund") or {})
+        try:
+            out["payment"] = prepare_payment(plane, fund.get("value") if isinstance(fund, dict) else fund, by, card["id"], card["subject"])
+        except ValueError as e:  # held: the approval stands, the payment is refused with the hold's reason
+            out["payment"] = {"status": "refused", "why": str(e)}
+    return out
+
+
+def prepare_payment(plane, fund: str | None, by: str, card_id: str | None = None, subject: str = "") -> dict:
+    """Record the intent to pay: "payment prepared, waiting for release". Refused (ValueError, the hold's reason) while an open card holds prepare_payment
+    for the fund. It never moves money and never calls a bank: release is a person's act, outside Harbor."""
+    if hold := held(plane, "prepare_payment", fund):
+        raise ValueError(f"Payment is held: {hold[0]['message']} It lifts when {hold[0]['hold'].get('until') or 'the card is done'}.")
+    pid = "pay-" + hashlib.sha1(f"{fund}|{card_id}|{subject}".encode()).hexdigest()[:10]
+    with LOCK:
+        p = _dir(plane) / "payments.json"
+        from sh_platform.jsonfile import read_json_strict
+        d = read_json_strict(p, dict) if p.is_file() else {}
+        d.setdefault(pid, {"id": pid, "fund": fund, "subject": subject, "card": card_id, "by": by, "at": now(), "status": "prepared", "note": "Payment prepared, waiting for release"})
+        write_json_atomic(p, d)
+    return d[pid]
 
 
 def cards(plane) -> list[dict]:
