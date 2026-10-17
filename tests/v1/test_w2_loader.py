@@ -124,6 +124,7 @@ def test_nothing_in_the_office_folders_is_left_without_a_reader(office):
     NEW_KINDS = [k for k in NEW_KINDS if k not in ("custody_statements", "insurance_schedule", "property_valuations", "title_deeds")]  # read by v3_pack_readers_assets
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("expense_ledger", "office_budget", "payroll_drafts", "sops", "access_register", "kyc_register", "onboarding", "bank_forms", "family_access", "glossary", "break_register", "load_log", "inbox", "new_feed"))  # read by v3_pack_readers_controls
+    NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("tax_calendar", "tax_notices", "grant_ledger", "grant_requests", "trust_deed", "estate_planning", "fund_holdings", "deal_pipeline", "fund_documents", "market_data", "target_allocation"))  # read by v3_pack_readers_family and v3_pack_readers_invest
     kinds = {p.parts[-2] for p in OFFICE.glob("20??-??/*/*") if p.is_file()} - set(NEW_KINDS)
     assert kinds <= set(office.report), kinds - set(office.report)
     assert not [k for k, v in office.report.items() if "no reader for this kind" in v["not_loaded"] and k not in NEW_KINDS]
