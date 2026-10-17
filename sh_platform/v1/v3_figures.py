@@ -923,6 +923,8 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
     tabs = [live[g["name"]] for g in covering(k, gold) if g["name"] in live]
     ready = [t for t in tabs if t["rows"]]
+    if ready and (hit := _every_row(plane, text, pid, th, k)):  # r2: every row of the set, from the recipe's own lines
+        return hit
     if (asked := parse_when(text)) and asked[1] and any(_by_period(plane, t) for t in ready) and (rows := recipe_rows(plane, text, pid, th, [k], floor=1)):
         return rows  # r1 uc-029: a month named, over a table kept by month: the figure's own lines say it, for that month (not the flag's first row)
     run = next((s["run_id"] for s in reversed(th.get("steps") or []) if s.get("run_id")), None)
@@ -1086,9 +1088,21 @@ def _plain_sentence(name: str, r: dict, rows: list[dict], who, names: dict, mone
 
 
 RATE_COL = re.compile(r"rate|pct|percent|fixing|ratio|share|price")
+SET_Q = re.compile(r"\b(?:each|every|all|which|across|whether|per)\b", re.I)  # a question about a set of rows, not one latest figure
 
 
-def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1) -> dict | None:
+def _every_row(plane, text: str, pid: str, th: dict, k: dict) -> dict | None:
+    """r2: a question about every row ("each", "which", "across all funds", "whether to pay") is answered from the recipe's own answer lines over all
+    its rows, not from the latest date's rows alone (uc-007, uc-013, uc-023, uc-050). None when the question is about one figure, names a month, the
+    recipe has no such lines, or it reads the latest date (`latest`)."""
+    from sh_platform.v1 import v3_recipes as R
+    spec = [s for s in ((R.bound(k) or {}).get("answer") or []) if isinstance(s, dict)]
+    if not spec or any("latest" in s for s in spec) or not SET_Q.search(text) or parse_when(text):  # a month named: the month's own rows (_read)
+        return None
+    return recipe_rows(plane, text, pid, th, [k], floor=0, every=True)
+
+
+def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False) -> dict | None:
     """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
     `relevance`, at least `floor`, and within one of the best), the rows of their ready tables for what the question names. `answer` is a short
     sentence from each recipe's own `answer` lines (else the figure, its subject and its measure), in the pack's order; `rows` holds the figures behind
@@ -1119,7 +1133,7 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
                 hit = [x for x in rows if str(x.get(c))[5:7] == f"{asked[1]:02d}" and (not asked[0] or str(x.get(c))[:4] == str(asked[0]))]
                 rows = hit or rows
         else:
-            for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
+            for c in ([] if every else texts):  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds); a question about every row names none
                 hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
                 rows = hit or rows
         money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META and not RATE_COL.search(c)]  # never a rate
@@ -1127,6 +1141,8 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         def who(x, texts=texts):
             return " · ".join(names.get(str(x[c]), str(x[c])) for c in texts if x.get(c) not in (None, ""))
 
+        said_by = [x for x in rows if any(_holds(sp.get("if"), x) for sp in (r.get("answer") or []) if isinstance(sp, dict) and sp.get("if"))]
+        rows = said_by + [x for x in rows if not any(x is y for y in said_by)]  # the rows the answer names come first (a cap never drops them)
         for x in rows[:ROW_CAP]:
             vals = [f"{c.replace('_', ' ')} {v}" for c in cols if c not in texts and c not in META and c not in FLAGS and not c.endswith("_id")
                     and not c.startswith("run") and (v := _said(x.get(c), names, iso=True, money=c in money)) is not None]

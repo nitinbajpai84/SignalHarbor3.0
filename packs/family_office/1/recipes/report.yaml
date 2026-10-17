@@ -29,7 +29,7 @@ recipes:
 
   - id: change_since_report
     label: Change since the issued report
-    names: [change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value]
+    names: [change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value, amendment status, whether amended, valuation amended]
     words_all: [[change, changed, revision, revised, amended, amendment, restated], [since, issued, report, original, earlier, previous]]
     may_read: [valuation_observations, instruments]
     never_read: [commitments, cash_movements, transactions]
@@ -57,7 +57,7 @@ recipes:
   - id: time_weighted_return
     label: Time weighted return and active return
     cards: [42, 44]
-    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark]
+    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark, quarter return, year to date return, ytd return, benchmark return]
     may_read: [position_snapshots, transactions, market_observations, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements]
     why: A return is the change in value of what is held, less what was put in or taken out. It reads the position snapshots at each month end, the buys and sells that moved value into or out of the portfolio, and the index levels of the approved benchmark the office has linked to the portfolio (the signed rule benchmark_link). Commitments and cash calls are not returns.
@@ -395,6 +395,7 @@ recipes:
     label: Report sections ready to sign
     cards: [45]
     names: [report sections ready, sections ready to sign, report ready to sign, report sections ready to sign]
+    words_all: [[ready, readiness], [section, sections]]  # "which sections are ready" (w7)
     may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, market_observations]
     never_read: [commitments, cash_movements, transactions]
     why: A report section is ready when its figure agrees with the administrator and is not an estimate. It reads the issued report's fields, the administrator's snapshots and the FX fixing.
@@ -508,6 +509,7 @@ recipes:
     label: Committee pack sections and owners
     cards: [47]
     names: [committee pack sections, investment committee pack, pack sections and their owners, pack items]
+    words_all: [[committee, committees], [matters, matter, pack]]  # "which matters to put to the committee" (w7)
     may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, business_rules, rule_versions, valuation_observations, committee_decisions, deal_pipeline, cash_movements, market_observations, benchmark_definitions]
     never_read: [commitments, transactions]
     why: 'The committee pack is a list of sections, each with its owner and its state, drawn from what the office holds: the issued report, the performance inputs, the breaches, the amendments still open and the proposals waiting for a decision.'

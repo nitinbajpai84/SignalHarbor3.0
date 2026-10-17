@@ -350,3 +350,91 @@ def test_r1_live_case_states_the_check_numbers(r1_office, monkeypatch, card, sai
     assert len(said.split()) <= 42, said
     for n in never:
         assert n.lower() not in said.lower(), (n, said)
+
+
+# ---- r2 answer class (c): the answer left out the key numbers the table holds. The four live cases of the second round (docs/v3/LIVE-R2-ANALYSIS.md)
+# Each case's figures are its live brief's, bound to the recipes its thread bound them to; the question is the case's check ask, answered through
+# figures._answer. The expected numbers are the persona check's (builds), read from the sentence and the figures behind it. Synthetic data only.
+
+R2_CASES = [  # card, the check ask, the case's figures (name, definition, recipe), the words the sentence or its figures must hold
+    ("uc-007-pacing", "What's our unfunded commitment across all funds?",
+     [("Unfunded commitments", "Opening unfunded + approved commitment changes + recallable adjustments - reductions from applicable funded calls.", "commitments_by_fund"),
+      ("Private markets budget remaining", "Private-markets budget set by policy minus total committed across all private funds.", "private_markets_budget")],
+     ["14,600,000"]),
+    ("uc-013-secgaps", "Which instruments need a class or identifier before limits and allocation can be trusted?",
+     [("Missing asset class count", "Number of securities in the admin export with no asset class assigned", "identifier_gaps"),
+      ("Missing identifier count", "Number of securities with no external identifier", "identifier_gaps"),
+      ("Value of missing securities", "Total market value of securities lacking asset class or identifier", "identifier_gaps")],
+     ["Pacific Rim Convertible 2029 note", "1,122,000"]),
+    ("uc-023-tieout", "Does each number on the report agree with the administrator?",
+     [("Net worth", "All assets including private funds, less liabilities, expressed in base currency.", "net_worth"),
+      ("Time-weighted return net of fees", "Chained monthly return net of fees, compared to a blended benchmark.", "time_weighted_return"),
+      ("Allocation drift", "Difference between actual asset allocation and policy target ranges.", "drift_vs_target"),
+      ("Single-issuer concentration", "Aggregate direct issuer exposure divided by total included asset value.", "concentration"),
+      ("Issued report against the administrator", "For each line of each issued investment report (every field except the totals), the administrator value on the report's date, the sum of the administrator position snapshots whose instrument name or portfolio name is the line's name, and the difference = report value less administrator value.", "report_tie_out")],
+     ["4,581", "110,866", "289,043"]),
+    ("uc-050-feeinv", "Whether to pay the invoice as billed?",
+     [("Invoice fee variance", "Invoice fee amount minus the scheduled fee from the fee schedule, per invoice.", "invoice_variance")],
+     ["15,595.58", "4,940.14", "16,234.50", "6,180", "5,150", "1,030"]),
+]
+
+
+@pytest.fixture(scope="module")
+def r2_office(tmp_path_factory):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+    import score50
+    plane, con, _ = score50.load(tmp_path_factory.mktemp("r2"))
+    tables = {}
+    for rid in sorted({rid for c in R2_CASES for _, _, rid in c[2]}):
+        r = R.recipe(rid)
+        name = f"gold_r2_{rid}"
+        con.execute(R.render(r, name, R.dims_for(r, {})))
+        cols = con.execute("select column_name, data_type from information_schema.columns where table_name = ? order by ordinal_position", [name]).fetchall()
+        tables[rid] = {"name": name, "columns": [{"name": c, "type": t} for c, t in cols], "rows": con.execute(f"select count(*) from {name}").fetchone()[0],
+                       "purpose": f"{R.MARK}{rid}: {r['label']}", "kpis": []}
+    con.close()
+    return plane, list(tables.values())
+
+
+def _r2_answer(monkeypatch, office, card, ask, figs):
+    from sh_platform.v1 import b10_pack as P, cx_dash as CD, talk
+    plane, tables = office
+    kpis = [{"name": n, "definition": d, "built_from": rid} for n, d, rid in figs]
+    monkeypatch.setattr(F, "kpis_of", lambda plane_, iid: [dict(k) for k in kpis])
+    monkeypatch.setattr(P, "latest_approved", lambda *a, **k: {"target": {"gold": [{"name": t["name"], "purpose": t["purpose"], "kpis": t["kpis"]} for t in tables]}})
+    monkeypatch.setattr(CD, "gold_tables", lambda *a, **k: tables)
+    monkeypatch.setattr(talk, "reachable", lambda *a, **k: ([{"id": "prj-1"}], []))
+    th = {"id": f"t-{card}", "pid": "prj-1", "iid": f"ini-{card}", "figures": [], "steps": []}
+    return F._answer(plane, None, ask, "prj-1", th)
+
+
+@pytest.mark.parametrize("card, ask, figs, words", R2_CASES, ids=[c[0] for c in R2_CASES])
+def test_r2_live_case_states_the_key_numbers(r2_office, monkeypatch, card, ask, figs, words):
+    got = _r2_answer(monkeypatch, r2_office, card, ask, figs)
+    assert got and got["answer"], card
+    print(card, got["answer"])
+    for w in words:
+        assert w in got["answer"] or any(w in f"{r['label']} {r['value']}" for r in got["rows"]), (w, got["answer"])
+    assert got["rows"] and all(r["label"] and r["value"] for r in got["rows"])
+    vp = _persona()  # the persona check reads the sentence and the figures behind it: every number of the card's check is there
+    _, build = vp.load_uc(card)
+    assert vp.missing(vp.said(got), build["check"]["expect"]) == [], vp.missing(vp.said(got), build["check"]["expect"])
+
+
+def test_r2_pacing_lists_every_fund_not_the_total_only(r2_office, monkeypatch):
+    """uc-007: "across all funds" names the total row, not one fund: every fund's unfunded amount is said or shown."""
+    got = _r2_answer(monkeypatch, r2_office, "uc-007-pacing", "What's our unfunded commitment across all funds?",
+                     [("Unfunded commitments", "", "commitments_by_fund")])
+    behind = " ".join(f"{r['label']} {r['value']}" for r in got["rows"]).replace(",", "")
+    for fund_amount in ("3750000", "800000", "2750000", "250000", "6000000", "600000", "300000", "150000"):
+        assert fund_amount in behind, (fund_amount, behind[:600])
+    assert "14600000" in got["answer"].replace(",", "")
+
+
+def test_r2_invoice_answer_covers_every_invoice_not_the_latest_month(r2_office, monkeypatch):
+    """uc-050: "whether to pay as billed" covers the quarter's invoices, not only the latest date's two."""
+    got = _r2_answer(monkeypatch, r2_office, "uc-050-feeinv", "Whether to pay the invoice as billed?", [("Invoice fee variance", "", "invoice_variance")])
+    text = got["answer"] + " " + " ".join(r["label"] for r in got["rows"])
+    for invoice in ("FEE-ADMIN-Q2", "FEE-CUST-Q2", "FEE-ADMIN-Q3", "FEE-CUST-Q3"):
+        assert invoice in text, (invoice, got["answer"])

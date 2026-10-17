@@ -67,6 +67,7 @@ def _words(text) -> str:
     return " " + re.sub(r"[^a-z0-9]+", " ", str(text or "").lower()).strip() + " "
 
 
+SHARE = {"percent", "percentage", "proportion", "ratio", "share", "fraction", "pct", "divided"}  # a figure that is a ratio or a share of a recipe's quantity is none
 SPLIT = re.compile(r"\b(?:(?:by|per|for each|each)\s+[a-z]+|in\s+[a-z]{3})\b", re.I)  # "cash by entity", "net worth in usd": a split or a unit, not another figure
 
 
@@ -95,6 +96,13 @@ def match(kpi: dict, strict: bool = True) -> dict | None:
         top = [r for r in recipes() if max([10 + len(n) for n in r.get("names") or [] if _words(n) in text and (not strict or " " in n.strip() or _words(n).strip() == core)] or [0]) == score]
         near = sorted(((len(_stems(said) & _stems(f"{r['label']} {r.get('formula', '')}")), r) for r in top), key=lambda t: -t[0])
         return near[0][1] if said and near[0][0] > near[1][0] else None
+    if best is None and kpi.get("definition") and not set(_words(kpi["definition"]).split()) & SHARE:
+        # the definition leads with a recipe's phrase ("Cash balance at month start minus ..." leads with cash_by_entity's "cash balance"): that is the quantity it
+        # states first. A phrase the definition only mentions ("Opening cash + ... - known obligations") is a term of another figure, so it is none; so is a
+        # share or a ratio of the phrase ("Cash balance expressed as a percentage"), which is its result, not the recipe's quantity
+        dfn = _words(kpi["definition"])
+        named_in_definition = [r for r in recipes() if any(" " in n.strip() and dfn.startswith(_words(n)) for n in r.get("names") or [])]
+        best = named_in_definition[0] if len(named_in_definition) == 1 else None
     if best is None and kpi.get("definition"):
         full = set(_words(f"{name} {kpi['definition']}").split())
         hits = [r for r in recipes() if r.get("words_all") and all(full & set(g) for g in r["words_all"])]
