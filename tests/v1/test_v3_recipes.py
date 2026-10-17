@@ -401,3 +401,93 @@ def test_the_age_of_the_latest_value_is_not_nav_rollforward():
 def test_a_fee_in_the_latest_call_is_not_the_called_to_date_recipe():
     # uc-040: "Fee in latest call" is read from the call notice's fee part, not the call amounts
     assert (R.match({"name": "Fee in latest call", "definition": "Management fee amount included in the most recent capital call"}) or {}).get("id") != "called_to_date"
+
+
+# ---- live run 3 (docs/v3/LIVE-R3-ANALYSIS.md): uc3, uc-039, uc-015 on the six-month office (tests/v1/fixtures/office6m), each with its live question ----
+
+@pytest.fixture(scope="module")
+def office6m(tmp_path_factory):
+    from tools import score50 as S50
+    plane, con, _ = S50.load(tmp_path_factory.mktemp("r3"))
+    yield plane, con
+    con.close()
+
+
+def _built(con, rid: str) -> list[dict]:
+    r = R.recipe(rid)
+    con.execute(f"drop table if exists r3_{rid}")
+    con.execute(R.render(r, f"r3_{rid}", R.dims_for(r, {})))
+    cur = con.execute(f"select * from r3_{rid}")
+    return [dict(zip([d[0] for d in cur.description], x)) for x in cur.fetchall()]
+
+
+@pytest.mark.parametrize("rid", ["statement_timeliness", "unsettled_trades", "break_age"])
+def test_r3_a_business_day_recipe_passes_the_plan_check_so_it_is_built_live(office6m, rid):
+    """uc3 live r3: statement_timeliness counted business days with generate_series(...) as t(x) in a subquery; the plan check read the table function as a
+    table with no name ("reads , which is not in the data model") and dropped it, so "Statement receipt timeliness" had 0 rows. Counted by arithmetic now."""
+    from sh_platform.v1 import b6_plan as B
+    plane, _ = office6m
+    r = R.recipe(rid)
+    t = R._table("office", r, {"name": r["label"]})
+    B.validate(plane, {"tables": [t]}, {t["name"]})
+
+
+def test_r3_uc3_which_statement_is_missing_and_how_overdue_counts_business_days_and_uses_the_signed_due_rule(office6m):
+    """uc3 "Which statement is missing and how overdue is it?": Cedarpoint Opportunities II, 30 Jun, due 14 Jul, 65 business days to 13 Oct (91 calendar days).
+    Live, the schedule a person confirmed had no due dates (no fund terms on file): the due date then comes from the signed rule statement_due (10 business
+    days after the period end), never typed."""
+    _, con = office6m
+    miss = [x for x in _built(con, "statement_timeliness") if x["status"] == "missing" and x["kind"] == "manager statement" and x["business_days_overdue"]]
+    assert [(x["statement_of"], str(x["period_end"]), str(x["due_date"]), x["business_days_overdue"]) for x in miss] == [
+        ("Cedarpoint Opportunities II", "2026-06-30", "2026-07-14", 65)]
+    con.execute("begin")
+    try:
+        con.execute("update expected_statements set due_date = null where instrument_id in (select id from instruments where instrument_type <> 'cash')")
+        rows = _built(con, "statement_timeliness")
+    finally:
+        con.execute("rollback")
+    got = {(x["statement_of"], str(x["period_end"])): x for x in rows}
+    june = got[("Cedarpoint Opportunities II", "2026-06-30")]
+    assert (str(june["due_date"]), june["business_days_overdue"]) == ("2026-07-14", 65)
+    assert str(got[("Cedarpoint Opportunities II", "2026-03-31")]["due_date"]) == "2026-04-14"  # 31 Mar (Tue) + 10 business days
+    from sh_platform.v1.v3_figures import say
+    assert "65 business days overdue" in say(R.recipe("statement_timeliness"), rows)
+
+
+def test_r3_uc039_fund_irr_reads_the_history_the_live_office_holds(office6m):
+    """uc-039 "Which funds earned their place and which should we stop adding to?": live, the notices were posted to stub commitments the register later
+    replaced (or to none), and no notice was matched to its bank payment, so no call was confirmed: 5 of 8 funds were incomplete. The IRR now follows the
+    replacing commitment (else the fund's only one) and takes the bank payment to the fund as the paid call. Same numbers as the key either way."""
+    _, con = office6m
+    want = {"Evergreen Growth I": (23.24, 0.9282), "Evergreen Income II": (32.74, 0.9222), "Cedarpoint Ventures III": (-40.54, 1.3792),
+            "Cedarpoint Opportunities II": (-2.83, 1.0168), "Saltmarsh Infrastructure Fund II": (-9.32, 2.4875), "Evergreen Growth II": (9.83, 1.2833),
+            "Evergreen Credit III": (17.28, 1.125), "Saltmarsh Renewables I": (-24.85, 0.9042)}
+
+    def got():
+        return {x["fund"]: (float(x["irr_pct"]), float(x["tvpi"]), x["irr_status"]) for x in _built(con, "fund_irr_tvpi")}
+    assert got() == {f: (*v, "ok") for f, v in want.items()}
+    con.execute("begin")
+    try:  # the live office: no confirmed call, movements on a replaced stub commitment or on none
+        con.execute("delete from cash_movements where notice_kind = 'capital_call' and confirmation_status = 'confirmed'")
+        stub = "00000000-0000-0000-0000-0000000000c3"
+        con.execute("insert into commitments select * replace (cast(? as uuid) as id, null as source_record_id, null as called_to_date, null as called_as_at, null as supersedes_commitment_id) "
+                    "from commitments where id = (select min(id) from commitments where supersedes_commitment_id is null)", [stub])
+        con.execute("update commitments set supersedes_commitment_id = ? where supersedes_commitment_id is null and id <> ? and instrument_id = (select instrument_id from commitments where id = ?)", [stub, stub, stub])
+        con.execute("update cash_movements set commitment_id = ? where commitment_id in (select id from commitments where instrument_id = (select instrument_id from commitments where id = ?))", [stub, stub])
+        con.execute("update cash_movements set commitment_id = null where movement_type = 'distribution' and instrument_id = (select id from instruments where canonical_name = 'Saltmarsh Renewables I')")
+        live = got()
+    finally:
+        con.execute("rollback")
+    assert live == {f: (*v, "ok") for f, v in want.items()}
+
+
+def test_r3_uc015_the_cash_availability_flag_is_answered_from_cash_by_entity(office6m):
+    """uc-015 "What do we owe each family member this month, and do we have the cash?": North's figure "Cash-availability flag" (a yes/no, "whether the
+    Trust has enough cash after scheduled payments") was left to a design over the scheduled flows. A flag is the quantity it tests: the cash balance."""
+    k = {"name": "Cash\u2011availability flag", "definition": "Whether the Trust has enough cash after scheduled payments.",
+         "formula": "Opening cash + approved inflows \u2013 scheduled payments \u2265 not available yet", "unit": "boolean"}
+    assert (R.match(k) or {}).get("id") == "cash_by_entity"
+    assert R.match({"name": "Cash availability", "definition": "Opening cash plus approved inflows minus known obligations, scenario\u2011only calls and reserve"}) is None
+    _, con = office6m
+    from sh_platform.v1.v3_figures import say
+    assert "Evergreen Family Trust USD 213,895.52" in say(R.recipe("cash_by_entity"), _built(con, "cash_by_entity"))

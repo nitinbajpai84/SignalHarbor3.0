@@ -71,7 +71,20 @@ SHARE = {"percent", "percentage", "proportion", "ratio", "share", "fraction", "p
 SPLIT = re.compile(r"\b(?:(?:by|per|for each|each)\s+[a-z]+|in\s+[a-z]{3})\b", re.I)  # "cash by entity", "net worth in usd": a split or a unit, not another figure
 
 
+FLAG = re.compile(r"\b(?:flags?|indicators?|availability|available|sufficiency)\b")  # the words of a yes/no figure that are not the quantity it tests
+
+
 def match(kpi: dict, strict: bool = True) -> dict | None:
+    """`_match`, and a yes/no figure (its name says flag, or its unit is boolean) that matches nothing is the quantity it tests: "Cash-availability flag",
+    "whether the Trust has enough cash after scheduled payments", is answered from the cash balance (live r3 uc-015)."""
+    r = _match(kpi, strict)
+    if r is None and (re.search(r"\bflags?\b", _words(kpi.get("name"))) or str(kpi.get("unit") or "").lower() == "boolean"):
+        bare = " ".join(FLAG.sub(" ", _words(kpi.get("name"))).split())
+        r = _match({"name": bare}, strict) if bare and bare != _words(kpi.get("name")).strip() else None
+    return r
+
+
+def _match(kpi: dict, strict: bool = True) -> dict | None:
     """The recipe a brief's figure is, by the names it answers to and by words: the longest name in the figure's own name wins, a word set scores
     above a short name. A count is not the recipe's figure; a threshold ("breaks over 5,000") is cut off the name. A name that matches nothing
     ("Variance over 5,000") is matched by the word sets of its name and definition together. A one-word name ("cash", "break") is the figure only
