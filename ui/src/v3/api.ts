@@ -15,14 +15,17 @@ export interface Check { label: string; value: string; ok: boolean; note: string
 export interface Decision {
   n: 1 | 2 | 3; title: string; brief?: Brief; files?: DecisionFile[]; questions?: Question[]; checks?: Check[]; summary?: string; gaps?: string[];
   sop?: { title: string; download: { docx: string; md: string } };
+  assumptions?: Assumption[];
 }
+export interface Assumption { figure: string; text: string; source: string }
+export interface ThreadFigure { figure_id: string; name: string; v: number; status: "verified" | "held" | "draft"; hold: { v: number; reason: string } | null }
 export interface Signer { id: string; name: string; email?: string }
 export interface SignOff {
   state: "can_sign" | "send" | "fill" | "waiting" | "awaiting_you" | "none"; signers: Signer[]; signer?: Signer | null; raised_by?: string | null;
   sent_at?: string; sent_by?: string; mine?: boolean; message?: string; gaps?: string[];
 }
 export interface ThreadRecord { started_by?: string | null; started_at?: string; sent_at?: string | null; line?: string | null; signed_by?: string; role?: string; signed_at?: string; version?: number; document?: string }
-export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; reuse?: ReuseOffer[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
+export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; reuse?: ReuseOffer[]; figures?: ThreadFigure[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
 export interface CardAction { label: string; answer: string }
 export interface Card { kind: "decision" | "exception" | "question"; thread: string; title: string; text: string; actions: CardAction[] }
 export interface Figure { label: string; value: string; change: string; id?: string; name?: string; v?: number }
@@ -124,7 +127,7 @@ export interface FigureRow { id: string; name: string; current_v: number; status
 export interface FigureVersion {
   v: number; built_from: { kind: string; id: string }; reads: string[]; sql_hash?: string; model?: string | null; prompt_hash?: string | null;
   assumptions: { text: string; source: string; at: string }[]; tie_out?: { rule: string; ok: boolean; at: string } | null;
-  approved_by?: string | null; approved_at?: string | null; runs: { run_id: string; at: string; ok: boolean; rows: number }[]; status: FigureStatus;
+  reason?: string | null; approved_by?: string | null; approved_at?: string | null; runs: { run_id: string; at: string; ok: boolean; rows: number }[]; status: FigureStatus;
 }
 export interface FigureRecord {
   id: string; name: string; definition: string; grain: string[]; versions: FigureVersion[];

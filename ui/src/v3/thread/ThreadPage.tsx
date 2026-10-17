@@ -6,6 +6,9 @@ import { decide, editBrief, sendForSignature, getThread, say, type Event, type T
 import { EditLine } from "../build/IntentGraph";
 import "../build/build.css";
 import V3Frame from "../Frame";
+import AssumptionsCard from "./AssumptionsCard";
+import FigureChecks from "./FigureChecks";
+import QuestionBlock from "./QuestionBlock";
 import Discard from "./Discard";
 import ReuseOffer from "./ReuseOffer";
 import { SignNote, signAction } from "./SignOff";
@@ -243,17 +246,8 @@ export default function ThreadPage() {
           ))}
         </ul>
         {qs.length > 0 && <b>{qs.length === 1 ? "One thing I am not sure about" : `${qs.length} things I am not sure about`}</b>}
-        {qs.map((q) => (
-          <div key={q.id} className="v3-col" style={{ gap: 8 }}>
-            <span>{q.text}</span>
-            <div className="v3-row">
-              {q.options.map((o) => (
-                <button key={o} className={value(q) === o ? "go" : undefined} aria-pressed={value(q) === o} onClick={() => setPicked({ ...picked, [q.id]: o })}>{o}</button>
-              ))}
-            </div>
-            {q.assumed && <small className="v3-mute">I have assumed {q.assumed}; change it if I am wrong.</small>}
-          </div>
-        ))}
+        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => composer.current?.focus()} />)}
+        <AssumptionsCard assumptions={d.assumptions} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         <div className="v3-row">
           <button className="go" disabled={busy || open > 0} onClick={() => void run(decide(id, 2, "carry_on", answers))}>This is right, carry on</button>
@@ -278,6 +272,7 @@ export default function ThreadPage() {
             ))}
           </tbody>
         </table>
+        <FigureChecks figures={t.figures} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         {d.sop && <p><a href={d.sop.download.docx}>Download the procedure (Word)</a> · <a href={d.sop.download.md}>Markdown</a></p>}
         <div className="v3-row">
