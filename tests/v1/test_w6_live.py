@@ -233,3 +233,120 @@ def test_say_formats_like_a_person():
     assert F.say(r, rows) == "A is short USD 270,000 due 23 Oct 2026. 2 rows, 16,235.50 in all."
     assert F.say({"answer": [{"say": "{rate}"}]}, [{"rate": Decimal("1.3400000000")}]) == "1.34."
     assert F.say({}, rows) is None
+
+R1_CASES = {  # card: (the figures of its brief, each with the recipe the live thread bound it to; the question is the case's check ask)
+    "morning-networth-note": {
+        "question": "What are we worth in the latest report?",
+        "figures": [
+            {"name": "Net worth (USD)", "definition": "Total value of all assets and cash in US dollars.", "built_from": "net_worth"},
+            {"name": "Change since last note", "definition": "Difference in net worth and key balances from previous morning.", "built_from": "change_since_report"},
+            {"name": "Unfunded commitments", "definition": "Opening unfunded commitments plus changes minus funded calls.", "built_from": "commitments_by_fund"},
+            {"name": "Known obligations due", "definition": "Sum of approved unpaid obligations within each monthly bucket.", "built_from": ""},
+            {"name": "Cash headroom", "definition": "Opening cash plus approved inflows minus known obligations.", "built_from": ""},
+        ],
+    },
+    "uc-008-payrun": {
+        "question": "Which payments to release",
+        "figures": [
+            {"name": "Payments processed on time", "definition": "Number of payments executed within the scheduled Thursday run", "built_from": ""},
+            {"name": "Total amount processed", "definition": "Sum of payment amounts executed in the run", "built_from": ""},
+            {"name": "Exceptions held", "definition": "Count of payments held because invoice exceeds fee schedule", "built_from": ""},
+            {"name": "Payment batch by approval state", "definition": "The payments still to be released (cash movements of type payment, status expected), each in one state. Hold when an open approval of type payment_hold names it (its rationale is the reason), or when the office has signed the rule invoice_above_fee_schedule (parameters action hold, tolerance_amount) and the payment's invoice (the invoice document read from the same source record as the payment) bills more than its fee schedule allows by more than the tolerance, the fee variance worked out as in invoice_variance (billed less fee base times the schedule rate over the billing periods, from the schedule in force on the invoice date; an invoice that cannot be checked is not held by it); with no such rule signed no payment is held for its fee; waiting for approval when an approval requested for it is not yet approved; hold on an unverified changed account when the payment goes to an account that replaced an earlier payee account and has no call-back (verified_on); otherwise ready. release_blocked is true while any of these stands, and blocked_by lists them all. The run window (days from the latest movement date) is the signed rule payment_run_window_days; with no signed rule in_window is empty and every expected payment is listed. Totals are by currency, never across currencies.", "built_from": "payment_batch"},
+        ],
+    },
+    "uc-017-liab": {
+        "question": "What do we owe, and what is our net worth after debt?",
+        "figures": [
+            {"name": "Loan balance", "definition": "Outstanding principal on the family loan as at month‑end.", "built_from": ""},
+            {"name": "Net worth after debt", "definition": "Family net asset value less the loan balance at month‑end.", "built_from": "net_worth_after_debt"},
+        ],
+    },
+    "uc-029-closeck": {
+        "question": "Is the September close complete and can the report start?",
+        "figures": [
+            {"name": "Net worth", "definition": "Total value of all assets (including private funds) minus liabilities", "built_from": "net_worth"},
+            {"name": "Time‑weighted return net of fees", "definition": "Monthly return after fees, chained to give cumulative performance", "built_from": "time_weighted_return"},
+            {"name": "Allocation drift", "definition": "Difference between current asset allocation and policy target ranges", "built_from": "drift_vs_target"},
+            {"name": "Single‑issuer concentration", "definition": "Aggregate exposure to any single issuer divided by total asset value", "built_from": "concentration"},
+            {"name": "Cash drag", "definition": "Cash as a percentage of total assets, showing idle cash", "built_from": ""},
+            {"name": "Fee ratio", "definition": "Total fees paid divided by net asset value", "built_from": ""},
+            {"name": "Month-end close checklist progress", "definition": "The close checklist steps of one close (exceptions of type close_item; the close month and the step number are the first words of the description, \"2026-09 close, step 3\"): done (resolved_at set), open (not resolved), and late (due_at passed and not resolved, or resolved after due_at). The date used for \"passed\" is the latest date any document was received. Owner is the user the step is assigned to.", "built_from": "close_items_done"},
+        ],
+    },
+    "uc-031-alloc": {
+        "question": "What share of the family is in each asset class, and in each entity?",
+        "figures": [
+            {"name": "Asset‑class share", "definition": "Proportion of total family net worth held in each asset class.", "built_from": "allocation"},
+            {"name": "Entity share", "definition": "Proportion of total family net worth held in each legal entity.", "built_from": "allocation"},
+            {"name": "Total net‑worth reconciliation", "definition": "Difference between the sum of all class and entity values and the administrator's reported net worth.", "built_from": "net_worth"},
+        ],
+    },
+    "uc7-manager-diligence": {
+        "question": "What changed at Kestrel Ridge since the last meeting?",
+        "figures": [
+            {"name": "New statements received", "definition": "Count of custodian or bank statements received since the last pack", "built_from": "missing_statements"},
+            {"name": "Restatements issued", "definition": "Count of corrected or restated statements received", "built_from": ""},
+            {"name": "Team changes announced", "definition": "Count of personnel updates listed in the newsletter", "built_from": ""},
+            {"name": "Change since the issued report", "definition": "For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.", "built_from": "change_since_report"},
+        ],
+    },
+}
+
+
+# ---- r1 answer class (c): the answer picked the wrong figure or rows. The six live cases of the first round (docs/v3/LIVE-R1-ANALYSIS.md) -----------------
+# Each case's figures are its live brief's, bound to the recipes its thread bound them to. The question is the case's check ask, answered through
+# figures._answer (the answer path the chat takes), on the six-month office (tests/v1/fixtures/office6m as at 13 Oct 2026). Synthetic data only.
+
+R1_EXPECT = [  # card, the numbers the sentence holds, the numbers the figures behind it hold, words the sentence must not say
+    ("morning-networth-note", ["57,600,000", "77,253,120"], [], ["change"]),  # the report's own total (issued 3 Oct), USD and SGD
+    ("uc-008-payrun", ["5,400", "16,234.50", "6,180", "1,030", "1,250,000"], [], []),  # every state of the batch: release, hold, waiting
+    ("uc-017-liab", ["2,800,000", "105,430,000"], [], ["42,273,700"]),  # the family at 30 Sep, not the one entity loaded in October
+    ("uc-029-closeck", ["4 of 6", "Read the report", "Collect manager statements"], ["Review and approve the report"], ["time"]),  # the close, not TWR
+    ("uc-031-alloc", ["108,230,000", "36.37", "58.9"], ["1.04"], ["78.7"]),  # the family's shares at 30 Sep, not Family Trust's alone in October
+    ("uc7-manager-diligence", ["Kestrel Ridge", "7,012,500"], [], ["10,180,000"]),  # Kestrel Ridge's own row, not Evergreen Growth I
+]
+
+
+@pytest.fixture(scope="module")
+def r1_office(tmp_path_factory):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+    import score50
+    plane, con, _ = score50.load(tmp_path_factory.mktemp("r1"))
+    tables = []
+    for rid in sorted({k["built_from"] for c in R1_CASES.values() for k in c["figures"] if k["built_from"]}):
+        r = R.recipe(rid)
+        name = f"gold_r1_{rid}"
+        con.execute(R.render(r, name, R.dims_for(r, {})))
+        cols = con.execute("select column_name, data_type from information_schema.columns where table_name = ? order by ordinal_position", [name]).fetchall()
+        tables.append({"name": name, "columns": [{"name": c, "type": t} for c, t in cols], "rows": con.execute(f"select count(*) from {name}").fetchone()[0],
+                       "purpose": f"{R.MARK}{rid}: {r['label']}", "kpis": []})
+    con.close()
+    return plane, tables
+
+
+def _r1_answer(monkeypatch, office, card):
+    from sh_platform.v1 import b10_pack as P, cx_dash as CD, talk
+    plane, tables = office
+    case = R1_CASES[card]
+    monkeypatch.setattr(F, "kpis_of", lambda plane_, iid: [dict(k) for k in case["figures"]])
+    monkeypatch.setattr(P, "latest_approved", lambda *a, **k: {"target": {"gold": [{"name": t["name"], "purpose": t["purpose"], "kpis": t["kpis"]} for t in tables]}})
+    monkeypatch.setattr(CD, "gold_tables", lambda *a, **k: tables)
+    monkeypatch.setattr(talk, "reachable", lambda *a, **k: ([{"id": "prj-1"}], []))
+    th = {"id": f"t-{card}", "pid": "prj-1", "iid": f"ini-{card}", "figures": [], "steps": []}
+    return F._answer(plane, None, case["question"], "prj-1", th)
+
+
+@pytest.mark.parametrize("card, said_keys, row_keys, never", R1_EXPECT, ids=[c[0] for c in R1_EXPECT])
+def test_r1_live_case_states_the_check_numbers(r1_office, monkeypatch, card, said_keys, row_keys, never):
+    got = _r1_answer(monkeypatch, r1_office, card)
+    said = got["answer"]
+    print(card, len(said.split()), said)
+    for k in said_keys:
+        assert k in said, (k, said)
+    behind = " ".join(f"{r['label']} {r['value']}" for r in got.get("rows") or [])
+    for k in row_keys:
+        assert k in behind, (k, behind[:800])
+    assert len(said.split()) <= 42, said
+    for n in never:
+        assert n.lower() not in said.lower(), (n, said)

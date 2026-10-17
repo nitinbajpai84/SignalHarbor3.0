@@ -773,13 +773,16 @@ def _change_answer(plane, text: str, pid: str, th: dict, gold: list[dict], live:
     asked, q = parse_when(text), _tokens(text)
     if when and asked:
         rows = [x for x in rows if str(x[when])[5:7] == f"{asked[1]:02d}" and (not asked[0] or str(x[when])[:4] == str(asked[0]))] or rows
-    elif when and rows:
-        top = max(str(x[when])[:7] for x in rows)  # no month named: the latest one the table has
-        rows = [x for x in rows if str(x[when])[:7] == top]
-    for c in texts:
+    for c in texts:  # the fund or manager the question names: its rows, whatever their date (uc7: Kestrel Ridge is July, the table's latest is September)
         pick = match_values(sorted({str(x[c]) for x in rows if x.get(c) is not None}), names, q, text)
         if pick:
             rows = [x for x in rows if str(x.get(c)) in pick]
+    if when and rows and not asked:  # no month named: each fund's own latest row, not the latest month of the table
+        key = (lambda x: str(x.get(texts[0]))) if texts else (lambda x: "")
+        latest: dict[str, str] = {}
+        for x in rows:
+            latest[key(x)] = max(latest.get(key(x), ""), str(x[when])[:10])
+        rows = [x for x in rows if str(x[when])[:10] == latest[key(x)]]
     rows = [x for x in rows if _num(x.get(o)) is not None and _num(x.get(r_)) is not None]
     if not rows:
         return {"answer": "Not available yet: the table of original and revised values has no row for what you named.", "figure": None, "rows": [], "source": t["name"], "used": [], "trace": trace}
@@ -797,6 +800,7 @@ def _change_answer(plane, text: str, pid: str, th: dict, gold: list[dict], live:
             "source": plain(t["name"]), "used": [], "trace": trace}
 
 
+RELEASE_Q = re.compile(r"\bwhich\b[^.?!]*\b(?:release|pay)\b", re.I)  # "which payments to release", "which to pay": every state of the batch
 REPORT_Q = re.compile(r"\b(?:report|pack)\b", re.I)
 TOTAL_Q = re.compile(r"\b(?:worth|total|net worth|nav|value)\b", re.I)
 
@@ -812,6 +816,7 @@ def report_total(plane, text: str) -> dict | None:
         rows = con.execute("select d.original_filename, d.valuation_date, f.field_name, f.value_numeric, f.currency from extracted_fields f join documents d on d.id = f.document_id "
                            "where f.value_numeric is not null and d.valuation_date is not null and lower(f.field_name) like 'total%' "
                            "and coalesce(f.review_status, '') <> 'rejected' order by d.valuation_date desc, d.original_filename, f.page_number, f.line_number").fetchall()
+    rows = [r for r in rows if re.fullmatch(r"total(?![_a-z]).*", str(r[2]).lower())]  # the report's own total ("Total", "Total (SGD) at WMR 4pm"), not a fund's total_commitment line
     if not rows:
         return None
     day = rows[0][1]
@@ -895,6 +900,8 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return hit
     if hit := missing_statements(plane, viewer, text):  # c4 fund_accountant: a count of statements received is not which one is missing
         return hit
+    if RELEASE_Q.search(text) and (hit := recipe_rows(plane, text, pid, th, kpis, floor=2)):  # r1 uc-008: which to release is every state of the batch, release and hold
+        return hit
     from sh_platform.v1 import v3_consume as C, v3_rule_checks as RC
     calls = bool(C.CALLS.search(text)) and not C.OTHER.search(text)
     if calls and (hit := recipe_rows(plane, text, pid, th, kpis)):  # w6: can we pay the call, how much to convert: the recipes' rows, never the old forecast
@@ -907,13 +914,17 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return {"answer": f"Not available yet: {k['name']}: {h['reason']}", "figure": None, "rows": [], "source": f"{k['name']} is held at Decision 3", "used": [],
                 "trace": [{"kind": "guard", "label": "A figure held at Decision 3 is not stated"}]}
     mine = relevance(text, R.bound(k)) if R.bound(k) else 0
-    if max((relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > max(mine, 1) and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+    named = named_relevance(text, R.bound(k)) if R.bound(k) else 0
+    if max((relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > max(mine, 1) and max(
+            (named_relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > named and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
         return rows  # w6 (uc-005 "Account number match ... 250,000"): the figure's name met a word, another figure's recipe fits the question's meaning
     pack = P.latest_approved(plane, pid) or {}
     gold = (pack.get("target") or {}).get("gold") or []
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
     tabs = [live[g["name"]] for g in covering(k, gold) if g["name"] in live]
     ready = [t for t in tabs if t["rows"]]
+    if (asked := parse_when(text)) and asked[1] and any(_by_period(plane, t) for t in ready) and (rows := recipe_rows(plane, text, pid, th, [k], floor=1)):
+        return rows  # r1 uc-029: a month named, over a table kept by month: the figure's own lines say it, for that month (not the flag's first row)
     run = next((s["run_id"] for s in reversed(th.get("steps") or []) if s.get("run_id")), None)
     trace = [{"kind": "tool", "label": f"Read the ready table for {k['name']}"}, {"kind": "guard", "label": "Every figure comes from the table's rows"}]
     if not ready and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
@@ -939,6 +950,23 @@ def relevance(text: str, r: dict) -> int:
     from sh_platform.v1 import v3_recipes as R
     cols = r.get("columns") or {}
     return len(R._stems(text) & R._stems(" ".join([r["label"], *(r.get("names") or []), r.get("formula", ""), *cols, *map(str, cols.values())])))
+
+
+def _by_period(plane, t: dict) -> bool:
+    """A ready table kept by month: a text column whose values are "2026-09" (most of its rows)."""
+    from sh_platform.v1 import cx_dash as CD
+    text_cols = [c["name"] for c in t["columns"] if str(c["type"]).lower().startswith(("varchar", "text", "char"))]
+    if not text_cols:
+        return False
+    _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
+    return any(sum(bool(re.fullmatch(r"\d{4}-\d{2}", str(x.get(c) or ""))) for x in rows) * 2 >= len(rows) > 0 for c in text_cols)
+
+
+def named_relevance(text: str, r: dict) -> int:
+    """relevance over the recipe's label and names only, not its formula: a figure the question names by its own words ("close checklist") is not beaten by
+    a figure whose formula happens to say "report" (r1 uc-029)."""
+    from sh_platform.v1 import v3_recipes as R
+    return len(R._stems(text) & R._stems(" ".join([r["label"], *(r.get("names") or [])])))
 
 
 ROW_CAP = 25
@@ -1085,9 +1113,15 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
         texts = [c for c, ty in cols.items() if ty.startswith(("varchar", "text", "char")) and c not in META and not c.endswith("_id") and not c.startswith("run")]
         _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
-        for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
-            hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
-            rows = hit or rows
+        period = [c for c in texts if rows and sum(bool(re.fullmatch(r"\d{4}-\d{2}", str(x.get(c) or ""))) for x in rows) * 2 >= len(rows)]
+        if period and (asked := parse_when(text)) and asked[1]:  # a table kept by month, and the question names one: that month's rows, not its steps' titles (r1 uc-029)
+            for c in period:
+                hit = [x for x in rows if str(x.get(c))[5:7] == f"{asked[1]:02d}" and (not asked[0] or str(x.get(c))[:4] == str(asked[0]))]
+                rows = hit or rows
+        else:
+            for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
+                hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
+                rows = hit or rows
         money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META and not RATE_COL.search(c)]  # never a rate
 
         def who(x, texts=texts):
@@ -1134,6 +1168,40 @@ def recipe_measures(k: dict, gold: list[dict]) -> dict[str, str]:
         if r and r.get("measure") and (k["name"] in (g.get("kpis") or []) or r["id"] == r_k):
             out[g["name"]] = r["measure"]
     return out
+
+
+def _as_at(rows: list[dict], when: str, ent: str | None) -> str:
+    """The as-at date a figure is read at when the question names none: the latest date on which the most entities have a row, so one entity that reported
+    later (the family trust, 13 Oct) does not leave the family's figures on that one entity (r1 uc-017, uc-031). No entity column: the latest date."""
+    by: dict[str, set] = {}
+    for r in rows:
+        by.setdefault(str(r[when])[:10], set()).add(str(r.get(ent)) if ent else "")
+    most = max(len(v) for v in by.values())
+    return max(d for d, v in by.items() if len(v) == most)
+
+
+def _shares(k: dict, rows: list[dict], texts: list[str], meas: str, got, names: dict[str, str]) -> dict | None:
+    """A share figure added up over each split the rows carry ("listed equity 36.37% by asset class"), with the total the rows give on the same as-at
+    date. None when no dimension splits the rows, so the plain read answers."""
+    parts = []
+    for c in texts:
+        sums: dict[str, Decimal] = {}
+        for r in rows:
+            n = _num(r.get(meas))
+            if n is not None and r.get(c) is not None:
+                key = names.get(str(r[c]), str(r[c])).replace("_", " ")
+                sums[key] = sums.get(key, Decimal(0)) + n
+        if len(sums) > 1:
+            parts.append((c.replace("_", " "), sorted(sums.items(), key=lambda kv: -kv[1])))
+    if not parts:
+        return None
+    total = next((_num(r.get("total_value")) for r in rows if _num(r.get("total_value")) is not None), None)
+    head = f"{k['name']} on {got.day} {_month_words(got)}" if got else k["name"]
+    say = (f"{head}: total {_money(total)}; " if total is not None else f"{head}: ") + "; ".join(
+        f"by {d}: " + "; ".join(f"{a} {v:,.2f}%" for a, v in sums[:SAID_FIGS + 1]) + ("; and more in the figures" if len(sums) > SAID_FIGS + 1 else "")
+        for d, sums in parts) + "."  # the sentence speaks for the largest shares; every share sits in the figures behind it
+    return {"answer": say, "figure": {"label": head, "value": _money(total) if total is not None else "", "change": ""},
+            "rows": [{"label": f"{k['name']} · by {d}", "value": "; ".join(f"{a} {v:,.2f}%" for a, v in sums)} for d, sums in parts]}
 
 
 def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | None = None, measure: str | None = None) -> dict | None:
@@ -1187,7 +1255,7 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     if not rows:
         return None
     if when:
-        top = max(str(r[when])[:10] for r in rows)
+        top = _as_at(rows, when, next((c for c in texts if "entity" in c), None))
         got = date.fromisoformat(top)
         if asked and asked[0] and (got.year, got.month) != (asked[0], asked[1]):
             return {"answer": f"Not available yet: {k['name']} has no figure for {_month_words(date(asked[0], asked[1], 1))}; the latest is {_month_words(got)}.",
@@ -1199,6 +1267,8 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     vals = [(r, _num(r.get(meas))) for r in rows if _num(r.get(meas)) is not None]
     if not vals:
         return None
+    if re.search(r"share|pct|percent", meas or "", re.I) and (sh := _shares(k, rows, texts, meas, got, names)):
+        return sh
     ccy = next((c for c in cols if CCY_COL.match(c)), None)
     ccys = {str(r.get(ccy)) for r, _ in vals if r.get(ccy)} if ccy else set()
     unit = next(iter(ccys)) if len(ccys) == 1 and not re.search(rf"\b{re.escape(next(iter(ccys)))}\b", k["name"], re.I) else ""
@@ -1217,7 +1287,9 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     total = sum((v for _, v in vals), Decimal(0))
     add = money and len(ccys) <= 1 and not re.search(r"percent|ratio|rate|return|share", k["name"].lower())
     say = "; ".join(f"{a} {_fmt(v, money)}" for a, v in parts)
-    return {"answer": f"{k['name']}{' ' + part if part else ''}{(' on ' if on_day else ' in ') + period if got else ''}: {say}." + (f" Total {_fmt(total, money)}." if add and len(parts) > 1 else ""),
+    owed = sum((_num(r.get("debt")) or Decimal(0) for r, _ in vals), Decimal(0)) if "debt" in cols and "debt" in k["name"].lower() else None
+    after = f" after {_fmt(owed, money)} of debt" if owed else ""  # "net worth after debt": what the family owes is said with the total
+    return {"answer": f"{k['name']}{' ' + part if part else ''}{(' on ' if on_day else ' in ') + period if got else ''}: {say}." + (f" Total {_fmt(total, money)}{after}." if add and len(parts) > 1 else ""),
             "figure": {"label": label + (" · total" if add else ""), "value": _fmt(total if add else parts[0][1], money), "change": ""},
             "rows": [{"label": a, "value": _fmt(v, money)} for a, v in parts]}
 
