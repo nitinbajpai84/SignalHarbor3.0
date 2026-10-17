@@ -8,6 +8,7 @@ import * as k from "./api";
 vi.mock("../../Frame", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("../../../api/client", () => ({ getCompany: vi.fn() }));
 vi.mock("./api", () => ({ getKnowledge: vi.fn() }));
+vi.mock("3d-force-graph", () => ({ default: class { constructor() { throw new Error("no WebGL in tests"); } } }));
 
 const m = vi.mocked(k);
 const at = () => render(<MemoryRouter><KnowledgePage /></MemoryRouter>);
@@ -28,6 +29,7 @@ test("the map shows the company, labelled edges and a selected box with its fact
   at();
   expect(screen.getByRole("status")).toHaveTextContent("Reading what the office knows");
   expect(await screen.findByRole("heading", { name: "How Evergreen works" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Columns" }));  // the original graph is one view of the map now
   expect(screen.getByText("decides")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Figure: Cash" }));
   expect(screen.getByText("Latest 4.14m")).toBeInTheDocument();
@@ -51,5 +53,6 @@ test("an empty company says so, and a failed read offers another try", async () 
   at();
   expect(await screen.findByRole("alert")).toHaveTextContent("I could not read");
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Columns" }));
   expect(await screen.findByRole("button", { name: "Figure: Cash" })).toBeInTheDocument();
 });

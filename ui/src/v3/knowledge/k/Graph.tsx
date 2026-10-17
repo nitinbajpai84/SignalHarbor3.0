@@ -1,15 +1,20 @@
 import type { KEdge, KNode, Kind } from "./api";
+import { KIND_LABEL, KIND_ONE } from "./kinds";
+
+export { KIND_LABEL, KIND_ONE };
 
 /** Columns by kind, left to right: who, what they hold, where data comes from, what is measured, what is built, what is decided. */
-const COLS: Kind[][] = [["person"], ["entity"], ["fund"], ["source", "file"], ["figure"], ["usecase"], ["decision"]];
+const COLS: Kind[][] = [["person"], ["entity"], ["fund"], ["source", "file"], ["document"], ["recipe"], ["figure"], ["signal"], ["rule"], ["usecase"], ["decision"]];
 const W = 150, H = 30, GX = 70, GY = 14, PAD = 12;
-export const KIND_LABEL: Record<Kind, string> = { person: "People", entity: "Entities", fund: "Funds", source: "Sources", file: "Files", figure: "Figures", usecase: "Use cases", decision: "Decisions" };
-export const KIND_ONE: Record<Kind, string> = { person: "Person", entity: "Entity", fund: "Fund", source: "Source", file: "File", figure: "Figure", usecase: "Use case", decision: "Decision" };
 /** Quiet tints by kind with slate (info) borders; status overrides: a live use case is done, one being built is Harbor's, a decision waiting needs a person. */
 export function look(n: KNode): { fill: string; stroke: string; dash?: string; tag?: string } {
+  if (n.kind === "usecase" && n.stage === "suggested") return { fill: "var(--card)", stroke: "var(--info)", dash: "4 3", tag: "Suggested" };
+  if (n.kind === "signal") return { fill: "var(--needs-soft)", stroke: "var(--needs)" };
+  if (n.kind === "rule") return { fill: "var(--done-soft)", stroke: "var(--done)" };
+  if (n.kind === "figure" || n.kind === "recipe") return { fill: "var(--harbor-soft)", stroke: "var(--harbor)" };
   if (n.kind === "usecase") return n.stage === "live" ? { fill: "var(--done-soft)", stroke: "var(--done)", tag: "Live" } : { fill: "var(--harbor-soft)", stroke: "var(--harbor)", dash: "4 3", tag: "Being built" };
   if (n.kind === "decision" && n.waiting) return { fill: "var(--needs-soft)", stroke: "var(--needs)", tag: "Waiting" };
-  if (n.kind === "source" || n.kind === "file") return { fill: "var(--paper)", stroke: "var(--info)", dash: "4 3" };
+  if (n.kind === "source" || n.kind === "file" || n.kind === "document") return { fill: "var(--paper)", stroke: "var(--info)", dash: "4 3" };
   if (n.kind === "entity" || n.kind === "fund") return { fill: "var(--info-soft)", stroke: "var(--info)" };
   return { fill: "var(--card)", stroke: "var(--info)" };
 }
