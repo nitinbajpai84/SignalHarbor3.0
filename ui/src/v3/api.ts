@@ -115,7 +115,7 @@ export interface Setup { steps: SetupStep[]; pack: { id: string; label: string; 
 export interface Tile { [key: string]: unknown }
 export interface Board { title: string; as_at: string; figures: Figure[]; tiles: Tile[] }
 export interface TraceStep { kind: string; label: string }
-export interface AskAnswer { answer: string; figure?: Figure; understood?: string; trace: TraceStep[]; used: string[] }
+export interface AskAnswer { answer: string; figure?: Figure; understood?: string; trace: TraceStep[]; used: string[]; rows?: { label: string; value: string }[] }
 export interface NoteFull { text: string; figures: Figure[]; history: { at: string; headline: string }[] }
 export interface CaseEvidence { source: string; row: string }
 export interface CaseStep { label: string; answer: string }

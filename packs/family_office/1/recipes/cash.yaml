@@ -15,6 +15,8 @@ recipes:
       from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
       join legal_entities as e on e.id = p.legal_entity_id where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all
     measure: cash
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: position_date, lead: "Cash on {position_date}:", say: "{entity} {currency} {cash}", max: 6}
     columns:
       cash: The cash the administrator reports at the end of the day.
     tie_out:
@@ -90,6 +92,9 @@ recipes:
       cast(case when c.currency_bought = t.currency then c.amount_bought when c.currency_sold = t.currency then c.amount_sold end - t.trade_amount as decimal(18,2)) as variance
       from conf as c join ref as r on r.ref = c.trade_reference join trade as t on t.id = r.trade_id
     measure: variance
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: variance, say: "{trade_reference} was confirmed at {confirmed_amount} against {trade_amount} traded, {variance} apart"}
+      - {if: not variance, once: true, say: "{n} confirmations match their trades"}
     columns:
       confirmed_amount: The confirmation's amount in the currency of the desk's trade.
       trade_amount: The desk's trade amount, as a positive number.
@@ -136,6 +141,10 @@ recipes:
       cast(b.commitment - b.called_before - b.noticed as decimal(18,2)) as unfunded_after_notice,
       b.noticed <= b.commitment - b.called_before and b.other_currency_calls = 0 as notice_fits, b.other_currency_calls as calls_in_other_currency from base as b
     measure: unfunded_after_notice
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: noticed_not_recorded and notice_fits, stop: true, say: "The {noticed_not_recorded} call fits {fund}: {called_before_notice} called of {commitment} committed, {called_after_notice} after it, leaving {unfunded_after_notice} unfunded"}
+      - {if: noticed_not_recorded, stop: true, say: "The {noticed_not_recorded} call does not fit {fund}: only {unfunded_before_notice} of the {commitment} committed is unfunded"}
+      - {once: true, say: "Uncalled across {n} commitments is {sum:unfunded_after_notice} after the noticed calls, {sum:unfunded_before_notice} before them"}
     columns:
       investor: The entity that made the commitment.
       commitment: What the office committed to the fund.
@@ -188,6 +197,9 @@ recipes:
       case when r.fee_rate is null then 'fee rate not on record' when p.matches = 0 then 'no commitment on record' when p.matches > 1 then 'investor not named on the notice' else 'rate times commitment' end as fee_basis
       from pick as p join instruments as i on i.id = p.instrument_id left join rate as r on r.instrument_id = p.instrument_id
     measure: fee_difference
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: not fee_matches, say: "{fund} call {call_no} fee {fee_on_notice} is {fee_difference} off the terms ({fee_per_terms})"}
+      - {if: fee_matches, say: "{fund} call {call_no} fee {fee_on_notice} matches the terms", max: 2}
     columns:
       call_no: The call number, the last digits of the notice reference.
       investor: The investor the notice names, empty when it names none.
@@ -229,6 +241,9 @@ recipes:
       from refd as a cross join ccy as y cross join (select 30 as days union all select 60) as w
       left join calls as c on c.entity_id = a.entity_id and c.currency = y.currency and (c.status in ('noticed', 'expected') or c.due_date >= a.d) group by a.entity_name, y.currency, w.days, a.d
     measure: calls_due
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: calls_due, say: "{entity} has {currency} {calls_due} of calls due within {window_days} days (next {next_due_date})"}
+      - {if: not calls_due, once: true, say: "No calls are due for {list:entity}"}
     columns:
       as_of: The entity's latest cash position date; its windows start here.
       calls_due: The open calls due up to the end of the window, including any already past due and unpaid.
@@ -281,6 +296,11 @@ recipes:
       from lastc as c join legal_entities as e on e.id = c.entity_id left join due as d on d.entity_id = c.entity_id and d.currency = c.currency
       left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency
     measure: cash_after_calls
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: shortfall, say: "{entity} is short {currency} {shortfall} for the {calls_due} of calls due {next_due_date}, after keeping the {buffer} buffer from cash of {cash}"}
+      - {if: shortfall, say: "{entity} is {currency} {shortfall} below its {buffer} buffer, with cash of {cash}"}
+      - {if: calls_due, say: "{entity} can pay the {currency} {calls_due} due {next_due_date} from cash of {cash} and keep the {buffer} buffer, with {cash_after_calls} to spare"}
+      - {say: "{entity} has {currency} {cash_after_calls} above the {buffer} buffer"}
     columns:
       cash: The administrator's closing cash for the entity and currency at its latest date (zero when the entity has a call in a currency it holds no cash in).
       calls_due: The open calls due in the same currency, including any past due and unpaid.
@@ -333,6 +353,10 @@ recipes:
       from notice as n join instruments as i on i.id = n.instrument_id left join basis as s on s.document_id = n.document_id
       left join callback as c on c.document_id = n.document_id left join paid as p on p.document_id = n.document_id
     measure: on_hold
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: changed and callback_verified_on, say: "{fund} call {call_no} moved from the account ending {old_ending} to {new_ending}, confirmed by call-back on {callback_verified_on}"}
+      - {if: changed and on_hold, say: "Not confirmed: {fund} call {call_no} asks for account {new_ending}, but earlier calls went to {old_ending}; it is held until a call-back on the number on file"}
+      - {if: changed, say: "{fund} call {call_no} asks for an account ending {new_ending} instead of {old_ending}, with no call-back on record"}
     columns:
       call_no: The call number, the last digits of the notice reference.
       notice_ending: The last four characters of the account the notice asks to pay.
@@ -388,6 +412,9 @@ recipes:
       from short as s join legal_entities as e on e.id = s.entity_id join fx as f on f.entity_id = s.entity_id and f.currency = s.currency
       left join lastc0 as o on o.entity_id = s.entity_id and o.currency = f.quote_currency
     measure: convert_amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: other_cash_covers, say: "Converting {convert_currency} {convert_amount} of its {other_cash} (worth {currency} {other_cash_in_call_currency}) at {rate} covers the {currency} {shortfall} short"}
+      - {say: "Converting {convert_currency} {convert_amount} at {rate} would cover the {currency} {shortfall}, but {entity} holds only {convert_currency} {other_cash}"}
     columns:
       shortfall: The amount short after calls due and the buffer, in the call currency.
       convert_currency: The currency held that would be converted.
@@ -440,6 +467,9 @@ recipes:
       cast(p.rate - f.rate as decimal(18,6)) as rate_difference, cast(100 * (p.rate - f.rate) / f.rate as decimal(9,4)) as difference_pct
       from pair as p left join fix as f on f.base_currency = p.currency_bought and f.quote_currency = p.currency_sold and f.day = p.trade_date
     measure: difference_pct
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "The bank's rate on {n} conversions was within {max:difference_pct}% of the fixing"}
+      - {if: confirmation = none on record, lead: "No bank confirmation:", say: "{trade_reference}"}
     columns:
       confirmation: bank confirmation when the bank's confirmation is on file; none on record when only the desk's conversion is.
       bank_rate: The rate on the bank's confirmation, or the rate the desk booked the conversion at when none is on record.
@@ -513,6 +543,10 @@ recipes:
       cast(sum(s.amount) over (partition by s.currency) as decimal(18,2)) as batch_total_in_currency,
       cast(sum(s.amount) filter (where not s.release_blocked) over (partition by s.currency) as decimal(18,2)) as releasable_total_in_currency from fin as s
     measure: amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: not release_blocked, lead: "Release", say: "{payee} {currency} {amount}", max: 4}
+      - {if: fee_variance, lead: "Hold", say: "{payee} {currency} {amount}, {fee_variance} above the fee schedule"}
+      - {if: release_blocked, lead: "Hold", say: "{payee} {currency} {amount}: {blocked_by}"}
     columns:
       payee: Who is paid, the holder of the account the payment goes to.
       amount: The payment as a positive number.
@@ -568,6 +602,11 @@ recipes:
       count(*) filter (where s.share_pct > s.limit_pct) over () as banks_over_limit
       from shared as s
     measure: usd_equivalent
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "Cash totals USD {sum:usd_equivalent}"}
+      - {say: "{bank} holds {usd_equivalent} ({share_pct}%)"}
+      - {if: over_limit, say: "{bank} is over the {limit_pct}% limit by {excess_pct}%"}
+      - {if: not limit_pct, once: true, say: "The policy sets no bank limit"}
     columns:
       accounts: How many accounts the bank holds for the office.
       as_of: The latest balance date among them.
@@ -644,6 +683,10 @@ recipes:
       cast(greatest(-p.cover_after, 0) as decimal(18,2)) as shortfall,
       cast(coalesce(greatest(p.top_cover, 0), 0) as decimal(18,2)) as best_other_spare, case when p.top_cover > 0 then p.top_entity end as best_other_entity from pick as p
     measure: cover_after_calls
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: is_named and transfer_needed, say: "{entity} is short {currency} {shortfall} for the {fund} call of {call_amount} due {due_date}; {best_other_entity} has {best_other_spare} spare after its buffer and can transfer it"}
+      - {if: is_named, say: "{entity} pays the {fund} call of {currency} {call_amount} from its own cash and keeps the {buffer} buffer"}
+      - {lead: "Others after the buffer:", say: "{entity} {cover_after_calls}"}
     columns:
       is_named: True for the entity the commitment names (or that carries the call when it names none); it is the one that pays.
       due_date: The call's due date, as text (yyyy-mm-dd).
@@ -702,6 +745,9 @@ recipes:
       from pair as n join legal_entities as a on a.id = n.lo join legal_entities as b on b.id = n.hi
       left join ref as r on r.lo = n.lo and r.hi = n.hi and r.currency = n.currency left join apr as x on x.lo = n.lo and x.hi = n.hi and x.currency = n.currency
     measure: balance_outstanding
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: sides_agree, say: "{lender} lent {borrower} {currency} {balance_outstanding} on {first_transfer_date}, reference {reference}, approved by {approved_by}; both sides agree"}
+      - {say: "{lender} lent {borrower} {currency} {balance_outstanding} on {first_transfer_date}, reference {reference}; the two sides do not agree"}
     columns:
       lender: The entity that is net out, owed the balance.
       borrower: The entity that owes it.
@@ -755,6 +801,9 @@ recipes:
       from notice as n join instruments as i on i.id = n.instrument_id cross join lastday as a
       left join got as g on g.instrument_id = n.instrument_id and g.pay_date = n.pay_date and g.currency = n.currency
     measure: gap
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: gap, say: "{fund} paid {received} of {notice_amount} on {pay_date}, {gap} short"}
+      - {if: not gap, once: true, say: "{n} other distributions arrived in full"}
     columns:
       notice_amount: The distribution the fund's notice says will be paid.
       received: The confirmed bank credits of the fund that belong to the notice, zero when none.
@@ -796,6 +845,10 @@ recipes:
       from calls as c join instruments as i on i.id = c.instrument_id cross join lastday as l
       left join pay as p on p.instrument_id = c.instrument_id and p.currency = c.currency and p.amount = c.amount and p.effective_date = c.due_date group by c.id, i.canonical_name, c.currency, c.amount, c.due_date, l.d
     measure: amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: status = not due, lead: "Not paid yet:", say: "{fund} {currency} {amount}"}
+      - {if: not status = paid, say: "{fund} {currency} {amount} due {due_date} is {status}"}
+      - {if: status = paid, once: true, say: "{n} earlier calls are paid, {sum:amount} in all"}
     columns:
       due_date: The call's due date, as text (yyyy-mm-dd).
       payments_found: How many confirmed payments of the exact amount to the fund are dated on the due date.

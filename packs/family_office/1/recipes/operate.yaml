@@ -59,6 +59,9 @@ recipes:
       cast(case when done_on is null and due_on < as_of then date_diff('day', due_on, as_of) when done_on > due_on then date_diff('day', due_on, done_on) end as integer) as days_late
       from s
     measure: late
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: close_month, once: true, say: "{close_month} close: {sum:done} of {n} steps done"}
+      - {latest: close_month, if: open, sort: days_late, lead: "Open:", say: "{step_name} ({owner}, {days_late} days late)", max: 4}
     columns:
       done: 1 when the step is resolved.
       open: 1 when the step is not resolved.
@@ -149,6 +152,9 @@ recipes:
       cast(count(*) over (partition by fund, call_no, case when call_no is null then id end) as integer) as copies from r
       qualify row_number() over (partition by fund, call_no, case when call_no is null then id end order by received_at, id) = 1
     measure: amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: due_date, if: management_fee, say: "{fund} call {call_no}: {currency} {amount} ({new_investments} for investments, {management_fee} fee) due {due_date}, to the account ending {account_ending}"}
+      - {latest: due_date, say: "{fund} call {call_no}: {currency} {amount} due {due_date}, to the account ending {account_ending}"}
     columns:
       amount: The amount the notice asks the investor to pay.
       due_date: The payment due date on the notice.
@@ -178,6 +184,8 @@ recipes:
       left join extracted_fields as f on f.document_id = d.id and f.field_name = 'call_no'
       where m.movement_type = 'call' and m.confirmation_status = 'noticed' and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
     measure: notices_open
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {lead: "Logged, not yet recorded:", say: "{fund} call {call_no}, {currency} {amount} due {due_date}"}
     columns:
       notices_open: 1 for each notice logged and not yet recorded against a commitment.
       amount: The amount the notice asks for.
@@ -213,6 +221,8 @@ recipes:
       where c.source_system_id = coalesce(o.src, n.src) and c.sheet_name = coalesce(o.sheet_name, n.sheet_name)) as integer) as batches_on_old_name
       from o full join n on n.k = o.k and n.sheet_name = o.sheet_name and n.src = o.src where o.k is null or n.k is null or o.source_column <> n.source_column
     measure: columns_changed
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "{sheet}: {old_name} was {change} to {new_name}; {batches_on_old_name} earlier batches use the old name"}
     columns:
       old_name: The column name in the approved mapping; empty for an added column.
       new_name: The column name in the new file; empty for a dropped column.
@@ -253,6 +263,9 @@ recipes:
       where dayofweek(t.x) between 1 and 5) end as integer) as business_days_overdue,
       cast(case when first_received is null or (due_date is not null and first_received > due_date) then 1 else 0 end as integer) as late_or_missing from j
     measure: late_or_missing
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: status = missing, stop: true, max: 2, sort: business_days_overdue, lead: "Missing:", say: "{statement_of} {kind} for {period_end}, {business_days_overdue} business days overdue"}
+      - {if: status = late, max: 2, sort: business_days_late, lead: "Late:", say: "{statement_of} {kind} for {period_end}, {business_days_late} business days late"}
     columns:
       received_on: The day the first statement for the period was received; empty when none was.
       status: on_time, late or missing.
@@ -282,6 +295,9 @@ recipes:
       from valuation_observations as a join documents as d on d.id = a.evidence_document_id and d.document_status = 'amended'
       join valuation_observations as o on o.id = a.supersedes_valuation_id join instruments as i on i.id = a.instrument_id
     measure: open_amendments
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: open_amendments, lead: "Needs a note on the issued report:", say: "{fund} {valuation_date} value {replaces} replaced by {amended_value} ({change})"}
+      - {if: not open_amendments, lead: "Already reflected:", say: "{fund} {valuation_date} value {replaces} replaced by {amended_value} ({change})"}
     columns:
       replaces: The value the amendment replaces.
       amended_value: The amended value.
@@ -320,6 +336,9 @@ recipes:
       case when s.supersedes_valuation_id is not null then 'amended' when s.valuation_type = 'manager_estimate' then 'estimate' else 'final' end as statement_kind
       from adm as a join stm as s on s.instrument_id = a.instrument_id and s.rn = 1 join instruments as i on i.id = a.instrument_id
     measure: difference
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: difference, sort: difference, lead: "Differs from the administrator:", say: "{fund} statement {statement_value} ({statement_kind}) against {administrator_value} ({administrator_status}), {difference} apart"}
+      - {if: not difference, once: true, say: "{n} other funds agree"}
     columns:
       statement_value: The latest manager statement value the office has received.
       administrator_value: The administrator's value at its latest position date.
@@ -368,6 +387,9 @@ recipes:
       join acc as a on a.entity = b.entity and a.currency = b.currency left join tol as t on t.ccy = o.currency
       where o.source_type in ('administrator', 'oms') and o.cash <> b.cash
     measure: cash_break
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: over_tolerance, latest: day, say: "{entity} {source} cash is {cash_break} off the bank on {day}, over the {tolerance} tolerance"}
+      - {if: cash_break, latest: day, say: "{entity} {source} cash is {cash_break} off the bank on {day}, inside the {tolerance} tolerance"}
     columns:
       bank_cash: The bank's closing cash for the entity, currency and day.
       other_cash: The administrator's or the desk's closing cash.

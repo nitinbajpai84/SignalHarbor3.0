@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useSession } from "../../useSession";
 import { MicButton } from "../../v1/voice";
 import V3Frame from "../Frame";
-import { useRead } from "../board/common";
+import { ShowFigures, useRead } from "../board/common";
 import { askConsume, getConsume, type ConsumeAnswer, type ConsumeData, type Reading } from "./consumeApi";
 import "./consume.css";
 
@@ -75,19 +75,7 @@ function Answer({ turn, golden, ask }: { turn: Turn; golden: string[]; ask: (q: 
       {a.figure ? <div className="v3c-figrow"><span className="v3c-big">{a.figure.value}</span>{a.figure.change ? <span className={`v3c-chg ${tone(a.figure.change)}`}>{a.figure.change}</span> : null}</div> : null}
       <p className="v3c-sentence">{a.answer}</p>
       <Chart series={a.series} rows={rows} />
-      {rows.length ? (
-        <div className="v3c-rows">
-          {rows.map((r, i) => {
-            const n = nums[i];
-            return (
-              <div key={r.label} className="v3c-rowi" style={{ borderTopColor: COLOURS[i % 3] }}>
-                <span>{r.label}{n != null && sum > 0 ? ` · ${((n / sum) * 100).toFixed(1)}%` : ""}</span>
-                <span className="mono">{r.value}</span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      <ShowFigures rows={rows.map((r, i) => ({ label: `${r.label}${nums[i] != null && sum > 0 ? ` · ${(((nums[i] as number) / sum) * 100).toFixed(1)}%` : ""}`, value: r.value }))} />
       <div className="v3c-chips noprint" role="group" aria-label="Follow-up questions">{golden.filter((q) => q !== turn.q).slice(0, 4).map((q) => <button key={q} type="button" onClick={() => ask(q)}>{q}</button>)}</div>
       <div className="v3c-acts noprint">
         <button type="button" className="go" onClick={() => window.print()}>Download PDF</button>

@@ -29,7 +29,8 @@ test("opens on the pre-answered question with figure, rows, source and timing; t
   open();
   expect(await screen.findByText("Evergreen Office")).toBeInTheDocument();
   expect(screen.getByText("4,463,398.82")).toBeInTheDocument();
-  expect(screen.getByText("2,305,906.48")).toBeInTheDocument();
+  expect(screen.getByText("2,305,906.48").closest("details")).not.toHaveAttribute("open");  // the rows sit behind the sentence, folded
+  expect(screen.getByText("Show the figures")).toBeInTheDocument();
   expect(screen.getByText(/Source: Bank statements and administrator, as at 31 Jul 2026/)).toBeInTheDocument();
   expect(screen.getByText("Answered in 3 ms (from memory)")).toBeInTheDocument();
   expect(screen.getByLabelText("Fund C")).toHaveClass("stale");

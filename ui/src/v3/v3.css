@@ -226,3 +226,12 @@ html:has(.v3),body:has(.v3),html:has(.lg-page),body:has(.lg-page){background:var
 .v3-why{margin:0;font-size:13px;color:var(--mute)}
 .v3 .v3-mode{gap:12px}
 .v3 .v3-mode select.v3-theme{width:auto;min-width:0;height:32px;min-height:0;padding:0 8px;border-radius:10px;border:1px solid var(--line);font:500 13px var(--font-body);cursor:pointer}
+/* An answer's figures, folded under its sentence ("Show the figures"): a quiet two-column table in the theme's own colours. */
+.v3-figs{border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--mute)}
+.v3-figs summary{cursor:pointer;color:var(--act);font-weight:500;width:max-content}
+.v3-figs summary:focus-visible{outline:2px solid var(--act);outline-offset:2px;border-radius:4px}
+.v3-figs table{width:100%;border-collapse:collapse;margin-top:8px}
+.v3-figs th,.v3-figs td{text-align:left;vertical-align:top;padding:6px 8px 6px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.v3-figs th{font-weight:500;color:var(--ink);width:38%}
+.v3-figs td{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+@media print{.v3-figs summary{display:none}.v3-figs::details-content{content-visibility:visible}}

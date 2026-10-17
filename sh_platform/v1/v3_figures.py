@@ -926,13 +926,129 @@ def relevance(text: str, r: dict) -> int:
 
 
 ROW_CAP = 25
+SAID_FIGS = 2  # the sentence speaks for the two figures the question fits best; the rest sit in the figures behind it
+FLAGS = {"first_row", "is_total", "is_latest", "latest", "is_named", "is_opening"}  # helper columns of a recipe: they pick a row, a person never reads them
+
+
+def _said(v, names: dict, iso: bool = False, money: bool | None = None) -> str | None:
+    """A cell as a person says it: a whole amount without ".00", other amounts to the cent, rates to their own decimals (up to four), a date as
+    "23 Oct 2026" (ISO in the figures behind the sentence, `iso`). `money`: the column is an amount (None: an amount is a number with two decimals)."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, bool):
+        return "yes" if v else "no"
+    if isinstance(v, str) and not iso and re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+        v = date.fromisoformat(v)
+    if isinstance(v, date):
+        return v.isoformat()[:10] if iso else f"{v.day} {v:%b %Y}"
+    if (n := _num(v)) is not None:
+        return _money(n) if (n.as_tuple().exponent == -2 if money is None else money) else _fmt(n, False)
+    return names.get(str(v), str(v))
+
+
+def _holds(cond: str | None, x: dict) -> bool:
+    """A line's `if`: "col" (truthy), "not col", "col = text", joined by " and "."""
+    if not cond:
+        return True
+    if " and " in cond:
+        return all(_holds(c, x) for c in cond.split(" and "))
+    neg = cond.startswith("not ")
+    c = cond[4:].strip() if neg else cond.strip()
+    if "=" in c:
+        col, want = (t.strip() for t in c.split("=", 1))
+        ok = str(x.get(col)).lower() == want.lower()
+    else:
+        ok = bool(x.get(c)) and str(x.get(c)).lower() not in ("false", "0")
+    return ok != neg
+
+
+def _fill(tpl: str, x: dict, pool: list[dict], names: dict, money: set | None = None) -> str | None:
+    """{col} from the row; {n}, {sum:col}, {max:col}, {min:col}, {list:col} over the rows the line holds for. None when a value is missing."""
+    gone = False
+
+    def one(m):
+        nonlocal gone
+        k = m.group(1)
+        if k == "n":
+            return str(len(pool))
+        how, _, col = k.rpartition(":")
+        cash = None if money is None else col in money
+        if how == "list":
+            seen = list(dict.fromkeys(s for y in pool if (s := _said(y.get(col), names))))
+            got = (", ".join(seen[:5]) + (f" and {len(seen) - 5} more" if len(seen) > 5 else "")) if seen else None
+        elif how in ("sum", "max", "min"):
+            nums = [n for y in pool if (n := _num(y.get(col))) is not None]
+            got = _said(sum(nums, Decimal(0)) if how == "sum" else (max if how == "max" else min)(nums), names, money=cash) if nums else None
+        else:
+            got = _said(x.get(col), names, money=cash)
+        gone = gone or got is None
+        return got or ""
+
+    out = re.sub(r"\{([a-z0-9_:]+)\}", one, tpl)
+    return None if gone else out
+
+
+def say(r: dict, rows: list[dict], names: dict | None = None, money: set | None = None) -> str | None:
+    """The recipe's own answer sentence (its `answer` lines in the pack) over the rows the question named, or None when it has none or no line holds.
+    A line: `say` (the template), `if` (a condition on the row), `lead` (words before the list), `max` (rows said, default 3), `once` (said once over
+    every row it holds for, for {n} and {sum:..}), `latest` (only the rows of the latest value of that column), `sort` (largest first), `stop` (no
+    later line once it is said). `if`: "col", "not col", "col = text", joined by " and ". A row said by one line is not said again by a later one.
+    `money`: the amount columns of the table (None: read from the values)."""
+    names = names or {}
+    out, used = [], set()
+    for spec in r.get("answer") or []:
+        spec = {"say": spec} if isinstance(spec, str) else spec
+        pool = [x for x in rows if _holds(spec.get("if"), x)]
+        if (c := spec.get("latest")) and (have := [x[c] for x in pool if x.get(c) is not None]):
+            pool = [x for x in pool if x.get(c) == max(have)]
+        if c := spec.get("sort"):  # largest first
+            pool = sorted(pool, key=lambda x: n if (n := _num(x.get(c))) is not None else Decimal("-Infinity"), reverse=True)
+        items: list[str] = []
+        for x in pool[:1] if spec.get("once") else pool:
+            if id(x) in used and not spec.get("once"):
+                continue
+            if s := _fill(spec["say"], x, pool, names, money):
+                items += [s] if s not in items else []
+                used |= set() if spec.get("once") else {id(x)}
+        if not items:
+            continue
+        cap = int(spec.get("max", 3))
+        line = "; ".join(items[:cap]) + (f"; and {len(items) - cap} more" if len(items) > cap else "")
+        if spec.get("lead") and (lead := _fill(spec["lead"], pool[0], pool, names, money)):
+            line = f"{lead} {line}"
+        out.append(line[0].upper() + line[1:] + ("" if line.endswith((".", "?", "!")) else "."))
+        if spec.get("stop"):
+            break
+    return " ".join(out) or None
+
+
+def _plain_sentence(name: str, r: dict, rows: list[dict], who, names: dict, money: set) -> str | None:
+    """No template: the figure, its subject and its measure: one row, or the total of a money measure in one currency, never a total of rates."""
+    m = r.get("measure")
+    rows = [x for x in rows if not x.get("is_total")] or rows
+    vals = [n for x in rows if (n := _num(x.get(m))) is not None]
+    if not vals:
+        return None
+    label = str(m).replace("_", " ")
+    if len(rows) == 1:
+        w = who(rows[0])
+        return f"{name}{' for ' + w if w else ''}: {label} {_said(rows[0][m], names, money=m in money)}."
+    ccy = {x.get("currency") for x in rows}
+    if len(vals) == len(rows) and len(ccy) == 1 and m in money:
+        unit = next(iter(ccy))
+        return f"{name}: {label} {_said(sum(vals, Decimal(0)), names, money=True)}{' ' + str(unit) if unit else ''} in total over {len(rows)} rows."
+    w = who(rows[0])
+    return f"{name}{' for ' + w if w else ''}: {label} {_said(rows[0][m], names, money=m in money)}, one of {len(rows)} rows."
+
+
+RATE_COL = re.compile(r"rate|pct|percent|fixing|ratio|share|price")
 
 
 def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1) -> dict | None:
     """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
-    `relevance`, at least `floor`, and within one of the best), every row of their ready tables for what the question names, each column stated, and a
-    total per money column. Every number is a row's own; whatever North called the figures, the answer reads their recipes' tables. None when no
-    such figure has rows."""
+    `relevance`, at least `floor`, and within one of the best), the rows of their ready tables for what the question names. `answer` is a short
+    sentence from each recipe's own `answer` lines (else the figure, its subject and its measure), in the pack's order; `rows` holds the figures behind
+    it, a line per row with its readable columns, and a total per money column. Every number is a row's own. None when no such figure has rows."""
     from sh_platform.v1 import b10_pack as P, cx_dash as CD, v3_recipes as R
     scored = [(relevance(text, r), k) for k in kpis if (r := R.bound(k)) and not R.held(th, k["name"])]
     top = max((sc for sc, _ in scored), default=0)
@@ -942,43 +1058,45 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
     gold = ((P.latest_approved(plane, pid) or {}).get("target") or {}).get("gold") or []
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
     names, q = aliases(plane), _tokens(text)
-    lines, short, seen, first = [], {}, set(), None
+    order = {r["id"]: i for i, r in enumerate(R.recipes())}
+    lines, said, seen, first = [], [], set(), None
     for k in figs:
         t = next((live[g["name"]] for g in covering(k, gold) if g["name"] in live and live[g["name"]]["rows"] and g["name"] not in seen), None)
         if t is None:
             continue
         seen.add(t["name"])
+        r = R.bound(k)
         cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
         texts = [c for c, ty in cols.items() if ty.startswith(("varchar", "text", "char")) and c not in META and not c.endswith("_id") and not c.startswith("run")]
         _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
         for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
             hit = [x for x in rows if x.get(c) is not None and (_tokens(f"{x[c]} {names.get(str(x[c]), '')}") & q) - GENERIC]
             rows = hit or rows
-        money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META
-                 and not re.search(r"rate|pct|percent|fixing|ratio|share|price", c)]  # amounts only: a rate or a percent is never added up
+        money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META and not RATE_COL.search(c)]  # never a rate
+
+        def who(x, texts=texts):
+            return " · ".join(names.get(str(x[c]), str(x[c])) for c in texts if x.get(c) not in (None, ""))
+
         for x in rows[:ROW_CAP]:
-            who = " · ".join(names.get(str(x[c]), str(x[c])) for c in texts if x.get(c) is not None)
-            said = []
-            for c, ty in cols.items():
-                v = x.get(c)
-                if c in texts or c in META or c.endswith("_id") or c.startswith("run") or v is None:
-                    continue
-                n = _num(v)
-                said.append(f"{c.replace('_', ' ')} " + (_fmt(n, c in money) if n is not None else "yes" if v is True else "no" if v is False else str(v)[:10]))
-            lines.append({"label": f"{k['name']} · {who}" if who else k["name"], "value": "; ".join(said)})
-            if "shortfall" in cols and _num(x.get("shortfall")):  # one line per amount: the shortfall and its conversion are the same short
-                short.setdefault(_num(x["shortfall"]), f"{who} is short by {_fmt(_num(x['shortfall']), True)}")
+            vals = [f"{c.replace('_', ' ')} {v}" for c in cols if c not in texts and c not in META and c not in FLAGS and not c.endswith("_id")
+                    and not c.startswith("run") and (v := _said(x.get(c), names, iso=True, money=c in money)) is not None]
+            lines.append({"label": f"{k['name']} · {who(x)}" if who(x) else k["name"], "value": "; ".join(vals)})
             first = first or k["name"]
+        body = [x for x in rows if not x.get("is_total")]  # a recipe's own total row is never added in again
         ccy = next((c for c in texts if CCY_COL.match(c)), None)
-        if len(rows) > 1 and money and len({x.get(ccy) for x in rows} if ccy else {None}) == 1:  # "the total across all funds": one currency only
-            tot = [f"{c.replace('_', ' ')} {_fmt(sum((_num(x.get(c)) or Decimal(0) for x in rows), Decimal(0)), True)}" for c in money]
-            lines.append({"label": f"{k['name']} · total of {len(rows)} rows", "value": "; ".join(tot)})
+        if len(body) > 1 and money and len({x.get(ccy) for x in body} if ccy else {None}) == 1:  # "the total across all funds": one currency only
+            tot = [f"{c.replace('_', ' ')} {_said(sum((_num(x.get(c)) or Decimal(0) for x in body), Decimal(0)), names, money=True)}" for c in money]
+            lines.append({"label": f"{k['name']} · total of {len(body)} rows", "value": "; ".join(tot)})
+        if len(said) < SAID_FIGS and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
+            said.append(((min(r.get("cards") or [999]), order.get(r["id"], 0)), s))  # the story's order: the notice before its payment, the short before the FX
     if not lines:
         return None
-    lead = "Not from its own cash alone: " + "; ".join(short.values()) + "." if short else "From the verified figures:"
-    return {"answer": lead + " " + " ".join(f"{r['label']}: {r['value']}." for r in lines), "figure": {"label": lines[0]["label"], "value": lines[0]["value"].split("; ")[0], "change": ""},
+    sentence = " ".join(s for _, s in sorted(said, key=lambda t: t[0])) or f"{first}: the figures are below."
+    return {"answer": sentence, "figure": {"label": lines[0]["label"], "value": lines[0]["value"].split("; ")[0], "change": ""},
             "rows": lines, "source": ", ".join(plain(n) for n in sorted(seen)), "used": [], "kpi": first,
-            "trace": [{"kind": "tool", "label": "Read the ready tables of the figures the question is about"}, {"kind": "guard", "label": "Every figure comes from the tables' rows"}]}
+            "trace": [{"kind": "tool", "label": "Read the ready tables of the figures the question is about"},
+                      {"kind": "guard", "label": "Every figure comes from the tables' rows"},
+                      {"kind": "tool", "label": "Said in one sentence from the recipes' own answer lines"}]}
 
 
 def _not_loaded(th: dict | None) -> str:

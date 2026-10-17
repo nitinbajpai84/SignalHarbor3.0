@@ -25,6 +25,9 @@ recipes:
       cast(1 as integer) as renewing_contracts
       from c where c.next_renewal_date - cast(coalesce(c.notice_days, 0) as integer) <= (select d from asat) + 90
     measure: renewing_contracts
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: notice_deadline, say: "{vendor_name} {currency} {annual_cost} a year renews in {days_to_renewal} days; notice by {notice_deadline}"}
+      - {say: "{vendor_name} {currency} {annual_cost} a year renews in {days_to_renewal} days"}
     columns:
       annual_cost: The contract's annual cost in its own currency.
       days_to_renewal: Days from the as-at date to the next renewal date; negative when the renewal date has passed.
@@ -73,6 +76,9 @@ recipes:
       cast(case when l.month < cast(date_trunc('month', (select d from asat)) as date) then 1 else 0 end as integer) as earlier
       from l left join portfolios as p on p.id = l.paid_from_portfolio_id left join legal_entities as e on e.id = l.legal_entity_id
     measure: owed
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: owed, latest: month, lead: "Owed for {month_name}:", say: "{member_name} {currency} {owed}", max: 5}
+      - {if: not owed, latest: month, once: true, say: "{list:member_name} are paid for {month_name}"}
     columns:
       month_name: The month in words, for messages (September 2026).
       scheduled: The allowance the schedule sets for the member and month.
@@ -133,6 +139,9 @@ recipes:
       case when x.check_status = 'checked' then cast(round(x.rate * 100, 4) as decimal(10,4)) end as rate_schedule_pct, x.check_status
       from x
     measure: variance
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: variance, lead: "Hold:", say: "{invoice_no} {vendor} billed {billed}, {variance} above the {expected} expected"}
+      - {if: not variance, lead: "Pay as billed:", say: "{invoice_no} {billed}", max: 4}
     columns:
       billed: The amount due on the invoice.
       expected: Fee base times the schedule rate, divided by the billing periods a year, to the cent; empty when the invoice could not be checked (see check_status).

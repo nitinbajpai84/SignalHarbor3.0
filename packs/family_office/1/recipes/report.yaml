@@ -17,6 +17,8 @@ recipes:
       from positions as l join instruments as i on i.id = l.instrument_id left join portfolios as p on p.id = l.portfolio_id
       join tot as t on t.portfolio_id is not distinct from l.portfolio_id and t.position_date = l.position_date and t.currency = l.currency group by all
     measure: concentration_pct
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: position_date, sort: concentration_pct, lead: "Largest issuers on {position_date}:", say: "{issuer} {concentration_pct}% of {portfolio}"}
     columns:
       exposure: The market value held in the issuer.
       concentration_pct: The issuer's share of everything the portfolio holds on the date, in percent.
@@ -40,6 +42,8 @@ recipes:
       from valuation_observations as a join valuation_observations as o on o.id = a.supersedes_valuation_id join instruments as i on i.id = a.instrument_id
       where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id)
     measure: change_since_report
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "{fund} moved {change_since_report} since the report, {original_value} to {amended_value} for {valuation_date}"}
     columns:
       original_value: The valuation in the issued report, the one the amendment replaces.
       amended_value: The amended valuation.
@@ -112,6 +116,8 @@ recipes:
       p.months_without_benchmark, p.gap as benchmark_gap, p.months_not_usable, p.why_not as data_note
       from p join portfolios as g on g.id = p.portfolio_id
     measure: portfolio_return_pct
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: to_date, say: "{portfolio} {portfolio_return_pct}% for {period_label} against {benchmark_return_pct}% for the benchmark"}
     columns:
       portfolio_return_pct: The portfolio's return over the period in percent, monthly returns chain-linked; empty when a month of the period has no return (data_note says why).
       benchmark_return_pct: The approved benchmark's return over the same months in percent; empty when an index level is missing for a month (months_without_benchmark says how many).
@@ -189,6 +195,8 @@ recipes:
       abs(sum(y.allocation + y.selection + y.interaction) over (partition by y.portfolio_id, y.month_end) - (y.rp_total - y.rb_total)) < 0.0001 as adds_up
       from y join portfolios as g on g.id = y.portfolio_id
     measure: total_effect_pct
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: month_end, lead: "{portfolio} {month_end}, {active_pct}% active:", say: "{asset_class} allocation {allocation_pct}%, selection {selection_pct}%"}
     columns:
       allocation_pct: The effect of holding more or less of the class than the benchmark does, in percentage points of return.
       selection_pct: The effect of the class return differing from the benchmark's class return, on the benchmark weight.
@@ -234,6 +242,9 @@ recipes:
       case when y.over_limit then cast((y.exposure - y.limit_pct / 100 * y.total) / (1 - y.limit_pct / 100) as decimal(18,2)) end as cost_to_cure
       from y
     measure: exposure
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: status = real breach, latest: position_date, sort: concentration_pct, lead: "Over the single-name limit on {position_date}:", say: "{holding} {concentration_pct}% against {limit_pct}%, {cost_to_cure} to sell to cure"}
+      - {if: over_limit, latest: position_date, say: "{holding} {concentration_pct}% is over {limit_pct}% but {status}"}
     columns:
       concentration_pct: The holding's share of the portfolio on the position date, in percent.
       limit_pct: The signed single-name limit of the portfolio, in percent.
@@ -284,6 +295,9 @@ recipes:
       case when not (pct < min_pct or pct > max_pct) then 'inside band' when coalesce(oldest_value_days > (select days from stale), false) then 'outside band, possibly stale' else 'outside band' end as status
       from x
     measure: bucket_value
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: outside_band, say: "{bucket} in {portfolio} is {allocation_pct}%, outside the {min_pct}% to {max_pct}% band"}
+      - {lead: "Inside the band:", say: "{bucket} {allocation_pct}% ({min_pct}% to {max_pct}%)", max: 4}
     columns:
       allocation_pct: The bucket's share of the portfolio on the position date, in percent.
       outside_band: True when the share is below the minimum or above the maximum of the signed limit.
@@ -325,6 +339,8 @@ recipes:
       cast(coalesce(sum(over_limit) filter (where not is_opening) over (partition by portfolio, rule_code, version_number), 0) as integer) as breaches_in_period,
       cast(month_end = max(month_end) over (partition by portfolio) as integer) as is_latest from r
     measure: over_limit
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {lead: "Largest name against the {limit_pct}% limit:", say: "{month_end} {largest_holding} {largest_name_pct}%", max: 6}
     columns:
       largest_name_pct: The largest holding's share of the portfolio at the month end, in percent.
       over_limit: 1 when that share is above this version's limit at that month end, else 0; its sum is the breaches the version would have caused.
@@ -361,6 +377,9 @@ recipes:
       select b.*, count(*) over (partition by report_month) as lines_in_month, count(*) filter (where difference is distinct from 0) over (partition by report_month) as lines_off
       from b
     measure: difference
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: difference, lead: "Off the administrator:", say: "{line} {report_month}: report {report_value}, administrator {administrator_value}, {difference} apart", max: 4}
+      - {if: not difference, once: true, say: "{n} other lines agree with the administrator"}
     columns:
       report_value: The value on the issued report's line, in USD.
       administrator_value: What the administrator held for the same name on the report date; empty when the administrator has no such name.
@@ -401,6 +420,9 @@ recipes:
       cast(100.0 * sum(case when coalesce(abs(report_value - source_value) < 0.005, false) and coalesce(lower(status), '') <> 'estimated' then 1 else 0 end) over () / count(*) over () as decimal(9,2)) as share_ready_pct
       from sec
     measure: report_value
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "{share_ready_pct}% of the report is ready to sign"}
+      - {if: not ready, lead: "Not ready:", say: "{section} ({reason})", max: 4}
     columns:
       has_source: False when the section has no source figure to be checked against.
       ties: True when the section's figure equals the same figure from the administrator (or, for the FX translation, from the USD total and the fixing).
@@ -431,6 +453,8 @@ recipes:
       from rep as r join extracted_fields as u on u.document_id = r.id and u.field_name = 'Total' left join extracted_fields as s on s.document_id = r.id and s.field_name ilike 'total (sgd)%'
       left join fx on fx.d = r.document_date
     measure: total_usd
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "The {report_date} report totals USD {total_usd} ({total_status}), SGD {total_sgd} at {usd_sgd_fixing}"}
     columns:
       total_usd: The report's Total line in USD.
       total_sgd: The USD total times the WMR USD/SGD fixing of the report date.
@@ -463,6 +487,9 @@ recipes:
       count(*) over (partition by request_id) as items_in_request, count(*) filter (where source_file is null) over (partition by request_id) as untraced_items
       from j where rn = 1
     measure: figure
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, say: "{share_traced_pct}% of the {items_in_request} sampled figures trace to a source"}
+      - {if: not traced, lead: "Not traced:", say: "{line} {report_month} {figure}"}
     columns:
       traced: True when an issued report line with the same month, name and figure exists.
       source_file: The issued report the figure was read from; empty when the item cannot be traced.
@@ -520,6 +547,8 @@ recipes:
       union all select 'Proposals', 'cfo', 'cash_after_calls', calls.n || ' capital call(s) noticed for ' || cast(round(calls.amount) as bigint) || ' and ' || deals.n || ' deal(s) in the pipeline for ' || cast(round(deals.amount) as bigint),
       null, calls.n + deals.n, null, est.report_date, cast(calls.amount as decimal(18,2)), cast(deals.amount as decimal(18,2)) from calls, deals, est
     measure: amount
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {lead: "Committee pack:", say: "{section} ({owner_role}): {status}", max: 5}
     columns:
       owner_role:  The role id that owns the section in the pack.
       status: What state the section is in, from the data.

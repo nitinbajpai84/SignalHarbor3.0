@@ -79,7 +79,7 @@ TH = {"id": "t-1", "pid": "prj-1"}
 
 
 def test_verified_figure_wins_over_the_forecast(monkeypatch):
-    fig = {"answer": "Not from its own cash alone: Evergreen Holdings · USD is short by 270,000.00.", "figure": {"label": "Shortfall", "value": "270,000.00"}}
+    fig = {"answer": "Evergreen Holdings is short USD 270,000 for the 1,250,000 of calls due 23 Oct 2026.", "figure": {"label": "Shortfall", "value": "270,000.00"}}
     _stub(monkeypatch, fig, ZERO)
     assert C.verified_answer(None, None, "Can Holdings pay the Cedarpoint call on the 23rd?", None, TH) is fig
 
@@ -98,7 +98,7 @@ def test_forecast_answers_when_no_figure_does(monkeypatch):
 # ---- the call answer reads the recipe tables -------------------------------------------------------------------------------------------------
 
 RIDS = ("cash_after_calls", "fx_required", "bank_details_changed", "call_payment_status", "payment_batch", "commitments_by_fund", "called_to_date",
-        "call_notice_fields", "net_worth")
+        "call_notice_fields", "net_worth", "fx_rate_check")
 
 
 @pytest.fixture(scope="module")
@@ -130,7 +130,7 @@ def test_call_question_states_every_figure(office, monkeypatch):
     said = got["answer"].replace(",", "")
     for want in ("1230000", "1600000", "1194029.85", "1250000", "250000", "270000", "361800", "1.34"):
         assert want in said, (want, got["answer"])
-    assert got["answer"].startswith("Not from its own cash alone")
+    assert got["answer"].startswith("Evergreen Holdings is short USD 270,000")
 
 
 @pytest.mark.parametrize("ask, bound, want", [
@@ -173,3 +173,63 @@ def test_question_suggests_the_recipe(say, rid):
     kpis = [{"name": "Weather", "definition": "Rain in mm."}]
     R.bind(None, None, kpis, say)
     assert rid in {k.get("built_from") for k in kpis}
+
+
+# ---- the answer reads like a colleague: one sentence with the key numbers, the rows behind it ---------------------------------------------------
+
+def _persona():
+    import importlib.util
+    path = Path(__file__).resolve().parents[2] / "docs" / "test" / "uc-live" / "uc6-scripts" / "v3_persona.py"
+    spec = importlib.util.spec_from_file_location("v3_persona_w6", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+CARDS = [  # (card, question, North's figures and the recipes they are bound to, the numbers the sentence itself must hold)
+    ("uc-001-noticelog", "A Cedarpoint call notice just came in by email. Which fund, how much and by when?",
+     {"Capital call payment status": "call_payment_status", "Call notice fields": "call_notice_fields", "Net worth": "net_worth"}, ["1,250,000", "900,000", "350,000", "4471"]),
+    ("uc-002-callrecord", "Does call 7 fit what we committed to Cedarpoint Ventures III, and what is left after it?",
+     {"Unfunded commitment after call": "called_to_date", "Net worth": "net_worth"}, ["10,000,000", "6,000,000", "7,250,000", "2,750,000"]),
+    ("uc-004-callcheck", "Can Holdings pay the Cedarpoint call on the 23rd?", {"Shortfall": "cash_after_calls", "SGD conversion amount": "fx_required"},
+     ["1,230,000", "1,600,000", "1,194,029.85", "1,250,000", "250,000", "270,000", "361,800", "1.34"]),
+    ("uc-005-benefcheck", "Cedarpoint now says to wire to an account ending 4471. Is that really them?",
+     {"Account number match": "call_payment_status", "Payment hold flag": "payment_batch", "Bank details changed": "bank_details_changed"}, ["2209", "4471"]),
+    ("uc-006-fxneed", "We hold SGD and need USD for the call. How much do we convert, and did the bank trade at the right rate?",
+     {"SGD to convert": "fx_required", "Bank rate check": "fx_rate_check"}, ["361,800", "1.34"]),
+    ("uc-007-pacing", "What's our unfunded commitment across all funds?", {"Unfunded commitments": "commitments_by_fund", "Net worth": "net_worth"}, ["14,600,000"]),
+    ("uc-008-payrun", "Which payments to release", {"Payments ready": "payment_batch", "Net worth": "net_worth"}, ["5,400", "16,234.50", "6,180", "1,030", "1,250,000"]),
+]
+
+
+@pytest.mark.parametrize("card, ask, bound, key", CARDS, ids=[c[0] for c in CARDS])
+def test_answer_is_one_sentence_with_the_key_numbers(office, monkeypatch, card, ask, bound, key):
+    import re
+    from sh_platform.v1 import b10_pack as P, cx_dash as CD
+    plane, tables = office
+    monkeypatch.setattr(P, "latest_approved", lambda *a: {"target": {"gold": [{"name": t["name"], "purpose": t["purpose"]} for t in tables]}})
+    monkeypatch.setattr(CD, "gold_tables", lambda *a: tables)
+    kpis = [{"name": n, "built_from": r} for n, r in bound.items()]
+    got = F.recipe_rows(plane, ask, "prj-1", {}, kpis, floor=2 if not C.CALLS.search(ask) else 1)
+    said = got["answer"]
+    print(card, len(said.split()), said)
+    for k in key:
+        assert k in said, (k, said)
+    assert len(said.split()) <= 42, said
+    assert not re.search(r"run|gold_|_id|[0-9a-f]{8}-[0-9a-f]{4}", said, re.I), said
+    assert got["rows"] and all(r["label"] and r["value"] for r in got["rows"])
+    assert got["kpi"]  # "Where this number comes from" links the figure record the answer was read through
+    vp = _persona()  # the persona check reads the sentence and the figures behind it: every number of the card's check is there
+    _, build = vp.load_uc(card)
+    assert vp.missing(vp.said(got), build["check"]["expect"]) == []
+
+
+def test_say_formats_like_a_person():
+    r = {"answer": [{"if": "shortfall", "say": "{entity} is short {currency} {shortfall} due {due}"}, {"once": True, "say": "{n} rows, {sum:cash} in all"}]}
+    from datetime import date
+    from decimal import Decimal
+    rows = [{"entity": "A", "currency": "USD", "shortfall": Decimal("270000.00"), "due": date(2026, 10, 23), "cash": Decimal("16234.50")},
+            {"entity": "B", "currency": "USD", "shortfall": Decimal("0.00"), "due": None, "cash": Decimal("1.00")}]
+    assert F.say(r, rows) == "A is short USD 270,000 due 23 Oct 2026. 2 rows, 16,235.50 in all."
+    assert F.say({"answer": [{"say": "{rate}"}]}, [{"rate": Decimal("1.3400000000")}]) == "1.34."
+    assert F.say({}, rows) is None

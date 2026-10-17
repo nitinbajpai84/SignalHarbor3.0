@@ -46,12 +46,26 @@ export function FigureCard({ f }: { f: Figure }) {
   );
 }
 
-/** Lumen's answer with how it was worked out and what it used. */
+/** The rows behind an answer's sentence, folded under "Show the figures": each figure's label and its readable values. */
+export function ShowFigures({ rows }: { rows?: { label: string; value: string }[] }) {
+  if (!rows?.length) return null;
+  return (
+    <details className="v3-figs">
+      <summary>Show the figures</summary>
+      <table>
+        <tbody>{rows.map((r, i) => <tr key={`${r.label}-${i}`}><th scope="row">{r.label}</th><td>{r.value}</td></tr>)}</tbody>
+      </table>
+    </details>
+  );
+}
+
+/** Lumen's answer with how it was worked out and what it used: the sentence first, the figures behind it folded. */
 export function AnswerCard({ a }: { a: AskAnswer }) {
   return (
     <article className="v3-card v3b-answer" aria-label="Harbor's answer">
       {a.figure ? <FigureCard f={a.figure} /> : null}
       <p>{a.answer}</p>
+      <ShowFigures rows={a.rows} />
       {a.understood ? <p className="v3-mute">How I understood you: {a.understood}</p> : null}
       {a.trace.length ? (
         <div>

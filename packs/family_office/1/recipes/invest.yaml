@@ -32,6 +32,9 @@ recipes:
       select entity, fund, currency, as_at, committed, called, noticed, unfunded, 0 as is_total from fr union all select 'All entities', 'All funds',
       currency, max(as_at), sum(committed), sum(called), sum(noticed), sum(unfunded), 1 from fr group by currency
     measure: unfunded
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: is_total, stop: true, say: "Unfunded commitments total {currency} {unfunded} across all funds: {called} called of {committed} committed"}
+      - {sort: unfunded, lead: "Unfunded:", say: "{fund} {currency} {unfunded} of {committed}", max: 4}
     columns:
       committed: What the office committed to the fund.
       called: 'Capital called to date: the register''s figure plus the calls logged since, a noticed call included.'
@@ -80,6 +83,9 @@ recipes:
       headroom, w.gaps + t.gaps as conversion_gaps, r.rule_version_id from nw as w cross join cmt as t join rl as r on r.rule_code =
       'allocation_private_markets'
     measure: headroom
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: limit_pct, say: "Room under the {limit_pct}% private markets budget is {currency} {headroom}: {committed} committed of {budget}"}
+      - {once: true, say: "The policy sets no private markets budget, so there is no room to compute"}
     columns:
       currency: 'USD: the reporting currency of the office; every amount is converted to it.'
       conversion_gaps: 'How many amounts have no fixing to convert them; not zero means the budget figures are empty.'
@@ -129,6 +135,8 @@ recipes:
       previous_on is not null and answer is distinct from previous_answer then 1 else 0 end as integer) as changed, cast(case when answer is null or
       lower(answer) like '%to follow%' then 1 else 0 end as integer) as open_item from j
     measure: changed
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: changed, lead: "Changed:", say: "{topic} from {previous_answer} to {answer}", max: 6}
     columns:
       answer: 'The manager''s answer in this questionnaire, as read from the document.'
       previous_answer: 'The same manager''s answer in the questionnaire before this one.'
@@ -193,6 +201,8 @@ recipes:
       on v1.cid = c.id join cum as u on u.cid = c.id join instruments as i on i.id = c.instrument_id left join legal_entities as e on e.id =
       c.legal_entity_id left join irr as r on r.cid = c.id left join dist as d on d.cid = c.id left join dn as n on n.cid = c.id
     measure: tvpi
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {sort: irr_pct, lead: "IRR and TVPI:", say: "{fund} {irr_pct}% ({tvpi}x)", max: 8}
     columns:
       distributions_not_received: 'Distributions noticed, due by the register date and not confirmed by a bank credit. Not zero means the distributions are incomplete.'
       opening_value: 'The manager''s value on the first date on file, treated as paid in on that date.'
@@ -251,6 +261,8 @@ recipes:
       cast(sum(fees) as decimal(18,2)) as fees_paid, cast(case when sum(no_terms) = 0 then sum(expected) end as decimal(18,2)) as expected_fees, cast(case when sum(no_terms) = 0 then sum(above) end as decimal(18,2)) as fees_above_terms, cast(sum(no_terms) as integer) as fee_rows_without_terms, cast(sum(net) as decimal(18,2)) as net_gain, cast(sum(net + fees) as decimal(18,2)) as gross_gain, cast(case when sum(net + fees) >
       0 then round(100 * sum(fees) / sum(net + fees), 2) end as decimal(9,2)) as fee_drag_pct, case when sum(fees) = 0 then 'no fees paid' when sum(net + fees) > 0 then 'fees are ' || round(100 * sum(fees) / sum(net + fees), 2) || ' percent of the gross gain' else 'the share of gain is not stated: the gross gain is not positive' end as fee_drag_text from pf group by all
     measure: fees_paid
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {sort: fees_paid, say: "{manager} fees {fees_paid} ({fees_above_terms} above terms), net gain {net_gain}", max: 4}
     columns:
       fee_rows_without_terms: 'Fee rows of funds whose fee terms are not on record. Not zero means the terms test cannot be made for the manager.'
       fee_drag_text: 'The share of gain in words, or why it is not stated.'
@@ -293,6 +305,9 @@ recipes:
       and c.field_name = 'counterparty' join mtg as m on m.manager = c.value_text left join extracted_fields as t on t.document_id = d.id and t.field_name =
       'team_change' where d.document_type = 'newsletter' and d.document_date > m.last_meeting) select * from st union all select * from nl
     measure: value
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: restated_from, stop: true, say: "{fund} value for {period} restated from {restated_from} to {value} on {item_date}"}
+      - {sort: value, lead: "Since the last meeting on {last_meeting}:", say: "{fund} {status_kind} value {value} on {item_date}"}
     columns:
       replaced_on: 'For a statement that a later one replaces, the date of the replacement; empty otherwise. It stays in the list because it did arrive.'
       last_meeting: The date of the last recorded meeting with the manager.
@@ -369,6 +384,8 @@ recipes:
       class_pct is null then 'not set' when class_room_after is null then 'not stated' when class_room_after >= 0 then 'within' else 'over' end as
       class_status, gaps + tgap as conversion_gaps from y
     measure: ticket
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "{deal_name}: the {currency} {ticket} ticket is {ticket_pct_of_uncalled}% of the {uncalled_before} uncalled, taking it to {uncalled_after}; budget {budget_status}"}
     columns:
       conversion_gaps: 'How many amounts have no fixing to convert them to USD; not zero means the figures that need them are empty.'
       ticket: 'The commitment the office would make (the deal''s target commitment).'
@@ -430,6 +447,9 @@ recipes:
       = q.manager where exists (select 1 from cu as c where c.instrument_id = i.id)) select fund, currency, figure, case figure when 'commitment' then 'commitment' when 'called' then 'capital called' when 'unfunded' then 'unfunded' when 'latest_value' then 'latest value' when 'fee_in_call' then 'fee in the latest call' when 'ddq_changes' then 'questionnaire answers changed' else figure end as figure_label, cast(value as decimal(18,2)) as value,
       as_at, detail, source, cast(traced as integer) as traced from rows_
     measure: value
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: not traced, lead: "Not traced:", say: "{fund} {figure_label} {value}"}
+      - {once: true, say: "{n} memo figures, {sum:traced} traced to a source"}
     columns:
       figure_label: 'The figure in plain words.'
       figure: 'commitment, called, unfunded, latest_value, fee_in_call or ddq_changes.'
@@ -512,6 +532,8 @@ recipes:
       y.class_pct as class_limit_pct, y.class_room_after, case when y.class_pct is null then 'not set' when y.class_room_after is null then 'not stated'
       when y.class_room_after >= 0 then 'within' else 'over' end as class_status, y.gaps + y.tgap as conversion_gaps from y cross join cash as c
     measure: cash_usd
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "{deal_name}: {new_commitment} takes uncalled to {uncalled_after}; cash of {cash_usd} covers {cash_cover_pct}% of it ({cash_status}); budget {budget_status}"}
     columns:
       cash_oldest_on: 'The oldest position date among the cash accounts counted.'
       conversion_gaps: 'How many amounts have no fixing to convert them to USD.'

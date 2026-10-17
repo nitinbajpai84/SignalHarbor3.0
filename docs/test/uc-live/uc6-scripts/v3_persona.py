@@ -51,6 +51,11 @@ def norm(s: str) -> str:
     return s.replace(",", "").lower()
 
 
+def said(out: dict) -> str:
+    """What the answer shows: the sentence, then the figures behind "Show the figures" (each row's label and value)."""
+    return " ".join([str(out.get("answer") or ""), *(f"{r.get('label', '')} {r.get('value', '')}" for r in out.get("rows") or [] if isinstance(r, dict))])
+
+
 def missing(answer: str, expect: list[str]) -> list[str]:
     a = norm(answer)
     return [e for e in expect if norm(e) not in a and norm(e).removesuffix(".00") not in a]
@@ -243,7 +248,7 @@ def run(role: dict, build: dict, n: int) -> None:
                 break
             time.sleep(15)
         answer = out.get("answer", "") if isinstance(out, dict) and st < 400 else f"HTTP {st}: {out}"
-        gone = missing(answer, expect) if st < 400 else expect
+        gone = missing(said(out), expect) if st < 400 else expect
         ok = st < 400 and bool(answer.strip()) and not gone
         s["answer"], s["check"] = answer, {"ask": ask, "expect": expect, "missing": gone, "pass": ok, "http": st}
         for name, url in (("desk", "/v3/desk"), ("build", f"/v3/thread/{tid}"), ("consume", "/v3/board")):

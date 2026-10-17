@@ -19,6 +19,8 @@ recipes:
       create table {name} as with {positions} select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as net_worth
       from positions as l join portfolios as p on p.id = l.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id group by all
     measure: net_worth
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: position_date, lead: "Net worth on {position_date}:", say: "{portfolio} {currency} {net_worth}", max: 4}
     columns:
       net_worth: The market value of everything held at the position date, in the currency shown.
       position_date: The date the positions are as at.
@@ -58,6 +60,9 @@ recipes:
       (row_number() over (partition by currency order by instrument) = 1) as first_row
       from flagged
     measure: gap_value
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: has_gap, lead: "Needs a class or identifier:", say: "{instrument} {currency} {market_value}", max: 4}
+      - {if: has_gap, once: true, say: "That is {gap_value_total} in all, {gap_pct_of_net_worth}% of net worth"}
     columns:
       gap_value: The market value held in an instrument that has a gap (0 for one that has none).
       has_gap: True when the instrument has no asset class or no approved identifier.
@@ -102,6 +107,8 @@ recipes:
       select s.*, t.stale_count, t.stale_names, t.stalest_fund, t.estimate_count, t.estimate_names, t.stale_max_fund, cast(t.stale_max_pct as decimal(9,2)) as stale_max_pct, t.stale_max_age,
       (row_number() over (order by s.age_days desc, s.fund) = 1) as first_row from s cross join tot as t
     measure: age_days
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: stale, sort: age_days, lead: "Older than {stale_after_days} days:", say: "{fund} {age_days} days ({valuation_date})", max: 4}
     columns:
       age_days: Days from the latest valuation date to the as-of date.
       stale: True when the value is older than the stale threshold.
@@ -151,6 +158,8 @@ recipes:
       (row_number() over (partition by g.currency order by g.position_date desc, g.market_value desc) = 1) as first_row
       from g window w as (partition by g.position_date, g.currency)
     measure: share_pct
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: position_date, sort: market_value, lead: "On {position_date}:", say: "{asset_class} {share_pct}% of {entity}", max: 4}
     columns:
       market_value: The market value held in the class and entity at the position date.
       share_pct: The row's share of everything held on the position date, in the same currency, in percent.
@@ -210,6 +219,9 @@ recipes:
       from agg as a join instruments as i on i.id = a.instrument_id and i.instrument_type = 'private_fund'
       left join qg as x on x.instrument_id = a.instrument_id and x.period_end = a.period_end
     measure: implied_gain
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: unexplained, say: "{fund} {period_end} is not explained by {unexplained}: {prior_value} plus calls {calls} less distributions {distributions} plus gain {reported_gain} against {closing_value}"}
+      - {if: latest, lead: "Latest quarter:", say: "{fund} {prior_value} to {closing_value}, gain {implied_gain}", max: 2}
     columns:
       prior_value: The fund's value at the previous quarter end.
       calls: Confirmed capital calls paid in the quarter.
@@ -277,6 +289,8 @@ recipes:
       (row_number() over (partition by r.currency order by r.value_month_end desc nulls last, r.portfolio) = 1) as first_row
       from r window w as (partition by r.currency)
     measure: gain_loss
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {say: "{portfolio} {gain_loss} ({gain_pct}%) this month: {value_today} today against {value_month_end} on {month_end_date}, after net trades of {net_trades}"}
     columns:
       value_today: The listed instruments' value at the latest position date.
       value_month_end: Their value at the last position date on or before the previous month end.
@@ -356,6 +370,8 @@ recipes:
       (row_number() over (partition by r.currency order by r.position_date desc, r.entity) = 1) as is_latest
       from r window w as (partition by r.position_date, r.currency)
     measure: net_worth_after_debt
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: is_latest, lead: "Net worth after debt:", say: "{entity} {currency} {net_worth_after_debt} ({net_worth} less {debt} debt, {position_date})", max: 4}
     columns:
       net_worth: What the entity holds at the position date.
       debt: The drawn amount of the entity's credit facilities at that date (positive).
@@ -396,6 +412,9 @@ recipes:
       (row_number() over (partition by c.currency order by c.limit_missing, c.headroom, c.as_at desc, c.facility_ref) = 1) as first_row
       from cur as c join tot as t on t.currency = c.currency
     measure: headroom
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: limit_missing, say: "{entity} has drawn {currency} {drawn_amount} on {facility_ref} with {lender}; no limit is on record, so the headroom is not known"}
+      - {say: "{entity} has drawn {currency} {drawn_amount} of {limit_amount} on {facility_ref}, leaving {headroom}"}
     columns:
       drawn_amount: What is drawn at the latest statement, positive.
       limit_amount: The facility limit; empty when the agreement states none.
