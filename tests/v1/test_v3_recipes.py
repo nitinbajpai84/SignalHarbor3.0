@@ -395,3 +395,8 @@ def test_the_age_of_the_latest_value_is_not_nav_rollforward():
     # uc-021 (score50 card 21): "latest value" is a name of nav_rollforward's latest reported NAV, but "the age of the latest value" is another figure
     k = {"name": "Figure Age of the latest value per fund", "definition": "As-of date less the latest valuation date, flagged above 90 days."}
     assert (R.match(k) or {}).get("id") != "nav_rollforward"
+
+
+def test_a_fee_in_the_latest_call_is_not_the_called_to_date_recipe():
+    # uc-040: "Fee in latest call" is read from the call notice's fee part, not the call amounts
+    assert (R.match({"name": "Fee in latest call", "definition": "Management fee amount included in the most recent capital call"}) or {}).get("id") != "called_to_date"
