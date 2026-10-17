@@ -1,0 +1,17 @@
+# SUGGESTION. A spot conversion the desk booked has no bank confirmation on file. Card uc-006-fxneed, W1 cash builder (docs/v3/w1/build-cash.md), wave 4. Row: the conversion with no confirmation (planted M09).
+suggestion: true
+id: uc-006-fxneed-no-confirmation
+title: A conversion has no bank confirmation
+pain_points: [PP-01]
+row: exception
+trigger: {'on': figure_changed, figure: fx_rate_check}
+inputs:
+  - {kind: doc, fields: [trade_reference, trade_date, currency_bought, amount_bought, currency_sold, bank_rate, confirmation]}
+subject: "{doc.trade_reference}"
+condition: doc.confirmation == 'none on record'
+severity: problem
+route_to: ops_lead
+action: {verb: call_back, options: [Ask the bank for its confirmation]}
+hold: {blocks: close_fx_match, scope: "{doc.trade_reference}", until: the bank confirmation is on file}
+message: "{doc.trade_reference}: {doc.amount_bought:,.0f} {doc.currency_bought} bought at {doc.bank_rate} on {doc.trade_date} is in the desk's trades with no bank confirmation on file. The match stays open until the confirmation arrives."
+evidence: [doc.trade_reference, doc.bank_rate, doc.trade_date]

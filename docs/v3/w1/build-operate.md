@@ -77,3 +77,12 @@ Test result after the fixes: `tests/v1/test_w1_operate.py` **19 passed, 0 failed
 | 29 fake document sets the as-of date | Fixed | The test loads the received log and asserts that the latest document date is 13 Oct |
 
 Open and unchanged: Needs 1 (loaders), 2 (rule code `cash_tolerance` is now `cash_tolerance*`, one rule per currency: add to ASSUMPTIONS A20 and the seed), 3, 6, 7, 9, 10, 12.
+
+## Score50 fixes, 17 Oct (cards 1, 16, 19, 22, 26)
+
+Before to after on `python tools/score50.py`: card 1 FAIL to PASS, card 19 FAIL to PASS, card 22 FAIL to PASS, card 26 FAIL to PASS. Card 16 stays FAIL: the key says 5, the files say 6 (see item 8 above); this is a key conflict, not a recipe fault, and the key is not changed here. Its scorecard cause ("batches, not months") does not hold: the six old-name packs are six distinct months too.
+
+- `notices_open`: filtered `notice_kind = 'call'`, but the loader writes `movement_type = 'call'`, `notice_kind = 'capital_call'` (the convention the readers document). Now filters on `movement_type = 'call'`. Result: CALL-C-7 only. Test fixture (`test_w1_operate.py`) updated to the same convention.
+- `missing_statements`: "Cannot mix aggregates" error. Rewritten with a counted CTE per instrument and month. It also counted cash accounts against manager statements (every bank account showed missing each month); cash accounts now need a `bank_statement`, and amended re-issues are not counted, as in `statement_timeliness`.
+- `amendments_open`: the last issued report was the period end (`document_date`). The day it was issued is the day it was received (`received_at`, e.g. 2026-10-03 for the September report). Now uses `received_at`.
+- `statement_vs_admin`: the "latest administrator position date" was 13 Oct, the daily administrator cash file, so no fund matched. The comparison now uses the administrator's non-cash positions (source type `administrator`). The statement valuation filter now includes `manager_amended` (the amended valuation is the one that replaces the estimate). The tie-out uses the same rule. `may_read` lists the three source tables the administrator filter reads.

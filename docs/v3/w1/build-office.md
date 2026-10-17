@@ -79,3 +79,11 @@ Signals added: `uc-030-vendors-notice-passed`, `uc-030-vendors-renewal-passed`, 
 | 24 | all | fixed | `_recipe` reads through the live loader (`v3_recipes.recipe`) except `allowance_due` (row 3, xfail test). Every signal's condition is now run on recipe rows in tests (cards 9, 15, 30, 50), and all 17 pass `check()`. |
 | 25 | all | not fixed, by design | The live loader also reads every recipe file, so a broken file elsewhere breaks these figures in production too; the test failing then is the right signal. |
 | 26 | all | fixed | Dashboard labels lost "Consume:"; allowance messages use `month_name` (September 2026). Subjects keep the ISO month as the once-only key. |
+
+## Wave 4: the stub is gone (score50, 17 Oct 2026)
+
+- **Card 15, stub removed.** `recipes/family.yaml` now has `recipes: []` and a note; `allowance_due` from `office.yaml` is the one the loader serves (cards [15], built, no status). Needs 1 is done. `test_allowance_due_is_served_by_the_loader` is now a normal test (the strict xfail would have turned red).
+- **Card 15 before → after:** BLOCKED (stub shadows the recipe) → FAIL, 0/4 key values. The recipe now runs and ties out. The remaining difference is the key's scope, not the recipe: `due_october` expects Lin 8,000, Maya 6,000, Ethan 5,000, Wen 4,000 as unpaid for October. The fixture's `HB_TRUST_USD_2026-10_mtd.xlsx` (1 Oct, four `allowance` lines, all paid) is loaded in score50, and the key's own `input_files` leave it out. With all inputs loaded the recipe gives October owed 0 and September owed 5,000 for Ethan Chen (earlier = 1, the planted gap). Tie-out ok (5,000 = 5,000).
+- **To pass card 15 one of these must be decided by the key owner, not by this domain:** (a) restate `due_october` and `total_owed` (5,000) for the full data, as Needs 6 says; or (b) scope the key's inputs to the September statement. I did not change the key or the scorer.
+- **Not touched (outside my files):** card 9 remains BLOCKED (narrative reader, Needs 22). Cards 30 and 50 still PASS.
+- **Test:** `tests/v1/test_w1_office.py` 40 passed, 0 failed.

@@ -7,6 +7,7 @@ are checked for their shape. Synthetic data only."""
 from __future__ import annotations
 
 import csv
+from contextlib import contextmanager
 import glob
 import json
 import re
@@ -25,6 +26,28 @@ PACK = ROOT / "packs" / "family_office" / "1"
 DDL = ROOT / "docs" / "v2" / "evidence-to-action-mvp.duckdb.sql"
 KEYS = yaml.safe_load((OFFICE / "answer_keys.yaml").read_text(encoding="utf-8"))["keys"]
 ORG = "org-evergreen"
+
+@contextmanager
+def signed_rule(con, rule_code: str, rule_type: str, params: dict, rebuild: tuple = ()):
+    """A rule signed for one test only: written as approved, then removed, and the recipes named in `rebuild` built again on the way out."""
+    L = Loader(con)
+    rid = L.uid("rule")
+    L.ins("business_rules", {"id": rid, "rule_code": rule_code, "rule_type": rule_type, "owner_user_id": "u-sofia"})
+    L.ins("rule_versions", {"business_rule_id": rid, "version_number": 1, "definition_text": rule_code, "parameters": json.dumps(params), "effective_from": "2026-01-01",
+                            "approval_status": "approved", "approved_by": "Daniel Foo", "approved_at": "2026-01-01 00:00:00+00"})
+    try:
+        yield rid
+    finally:
+        con.execute("delete from rule_versions where business_rule_id = ?", [rid])
+        con.execute("delete from business_rules where id = ?", [rid])
+        for r in rebuild:
+            build(con, r)
+
+
+SOVEREIGN = "Harbour Treasury Note 2029 (synthetic sovereign)"
+EXEMPTION = ("single_name_exempt", "policy", {"portfolio": "EG-LIQUID", "dimension": "single_name_exempt", "instrument": SOVEREIGN})
+BENCH_LINK = ("benchmark_link", "mapping", {"portfolio": "EG-LIQUID", "benchmark_code": "EG-OFFICE-BLEND"})
+
 SRC = "src-office6m"
 NOW = "2026-10-13 12:00:00+00"
 
@@ -226,16 +249,8 @@ def load_office(con) -> None:
             L.ins("rule_versions", {"business_rule_id": rid, "version_number": 2, "definition_text": code, "parameters": json.dumps({**params, "max_pct": 6}), "effective_from": "2026-10-13",
                                     "approval_status": "proposed"})
 
-    # Two rules the key assumes and the office files do not carry. They stand in for rules the office has still to sign (docs/v3/w1/build-report.md, Needs 4 and 8); the
-    # recipes read them like any signed rule, and without them the recipes say so (tests below remove them and look). Not in the policy text:
-    #   single_name_exempt  the key and the committee notes leave the sovereign treasury note out of the 5 percent single-name limit
-    #   benchmark_link      the key compares the liquid book with the office blend benchmark
-    for code, params in (("single_name_exemption_treasury", {"portfolio": "EG-LIQUID", "dimension": "single_name_exempt", "instrument": "Harbour Treasury Note 2029 (synthetic sovereign)"}),
-                         ("benchmark_link", {"portfolio": "EG-LIQUID", "benchmark_code": "EG-OFFICE-BLEND"})):
-        rid = L.uid("rule")
-        L.ins("business_rules", {"id": rid, "rule_code": code, "rule_type": "policy" if code.startswith("single") else "mapping", "owner_user_id": "u-sofia"})
-        L.ins("rule_versions", {"business_rule_id": rid, "version_number": 1, "definition_text": code, "parameters": json.dumps(params), "effective_from": "2026-01-01",
-                                "approval_status": "approved", "approved_by": "Daniel Foo", "approved_at": "2026-01-01 00:00:00+00"})
+    # No single-name exemption and no benchmark link is on record in the office files, so none is loaded here (build-report.md, Needs 4 and 8).
+    # A test that needs one signs it for that test only, with signed_rule() below, and removes it afterwards.
 
     # the pipeline (fund teaser: minimum commitment) and the capital call notice of 13 October (cash_movements, noticed)
     teaser = _pdf_text(next(OFFICE.glob("*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf")))
@@ -305,40 +320,45 @@ def test_every_recipe_is_built_reads_only_what_it_may_and_ties_out(con, built):
 
 # ---- card 12, uc5-limits -----------------------------------------------------------------------------------------------------------------
 
-def test_uc5_limits_the_largest_name_over_the_limit_is_5_75_and_a_holding_has_no_class(con, built):
+
+def test_uc5_limits_harborview_is_5_75_and_the_sovereign_note_is_a_breach_on_record(con, built):
     k = key("uc5-limits")
     r = rows(con, built["single_name_breach"], "holding = 'Harborview Semiconductor'")[0]
     assert (num(r["concentration_pct"]), num(r["limit_pct"]), num(r["exposure"]), r["status"]) == (k["pct_of_portfolio"], k["limit_pct"], k["value"], "real breach")
-    assert rows(con, built["single_name_breach"], "not exempt", "exposure desc")[0]["holding"] == k["holding"]  # the largest name that is not the sovereign note, as the key says
+    sov = rows(con, built["single_name_breach"], f"holding = '{SOVEREIGN}'")[0]
+    assert sov["exempt"] is False and sov["status"] == "real breach" and num(sov["concentration_pct"]) == 7.08  # no signed exemption on record: the policy says any single name
+    assert rows(con, built["single_name_breach"], "exempt") == []
     assert [x["holding"] for x in rows(con, built["single_name_breach"], "no_asset_class")] == ["Pacific Rim Convertible 2029 note"]
-    assert [x["holding"] for x in rows(con, built["single_name_breach"], "exempt")] == ["Harbour Treasury Note 2029 (synthetic sovereign)"]
     assert num(rows(con, built["concentration"], "issuer = 'Harborview Semiconductor' and position_date = '2026-09-30'")[0]["concentration_pct"]) == 5.75  # the shared recipe agrees
 
 
-def test_uc5_limits_data_finding_other_names_are_also_over_five_percent(con, built):
-    """The key and the committee notes name only the largest name. By the same data six more names are above 5 percent at 30 September (reported under Needs 6): the
-    key's 'real_breaches: 1' counts the largest name only, and no signed rule or committee decision in the files excuses the other six, so the pack says 7."""
+
+
+def test_uc5_limits_data_finding_eight_holdings_are_over_five_percent_on_record(con, built):
+    """The key's 'which holding' is the largest name other than the sovereign note, and its 'real_breaches: 1' counts that name only. On the signed 5 percent limit
+    the sovereign note and six more listed names are also above 5 percent at 30 September, and no signed rule or committee decision in the files excuses them
+    (build-report.md, Needs 4 and 6). The recipe says 8; the key says 1."""
     over = rows(con, built["single_name_breach"], "over_limit", "concentration_pct desc")
-    assert len(over) == 7 and over[0]["holding"] == "Harborview Semiconductor" and all(o["status"] == "real breach" for o in over)
+    assert len(over) == 8 and over[0]["holding"] == SOVEREIGN and over[1]["holding"] == "Harborview Semiconductor" and all(o["status"] == "real breach" for o in over)
+
+
 
 
 def test_a_holding_is_exempt_only_when_a_signed_rule_says_so(con, built):
-    """The sovereign note is exempt through the signed exemption rule (stand-in row in the loader), not through its name. Without the row it is a breach like the rest."""
-    exempt = rows(con, built["single_name_breach"], "exempt")
-    assert [(x["holding"], x["exemption_rule"], x["status"]) for x in exempt] == [("Harbour Treasury Note 2029 (synthetic sovereign)", "single_name_exemption_treasury", "exempt")]
-    con.execute("update rule_versions set approval_status = 'proposed' where definition_text = 'single_name_exemption_treasury'")  # not signed
-    try:
+    """Without a signed exemption the sovereign note is a breach like the rest. With one on record the note is exempt and the figures follow the rule.
+    The rule is signed here for this test only, to show the mechanism; the office has not signed it."""
+    assert rows(con, built["single_name_breach"], "exempt") == []
+    with signed_rule(con, *EXEMPTION, rebuild=("single_name_breach", "limit_changes", "pack_items")):
         n = build(con, "single_name_breach")
-        sov = rows(con, n, "holding ilike '%sovereign%'")[0]
-        assert sov["exempt"] is False and sov["status"] == "real breach" and num(sov["concentration_pct"]) == 7.08 and len(rows(con, n, "over_limit")) == 8
+        sov = rows(con, n, f"holding = '{SOVEREIGN}'")[0]
+        assert sov["exempt"] is True and sov["status"] == "exempt" and sov["exemption_rule"] == "single_name_exempt"
+        assert len(rows(con, n, "over_limit")) == 7
         lc = rows(con, build(con, "limit_changes"), "version_number = 1 and not is_opening", "month_end")
-        assert {r["largest_holding"] for r in lc} == {"Harbour Treasury Note 2029 (synthetic sovereign)"} and all(r["over_limit"] == 1 for r in lc)  # the figures follow the rule on record
+        assert [round(num(r["largest_name_pct"]), 2) for r in lc] == [6.13, 5.89, 5.74, 5.71, 5.71, 5.75]  # the key's figures, once the exemption is signed
         pack = {x["section"]: x for x in rows(con, build(con, "pack_items"))}
-        assert pack["Breaches"]["items"] == 8 and "Harbour Treasury Note 2029" in pack["Breaches"]["status"]
-    finally:
-        con.execute("update rule_versions set approval_status = 'approved' where definition_text = 'single_name_exemption_treasury'")
-        for rid in ("single_name_breach", "limit_changes", "pack_items"):
-            build(con, rid)
+        assert pack["Breaches"]["items"] == 7
+    assert rows(con, build(con, "single_name_breach"), "exempt") == []  # back to the record
+
 
 
 def test_uc5_limits_a_breach_on_a_value_older_than_90_days_is_possibly_stale_not_real(con):
@@ -441,11 +461,20 @@ def test_uc033_cost_to_cure_is_324210_53(con, built):
 
 # ---- card 42, uc4-vs-benchmark ------------------------------------------------------------------------------------------------------------
 
+
 def test_uc4_september_portfolio_against_the_blended_benchmark(con, built):
+    """The September return of the liquid book is on record. Its benchmark return needs a signed benchmark_link, which the office files do not hold: the
+    key's comparison is checked with a link signed for this test only."""
     k = key("uc4-vs-benchmark")
-    r = rows(con, built["time_weighted_return"], "portfolio = 'Evergreen Liquid Book' and period_kind = 'month' and period_label = '2026-09'")[0]
-    assert (num(r["portfolio_return_pct"]), num(r["benchmark_return_pct"]), num(r["active_pct"])) == (k["portfolio_return_pct"], k["benchmark_return_pct"], k["active_pct"])
+    where = "portfolio = 'Evergreen Liquid Book' and period_kind = 'month' and period_label = '2026-09'"
+    r = rows(con, built["time_weighted_return"], where)[0]
+    assert (num(r["portfolio_return_pct"]), r["benchmark_linked"], r["benchmark_return_pct"]) == (k["portfolio_return_pct"], False, None)
     assert (num(r["start_value"]), num(r["end_value"]), num(r["net_flow"])) == (k["liquid_aug"], k["liquid_sep"], 0)
+    with signed_rule(con, *BENCH_LINK, rebuild=("time_weighted_return",)):
+        r = rows(con, build(con, "time_weighted_return"), where)[0]
+        assert (num(r["benchmark_return_pct"]), num(r["active_pct"])) == (k["benchmark_return_pct"], k["active_pct"])
+
+
 
 
 def test_uc4_a_missing_index_level_means_no_benchmark_return_and_names_the_series(con):
@@ -453,16 +482,19 @@ def test_uc4_a_missing_index_level_means_no_benchmark_return_and_names_the_serie
     con.execute(f"create temp table lost as select * from market_observations where {where}")
     con.execute(f"delete from market_observations where {where}")
     try:
-        r = rows(con, build(con, "time_weighted_return"), "portfolio = 'Evergreen Liquid Book' and period_label = '2026-09'")[0]
-        assert r["benchmark_return_pct"] is None and r["active_pct"] is None and r["months_without_benchmark"] == 1 and r["benchmark_gap"] == "IDX:GLBD:SYN"
-        assert num(r["portfolio_return_pct"]) == 4.1667  # the portfolio's own return does not depend on the benchmark
+        with signed_rule(con, *BENCH_LINK, rebuild=("time_weighted_return",)):
+            r = rows(con, build(con, "time_weighted_return"), "portfolio = 'Evergreen Liquid Book' and period_label = '2026-09'")[0]
+            assert r["benchmark_return_pct"] is None and r["active_pct"] is None and r["months_without_benchmark"] == 1 and r["benchmark_gap"] == "IDX:GLBD:SYN"
+            assert num(r["portfolio_return_pct"]) == 4.1667  # the portfolio's own return does not depend on the benchmark
     finally:
         con.execute("insert into market_observations select * from lost")
         con.execute("drop table lost")
         build(con, "time_weighted_return")
 
 
+
 # ---- card 44, uc-044-twr ----------------------------------------------------------------------------------------------------------------------
+
 
 def test_uc044_monthly_quarter_and_since_april_returns_match_the_key(con, built):
     k = key("uc-044-twr")
@@ -472,9 +504,14 @@ def test_uc044_monthly_quarter_and_since_april_returns_match_the_key(con, built)
     q = {r["period_label"]: r for r in rows(con, t, f"{liquid} and period_kind = 'quarter'")}
     assert (num(q["2026Q2"]["portfolio_return_pct"]), num(q["2026Q3"]["portfolio_return_pct"])) == (k["q2_apr_jun_pct"], k["q3_jul_sep_pct"]) and q["2026Q2"]["complete"] and q["2026Q3"]["complete"]
     since = rows(con, t, f"{liquid} and period_kind = 'all'")[0]
-    assert (num(since["portfolio_return_pct"]), num(since["benchmark_return_pct"]), since["months"]) == (k["since_1_apr_pct"], k["benchmark_since_1_apr_pct"], 6)
+    assert (num(since["portfolio_return_pct"]), since["months"]) == (k["since_1_apr_pct"], 6)
+    with signed_rule(con, *BENCH_LINK, rebuild=("time_weighted_return",)):
+        since = rows(con, build(con, "time_weighted_return"), f"{liquid} and period_kind = 'all'")[0]
+        assert num(since["benchmark_return_pct"]) == k["benchmark_since_1_apr_pct"]
+    build(con, "time_weighted_return")
     ytd, y12 = rows(con, t, f"{liquid} and period_kind = 'ytd'")[0], rows(con, t, f"{liquid} and period_kind = 'last_12_months'")[0]
     assert ytd["complete"] is False and y12["complete"] is False and y12["months"] == 6  # the data starts on 1 April, so the year to date and 12 months say they are short
+
 
 
 def test_uc044_a_flow_in_the_month_is_counted_at_half_weight(con, built):
@@ -530,12 +567,19 @@ def test_uc047_the_pack_has_five_sections_with_owners_and_the_open_items(con, bu
     p = r["Proposals"]  # call 7 noticed and the Harborlight ticket: two amounts, never added (a call is owed, a ticket is a possible commitment)
     assert p["items"] == 2 and (num(p["call_amount"]), num(p["deal_amount"]), p["amount"]) == (1250000, 2000000, None) and "1250000" in p["status"] and "2000000" in p["status"]
     # the key's 'short USD 270,000' is the figure cash_after_calls (cash domain), not produced by this recipe
-    assert r["Breaches"]["items"] == 7 and "Harborview Semiconductor at 5.75" in r["Breaches"]["status"]  # the key counts the largest only (Needs 6)
+    assert r["Breaches"]["items"] == 8 and "Harbour Treasury Note 2029 (synthetic sovereign) at 7.08" in r["Breaches"]["status"]  # the key counts 1 (Needs 4 and 6)
+
+
+def test_uc048_largest_name_by_month_end_and_breaches_at_5_and_6_percent(con, built):
+    with signed_rule(con, *EXEMPTION, rebuild=("limit_changes", "single_name_breach")):
+        build(con, "limit_changes")
+        _uc048_body(con, built)
+    build(con, "limit_changes")
 
 
 # ---- card 48, uc-048-policyupd -------------------------------------------------------------------------------------------------------------
 
-def test_uc048_largest_name_by_month_end_and_breaches_at_5_and_6_percent(con, built):
+def _uc048_body(con, built):
     k = key("uc-048-policyupd")
     t = built["limit_changes"]
     cur = rows(con, t, "version_number = 1 and not is_opening", "month_end")  # the first position date (31 March) is the opening position: shown in the table, not counted
@@ -612,7 +656,7 @@ def test_signals_of_uc5_limits_fire_on_the_office_data(con, built):
     sg = signals("uc5-limits")
     sn = rows(con, built["single_name_breach"], "true", "holding")
     msgs = [m for m in (fire(sg["uc5-limits-breach"], r) for r in sn) if m]
-    assert any("Harborview Semiconductor is 5.75 percent of Evergreen Liquid Book (2,368,000 of 41,200,000) against the 5 percent single-name limit" in m for m in msgs) and len(msgs) == 7
+    assert any("Harborview Semiconductor is 5.75 percent of Evergreen Liquid Book (2,368,000 of 41,200,000) against the 5 percent single-name limit" in m for m in msgs) and len(msgs) == 8
     assert [m for m in (fire(sg["uc5-limits-no-class"], r) for r in sn) if m][0].startswith("Pacific Rim Convertible 2029 note (1,122,000 in Evergreen Liquid Book) has no asset class")
     assert not [m for m in (fire(sg["uc5-limits-possibly-stale"], r) for r in sn) if m]  # every value is current at 30 September
     stale = fire(sg["uc5-limits-possibly-stale"], {**[r for r in sn if r["holding"] == "Harborview Semiconductor"][0], "status": "possibly stale", "value_age_days": 121})
@@ -667,7 +711,7 @@ def test_signals_of_drift_and_the_breach_note(con, built):
     assert fire(sg["uc-033-breachesc-waiver-expired"], old) and fire(sg["uc-033-breachesc-waiver-expired"], {**old, "breach_open": 0}) is False
 
 
-def test_signals_of_performance_attribution_and_the_report_pack(con, built):
+def _performance_signals_body(con, built):
     sg = signals("uc4-vs-benchmark")
     tw = rows(con, built["time_weighted_return"], "portfolio = 'Evergreen Liquid Book'", "period_kind, to_date")
     sept = [r for r in tw if r["period_label"] == "2026-09"][0]
@@ -700,9 +744,15 @@ def test_signals_of_the_committee_pack_and_the_policy_update(con, built):
     pk = rows(con, built["pack_items"])
     asm = [m for m in (fire(sg["uc-047-icpack-assembled"], r) for r in pk) if m]
     assert len(asm) == 1 and "The committee pack as at 2026-09-30 has five sections" in asm[0]
-    sec = {"section": "Breaches", "owner_role": "risk_officer", "status": "7 real breach(es) open", "done": 0, "days_to_committee": 2}
+    sec = {"section": "Breaches", "owner_role": "risk_officer", "status": "8 real breach(es) open", "done": 0, "days_to_committee": 2}
     assert "owner is the risk_officer" in fire(sg["uc-047-icpack-open-late"], sec) and fire(sg["uc-047-icpack-open-late"], {**sec, "done": 1}) is False
     assert fire(sg["uc-047-icpack-section-done"], {**sec, "done": 1}) and fire(sg["uc-047-icpack-section-done"], sec) is False
+    with signed_rule(con, *EXEMPTION, rebuild=("limit_changes",)):
+        build(con, "limit_changes")
+        _policy_signals_body(con, built)
+
+
+def _policy_signals_body(con, built):
     sg = signals("uc-048-policyupd")
     lc = rows(con, built["limit_changes"], "true", "version_number, month_end")
     rev = [m for m in (fire(sg["uc-048-policyupd-review"], r) for r in lc) if m]
@@ -711,6 +761,14 @@ def test_signals_of_the_committee_pack_and_the_policy_update(con, built):
     tight = {**[r for r in lc if r["version_number"] == 2 and r["is_latest"] == 1][0], "limit_pct": 5.5, "over_limit": 1}
     assert "Harborview Semiconductor (2,368,000, 5.75 percent) would still be in breach" in fire(sg["uc-048-policyupd-leaves-breach"], tight)
     assert fire(sg["uc-048-policyupd-approved"], {"rule_code": "limit_single_name_liquid", "version_number": 2, "limit_pct": 6, "decided_on": "2026-10-20", "effective_from": "2026-10-21", "outcome": "approved"})
+
+
+
+def test_signals_of_performance_attribution_and_the_report_pack(con, built):
+    with signed_rule(con, *BENCH_LINK, rebuild=("time_weighted_return",)):
+        build(con, "time_weighted_return")
+        _performance_signals_body(con, built)
+    build(con, "time_weighted_return")
 
 
 # ---- the persona builds -----------------------------------------------------------------------------------------------------------------------
@@ -750,7 +808,7 @@ def test_a_portfolio_with_carried_forward_or_estimated_values_has_no_return_and_
     assert {r["data_note"] for r in others} == {"a value is carried forward or estimated"}
     assert all(r["benchmark_linked"] is False and r["benchmark_return_pct"] is None for r in others)  # no signed link to a benchmark: no benchmark return
     liquid = rows(con, tw, "portfolio = 'Evergreen Liquid Book' and period_kind = 'month'")
-    assert all(r["benchmark_linked"] and r["months_not_usable"] == 0 and r["data_note"] is None for r in liquid)
+    assert all(r["benchmark_linked"] is False and r["months_not_usable"] == 0 and r["data_note"] is None for r in liquid)  # its return is on record; its benchmark is not
 
 
 def test_a_holding_change_with_no_trade_on_record_is_not_a_return(con):

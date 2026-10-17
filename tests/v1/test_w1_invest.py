@@ -128,7 +128,8 @@ def data():
 # ---- the small company model -----------------------------------------------------------------------------------------------------------------------
 
 class Office:
-    """The model's tables (the DDL of the warehouse) holding the office6m facts the way the loaders will: a call notice is a call row (investment part) and a fee row (fee part),
+    """The model's tables (the DDL of the warehouse) holding the office6m facts the way the loaders write them (v3_pack_readers): a call notice is one call row for the WHOLE
+    notice amount (investment part plus management fee), and its management fee is the notice document's management_fee field; the notice document's source_record_id is the call row's;
     money out negative; a distribution is a noticed row superseded by the confirmed bank credit; statements are valuations that a later one for the period supersedes."""
 
     def __init__(self, d: dict):
@@ -152,7 +153,7 @@ class Office:
 
     def document(self, kind, title, day, status="final", instrument=None, valuation=None, uri=None) -> str:
         did = self.i("doc")
-        self.ins("documents", id=did, source_system_id="src-1", access_group_id="ag-1", instrument_id=instrument, document_type=kind, title=title, original_uri=uri or f"office6m/{title}",
+        self.ins("documents", id=did, source_record_id=did, source_system_id="src-1", access_group_id="ag-1", instrument_id=instrument, document_type=kind, title=title, original_uri=uri or f"office6m/{title}",
                  content_hash=did, document_date=day, valuation_date=valuation, received_at=self.ts(day), recorded_at=self.ts(day), document_status=status, processing_status="done")
         return did
 
@@ -199,22 +200,22 @@ class Office:
             doc = self.document("capital_call_notice" if n["kind"] == "call" else "distribution_notice", n["file"].removesuffix(".pdf"), n["notice"], instrument=self.inst[k])
             if n["kind"] == "call":
                 paid = d["bank"].get(f"CC-CALL-{k}-{n['no']}")
-                for mt, amt in (("call", n["invest"]), ("fee", n["fee"])):
-                    if amt:
-                        self.ins("cash_movements", id=self.i("mov"), source_record_id=doc, portfolio_id=self.pf[PORTFOLIO_OF[k]], instrument_id=self.inst[k], movement_type=mt, effective_date=n["due"],
-                                 received_at=self.ts(n["notice"]), recorded_at=self.ts(n["notice"]), amount=-amt, currency="USD", confirmation_status="confirmed" if paid else "noticed",
-                                 due_date=n["due"], notice_kind="capital_call", commitment_id=self.commit[k])
+                if n["fee"]:
+                    self.fld(doc, "management_fee", numeric=n["fee"])
+                self.ins("cash_movements", id=self.i("mov"), source_record_id=doc, portfolio_id=self.pf[PORTFOLIO_OF[k]], instrument_id=self.inst[k], movement_type="call", effective_date=n["due"],
+                         received_at=self.ts(n["notice"]), recorded_at=self.ts(n["notice"]), amount=-(n["invest"] + n["fee"]), currency="USD", confirmation_status="confirmed" if paid else "noticed",
+                         due_date=n["due"], notice_kind="capital_call", commitment_id=self.commit[k])
             else:
                 ref = f"DI-DIST-{k}-{n['value_date']:%Y-%m}"
                 noticed = self.i("mov")
                 self.ins("cash_movements", id=noticed, source_record_id=doc, portfolio_id=self.pf[PORTFOLIO_OF[k]], instrument_id=self.inst[k], movement_type="distribution", effective_date=n["value_date"],
                          received_at=self.ts(n["notice"]), recorded_at=self.ts(n["notice"]), amount=n["amount"], currency="USD", confirmation_status="noticed", due_date=n["value_date"],
                          notice_kind="distribution", commitment_id=self.commit[k])
-                if ref in d["bank"]:  # the bank credit confirms it, at the amount that arrived (M19: 262,500 against a notice of 275,000)
+                if ref in d["bank"]:  # the bank credit is its own confirmed row (no notice_kind) and does not supersede the notice, as the reader writes it; its amount is what arrived (M19: 262,500 against 275,000)
                     day, amount = d["bank"][ref]
                     self.ins("cash_movements", id=self.i("mov"), source_record_id=doc, portfolio_id=self.pf[PORTFOLIO_OF[k]], instrument_id=self.inst[k], movement_type="distribution", effective_date=day,
                              received_at=self.ts(day), recorded_at=self.ts(day), amount=amount, currency="USD", confirmation_status="confirmed", due_date=n["value_date"],
-                             notice_kind="distribution", commitment_id=self.commit[k], supersedes_cash_movement_id=noticed)
+                             commitment_id=self.commit[k])
         for q in d["ddq"]:
             doc = self.document("ddq", q["title"], f"{q['month']}-01", uri=q["file"])
             self.fld(doc, "manager_name", text="Cedarpoint Ventures")
@@ -236,6 +237,8 @@ class Office:
         for c in d["cash"]:
             cash_inst[c["account"]] = self.i("ins")
             self.ins("instruments", id=cash_inst[c["account"]], canonical_name=f"Cash {c['account']}", instrument_type="cash", currency=c["currency"], created_at=self.ts("2026-04-01"))
+            self.ins("bank_accounts", id=self.i("ba"), source_record_id="bank statement", received_at=self.ts("2026-04-01"), recorded_at=self.ts("2026-04-01"), holder_kind="office", legal_entity_id=self.ent[c["entity"]], holder_name=ENTITY_NAME[c["entity"]], account_purpose="operating", bank_name="Office bank (synthetic)",
+                     account_ref=c["account"], currency=c["currency"], cash_instrument_id=cash_inst[c["account"]], status="active")  # the office's own accounts (the 12); the desk and administrator views are not bank accounts
             self.ins("position_snapshots", id=self.i("pos"), source_record_id="bank statement", portfolio_id=self.pf[f"CASH-{c['entity']}"], instrument_id=cash_inst[c["account"]], position_date=ASOF,
                      as_of_at=self.ts(ASOF), received_at=self.ts(ASOF), recorded_at=self.ts(ASOF), quantity=c["balance"], source_market_value=c["balance"], currency=c["currency"], view_type="operational", data_status="Final")
         for day, rate in d["fx"]:
@@ -492,7 +495,7 @@ def test_card40_memo_figures_trace_to_files(office):
     f = {r["figure"]: r for r in rows}
     assert (f["commitment"]["value"], f["called"]["value"], f["unfunded"]["value"]) == (exp["commitment"], exp["called_incl_call_7"], exp["unfunded"])
     assert (f["latest_value"]["value"], str(f["latest_value"]["as_at"]), f["latest_value"]["detail"]) == (exp["latest_value"], exp["latest_period"], exp["statement_kind"])
-    assert f["fee_in_latest_call"]["value"] == exp["fee_in_call_7"]
+    assert f["fee_in_call"]["value"] == exp["fee_in_call_7"]
     assert f["ddq_changes"]["value"] == exp["ddq_changes_2025_to_2026"]
     assert all(r["traced"] == 1 for r in rows) and "cedarpoint_C_2026-06-30_amended" in f["latest_value"]["source"]
 

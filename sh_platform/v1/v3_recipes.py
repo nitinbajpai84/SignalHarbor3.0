@@ -90,8 +90,11 @@ def match(kpi: dict, strict: bool = True) -> dict | None:
             best, score, tied = r, got, False
         elif got and got == score:
             tied = True
-    if tied:  # two recipes answer to the name equally: the rules do not guess, the model and the judge decide by meaning (w2: a large library)
-        return None
+    said = kpi.get("definition") or kpi.get("formula")  # a figure drafted with a formula only is read by it too
+    if tied:  # two recipes answer to the name equally: the one whose written formula the figure's own words are closest to, when one leads; else the model and the judge decide (w2)
+        top = [r for r in recipes() if max([10 + len(n) for n in r.get("names") or [] if _words(n) in text and (not strict or " " in n.strip() or _words(n).strip() == core)] or [0]) == score]
+        near = sorted(((len(_stems(said) & _stems(f"{r['label']} {r.get('formula', '')}")), r) for r in top), key=lambda t: -t[0])
+        return near[0][1] if said and near[0][0] > near[1][0] else None
     if best is None and kpi.get("definition"):
         full = set(_words(f"{name} {kpi['definition']}").split())
         hits = [r for r in recipes() if r.get("words_all") and all(full & set(g) for g in r["words_all"])]

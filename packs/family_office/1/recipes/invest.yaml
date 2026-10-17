@@ -180,7 +180,7 @@ recipes:
       s.mid else s.hi end, s.n + 1 from (select t.*, (select sum(c / power(1 + t.lo, d / 365.0)) from fl where fl.cid = t.cid) as flo, (select sum(c /
       power(1 + t.mid, d / 365.0)) from fl where fl.cid = t.cid) as fmid from (select cid, lo, hi, n, (lo + hi) / 2 as mid from b where n < 60) as t) as s),
       irr as (select cid, (lo + hi) / 2 as r from b where n = 60 and (select sum(c / power(0.01, d / 365.0)) from fl where fl.cid = b.cid) * (select sum(c /
-      power(11.0, d / 365.0)) from fl where fl.cid = b.cid) <= 0), dist as (select cid, coalesce(sum(amount) filter (where movement_type = 'distribution'), 0) as dist from mf group by cid), dn as (select m.commitment_id as cid, count(*) as n from cash_movements as m where m.movement_type = 'distribution' and m.confirmation_status = 'noticed' and m.effective_date <= (select d from reg) and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cum as (select s.cid, (select max(f.value_numeric) from extracted_fields as f where f.document_id = v0.doc and
+      power(11.0, d / 365.0)) from fl where fl.cid = b.cid) <= 0), dist as (select cid, coalesce(sum(amount) filter (where movement_type = 'distribution'), 0) as dist from mf group by cid), dn as (select m.commitment_id as cid, count(*) as n from cash_movements as m where m.movement_type = 'distribution' and m.confirmation_status = 'noticed' and m.effective_date <= (select d from reg) and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) and not exists (select 1 from cash_movements as b where b.commitment_id = m.commitment_id and b.movement_type = 'distribution' and b.notice_kind is null and b.confirmation_status = 'confirmed' and b.effective_date = m.effective_date) group by m.commitment_id), cum as (select s.cid, (select max(f.value_numeric) from extracted_fields as f where f.document_id = v0.doc and
       f.field_name = 'cumulative_called') as c0, (select max(f.value_numeric) from extracted_fields as f where f.document_id = v1.doc and f.field_name =
       'cumulative_called') as c1, (select coalesce(sum(-m.amount), 0) from mf as m where m.cid = s.cid and m.movement_type <> 'distribution' and
       m.effective_date <= s.end_d) as calls_to_end from se as s join v0 on v0.cid = s.cid join v1 on v1.cid = s.cid) select e.entity_name as entity,
@@ -242,8 +242,7 @@ recipes:
       from se as s join cash_movements as m on m.commitment_id = s.cid where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution' or
       m.notice_kind = 'capital_call') and m.effective_date > s.start_d and m.effective_date <= (select d from reg) and not exists (select 1 from
       cash_movements as z where z.supersedes_cash_movement_id = m.id)), rate as (select t.instrument_id, t.r from (select d.instrument_id, f.value_numeric as r, row_number() over (partition by d.instrument_id order by d.document_date desc, d.received_at desc) as rn from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'management_fee_rate' join extracted_fields as b on b.document_id = d.id and b.field_name = 'fee_basis' and b.value_text like 'commitment%' where d.document_type = 'fund_terms' and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)) as t where t.rn = 1),
-      fr as (select c.id as cid, i.manager_name, c.currency, c.commitment_amount, r.r, m.amount from cu as c join instruments as i on i.id = c.instrument_id
-      join se as s on s.cid = c.id join mf as m on m.cid = c.id and m.movement_type = 'fee' left join rate as r on r.instrument_id = c.instrument_id), ff as
+      fp as (select m.commitment_id as cid, -cast(f.value_numeric as decimal(18,2)) as amount from cash_movements as m join se as s on s.cid = m.commitment_id left join cash_movements as z on z.id = m.supersedes_cash_movement_id join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call' and m.movement_type = 'call' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id) and m.effective_date > s.start_d and m.effective_date <= (select d from reg)), fr as (select c.id as cid, i.manager_name, c.currency, c.commitment_amount, r.r, fp.amount from cu as c join instruments as i on i.id = c.instrument_id join fp on fp.cid = c.id left join rate as r on r.instrument_id = c.instrument_id), ff as
       (select cid, manager_name, currency, sum(-amount) as fees, sum(commitment_amount * r) as expected, sum(greatest(-amount - commitment_amount * r, 0)) as above, count(*) filter (where r is null) as no_terms from fr group by all), fc as (select cid, coalesce(sum(-amount), 0) as calls from mf where movement_type <> 'distribution' group by cid), fd
       as (select cid, coalesce(sum(amount), 0) as dist from mf where movement_type = 'distribution' group by cid), pf as (select i.manager_name, c.currency,
       coalesce(f.fees, 0) as fees, coalesce(f.expected, 0) as expected, coalesce(f.above, 0) as above, coalesce(f.no_terms, 0) as no_terms, v1.val - v0.val - coalesce(k.calls, 0) +
@@ -265,11 +264,7 @@ recipes:
     tie_out:
       label: The fees paid equal the fee movements confirmed in the window
       sql: >-
-        select (select coalesce(sum(fees_paid), 0) from {name}), (select coalesce(sum(-m.amount), 0) from cash_movements as m join commitments as c on c.id =
-        m.commitment_id where m.movement_type = 'fee' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as z where
-        z.supersedes_cash_movement_id = m.id) and not exists (select 1 from commitments as y where y.supersedes_commitment_id = c.id) and m.effective_date >
-        (select min(v.valuation_date) from valuation_observations as v where v.instrument_id = c.instrument_id) and m.effective_date <= (select
-        coalesce(max(called_as_at), current_date) from commitments))
+        select (select coalesce(sum(fees_paid), 0) from {name}), (select coalesce(sum(f.value_numeric), 0) from cash_movements as m join commitments as c on c.id = m.commitment_id left join cash_movements as z on z.id = m.supersedes_cash_movement_id join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call' and m.movement_type = 'call' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id) and not exists (select 1 from commitments as y where y.supersedes_commitment_id = c.id) and m.effective_date > (select min(v.valuation_date) from valuation_observations as v where v.instrument_id = c.instrument_id) and m.effective_date <= (select coalesce(max(called_as_at), current_date) from commitments))
 
 
   - id: manager_timeline
@@ -413,10 +408,7 @@ recipes:
       m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
       coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), lv as (select
       v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc) as rn from valuation_observations as v where
-      not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)), lf as (select m.commitment_id, -m.amount as fee,
-      m.received_at, m.source_record_id, row_number() over (partition by m.commitment_id order by m.effective_date desc, m.received_at desc) as rn from
-      cash_movements as m where m.notice_kind = 'capital_call' and m.movement_type = 'fee' and m.confirmation_status <> 'cancelled' and not exists (select 1
-      from cash_movements as z where z.supersedes_cash_movement_id = m.id)), dq as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager
+      not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)), lf as (select m.commitment_id, coalesce(f.value_numeric, 0) as fee, m.received_at, coalesce(z.source_record_id, m.source_record_id) as source_record_id, row_number() over (partition by m.commitment_id order by m.effective_date desc, m.received_at desc) as rn from cash_movements as m left join cash_movements as z on z.id = m.supersedes_cash_movement_id left join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) left join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call' and m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id)), dq as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager
       from documents as d join extracted_fields as m on m.document_id = d.id and m.field_name = 'manager_name' where d.document_type = 'ddq' and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)), da as (select
       q.manager, q.title, q.document_date, coalesce(f.corrected_value_text, f.value_text) as answer, lag(coalesce(f.corrected_value_text, f.value_text))
       over (partition by q.manager, f.field_name order by q.document_date) as prev from dq as q join extracted_fields as f on f.document_id = q.doc_id and
@@ -431,16 +423,16 @@ recipes:
       all select i.canonical_name, v.currency, 'latest_value', v.value_amount, v.valuation_date, case v.valuation_type when 'manager_estimate' then
       'estimate' when 'manager_amended' then 'amended' else 'final' end, d.title, d.id is not null from lv as v join instruments as i on i.id =
       v.instrument_id left join documents as d on d.id = v.evidence_document_id where v.rn = 1 and exists (select 1 from cu as c where c.instrument_id =
-      v.instrument_id) union all select i.canonical_name, c.currency, 'fee_in_latest_call', f.fee, cast(f.received_at as date), 'fee part of the latest call
+      v.instrument_id) union all select i.canonical_name, c.currency, 'fee_in_call', f.fee, cast(f.received_at as date), 'fee part of the latest call
       notice', 'call notice record ' || f.source_record_id, f.source_record_id is not null from lf as f join cu as c on c.id = f.commitment_id join
       instruments as i on i.id = c.instrument_id where f.rn = 1 union all select i.canonical_name, cast(null as varchar), 'ddq_changes', q.n, cast(null as
       date), 'answers changed between the manager''s last two questionnaires', q.src, q.src is not null from qd as q join instruments as i on i.manager_name
-      = q.manager where exists (select 1 from cu as c where c.instrument_id = i.id)) select fund, currency, figure, case figure when 'commitment' then 'commitment' when 'called' then 'capital called' when 'unfunded' then 'unfunded' when 'latest_value' then 'latest value' when 'fee_in_latest_call' then 'fee in the latest call' when 'ddq_changes' then 'questionnaire answers changed' else figure end as figure_label, cast(value as decimal(18,2)) as value,
+      = q.manager where exists (select 1 from cu as c where c.instrument_id = i.id)) select fund, currency, figure, case figure when 'commitment' then 'commitment' when 'called' then 'capital called' when 'unfunded' then 'unfunded' when 'latest_value' then 'latest value' when 'fee_in_call' then 'fee in the latest call' when 'ddq_changes' then 'questionnaire answers changed' else figure end as figure_label, cast(value as decimal(18,2)) as value,
       as_at, detail, source, cast(traced as integer) as traced from rows_
     measure: value
     columns:
       figure_label: 'The figure in plain words.'
-      figure: 'commitment, called, unfunded, latest_value, fee_in_latest_call or ddq_changes.'
+      figure: 'commitment, called, unfunded, latest_value, fee_in_call or ddq_changes.'
       value: The figure.
       detail: 'How the figure is counted, or the status of the statement it comes from.'
       source: The document or record the figure comes from.
@@ -456,7 +448,7 @@ recipes:
     label: Budget, limit and cash tests of a new commitment
     cards: [41]
     names: [commit check, budget limit and cash tests, can we commit, cash cover after the commitment]
-    may_read: [deal_pipeline, commitments, cash_movements, instruments, business_rules, rule_versions, position_snapshots, market_observations]
+    may_read: [deal_pipeline, commitments, cash_movements, instruments, business_rules, rule_versions, position_snapshots, market_observations, bank_accounts]
     never_read: [transactions]
     why: >-
       A commitment is approved only when it fits the signed budget, the signed class limit and the cash the office will need for its calls; each test is
@@ -495,10 +487,7 @@ recipes:
       reg))) as gap from cu as c join instruments as i on i.id = c.instrument_id), tot as (select sum(unf_usd) as uncalled, sum(cmt_usd) as committed,
       count(*) filter (where gap) as gaps from cu2), cls as (select asset_class, sum(cmt_usd) as committed, count(*) filter (where gap) as gaps from cu2
       group by asset_class), dl as (select x.* from deal_pipeline as x where not exists (select 1 from deal_pipeline as y where y.supersedes_deal_id = x.id)
-      and x.stage not in ('declined', 'passed')), tp as (select * from dl order by stage_on desc, received_at desc, id limit 1), cd as (select
-      max(p.position_date) as d from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash'), lc as (select p.* from
-      positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where p.position_date = (select max(q.position_date)
-      from positions as q where q.instrument_id = p.instrument_id)), cash as (select sum(case when p.currency = 'USD' then p.source_market_value else
+      and x.stage not in ('declined', 'passed')), tp as (select * from dl order by stage_on desc, received_at desc, id limit 1), cd as (select max(p.position_date) as d from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office')), lc as (select p.* from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office') and p.position_date = (select max(q.position_date) from positions as q where q.instrument_id = p.instrument_id)), cash as (select sum(case when p.currency = 'USD' then p.source_market_value else
       (p.source_market_value) / (select f.rate from fxo as f where f.currency = p.currency and f.d <= (select d from cd) order by f.d desc limit 1) end) as
       cash_usd, count(*) filter (where (p.currency <> 'USD' and not exists (select 1 from fxo as f where f.currency = p.currency and f.d <= (select d from
       cd)))) as unconverted, min(p.position_date) as oldest from lc as p), x as (select l.deal_name, l.asset_class, l.currency, l.target_commitment as

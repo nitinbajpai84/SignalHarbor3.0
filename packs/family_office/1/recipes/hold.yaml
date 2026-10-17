@@ -35,12 +35,12 @@ recipes:
     may_read: [instruments, instrument_identifiers, position_snapshots]
     never_read: [commitments, cash_movements, transactions]
     why: "A gap is a fact about the instrument (no asset class, no approved identifier); its size is what is held in it at the instrument's latest position date. A commitment or a cash movement says nothing about either."
-    formula: One row for each instrument held (a market value other than zero at its latest position date; an instrument that is only in the master, or was sold out, has no row and is not a gap), with a flag for no asset class and a flag for no approved identifier, and the market value held in it at its latest position date. as_of_min, as_of_max and mixed_dates say when the dates held are not all the same (a monthly administrator file next to daily custodian files), so a total is never read as one date by mistake. gap_count, gap_value_total and net_worth are the totals of the same currency, repeated on every row; first_row marks one row of each currency so a signal can read the totals once.
-    grain: By instrument, at the instrument's latest position date
+    formula: One row for each instrument held at the latest month end loaded (the date the limits are measured on, policy section 3; a market value other than zero there; an instrument that is only in the master, or was sold out before that date, has no row and is not a gap), with a flag for no asset class and a flag for no approved identifier, and the market value held in it at its latest position date. as_of_min, as_of_max and mixed_dates say when the dates held are not all the same (a monthly administrator file next to daily custodian files), so a total is never read as one date by mistake. gap_count, gap_value_total and net_worth are the totals of the same currency, repeated on every row; first_row marks one row of each currency so a signal can read the totals once.
+    grain: By instrument, at the latest month end
     sql: >-
       create table {name} as with {positions},
-      last as (select l.instrument_id, l.position_date, l.currency, l.source_market_value from positions as l
-      where l.position_date = (select max(m.position_date) from positions as m where m.instrument_id = l.instrument_id)),
+      month_end as (select max(s.position_date) as d from positions as s where s.position_date = last_day(s.position_date)),
+      last as (select l.instrument_id, l.position_date, l.currency, l.source_market_value from positions as l join month_end as a on l.position_date = a.d),
       held as (select instrument_id, max(position_date) as position_date, currency, sum(source_market_value) as market_value from last group by instrument_id, currency),
       base as (select i.canonical_name as instrument, i.instrument_type, h.position_date, h.currency, h.market_value,
       (i.asset_class is null or trim(i.asset_class) = '') as no_class,
@@ -66,10 +66,10 @@ recipes:
       as_of_max: The newest position date among the holdings counted.
       mixed_dates: True when the holdings counted are not all at the same position date.
     tie_out:
-      label: The values held add up to the position snapshots at each instrument's latest date
+      label: The values held add up to the position snapshots at the latest month end
       sql: >-
         select (select coalesce(sum(market_value), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c
-        where c.position_date = (select max(d.position_date) from ({positions_check}) as d where d.instrument_id = c.instrument_id))
+        where c.position_date = (select max(d.position_date) from ({positions_check}) as d where d.position_date = last_day(d.position_date)))
 
   - id: value_age_days
     label: Valuation age
@@ -131,7 +131,7 @@ recipes:
     may_read: [position_snapshots, instruments, portfolios, legal_entities]
     never_read: [commitments, cash_movements, transactions]
     why: "Allocation is a share of what is held, so it reads the positions (counted as net_worth counts them) and the class on the instrument. An instrument with no class is shown as unclassified, never dropped."
-    formula: Market value of the position snapshots (counted as net_worth counts them) by asset class and entity, and each row's share_pct of the total of the same position date and currency, in percent.
+    formula: Market value of the position snapshots (counted as net_worth counts them, cash left out) by asset class and entity, and each row's share_pct of the total of the same position date and currency, in percent. Cash (instrument type cash, meaning the bank balances and the administrator's cash) is not an allocation line; the allocation covers the investment portfolios (policy section 1), and cash is reported on its own.
     grain: By asset class, entity and position date
     always_dims: true
     default_dims: [asset_class, entity]
@@ -142,11 +142,12 @@ recipes:
       create table {name} as with {positions},
       g as (select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as market_value
       from positions as l join portfolios as p on p.id = l.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id
-      left join instruments as i on i.id = l.instrument_id group by all)
-      select g.*, cast(100 * g.market_value / nullif(sum(g.market_value) over w, 0) as decimal(9,2)) as share_pct,
+      left join instruments as i on i.id = l.instrument_id where i.instrument_type is distinct from 'cash' group by all)
+      select g.*, cast(100 * g.market_value / nullif(sum(g.market_value) over w, 0) as decimal(9,4)) as share_pct,
       cast(sum(g.market_value) over w as decimal(18,2)) as total_value,
       cast(sum(case when g.asset_class = 'unclassified' then g.market_value else 0 end) over w as decimal(18,2)) as unclassified_value,
-      cast((select sum(q.source_market_value) from positions as q where q.position_date = g.position_date and q.currency = g.currency) as decimal(18,2)) as positions_total,
+      cast((select sum(q.source_market_value) from positions as q join instruments as qi on qi.id = q.instrument_id where q.position_date = g.position_date and q.currency = g.currency
+      and qi.instrument_type is distinct from 'cash') as decimal(18,2)) as positions_total,
       (row_number() over (partition by g.currency order by g.position_date desc, g.market_value desc) = 1) as first_row
       from g window w as (partition by g.position_date, g.currency)
     measure: share_pct
@@ -160,7 +161,8 @@ recipes:
     tie_out:
       label: The parts add up to the position snapshots for the same dates
       sql: >-
-        select (select coalesce(sum(market_value), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+        select (select coalesce(sum(market_value), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c
+        join instruments as ci on ci.id = c.instrument_id where ci.instrument_type is distinct from 'cash')
 
   - id: nav_rollforward
     label: Private fund value roll-forward
@@ -180,6 +182,13 @@ recipes:
       flows as (select c.id, c.instrument_id, c.effective_date, c.currency, c.movement_type, abs(c.amount) as amount from cash_movements as c
       where c.movement_type in ('call', 'distribution') and c.confirmation_status = 'confirmed'
       and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = c.id)),
+      gain as (select document_id, case when count(distinct value_numeric) = 1 then max(value_numeric) end as value_numeric from extracted_fields
+      where field_name = 'net_gain_loss' and value_numeric is not null group by document_id),
+      mobs as (select o.* from (select o.*, row_number() over (partition by o.instrument_id, o.valuation_date order by coalesce(o.approval_status = 'estimate', false), o.recorded_at desc, o.id) as rn
+      from valuation_observations as o where o.valuation_date = last_day(o.valuation_date)
+      and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)) as o where o.rn = 1),
+      monthly as (select m.instrument_id, m.valuation_date, x.value_numeric as gain from mobs as m left join gain as x on x.document_id = m.evidence_document_id),
+      freq as (select m.instrument_id, case when count(*) filter (where month(m.valuation_date) % 3 <> 0) > 0 then 3 else 1 end as statements_per_quarter from monthly as m group by m.instrument_id),
       pairs as (select n.instrument_id, p.valuation_date as period_start, n.valuation_date as period_end, n.currency, p.value_amount as prior_value,
       n.value_amount as closing_value, n.evidence_document_id, n.approval_status as closing_status from q as n join q as p on p.instrument_id = n.instrument_id
       and p.valuation_date = last_day(cast(n.valuation_date - interval 3 month as date))),
@@ -187,17 +196,19 @@ recipes:
       coalesce(sum(f.amount) filter (where f.movement_type = 'distribution'), 0) as distributions
       from pairs as r left join flows as f on f.instrument_id = r.instrument_id and f.currency = r.currency
       and f.effective_date > r.period_start and f.effective_date <= r.period_end group by all),
-      gain as (select document_id, case when count(distinct value_numeric) = 1 then max(value_numeric) end as value_numeric from extracted_fields
-      where field_name = 'net_gain_loss' and value_numeric is not null group by document_id)
+      qg as (select r.instrument_id, r.period_end, case when count(m.valuation_date) = max(f.statements_per_quarter) and count(m.gain) = count(m.valuation_date)
+      then cast(sum(m.gain) as decimal(18,2)) end as reported_gain
+      from pairs as r join monthly as m on m.instrument_id = r.instrument_id and m.valuation_date > r.period_start and m.valuation_date <= r.period_end
+      join freq as f on f.instrument_id = r.instrument_id group by all)
       select i.canonical_name as fund, a.period_start, a.period_end, a.currency, cast(a.prior_value as decimal(18,2)) as prior_value,
       cast(a.calls as decimal(18,2)) as calls, cast(a.distributions as decimal(18,2)) as distributions, cast(a.closing_value as decimal(18,2)) as closing_value,
       cast(a.closing_value - a.prior_value - a.calls + a.distributions as decimal(18,2)) as implied_gain,
-      cast(x.value_numeric as decimal(18,2)) as reported_gain,
-      cast(a.closing_value - (a.prior_value + a.calls - a.distributions + x.value_numeric) as decimal(18,2)) as unexplained,
-      a.closing_status, coalesce(a.closing_status = 'estimate', false) as on_estimate, (x.value_numeric is null) as gain_unreadable,
+      x.reported_gain,
+      cast(a.closing_value - (a.prior_value + a.calls - a.distributions + x.reported_gain) as decimal(18,2)) as unexplained,
+      a.closing_status, coalesce(a.closing_status = 'estimate', false) as on_estimate, (x.reported_gain is null) as gain_unreadable,
       (row_number() over (partition by i.canonical_name order by a.period_end desc) = 1) as latest
       from agg as a join instruments as i on i.id = a.instrument_id and i.instrument_type = 'private_fund'
-      left join gain as x on x.document_id = a.evidence_document_id
+      left join qg as x on x.instrument_id = a.instrument_id and x.period_end = a.period_end
     measure: implied_gain
     columns:
       prior_value: The fund's value at the previous quarter end.
@@ -326,12 +337,13 @@ recipes:
     may_read: [position_snapshots, credit_facilities, portfolios, legal_entities, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: "Net worth is what is held at a date; what is owed is the drawn amount of each facility as its latest statement at or before that date says. A loan statement may show the balance as a negative number: the drawn amount here is always the positive amount owed."
-    formula: Net worth (as net_worth counts it) by entity and position date, less the amount owed on each credit facility of the entity (the size of the drawn amount of its latest row at or before the position date, a superseded row out; a facility whose latest row is closed owes nothing), same currency and date. Currencies are never added together; a facility in a currency the entity holds nothing in at that date is not netted here (it needs a rate the model does not hold).
+    formula: Net worth (as net_worth counts it, cash left out, as the family totals of the allocation count them, that is the investment portfolios of policy section 1) by entity and position date, less the amount owed on each credit facility of the entity (the size of the drawn amount of its latest row at or before the position date, a superseded row out; a facility whose latest row is closed owes nothing), same currency and date. Currencies are never added together; a facility in a currency the entity holds nothing in at that date is not netted here (it needs a rate the model does not hold).
     grain: By entity and position date
     sql: >-
       create table {name} as with {positions},
       nw as (select e.id as entity_id, e.entity_name as entity, l.position_date, l.currency, sum(l.source_market_value) as net_worth
-      from positions as l join portfolios as p on p.id = l.portfolio_id join legal_entities as e on e.id = p.legal_entity_id group by all),
+      from positions as l join portfolios as p on p.id = l.portfolio_id join legal_entities as e on e.id = p.legal_entity_id
+      left join instruments as ci on ci.id = l.instrument_id where ci.instrument_type is distinct from 'cash' group by all),
       fac as (select f.* from credit_facilities as f where not exists (select 1 from credit_facilities as x where x.supersedes_credit_facility_id = f.id)),
       pick as (select n.entity_id, n.position_date, n.currency, f.drawn_amount, f.status, row_number() over (partition by n.entity_id, n.position_date, n.currency, f.facility_ref
       order by f.as_at desc, f.recorded_at desc) as rn from nw as n join fac as f on f.legal_entity_id = n.entity_id and f.currency = n.currency and f.as_at <= n.position_date),
@@ -355,7 +367,8 @@ recipes:
     tie_out:
       label: Net worth after debt equals the position snapshots less the debt shown
       sql: >-
-        select (select coalesce(sum(net_worth_after_debt), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c) - (select coalesce(sum(debt), 0) from {name})
+        select (select coalesce(sum(net_worth_after_debt), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c
+        join instruments as ci on ci.id = c.instrument_id where ci.instrument_type is distinct from 'cash') - (select coalesce(sum(debt), 0) from {name})
 
   - id: facility_headroom
     label: Credit facility headroom

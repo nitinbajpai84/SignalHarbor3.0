@@ -43,6 +43,22 @@ def test_the_narrative_gives_six_steps_and_the_email_only_fills_blanks():
     assert steps[1]["control"] == a[1]["control"]  # the email never overwrites the narrative
 
 
+def test_the_office_narrative_gives_the_figures_of_card_9():
+    """Card 9 of the six-month office (answer_keys uc9-sop): six steps, each with its owner, four flagged for automation, no step without owner or check."""
+    import yaml
+    office = ROOT / "tests" / "v1" / "fixtures" / "office6m"
+    plane = SimpleNamespace(path=lambda kind, name: office / "reference" / name)
+    docs, aside = P.read_docs(plane, ["month_end_process_narrative.md", "handover_email_mei_to_raj.txt"])
+    assert not aside
+    f = P.figures(docs)
+    exp = next(iter(yaml.safe_load((office / "answer_keys.yaml").read_text(encoding="utf-8"))["keys"]["uc9-sop"]["questions"].values()))["expected"]
+    assert f["steps"] == exp["steps"] == 6 and f["owners"] == exp["owners"]
+    assert f["manual_step_numbers"] == exp["manual_steps_flagged_for_automation"] == [1, 2, 3, 4] and f["manual_steps"] == 4
+    assert f["steps_without_owner"] == 0 and f["steps_without_check"] == 0
+    assert f["process_name"] == "Monthly investment report in USD and SGD" and len(f["handovers"]) == 5
+    assert P.figures([]) == {}
+
+
 def test_handovers_lanes_decisions_and_purpose():
     hand = P.handovers_of(NARRATIVE)
     assert [(h["from_step"], h["to_step"]) for h in hand] == [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6)] and "no log" in hand[2]["what"]

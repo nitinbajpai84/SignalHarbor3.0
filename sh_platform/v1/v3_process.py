@@ -178,6 +178,20 @@ def read_docs(plane, names: list[str]) -> tuple[list[dict], list[dict]]:
     return got, aside
 
 
+def figures(docs: list[dict]) -> dict:
+    """The figures a document-read process gives the signals and the key: the step count, the owner of each step by its name, the steps with no
+    owner or no control, the steps done by hand, the hand-overs. From read_docs' output; {} when no document gives steps."""
+    steps, seen = merge([(d["file"], _structured(d["text"]) or _numbered(d["text"])) for d in docs])
+    if not steps:
+        return {}
+    text = "\n".join(d["text"] for d in docs)
+    return {"process_name": _flat((re.search(r"^Project:\s*(.+)$", text, re.M) or [None, ""])[1]), "steps": len(steps),
+            "steps_without_owner": sum(1 for s in steps if not s["who"]), "steps_without_check": sum(1 for s in steps if not s["control"]),
+            "manual_steps": sum(1 for s in steps if s.get("manual")), "manual_step_numbers": [s["n"] for s in steps if s.get("manual")],
+            "owners": {s["name"]: s["who"] for s in steps}, "handovers": next((h for d in docs if (h := handovers_of(d["text"]))), []),
+            "files": [d["file"] for d in docs]}
+
+
 def _claim(x) -> list[str]:
     """The documents of this thread: its recognised files and any document still waiting for a home. They are marked read."""
     H = _h()

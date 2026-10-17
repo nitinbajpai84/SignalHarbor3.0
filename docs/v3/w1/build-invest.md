@@ -88,3 +88,19 @@ Changes in the recipes: every amount that crosses currencies is converted to USD
 
 New in the recipes beyond the rows: `mandate_fit` and `commit_check` read `market_observations` (fixing); `commit_check` also states the class test; the rules are the latest approved version in force (not the largest `max_pct` of several).
 Not done, noted: a card 41 class test gives `not set` on this office (no class limit signed), so it never blocks.
+
+
+## Wave 3: the scorecard (docs/v3/SCORE50.md, read with the real loader)
+
+The office loader (`v3_pack_readers`) writes what the recipes now read: a call notice is ONE `call` row for the whole notice (investment part plus management fee), and the fee is the notice document's `management_fee` field; a distribution's bank credit is its own confirmed row (no `notice_kind`, no supersession of the notice); the office's own accounts are the `bank_accounts` with `holder_kind = 'office'` (12), while the desk and administrator views are other instruments. The test stand-in now writes the same shape.
+
+| card | before | after | fix |
+|---|---|---|---|
+| 39 `uc-039-irr` | SIGNAL: `uc-039-irr-incomplete` fired on 5 clean funds | PASS, 40/40 keys, signals behave | `fund_irr_tvpi`: a noticed distribution counts as received when a confirmed bank credit of the same commitment has the same value date (`dn`). The credit does not supersede the notice in the loader, so the old test found no credit. No amount rule added (M19 stays visible in the credit amount). |
+| 40 `uc-040-icmemo` | FAIL: `fee_in_call_7` 0 (figure named `fee_in_latest_call`) | PASS, 8/8 | `memo_support`: the fee of the latest call notice is read from the notice's `management_fee` (0 when it bills none). Figure renamed `fee_in_call` to match the key and the scorecard. |
+| 41 `uc-041-commitappr` | FAIL: cash 18,468,124 (three times the 12 accounts), cover 111.25 | PASS, 4/4 keys | `commit_check`: cash is the latest snapshot of the office's own bank accounts only (`bank_accounts.holder_kind = 'office'`); the desk cash view and the administrator's `Cash <ccy>` view are not counted. `bank_accounts` added to `may_read`. |
+| 49 `uc-049-feedrag` | FAIL: fees 0 for all four managers, gross gain and drag wrong | keys 16/16 match; SIGNAL on `uc-049-feedrag-above-terms` for Bluewater Capital | `fee_drag`: fees come from the `management_fee` of each confirmed call notice (the fee part of the whole call row), not from `fee` rows that the reader never writes. Tie-out rewritten to the same source. Net gain unchanged (calls paid already include the fee). |
+
+Signal note for card 49: the Bluewater row is real. MANIFEST M08 (`notices/2026-06-10_G_call3.pdf`, Evergreen Credit III call 3: fee 28,125 against 18,750 on the terms, excess 9,375) is planted data, and the exception signal is right to hold it. score50's MESS table names M08 only for card 2, so card 49's signal counts as firing on a clean row. The scorer needs a MESS entry for card 49 (Bluewater Capital, M08); score50.py is outside this brief, so it is not changed here.
+
+Test: `pytest tests/v1/test_w1_invest.py` gives **37 passed, 0 failed** after wave 3.

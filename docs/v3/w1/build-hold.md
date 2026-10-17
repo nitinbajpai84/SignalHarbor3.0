@@ -7,6 +7,27 @@ Files: `packs/family_office/1/recipes/hold.yaml`, 21 files `packs/family_office/
 Test run (after the second pass, w2-fix-hold): `pytest tests/v1/test_w1_hold.py -q -p no:cacheprovider --basetemp=D:/Temp/pyt-w2-hold` gives **23 passed, 0 failed** (was 15).
 How the tests load: a small DuckDB with the model's tables (`docs/v2/evidence-to-action-mvp.duckdb.sql`); the office6m files are read by small readers in the test (xlsx, csv, pdf text) and written to the tables; the recipe SQL comes from `v3_recipes.render`, is checked with `refusal` / `tables_read` (only `may_read` tables) and `tie_out`, then compared with `answer_keys.yaml`. No expected number is typed in the tests: they come from the key, or from the statement files read again (the manager's gain line). Signals are run in the tests through the engine's own parser (`v3_signals.calc` and `render`) over the recipe rows, with the engine's `by` rule (exactly one row, else skipped), so each exception signal is shown firing, not firing, or skipped on the data. Extra cases (an exited holding, a negative loan, a closed facility, a second facility, an unread gain line, an estimate, a second book, a jump on an earlier day) are built from synthetic rows added in the test; none drops rows from a recipe table to make it pass.
 
+## Pass 2 (w4-fix-hold, 17 Oct 2026): the scorecard's hold cards
+
+Scorecard: `tools/score50.py` (docs/v3/SCORE50.md). Cards 13, 17, 21, 31, 38, 43 before the pass: 13 FAIL, 17 FAIL, 21 PASS, 31 FAIL, 38 SIGNAL, 43 PASS. After: 13 PASS, 17 PASS, 21 PASS, 31 PASS, 38 SIGNAL, 43 PASS. Test: `tests/v1/test_w1_hold.py` 23 passed, 0 failed (4 tests moved to the corrected rules, one renamed; no test removed).
+
+| card | before | after | why |
+|---|---|---|---|
+| 13 | FAIL: value 1,119,900 against 1,122,000 | PASS | The figure read each instrument at its own latest date (13 Oct for the listed holdings). The key and the policy measure limits at the month end (policy section 3), so the figure is now at the latest month end loaded (30 Sep). The found signal fired on the first row of each currency, not on the gap instrument, so the planted missing class was never caught; it now fires once for each instrument with a gap (`by: has_gap`), naming it. |
+| 17 | FAIL: family net worth 118,361,314 against 108,230,000 | PASS | The family totals counted the four cash portfolios (bank balances and the administrator's cash, instrument type cash). Policy section 1 scopes the figures to the investment portfolios, so cash is left out of `net_worth_after_debt`; the tie-out is adjusted to match. Debt is unchanged. |
+| 21 | PASS | PASS | Unchanged. |
+| 31 | FAIL: total 118,361,314 against 108,230,000; by-class share off on private equity (15.77 against 15.76) | PASS | Same cash rule: cash is left out of the allocation and of `positions_total`, so the not-adding-up check compares like with like. Shares are kept to four decimals: each row was rounded to two, and the sum of three rounded rows made 15.77. |
+| 38 | SIGNAL: the unexplained signal fires on Growth I (396,980) and Income II (182,582) | SIGNAL: only Growth I, at -12,500 | The manager's gain line on a monthly statement covers that month only (the Sep statement reads opening 9,400,000 + 780,000 = 10,180,000), but the roll-forward compared a quarter with it. The quarter's gain is now the sum of the net gain lines of the statements dated in the quarter; a quarter with a statement missing is unreadable, not guessed. Income II and Growth I Q2 now tie to the cent. The -12,500 left is the planted short-paid distribution (M19: notice 275,000, bank 262,500); the statements' gains assume the gross notice amount, the roll uses the cash received. No signed rule says which to use, so the difference is left in and the signal keeps saying so. |
+| 43 | PASS | PASS | Unchanged. |
+
+Other changes in the pass:
+- `identifier_gaps` tie-out and grain follow the month end; the CTE is `month_end` (`asof` is a DuckDB keyword).
+- `nav_rollforward`: new CTEs `mobs`, `monthly`, `freq` (statements per quarter: 3 when the fund reports monthly, else 1), `qg`; `reported_gain` and `gain_unreadable` come from `qg`.
+- Test changes: card 13 tests read the month end (a 13 Oct custodian file is loaded and does not move the figure); card 38 helper `quarter_gain`; the estimate test uses Growth II (quarterly), because a monthly fund needs its three months.
+- Scorecard limit, not changed here (tools/score50.py is not this domain's file): card 38 has no planted-mess entry for M19, so the -12,500 is scored as "fires on a clean row". It is a real difference, so the scorecard's MESS list for uc-038 should add M19. Decision for the orchestrator.
+
+Other tests run against the hold recipes: `tests/v1/test_v3_recipes.py` has 2 failures, both from files other domains are editing (`allowance_due` in `family.yaml` is still matched, and the stub-count check); not caused by this pass.
+
 ## Verifier rows (docs/v3/w1/verify-hold.md): fixed or not
 
 | card | verifier row | status | what was done, or why not |
@@ -48,11 +69,11 @@ Counts: wrong figure 7 (all fixed; the second as far as the data allows), unsafe
 
 | Recipe | Card | Reads | Tie-out | Added columns for signals |
 |---|---|---|---|---|
-| `identifier_gaps` | 13 | instruments, instrument_identifiers, position_snapshots | values add up to the position snapshots at each instrument's latest date | gap_count, gap_value_total, net_worth, gap_pct_of_net_worth, as_of_min, as_of_max, mixed_dates, first_row |
+| `identifier_gaps` | 13 | instruments, instrument_identifiers, position_snapshots | values add up to the position snapshots at the latest month end (pass 2) | gap_count, gap_value_total, net_worth, gap_pct_of_net_worth, as_of_min, as_of_max, mixed_dates, first_row |
 | `net_worth_after_debt` | 17 | position_snapshots, credit_facilities, portfolios, legal_entities, instruments | after-debt = positions less debt shown | family_* totals, is_latest |
 | `facility_headroom` | 17 | credit_facilities, legal_entities | none | limit_missing, drawn_change, facilities, facilities_without_limit, no_limit_facilities, drawdown_total, drawdown_facilities, first_row |
 | `value_age_days` | 21 | valuation_observations, position_snapshots, instruments | one row per instrument with a valuation | value_basis, is_estimate, was_stale, held_pct, stale_count, stale_names, stalest_fund, estimate_count, estimate_names, stale_max_*, first_row |
-| `allocation` | 31 | position_snapshots, instruments, portfolios, legal_entities | parts add up to the position snapshots | total_value, unclassified_value, positions_total, first_row |
+| `allocation` | 31 | position_snapshots, instruments, portfolios, legal_entities | parts add up to the position snapshots, cash left out (pass 2) | total_value, unclassified_value, positions_total, first_row |
 | `nav_rollforward` | 38 | valuation_observations, cash_movements, instruments, extracted_fields | calls less distributions equal the confirmed cash movements of the same quarters | closing_status, on_estimate, gain_unreadable, latest |
 | `liquid_pnl_mtd` | 43 | position_snapshots, transactions, instruments, portfolios | value today = listed positions at the latest date | no_month_start, new_month, books, books_without_start, total_*, mixed_dates, first_row |
 | `liquid_price_move` | 43 | position_snapshots, instruments, portfolios | none | jump_count, jump_names, top_move |
@@ -64,11 +85,11 @@ Rules used, none invented: stale after 90 days (card 21 and the stub), the 1 per
 
 ### Card 13, `uc-013-secgaps`, owner head_of_data
 - Recipe `identifier_gaps`. Signals: `-found` (needs), `-completed` (info), `-over-one-percent` (exception, problem, holds `publish_limits`).
-- Expect: Pacific Rim Convertible 2029 note, 1,122,000. Test: 1 instrument with a gap, value 1,122,000 (key), net worth 108,230,000 (key of card 17), about 1.04 percent, so the exception fires and `completed` does not.
+- Expect: Pacific Rim Convertible 2029 note, 1,122,000, at 30 Sep. Test: 1 instrument with a gap, value 1,122,000 (key), a 13 Oct file does not move it, about 1.04 percent of what is held, so the exception fires and `completed` does not.
 
 ### Card 17, `uc-017-liab`, owner principal
 - Recipes `net_worth_after_debt`, `facility_headroom`. Signals: `-owed`, `-drawdown` (info), `-no-limit-on-record` (needs, cfo), `-headroom` (exception, problem, cfo, holds `new_drawdown`; skipped until a signed line exists).
-- Expect: 2,800,000, 105,430,000. Test: debt 2,800,000 (Entity B only), after debt 105,430,000, by month Apr to Sep, issued report 57,600,000 less debt 54,800,000.
+- Expect: 2,800,000, 105,430,000 (investment portfolios, cash left out). Test: debt 2,800,000 (Entity B only), after debt 105,430,000, by month Apr to Sep, issued report 57,600,000 less debt 54,800,000.
 
 ### Card 21, `uc-021-stale`, owner risk_officer
 - Recipe `value_age_days`. Signals: `-found` (needs, holds `use_stale_values`), `-fresh`, `-estimate-only` (needs), `-breach-on-stale` (needs, holds `confirm_breach`).
@@ -79,7 +100,7 @@ Rules used, none invented: stale after 90 days (card 21 and the stub), the 1 per
 
 ### Card 38, `uc-038-navroll`, owner fund_accountant
 - Recipe `nav_rollforward`. Signals: `-statement`, `-ties` (info), `-unexplained` and `-gain-unreadable` (exceptions, problem, hold `report_fund`).
-- Expect: 1,176,980, -875,000. Test: the 12 fund-quarters of the key, the manager's gain line from the statement files, and for each fund's latest quarter exactly one of ties / unexplained fires.
+- Expect: 1,176,980, -875,000. Test: the 12 fund-quarters of the key, the quarter gain from the statement files (sum of the statements in the quarter), and for each fund's latest quarter exactly one of ties / unexplained fires. Growth I Q3 is left at -12,500 (M19, see pass 2).
 
 ### Card 43, `uc-043-liquidpnl`, owner cio
 - Recipes `liquid_pnl_mtd`, `liquid_price_move`. Signals: `-daily`, `-month-start` (info), `-price-jump` (exception, problem, ops_clerk, holds `enter_price`).
@@ -89,7 +110,7 @@ Rules used, none invented: stale after 90 days (card 21 and the stub), the 1 per
 
 1. **Real loader not called.** The tests read the files themselves. Whoever wires the loaders must write: statements into `valuation_observations` (period end as `valuation_date`, an amended statement as a row that `supersedes_valuation_id` the earlier one, `approval_status` final / estimate / amended) with `evidence_document_id`, and the statement's "Net gain / (loss)" line into `extracted_fields` as `field_name = 'net_gain_loss'`; capital calls and distributions into `cash_movements` as `call` / `distribution`, `confirmation_status = 'confirmed'`, with the amount that moved; loan statements into `credit_facilities` (the recipe takes the size of `drawn_amount`, so either sign is safe, and a limit goes in `limit_amount` when the agreement states one); the administrator column `Valuation Amount (USD)` read as market value (M18).
 2. **The security master leaves out three funds**: Evergreen Growth II, Evergreen Credit III, Saltmarsh Renewables I. A loader that creates them with no class would show them as gaps and change cards 13 and 31 (unclassified would rise by 5,555,000). Identify by name, not by administrator code 4491 (shared).
-3. **Model decision (steward): distribution amount.** The notice says 275,000 for Growth I (July); the bank credit is 262,500 (M19). The key uses 262,500.
+3. **Model decision (steward): distribution amount.** The notice says 275,000 for Growth I (July); the bank credit is 262,500 (M19). The key uses 262,500 (card 38's roll uses it too). The manager's monthly gain lines assume 275,000, so the roll shows -12,500 for Growth I's latest quarter. Decide whether the roll uses the gross notice amount or the cash received, and add M19 to the uc-038 entries of the scorecard MESS list.
 4. **Stale threshold.** 90 days is written in the recipe. To let an office sign its own, a `business_rules` code and a recipe that reads `business_rules` / `rule_versions` are needed.
 5. **Rules not signed yet.** `facility_headroom_line` (no covenant in the data; owner decision). `single_name_limit_pct` (5, in `reference/office_rules.csv`, worded "of the liquid portfolio"): the signal reads `limit.value`; confirm the field name and that it applies to funds. The estimate rule (may an estimate stand as the latest value?) is for the owner; the key accepts it today.
 6. **Signal engine fit** (engine on the `sh3-signals` branch): `by` must pick exactly one row, so recipes carry one marked row with the totals repeated on it. Consequences: the breach signal looks at the largest stale value only; the price-jump hold names the largest instrument only; with two currencies the `first_row` signals are skipped. To fire once for each item the engine needs items on `figure_changed`. Triggers assumed to exist: `file_arrived` kinds `manager_statement` and `loan_statement` (document field `fund`), `figure_changed` for the figure ids named, `schedule` for the month start. A condition that reads an empty value is skipped with a reason (engine `Missing`), which is why the recipes carry booleans such as `limit_missing` and `gain_unreadable` for the empty cases.

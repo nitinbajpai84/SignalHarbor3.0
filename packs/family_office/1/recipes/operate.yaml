@@ -9,18 +9,23 @@ recipes:
     may_read: [expected_statements, documents, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.
-    formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.
+    formula: For each fund or account and month the office expects a statement (expected_statements, the latest row for the instrument and period), count the statements received for that month (documents of type manager_statement, or bank_statement for a cash account; an amended re-issue is a correction, not a delivery, and is not counted). None received means missing; days overdue run from the due date to the latest date any document was received.
     grain: By fund and month
     sql: >-
       create table {name} as with due as (select e.* from expected_statements as e where not exists
       (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
-      asat as (select coalesce(max(cast(received_at as date)), current_date) as d from documents)
-      select i.canonical_name as fund, cast(date_trunc('month', e.period_end) as date) as month, e.period_end, e.due_date,
-      cast(count(d.id) as integer) as received_statements, cast(case when count(d.id) = 0 then 1 else 0 end as integer) as missing_statements,
-      case when count(d.id) = 0 and e.due_date is not null then greatest(date_diff('day', e.due_date, (select d from asat)), 0) end as days_overdue
-      from due as e join instruments as i on i.id = e.instrument_id left join documents as d on d.instrument_id = e.instrument_id
-      and d.document_type = 'manager_statement' and date_trunc('month', coalesce(d.valuation_date, cast(d.received_at as date))) = date_trunc('month', e.period_end)
-      group by all
+      asat as (select coalesce(max(cast(received_at as date)), current_date) as d from documents),
+      got as (select d.instrument_id, date_trunc('month', coalesce(d.valuation_date, cast(d.received_at as date))) as m, count(*) as n
+      from documents as d join instruments as k on k.id = d.instrument_id
+      where d.document_type = case when k.instrument_type = 'cash' then 'bank_statement' else 'manager_statement' end and coalesce(d.document_status, '') <> 'amended' group by all),
+      j as (select i.canonical_name as fund, cast(date_trunc('month', e.period_end) as date) as month, e.period_end, e.due_date,
+      coalesce(g.n, 0) as received_statements
+      from due as e join instruments as i on i.id = e.instrument_id
+      left join got as g on g.instrument_id = e.instrument_id and g.m = date_trunc('month', e.period_end))
+      select fund, month, period_end, due_date, cast(received_statements as integer) as received_statements,
+      cast(case when received_statements = 0 then 1 else 0 end as integer) as missing_statements,
+      case when received_statements = 0 and due_date is not null then greatest(date_diff('day', due_date, (select d from asat)), 0) end as days_overdue
+      from j
     measure: missing_statements
     columns:
       received_statements: Manager statements received for the fund and month.
@@ -162,7 +167,7 @@ recipes:
     may_read: [cash_movements, documents, extracted_fields, instruments]
     never_read: [commitments, position_snapshots, transactions]
     why: A notice is open until a person records it as a call against the commitment. The commitment register is the place it is recorded, so it cannot also say what is waiting.
-    formula: The capital call movements (notice_kind call) whose confirmation_status is still noticed and that no later movement replaces, with the fund, the call number read from the notice, the due date and the amount.
+    formula: The capital call movements (movement_type call, notice_kind capital_call) whose confirmation_status is still noticed and that no later movement replaces, with the fund, the call number read from the notice, the due date and the amount.
     grain: By notice
     sql: >-
       create table {name} as select i.canonical_name as fund, cast(f.value_numeric as integer) as call_no, m.due_date, cast(abs(m.amount) as decimal(18,2)) as amount,
@@ -170,7 +175,7 @@ recipes:
       from cash_movements as m join instruments as i on i.id = m.instrument_id
       left join documents as d on d.source_record_id = m.source_record_id and d.document_type = 'capital_call_notice'
       left join extracted_fields as f on f.document_id = d.id and f.field_name = 'call_no'
-      where m.notice_kind = 'call' and m.confirmation_status = 'noticed' and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
+      where m.movement_type = 'call' and m.confirmation_status = 'noticed' and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
     measure: notices_open
     columns:
       notices_open: 1 for each notice logged and not yet recorded against a commitment.
@@ -178,7 +183,7 @@ recipes:
     tie_out:
       label: Every noticed capital call movement is listed once
       sql: >-
-        select (select count(*) from {name}), (select count(*) from cash_movements as m where m.notice_kind = 'call' and m.confirmation_status = 'noticed'
+        select (select count(*) from {name}), (select count(*) from cash_movements as m where m.movement_type = 'call' and m.confirmation_status = 'noticed'
         and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
 
   - id: columns_changed
@@ -269,7 +274,7 @@ recipes:
     formula: For each valuation taken from an amended statement (its document status is amended) that replaces an earlier valuation, the value it replaces, the amended value and the change, the day it was received, and whether it was received after the last issued report (the latest document of type investment_report). open_amendments is 1 for those received after it.
     grain: By fund and valuation date
     sql: >-
-      create table {name} as with last_report as (select max(coalesce(d.document_date, cast(d.received_at as date))) as d from documents as d where d.document_type = 'investment_report')
+      create table {name} as with last_report as (select max(cast(d.received_at as date)) as d from documents as d where d.document_type = 'investment_report')
       select i.canonical_name as fund, a.valuation_date, a.currency, cast(o.value_amount as decimal(18,2)) as replaces, cast(a.value_amount as decimal(18,2)) as amended_value,
       cast(a.value_amount - o.value_amount as decimal(18,2)) as change, cast(a.received_at as date) as received_on, (select d from last_report) as last_issued_report,
       cast(case when cast(a.received_at as date) > (select d from last_report) then 1 else 0 end as integer) as open_amendments
@@ -293,17 +298,20 @@ recipes:
     label: Latest manager statement against the administrator value
     cards: [26]
     names: [statement against administrator, statement less administrator value, statement vs admin, manager statement against administrator]
-    may_read: [valuation_observations, documents, position_snapshots, instruments]
+    may_read: [valuation_observations, documents, position_snapshots, instruments, source_records, source_batches, source_systems]
     never_read: [commitments, cash_movements, transactions]
     why: The administrator may still carry a value from an earlier date. The comparison is the latest statement the office knows against the latest administrator position of the same fund, and the administrator row's own status says why they differ.
     formula: For each fund the administrator holds (the latest position date; a snapshot that a later one supersedes is out), the latest manager statement valuation the office has received for it (latest valuation date, then latest received; a valuation that a later one replaces is out), difference = statement less administrator. Shown with the administrator's status (Final, Estimate, Carried forward) and the statement's kind (final, estimate, amended).
     grain: By fund
     sql: >-
       create table {name} as with {positions},
-      adm as (select l.instrument_id, l.position_date, l.currency, l.data_status, sum(l.source_market_value) as admin_value from positions as l
-      where l.position_date = (select max(position_date) from positions) group by all),
+      pa as (select l.* from positions as l join instruments as k on k.id = l.instrument_id join source_records as sr on sr.id = l.source_record_id
+      join source_batches as sb on sb.id = sr.source_batch_id join source_systems as y on y.id = sb.source_system_id
+      where k.instrument_type <> 'cash' and y.source_type = 'administrator'),
+      adm as (select l.instrument_id, l.position_date, l.currency, l.data_status, sum(l.source_market_value) as admin_value from pa as l
+      where l.position_date = (select max(position_date) from pa) group by all),
       stm as (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc) as rn from valuation_observations as v
-      where v.valuation_type in ('manager_final', 'manager_estimate') and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id))
+      where v.valuation_type in ('manager_final', 'manager_estimate', 'manager_amended') and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id))
       select i.canonical_name as fund, s.valuation_date as statement_date, a.position_date as administrator_date, a.currency,
       cast(s.value_amount as decimal(18,2)) as statement_value, cast(a.admin_value as decimal(18,2)) as administrator_value,
       s.currency as statement_currency,
@@ -321,9 +329,13 @@ recipes:
     tie_out:
       label: The administrator values in the comparison equal the administrator's fund positions that have a statement
       sql: >-
-        select (select coalesce(sum(administrator_value), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c
-        where c.position_date = (select max(position_date) from position_snapshots) and exists (select 1 from valuation_observations as v
-        where v.instrument_id = c.instrument_id and v.valuation_type in ('manager_final', 'manager_estimate')))
+        select (select coalesce(sum(administrator_value), 0) from {name}), (select coalesce(sum(l.source_market_value), 0) from position_snapshots as l
+        join instruments as k on k.id = l.instrument_id join source_records as sr on sr.id = l.source_record_id join source_batches as sb on sb.id = sr.source_batch_id
+        join source_systems as y on y.id = sb.source_system_id
+        where y.source_type = 'administrator' and k.instrument_type <> 'cash' and not exists (select 1 from position_snapshots as x where x.supersedes_position_id = l.id)
+        and l.position_date = (select max(p.position_date) from position_snapshots as p join instruments as j on j.id = p.instrument_id join source_records as r on r.id = p.source_record_id
+        join source_batches as b on b.id = r.source_batch_id join source_systems as t on t.id = b.source_system_id where t.source_type = 'administrator' and j.instrument_type <> 'cash')
+        and exists (select 1 from valuation_observations as v where v.instrument_id = l.instrument_id and v.valuation_type in ('manager_final', 'manager_estimate', 'manager_amended')))
 
   - id: cash_difference_by_source
     label: Administrator and desk cash against the bank

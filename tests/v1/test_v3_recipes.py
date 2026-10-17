@@ -261,3 +261,24 @@ def test_recipes_load_from_the_domain_folder_stubs_are_skipped_and_the_old_file_
     finally:
         monkeypatch.undo()
         R._file.cache_clear()
+
+
+def test_the_top_50_figures_bind_to_the_recipe_that_answers_their_key():
+    """w4: figures of the family-office cards bind by their meaning (a tie on the name is read by the formula), never by the figure's id."""
+    want = {"unfunded_after_call": "called_to_date", "fee_part_check": "call_fee_check", "sgd_to_convert": "fx_required", "call_vs_commitment_check": "called_to_date",
+            "payments_on_hold": "bank_details_changed", "unclassified_holdings": "identifier_gaps", "networth_usd_sgd": "report_total_fx",
+            "missing_statements": "statement_timeliness", "cash_break": "cash_difference_by_source", "uncalled_total": "called_to_date",
+            "net_worth_after_debt": "net_worth_after_debt"}
+    cards = yaml.safe_load(open("packs/family_office/1/use_cases_100.yaml", encoding="utf-8"))
+
+    def figs(o):
+        if isinstance(o, dict):
+            if o.get("id") in want and "name" in o:
+                yield o
+            for v in o.values():
+                yield from figs(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from figs(v)
+    got = {f["id"]: (R.match(f) or {}).get("id") for f in figs(cards)}
+    assert got == want

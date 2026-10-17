@@ -115,3 +115,20 @@ Status of each verifier row (numbered in the order of the verifier's table). **F
 | 38 | 6, cosmetic (fx_required rows and tie-out across currencies) | Fixed | The tie-out checks each row (amount to convert equals shortfall times rate rounded up). One row per quote currency is kept on purpose. |
 
 Also noticed, not mine: `uc01-cash-shortfall` (and its siblings) picks `cash_by_entity` by entity and currency only, but that figure has one row per date, so the pick is ambiguous in real data; it needs a date in the key or the latest date. `tests/v1/test_v3_recipes.py` still fails on `renewals_vendors` and `invoice_variance` (other builders' recipes).
+
+## Wave 4: the scorecard's cash cards (docs/v3/SCORE50.md, `python tools/score50.py`)
+
+Files edited: `packs/family_office/1/recipes/cash.yaml` (`fx_rate_check`), `packs/family_office/1/signals/uc-006-fxneed-no-confirmation.yaml` (new), `tests/v1/test_w1_cash.py`, this page. `payment_batch` SQL is unchanged.
+
+| Card | Before | After | Reason |
+|---|---|---|---|
+| 6 `uc-006-fxneed` | FAIL 47/49: FXS-20260602-HOLD missing from `fx_rate_check`; M09 not caught by any signal | **PASS 53/53**; M09 caught by `uc-006-fxneed-no-confirmation` | `fx_rate_check` was built from bank confirmations only, so a conversion with no confirmation dropped out. It now lists every confirmation and every desk spot conversion (`transactions`, `fx_spot`, pair from the instrument name). A conversion with no confirmation shows `confirmation = none on record` and its booked rate (quote over base). The fixing check is unchanged. |
+| 8 `uc-008-payrun` | FAIL 15/17: Anchorage invoice shows `ready`, not `hold: invoice above fee schedule` | **still FAIL, BLOCKED** (see below) | No signed rule holds an invoice above its fee schedule (`reference/office_rules.csv` holds only the 500,000 approval line, the call-back rule, the buffer and the cash tolerance). `payment_batch` cannot read `invoice_variance` (card 50), and no payment carries an invoice reference. The hold can only come from a `payment_hold` approval that nothing writes. |
+
+Card 8, why it stays BLOCKED: the answer key says "an invoice above its fee schedule is held" and the 1,030 variance is real (card 50 PASS: 6,180 billed against 5,150). The hold rule itself is not on record. Per the rule for this work, the figure does not invent it. Needed before this card can pass: (a) a signed rule that holds an invoice above its fee schedule, in `office_rules.csv` or a `business_rules` row; (b) a link from the payment to its invoice (the payments carry no reference); (c) the invoice check writing `payment_hold` approvals. `tools/score50.py` still scores card 8 FAIL because its BLOCKED map is manual; the orchestrator should add card 8 there with the reason above.
+
+Test fixture finding: the wave 2 `payments()` fixture computed the 1,030 variance in Python and inserted a `payment_hold` approval, so the earlier card 8 pass was fixture-driven. Wave 4 removes that insertion. `test_card_8_the_invoice_above_its_fee_schedule_is_held` is a strict xfail with the BLOCKED reason; the releasable total for USD now includes the 6,180 to Anchorage, and the test says why.
+
+Test run: `python -m pytest tests/v1/test_w1_cash.py -q -p no:cacheprovider --basetemp=D:/Temp/pyt-w4-cash` gives **62 passed, 1 xfailed (strict, card 8), 0 failed**.
+
+Outside my files: `tests/v1/test_w2_loader.py` line 304 expects `len(checks) == 9` for `fx_rate_check`; it is now 10 (eight spot conversions, including FXS-20260602-HOLD, and two forwards). That test needs its owner to change 9 to 10. `tests/v1/test_w2_loader.py::test_hold_card_13...` fails on identifier_gaps (1,122,000 against 1,119,900), a hold-domain figure, not touched here.

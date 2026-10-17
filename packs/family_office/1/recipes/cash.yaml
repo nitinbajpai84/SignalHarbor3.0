@@ -408,30 +408,46 @@ recipes:
     cards: [6]
     names: [fx rate check, bank rate against fixing, confirmation rate against fixing, fx conversion rate check]
     words_all: [[fx, conversion, confirmation], [rate], [fixing, check, against]]
-    may_read: [fx_confirmations, market_observations]
-    never_read: [cash_movements, commitments, position_snapshots, transactions]
-    why: The bank's rate on a confirmation is checked against the fixing of its trade date. The planned amount to convert is a different figure and does not set the rate.
-    formula: For each confirmation (the latest row for the trade reference), the bank rate against the fixing of the same pair on the trade date (the last observation of that day, base = currency bought, quote = currency sold, so SGD per 1 USD when USD is bought). Difference in percent of the fixing. A confirmation whose pair or date has no fixing shows an empty fixing; nothing is guessed. The tolerance is the signed rule fx_plan_tolerance, read by the signal, not here.
+    may_read: [fx_confirmations, transactions, instruments, market_observations]
+    never_read: [cash_movements, commitments, position_snapshots]
+    why: The bank's rate on a confirmation is checked against the fixing of its trade date. A spot conversion the desk booked with no confirmation is still a conversion. It is listed, marked none on record, and checked against the same fixing. The planned amount to convert is a different figure and does not set the rate.
+    formula: One row per trade reference, from the latest confirmation and the desk's spot conversions (transactions of type fx_spot, not superseded). The pair is the instrument's name (base/quote, SGD per 1 USD when USD is the base). A confirmation gives the bank rate; a desk conversion with no confirmation gives the rate it was booked at (quote amount over base amount) and is marked none on record. The bank rate is then checked against the fixing of the same pair on the trade date (the last observation of that day). Difference in percent of the fixing. A reference whose pair or date has no fixing shows an empty fixing; nothing is guessed. The tolerance is the signed rule fx_plan_tolerance, read by the signal, not here.
     grain: By trade reference
     sql: >-
       create table {name} as with conf as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)),
       fix as (select o.base_currency, o.quote_currency, cast(o.observed_at as date) as day, o.value as rate from market_observations as o
       where o.observation_type = 'fx' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)
-      qualify row_number() over (partition by o.base_currency, o.quote_currency, cast(o.observed_at as date) order by o.observed_at desc) = 1)
-      select c.trade_reference, c.trade_date, c.counterparty, c.currency_bought, c.currency_sold, cast(c.amount_bought as decimal(18,2)) as amount_bought, cast(c.amount_sold as decimal(18,2)) as amount_sold,
-      cast(c.rate as decimal(18,6)) as bank_rate, cast(f.rate as decimal(18,6)) as fixing, cast(c.rate - f.rate as decimal(18,6)) as rate_difference,
-      cast(100 * (c.rate - f.rate) / f.rate as decimal(9,4)) as difference_pct
-      from conf as c left join fix as f on f.base_currency = c.currency_bought and f.quote_currency = c.currency_sold and f.day = c.trade_date
+      qualify row_number() over (partition by o.base_currency, o.quote_currency, cast(o.observed_at as date) order by o.observed_at desc) = 1),
+      spot as (select t.external_trade_id as ref, t.trade_date, split_part(split_part(i.canonical_name, ' ', 1), '/', 1) as base, split_part(split_part(i.canonical_name, ' ', 1), '/', 2) as quote,
+      abs(t.quantity_delta) as base_amount, abs(t.cash_amount) as quote_amount, t.quantity_delta > 0 as bought_base
+      from transactions as t join instruments as i on i.id = t.instrument_id where t.transaction_type = 'fx_spot' and t.supersedes_transaction_id is null
+      and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      pair as (select coalesce(c.trade_reference, s.ref) as trade_reference, coalesce(c.trade_date, s.trade_date) as trade_date, c.counterparty,
+      case when c.trade_reference is not null then c.currency_bought when s.bought_base then s.base else s.quote end as currency_bought,
+      case when c.trade_reference is not null then c.currency_sold when s.bought_base then s.quote else s.base end as currency_sold,
+      case when c.trade_reference is not null then c.amount_bought when s.bought_base then s.base_amount else s.quote_amount end as amount_bought,
+      case when c.trade_reference is not null then c.amount_sold when s.bought_base then s.quote_amount else s.base_amount end as amount_sold,
+      case when c.trade_reference is not null then c.rate else s.quote_amount / s.base_amount end as rate,
+      case when c.trade_reference is not null then 'bank confirmation' else 'none on record' end as confirmation
+      from conf as c full outer join spot as s on s.ref = c.trade_reference)
+      select p.trade_reference, p.trade_date, p.counterparty, p.currency_bought, p.currency_sold, p.confirmation, cast(p.amount_bought as decimal(18,2)) as amount_bought,
+      cast(p.amount_sold as decimal(18,2)) as amount_sold, cast(p.rate as decimal(18,6)) as bank_rate, cast(f.rate as decimal(18,6)) as fixing,
+      cast(p.rate - f.rate as decimal(18,6)) as rate_difference, cast(100 * (p.rate - f.rate) / f.rate as decimal(9,4)) as difference_pct
+      from pair as p left join fix as f on f.base_currency = p.currency_bought and f.quote_currency = p.currency_sold and f.day = p.trade_date
     measure: difference_pct
     columns:
-      bank_rate: The rate on the bank's confirmation.
+      confirmation: bank confirmation when the bank's confirmation is on file; none on record when only the desk's conversion is.
+      bank_rate: The rate on the bank's confirmation, or the rate the desk booked the conversion at when none is on record.
       fixing: The fixing of the same pair on the trade date, empty when none is on record.
       rate_difference: The bank rate less the fixing.
       difference_pct: The difference in percent of the fixing. Empty when there is no fixing.
     tie_out:
-      label: Every confirmation is checked once
+      label: Every confirmation and every desk spot conversion is checked once
       sql: >-
-        select (select count(*) from {name}), (select count(*) from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id))
+        select (select count(*) from {name}), (select count(*) from (select c.trade_reference as ref from fx_confirmations as c
+        where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)
+        union select t.external_trade_id from transactions as t where t.transaction_type = 'fx_spot' and t.supersedes_transaction_id is null
+        and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)) as u)
 
   - id: payment_batch
     label: Payment batch by approval state

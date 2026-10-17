@@ -290,7 +290,7 @@ def test_13_identifier_gaps():
     assert one["gap_count"] == k["count"] and float(one["gap_value_total"]) == k["value"] and float(one["net_worth"]) == nav
     assert float(one["gap_pct_of_net_worth"]) == pytest.approx(100 * k["value"] / nav, abs=1e-4) and not one["mixed_dates"]
     tables = {"identifier_gaps": table(con)}
-    assert fire("uc-013-secgaps-found", tables).startswith(f"{k['count']} instrument(s)")
+    assert fire("uc-013-secgaps-found", tables).startswith(k["instruments"][0])
     assert fire("uc-013-secgaps-over-one-percent", tables) and fire("uc-013-secgaps-completed", tables) is False
 
 
@@ -305,14 +305,17 @@ def test_13_an_instrument_not_held_is_not_a_gap():
     assert rows(con, "select * from gold_t where first_row")[0]["gap_count"] == key("uc-013-secgaps")["count"]
 
 
-def test_13_holdings_at_different_dates_are_said_to_be_so():
+def test_13_a_position_after_the_month_end_does_not_move_the_figure():
+    """Limits and allocation are measured at the month end (policy section 3): a 13 Oct custodian file is loaded but the figure stays at 30 Sep."""
     con, by_name = gaps_db()
-    load_custodian(con, "*/custodian_positions/positions_20261013.csv")  # the listed holdings move on to 13 Oct, the funds stay at 30 Sep
+    load_custodian(con, "*/custodian_positions/positions_20261013.csv")
     r, t = run(con, "identifier_gaps")
     assert t and t["ok"], t
     one = rows(con, "select * from gold_t where first_row")[0]
-    assert one["mixed_dates"] and str(one["as_of_min"]) == "2026-09-30" and str(one["as_of_max"]) == "2026-10-13"
-    assert "2026-10-13" in fire("uc-013-secgaps-found", {"identifier_gaps": table(con)})
+    assert not one["mixed_dates"] and str(one["as_of_min"]) == "2026-09-30" and str(one["as_of_max"]) == "2026-09-30"
+    gaps = rows(con, "select * from gold_t where has_gap")
+    assert [g["instrument"] for g in gaps] == key("uc-013-secgaps")["instruments"] and float(gaps[0]["gap_value"]) == key("uc-013-secgaps")["value"]
+    assert "2026-09-30" in fire("uc-013-secgaps-found", {"identifier_gaps": table(con)})
 
 
 # ---- card 17: net worth after debt ----------------------------------------------------------------------------------------------------------
@@ -474,6 +477,12 @@ def statement_of(fund, period_end):
     return max([x for x in c if x["status"].lower() != "estimate"] or c, key=lambda x: x["issued"])
 
 
+def quarter_gain(fund, start, end):
+    """The manager's gain over (start, end]: the net gain lines of the statements dated in it. A monthly statement covers its month only."""
+    months = sorted({x["period_end"] for x in statements() if x["fund"] == fund and start < x["period_end"] <= end})
+    return sum(statement_of(fund, m)["gain"] for m in months)
+
+
 def test_38_nav_rollforward():
     con = new_db()
     by_name, _ = load_master(con)
@@ -488,7 +497,7 @@ def test_38_nav_rollforward():
         x = got[(e["fund"], e["quarter"])]
         assert (float(x["prior_value"]), float(x["calls"]), float(x["distributions"]), float(x["closing_value"]), float(x["implied_gain"])) == \
                (e["prior"], e["calls"], e["distributions"], e["new"], e["implied_gain"]), e
-        rep = statement_of(x["fund"], x["period_end"])["gain"]  # the manager's own gain line, read from the statement file itself
+        rep = quarter_gain(x["fund"], date.fromisoformat(str(x["period_start"])), date.fromisoformat(str(x["period_end"])))  # read from the statement files themselves
         assert float(x["reported_gain"]) == rep and not x["gain_unreadable"] and not x["on_estimate"], e
         assert float(x["unexplained"]) == pytest.approx(float(x["closing_value"]) - (float(x["prior_value"]) + float(x["calls"]) - float(x["distributions"]) + rep))
     assert {x["fund"] for x in rows(con, "select fund from gold_t where latest")} == {e["fund"] for e in exp}
@@ -536,7 +545,7 @@ def test_38_a_quarter_on_an_estimate_is_marked_and_does_not_tie():
     by_name, _ = load_master(con)
     load_statements(con, by_name)
     load_flows(con, by_name)
-    fund = "Evergreen Growth I"
+    fund = "Evergreen Growth II"  # a quarterly statement: its quarter is the one statement of the quarter-end
     run(con, "nav_rollforward", "gold_before")
     prior = float(rows(con, "select closing_value from gold_before where fund = ? and period_end = date '2026-09-30'", fund)[0]["closing_value"])
 

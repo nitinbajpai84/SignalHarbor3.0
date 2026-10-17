@@ -212,6 +212,21 @@ class Office:
                      counterparty=t.splitlines()[0].title())
         return self
 
+    # the trading export's spot conversions (fx_spot rows) -> transactions on the pair's instrument; the reference is the trade id without the FX- prefix (the key's refs)
+    def fx_trades(self, pattern: str = "*/trading_export/trading_export_*.csv") -> "Office":
+        pairs = {}
+        for p in files(pattern):
+            for r in csv_rows(p):
+                if r["instrument_type"] != "fx_spot":
+                    continue
+                if r["instrument_name"] not in pairs:
+                    pairs[r["instrument_name"]] = self.instrument(r["instrument_name"], "fx_spot", currency=r["currency"])
+                sign = 1 if r["side"] == "buy" else -1  # buying the base currency: quantity in, cash out
+                self.ins("transactions", portfolio_id=self.port["EG-HOLD"], instrument_id=pairs[r["instrument_name"]], external_trade_id=r["external_trade_id"].removeprefix("FX-"),
+                         transaction_type="fx_spot", trade_date=r["trade_date"], effective_date=r["trade_date"], settlement_date=r["settle_date"],
+                         quantity_delta=sign * Decimal(r["quantity"]), cash_amount=-sign * Decimal(r["amount"]), currency=r["currency"], status=r["status"])
+        return self
+
     # reference/standing_instructions.csv -> the payee account on file for each fund; reference/accounts.csv -> the office's own accounts
     def payee_accounts(self) -> "Office":
         for r in csv_rows(OFFICE / "reference" / "standing_instructions.csv"):
@@ -279,7 +294,6 @@ class Office:
 
     # the payments waiting to be released on 13 Oct: three invoices and call 7 (the pdf text), with their approvals and holds
     def payments(self) -> "Office":
-        rate = float(re.search(r"Custody \(Anchorage Custody\): ([\d.]+)%", pdf_text(str(OFFICE / "reference" / "fee_schedule.pdf")))[1])
         daniel = self.user["Daniel Foo"]
         todo = []
         for p in files("*/invoices/*FEE-*.pdf") + files("*/invoices/2026-09-14_summit_STA-2609.pdf"):
@@ -290,11 +304,8 @@ class Office:
             end = re.search(r"account ending (\d{4})", t)
             acct = self.ins("bank_accounts", holder_kind="payee", holder_name=payee, account_purpose="payee", bank_name="Harbour Bank (synthetic)", account_ref=end[1] if end else "",
                             currency=ccy, status="active", verified_on="2026-01-15")  # an invoice that states no account leaves the reference empty
-            hold = None
-            if "FEE-" in p.name and (base := re.search(r"Fee base \(USD\): ([\d,\.]+)", t)):
-                over = money(amount) - money(base[1]) * Decimal(str(rate)) / 100 / 4 if "CUST" in p.name else 0
-                hold = f"invoice above fee schedule, {over:,.0f} over" if over > 0 else None
-            todo.append((payee, ccy, money(amount), due, acct, hold, False))  # an invoice due before 13 Oct is already paid: it is not in the batch
+                # no hold is written for an invoice above its fee schedule: no signed rule holds it (BLOCKED, docs/v3/w1/build-cash.md)
+            todo.append((payee, ccy, money(amount), due, acct, None, False))  # an invoice due before 13 Oct is already paid: it is not in the batch
         call = pdf_text(str(files("*/notices/2026-10-13_C_call7.pdf")[0]))
         new = self.ins("bank_accounts", holder_kind="payee", instrument_id=self.fund["Cedarpoint Ventures III"], holder_name="Cedarpoint Ventures III", account_purpose="payee",
                        bank_name="Harbour Bank (synthetic)", account_ref=re.search(r"Account:\s*\S+(\d{4})", call)[1], currency="USD", status="active",
@@ -469,24 +480,32 @@ def test_card_5_the_hold_lifts_only_when_a_call_back_is_recorded_for_the_new_acc
 
 # ---- card 8: the payment batch -------------------------------------------------------------------------------------------------------------
 
-def test_card_8_the_weekly_payment_run_has_two_ready_one_held_and_one_waiting_for_approval():
+def test_card_8_the_payments_that_are_ready_or_waiting_are_right_and_the_changed_account_is_held():
     o = Office().commitments().notices().payee_accounts().payments()
     rows, k = o.run("payment_batch"), key("uc-008-payrun")
     got = {(r["payee"], f2(r["amount"]), r["currency"], str(r["due_date"])): r for r in rows}
     for item in k["items"]:
+        if item["state"].startswith("hold"):  # BLOCKED: see test_card_8_the_invoice_above_its_fee_schedule_is_held
+            continue
         r = got[(item["payee"], float(item["amount"]), item["ccy"], item["due"])]
-        want = item["state"] if not item["state"].startswith("hold") else "hold"
-        assert r["state"].startswith(want if want != "hold" else "hold"), (item, r["state"])
-        if want == "hold":
-            assert item["state"].split(": ")[1] in r["state"] and f"{item['variance']:,}" in r["state"]
+        assert r["state"] == item["state"], (item, r["state"])
+    call = one(rows, payee="Cedarpoint Ventures III")
+    assert call["account_changed_unverified"] is True and call["release_blocked"] is True and call["approval_state"] == "requested" and call["requested_from"] == "Daniel Foo"
+    assert one(rows, payee="Summit Tax Advisory")["release_blocked"] is False  # a vendor with its account unchanged is not blocked
+
+
+@pytest.mark.xfail(strict=True, reason="BLOCKED: no signed rule holds an invoice above its fee schedule (reference/office_rules.csv has none), and payment_batch cannot read "
+                   "invoice_variance; the hold stays unwritten until the rule is signed (docs/v3/w1/build-cash.md)")
+def test_card_8_the_invoice_above_its_fee_schedule_is_held():
+    o = Office().commitments().notices().payee_accounts().payments()
+    rows, k = o.run("payment_batch"), key("uc-008-payrun")
+    want = next(i for i in k["items"] if i["payee"] == "Anchorage Custody (synthetic)")["state"]
+    assert [r["state"] for r in rows if r["payee"] == "Anchorage Custody (synthetic)"] == [want]
     states = {}
     for r in rows:
         key_ = "hold: invoice above fee schedule" if r["state"].startswith("hold") else r["state"]
         states[key_] = states.get(key_, 0) + 1
     assert states == k["states"]
-    call = one(rows, payee="Cedarpoint Ventures III")
-    assert call["account_changed_unverified"] is True and call["release_blocked"] is True and call["approval_state"] == "requested" and call["requested_from"] == "Daniel Foo"
-    assert one(rows, payee="Summit Tax Advisory")["release_blocked"] is False  # a vendor with its account unchanged is not blocked
 
 
 # ---- card 10: cash by bank -------------------------------------------------------------------------------------------------------------------
@@ -729,20 +748,29 @@ def test_the_approval_signal_reads_the_signed_rule_and_never_compares_two_curren
 
 @pytest.fixture()
 def confs() -> Office:
-    return Office().fx_rates().fx_confirmations()
+    return Office().fx_rates().fx_confirmations().fx_trades()
 
 
-def test_card_6_every_bank_conversion_is_checked_against_the_fixing_of_its_day_and_the_one_without_a_confirmation_is_found(confs):
+def test_card_6_every_conversion_is_checked_against_the_fixing_of_its_day_and_the_one_without_a_confirmation_is_found(confs):
     k = key("uc-006-fxneed", 0)["conversions"]
     rows = confs.run("fx_rate_check")
-    want = {c["ref"]: c for c in k if c["confirmation"]}
+    want = {c["ref"]: c for c in k}
     assert {r["trade_reference"] for r in rows} == set(want)
     for r in rows:
         c = want[r["trade_reference"]]
         assert (f2(r["amount_bought"]), float(r["bank_rate"]), float(r["fixing"]), round(float(r["difference_pct"]), 4)) == (float(c["usd"]), c["rate"], c["fixing"], c["diff_pct"])
         assert abs(r["difference_pct"]) < Decimal("0.1") and c["within_0_1_pct"]
+        assert (r["confirmation"] == "bank confirmation") == c["confirmation"]
     bank = {line["Reference"] for p in files("*/bank_statements/*.xlsx") for line in sheet(p, "Transactions") if line["Type"] == "fx_conversion"}  # conversions the banks booked (the data)
-    assert bank - {r["trade_reference"] for r in rows} == set(key("uc-006-fxneed", 2)["refs"])  # M09: booked at the bank, no confirmation (a recipe needs a reference on the movement: build doc)
+    assert bank <= {r["trade_reference"] for r in rows}  # every bank conversion is in the figure, confirmed or not
+    assert [r["trade_reference"] for r in rows if r["confirmation"] == "none on record"] == key("uc-006-fxneed", 2)["refs"]  # M09
+
+
+def test_card_6_a_conversion_with_no_confirmation_fires_its_signal_and_the_confirmed_ones_do_not(confs):
+    rows = confs.run("fx_rate_check")
+    cols = ("trade_reference", "trade_date", "currency_bought", "amount_bought", "currency_sold", "bank_rate", "confirmation")
+    fired = [r["trade_reference"] for r in rows if fire("uc-006-fxneed-no-confirmation", {c: r[c] for c in cols}, {"fx_rate_check": rows})[0]]
+    assert fired == key("uc-006-fxneed", 2)["refs"]
 
 
 def test_card_6_the_rate_signal_needs_a_signed_tolerance_and_fires_on_a_rate_away_from_the_fixing(confs):
@@ -902,8 +930,9 @@ def test_a_payment_to_a_changed_unverified_account_is_not_ready_even_when_no_app
     rows = o.run("payment_batch")
     usd = [r for r in rows if r["currency"] == "USD"]
     assert {f2(r["batch_total_in_currency"]) for r in usd} == {f2(sum(r["amount"] for r in usd))}
-    assert {f2(r["releasable_total_in_currency"]) for r in usd} == {16234.5}  # only the administrator's invoice is free to release; held and changed-account payments are not in it
-    assert [r["blocked_by"] for r in rows if r["payee"] == "Anchorage Custody (synthetic)"] == ["invoice above fee schedule, 1,030 over"]
+    # held and changed-account payments are not in the releasable total; the 6,180 to Anchorage is in it only because no hold rule for an invoice above its schedule is on record (BLOCKED)
+    assert {f2(r["releasable_total_in_currency"]) for r in usd} == {16234.5 + 6180}
+    assert [r["blocked_by"] for r in rows if r["payee"] == "Anchorage Custody (synthetic)"] == [None]  # no payment_hold on record: nothing is invented
 
 
 def test_the_payment_window_is_the_signed_rule_and_without_one_every_expected_payment_is_listed_unwindowed():

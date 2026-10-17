@@ -100,3 +100,32 @@ Test run: `pytest tests/v1/test_w1_report.py` gives 37 passed (31 before, 6 new)
 For every month and entity: `single_name_breach`, `limit_changes` and `pack_items` give no share for a portfolio that holds more than one currency (no FX rate is applied inside them); `time_weighted_return` gives no return for a month with holdings in another currency and `attribution` leaves such a portfolio out; attribution shows only portfolios with no carried-forward or estimated value.
 
 Left for others: the tests named in Needs 1 still need edits outside this brief; this file did not touch them.
+
+## Wave 3: score50 fixes (17 October 2026)
+
+Scope: `recipes/report.yaml`, `tests/v1/test_w1_report.py`, this page. Score: `python tools/score50.py` (docs/v3/SCORE50.md). Keys unchanged.
+
+What changed, at the root:
+
+1. **Month end, not the load date.** `single_name_breach`, `drift_vs_target`, `pack_items` and `limit_changes` read the latest month-end position date, and `time_weighted_return` only month-end dates. A month end is the last day of the month or its last business day (the administrator packs date some month ends on a Sunday, the custodian files on the Friday). The 13 October month-to-date is not a month, so the year to date runs April to September (six months), not to 13 October. The policy says each limit is measured at the month end.
+2. **Amendments open (pack).** An amended valuation counts as open for the Report section when it was received after the latest issued report (which therefore does not carry it) and has no committee decision. September: 1 (Evergreen Growth I, received 7 October, the report carries the estimate of 10,000,000). Before: 3, because the June Cedarpoint and July Kestrel amendments arrived before the report and are already in the position the report reflects.
+3. **Invented rules removed from the test world.** The test loader had written two rules the office has not signed: a single-name exemption for the sovereign note and a benchmark link of EG-LIQUID to EG-OFFICE-BLEND. Both are gone. A test that needs one signs it for that test only (`signed_rule`) and removes it afterwards; the default state is the signed data.
+
+Before to after, per card (score50):
+
+| Card | Before | After | Why it is not PASS |
+|---|---|---|---|
+| 12 uc5-limits | FAIL 6/10 | FAIL 9/10 | BLOCKED. Harborview's exposure, share and limit now match. "Which holding" returns 8 real breaches at 30 Sep: the sovereign note (7.08 percent) and seven listed names. The policy has no exemption for the note, and the key's "largest other than the sovereign note" needs one that is not on record. The key's single holding cannot be reproduced without it. |
+| 32 uc-032-driftrep | FAIL 1/2 | PASS 2/2 | Listed equity 80.61 and hedge funds 54.55 at 30 Sep; nothing outside band. |
+| 33 uc-033-breachesc | FAIL 0/4 | PASS 4/4 | Exposure 2,368,000, total 41,200,000, cost to cure 324,210.53 at 30 Sep. |
+| 42 uc4-vs-benchmark | FAIL 3/5 | FAIL 3/5 | BLOCKED on the benchmark. Portfolio return 4.1667 is right. No signed `benchmark_link` names EG-LIQUID. EG-OFFICE-BLEND v1 is approved in the workbook, but the workbook names no portfolio, and the link is not assumed. |
+| 44 uc-044-twr | FAIL 3/5 | FAIL 4/5 | Since 1 April 3.7934 becomes 3.821 (six months, April to September). BLOCKED on `benchmark_since_1_apr_pct` for the same reason as 42. |
+| 47 uc-047-icpack | FAIL 5/7 | FAIL 6/7 | BLOCKED on the breach count. Amendments open now 1 (matches). Breaches are 8 (the note and seven names), the key says 1; the key does not say why the other seven are not breaches. |
+| 48 uc-048-policyupd | FAIL 2/9 | FAIL 2/9 | BLOCKED. The key's monthly largest name (6.13, 5.89, 5.74, 5.71, 5.71, 5.75) is the largest name excluding the sovereign note. Checked by query: with the exemption signed, those six numbers come out of this recipe; without it the recipe gives 7.08 to 7.35. |
+
+Notes for the orchestrator:
+- The score cannot show BLOCKED for these cards (score50 only marks stub recipes BLOCKED), so the scorecard still shows FAIL on 12, 42, 44, 47 and 48. Read them as BLOCKED with the reasons above.
+- The signed exemption, the benchmark link, and the answer on the six other names are the three decisions the office has to make. Once the exemption and link are signed (business_rules rows), 48 and 44's benchmark figure should follow the test's own checks.
+- `stale_value_days` is not on record; the 90-day fallback is the card's figure, unchanged. Flagged, not fixed.
+
+Tests: `pytest tests/v1/test_w1_report.py`: 37 passed. The tests that depended on the two removed rules now assert the signed-data state, and sign a rule only inside the test that needs it. `tests/v1/test_v3_recipes.py` has two failures about the family `allowance_due` stub (another domain, not touched here).

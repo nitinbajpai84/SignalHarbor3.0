@@ -194,8 +194,8 @@ def load_notices(o: Office) -> None:
             fields.append(("management_fee", None, n["fee"], "USD", 1))
         recv = n["notice_date"]
         o.doc("capital_call_notice", n["file"], recv, instrument=ins, record=sr, fields=fields)
-        o.put("cash_movements", source_record_id=sr, portfolio_id=o.portfolio("EG-GROWTH" if n["investor"] == "Evergreen Holdings" else "EG-B-OPS"), instrument_id=ins, movement_type="capital_call",
-              effective_date=n["due"], received_at=ts(recv), amount=-n["amount"], currency="USD", due_date=n["due"], notice_kind="call",
+        o.put("cash_movements", source_record_id=sr, portfolio_id=o.portfolio("EG-GROWTH" if n["investor"] == "Evergreen Holdings" else "EG-B-OPS"), instrument_id=ins, movement_type="call",
+              effective_date=n["due"], received_at=ts(recv), amount=-n["amount"], currency="USD", due_date=n["due"], notice_kind="capital_call",
               confirmation_status="noticed" if (n["fund"] in waiting and n["call_no"] == latest[n["fund"]]) else "confirmed")
 
 

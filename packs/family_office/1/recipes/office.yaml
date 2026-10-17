@@ -8,6 +8,8 @@ recipes:
     cards: [30]
     names: [vendor renewals, contract renewals, renewals due vendors]
     may_read: [vendor_contracts]
+    never_read: [documents, extracted_fields, cash_movements]
+    why: A renewal comes from the contract on record (its renewal date, notice period and cost), never from an invoice or a payment to the vendor.
     formula: Contracts whose notice deadline (renewal date less notice_days; the renewal date when no notice period is stated) falls on or before 90 days after the as-at date (the latest day a contract was recorded), with the annual cost. A deadline or renewal date already passed stays in with negative days, so a contract still active after its renewal date is not lost. A superseded row and an ended or terminated contract are out. 90 days is the card's window (use case 30).
     grain: By contract
     sql: >-
@@ -89,6 +91,8 @@ recipes:
     cards: [50]
     names: [invoice variance, fee invoice variance, invoice against fee schedule, invoice less expected fee]
     may_read: [documents, extracted_fields]
+    never_read: [cash_movements, vendor_contracts]
+    why: The expected fee is the fee base times the rate of the fee schedule in force; what was paid or what a contract says is not the schedule.
     formula: 'For each fee invoice (a document of type invoice with a fee_base field): the billed amount (amount_due) less the expected fee, which is the fee base times the schedule rate for that vendor divided by the billing periods a year, rounded to the cent. The rate comes from the fee schedule in force on the invoice date: the latest fee_schedule document, not replaced, by its date (the day it was received when it has none), leaving out one dated after the invoice, fields service_fee_rate (value_text the vendor, value_numeric the fraction) and service_fee_periods. The invoice is checked only when that schedule gives one rate and one period count for the vendor and the fee base is in the currency of the amount due; otherwise it stays in with no expected fee and check_status says why.'
     grain: By invoice
     sql: >-

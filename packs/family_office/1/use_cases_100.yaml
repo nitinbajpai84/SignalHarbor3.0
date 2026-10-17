@@ -141,11 +141,11 @@ use_cases:
     formula: Called before the notice + this notice
     answer_key: 'Generator: 6,000,000 before call 7, 7,250,000 after'
   - id: unfunded_after_call
-    name: Unfunded after the call
+    name: Unfunded after call
     formula: Commitment less called to date
     answer_key: Commitment 10,000,000 minus 7,250,000 = 2,750,000
   - id: fee_part_check
-    name: Fee part against fund terms
+    name: Fee part of the call against fund terms
     formula: Fee on the notice against the fee rate in the fund terms
     answer_key: 350,000 equals the fee rate on file times the base; boolean from generator
   action: Fund Accountant records the call; a call larger than the uncalled amount stops and goes to the CFO
@@ -304,11 +304,11 @@ use_cases:
     formula: Cash by entity (per currency at the planning rate) less calls due by the due date less the 250,000 buffer from the signed office rule; negative means short
     answer_key: 'Holdings USD 1,230,000 vs call 1,250,000 + buffer 250,000: short USD 270,000'
   - id: sgd_to_convert
-    name: SGD to convert to cover the shortfall
+    name: Amount to convert to cover the shortfall (SGD)
     formula: Shortfall x USD/SGD WMR 4pm
     answer_key: 270,000 x 1.3400 = 361,800
   - id: call_vs_commitment_check
-    name: Notice against commitment
+    name: Notice against unfunded commitments
     formula: Notice amount <= unfunded before the call
     answer_key: Boolean from generator rows
   action: CFO approves the payment instruction; a short entity routes to the transfer or FX step
@@ -387,7 +387,7 @@ use_cases:
     formula: Account on the notice versus the standing instruction on file; yes/no with old and new ending
     answer_key: 'Notice account ending 4471 vs 2209 on file: yes (generator)'
   - id: payments_on_hold
-    name: Payments on hold awaiting call-back
+    name: 'Payee bank details changed: payments on hold awaiting call-back'
     formula: Payments to a changed account with no call-back recorded
     answer_key: 1 until the call-back note is recorded
   action: Grace calls a known number from the April subscription pack, records the call-back, and the standing instructions update with history
@@ -970,7 +970,7 @@ use_cases:
   - administrator export xlsx
   figures:
   - id: unclassified_holdings
-    name: Holdings without class or identifier
+    name: 'Unclassified holdings: without class or identifier'
     formula: Count and value of instruments with null asset class or no identifier
     answer_key: 'Generator: universe has one convertible note with no class (PRC29 1,122,000)'
   action: Head of Data asks the owner of the security master to complete it
@@ -1040,7 +1040,7 @@ use_cases:
   - fx rate csv
   figures:
   - id: networth_usd_sgd
-    name: Net worth in USD and SGD
+    name: Report total in USD and SGD
     formula: Report total, and total at the WMR USD/SGD rate
     answer_key: 'Existing key: 57,600,000'
   action: Principal reads and decides what to tell the board of the family
@@ -1250,7 +1250,7 @@ use_cases:
   - bank statement xlsx
   figures:
   - id: net_worth_after_debt
-    name: Net worth less liabilities
+    name: Net worth after debt (net worth less liabilities)
     formula: Net worth less loan balances in the same currency and date
     answer_key: 'Generator: universe loans table, balances at month end'
   action: Principal notes it for the board
@@ -1388,8 +1388,8 @@ use_cases:
   - email
   figures:
   - id: missing_statements
-    name: Missing and late statements
-    formula: 'Missing statements recipe: expected less received by fund and month'
+    name: Statements received late or missing, in business days
+    formula: 'For each expected statement, the first one received for the month; business days late, or missing when none'
     answer_key: 'Existing key: 63 days overdue'
   action: Fund Accountant sends the chase email herself
   signs: none
@@ -1958,8 +1958,8 @@ use_cases:
   - trade export csv
   figures:
   - id: cash_break
-    name: Cash break by entity and day
-    formula: 'Cash break recipe: administrator change in cash less movements'
+    name: Administrator and desk cash against the bank, by entity and day
+    formula: Administrator or desk cash less the bank cash, over the signed tolerance
     answer_key: 'Existing key: 12,400 (Entity B, 8 Oct)'
   action: Grace closes each break with a reason or hands it to Finance
   signs: ops_lead
@@ -2559,7 +2559,7 @@ use_cases:
   - commitments register xlsx
   figures:
   - id: uncalled_total
-    name: Uncalled by fund and total
+    name: Uncalled commitments by fund and total
     formula: Commitment less called, summed
     answer_key: 'Existing key: 13,450,000'
   action: CFO plans the cash for the year

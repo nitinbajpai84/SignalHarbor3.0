@@ -31,18 +31,15 @@ def _key(card: str) -> dict:
 
 
 def _recipe(rid: str) -> dict:
-    """The recipe as the live loader serves it. allowance_due is the one exception: family.yaml's stub of the same id shadows it in the loader
-    (test_allowance_due_is_served_by_the_loader, xfail until the stub goes), so it is read from office.yaml."""
-    if rid == "allowance_due":
-        return next(r for r in yaml.safe_load((PACK / "recipes" / "office.yaml").read_text(encoding="utf-8"))["recipes"] if r["id"] == rid)
+    """The recipe as the live loader serves it (allowance_due included: family.yaml's stub was removed, build-office.md Needs 1)."""
     r = R.recipe(rid)
     assert r, f"{rid} is not served by the recipe loader"
     return r
 
 
-@pytest.mark.xfail(strict=True, reason="family.yaml's allowance_due stub sorts first and shadows office.yaml's recipe (build-office.md, Needs 1)")
 def test_allowance_due_is_served_by_the_loader():
-    assert R.recipe("allowance_due") is not None
+    r = R.recipe("allowance_due")
+    assert r and r.get("status") != "stub" and r["sql"] and r["cards"] == [15]
 
 
 @pytest.fixture()
