@@ -1098,3 +1098,37 @@ def test_each_builds_files_exist_in_the_office6m_fixtures_and_are_the_answer_key
             assert entry.startswith("office6m:"), entry
             assert glob.glob(str(OFFICE / entry[len("office6m:"):])), (b["id"], entry)
         assert {e[len("office6m:"):] for e in b["files"]} == set(KEYS[b["id"]]["input_files"]), b["id"]
+
+
+# ---- live r1 fixes: shadow commitment rows and the daily cash break ----------------------------------------------------------------------
+
+def test_shadow_commitment_rows_are_not_counted_as_unfunded():
+    """r1 uc-007: placeholder rows (no register source, no called figure, no call) for commitments the register already holds added their whole amount (58.6M, not 14.6M)."""
+    o = Office().commitments().fund_terms().notices()
+    k = key("uc6-uncalled")["uncalled_after_call_7"]
+    live = o.con.execute("select legal_entity_id, instrument_id, commitment_amount, committed_on from commitments where called_to_date is not null").fetchall()
+    for ent, ins, amt, on in live:  # one placeholder per register line, and one for an investor the register does not list in that fund
+        o.ins("commitments", legal_entity_id=ent, instrument_id=ins, commitment_amount=amt, currency="USD", committed_on=on, called_to_date=None, called_as_at=None, source_record_id=None)
+    o.ins("commitments", legal_entity_id=o.ent["EG-B"], instrument_id=live[0][1], commitment_amount=6000000, currency="USD", committed_on="2023-09-20", called_to_date=None, called_as_at=None, source_record_id=None)
+    rows = o.run("called_to_date")
+    assert round(sum(float(r["unfunded_after_notice"]) for r in rows), 2) == k and len(rows) == len(live)
+    assert R.tie_out(o.con, R.recipe("called_to_date"), "t_called_to_date")["ok"]
+
+
+def test_cash_break_is_the_break_of_the_day_and_not_the_sum_since_the_period_start():
+    """r1 uc2: Entity B, 8 Oct: the administrator's cash is flat, the 12,400 wire left the bank that day, so the break is 12,400 on the 8th and -12,400 on the 9th, 0 on the others."""
+    o = Office()
+    cash = o.instrument("Cash USD", "cash")
+    desk = o.instrument("Desk cash EG-B USD", "cash")  # the desk's own derived line must not be read as the administrator's cash
+    bank = o.instrument("HB-B-USD", "cash")
+    o.ins("bank_accounts", holder_kind="office", legal_entity_id=o.ent["EG-B"], cash_instrument_id=bank, currency="USD", status="active", holder_name="Entity B", account_purpose="operating", bank_name="HB", account_ref="B")
+    k = key("uc2-recon-break-desk")
+    wire, day8 = Decimal(str(k["difference"])), str(k["date"])
+    for d, admin, derived in (("2026-10-06", 880400, 880400), ("2026-10-07", 880400, 880400), ("2026-10-08", 880400, 868000), ("2026-10-09", 868000, 868000), ("2026-10-12", 868000, 868000)):
+        o.ins("position_snapshots", portfolio_id=o.port["EG-B"], instrument_id=cash, position_date=d, source_market_value=admin, currency="USD", quantity=admin)
+        o.ins("position_snapshots", portfolio_id=o.port["EG-B"], instrument_id=desk, position_date=d, source_market_value=derived, currency="USD", quantity=derived, data_status="Derived")
+        o.ins("position_snapshots", portfolio_id=o.port["EG-B"], instrument_id=bank, position_date=d, source_market_value=derived - 200000, currency="USD", quantity=derived - 200000)
+    o.ins("cash_movements", portfolio_id=o.port["EG-B"], movement_type="payment", amount=-wire, currency="USD", effective_date=day8, confirmation_status="confirmed")
+    by = {str(r["day"]): r["cash_break"] for r in o.run("cash_break")}
+    assert by == {"2026-10-07": 0, "2026-10-08": wire, "2026-10-09": -wire, "2026-10-12": 0}  # the first day has no day before it
+    assert R.tie_out(o.con, R.recipe("cash_break"), "t_cash_break")["ok"]
