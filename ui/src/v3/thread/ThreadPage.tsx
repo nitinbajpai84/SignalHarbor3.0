@@ -11,7 +11,7 @@ import FigureChecks from "./FigureChecks";
 import QuestionBlock from "./QuestionBlock";
 import Discard from "./Discard";
 import ReuseOffer from "./ReuseOffer";
-import { SignNote, signAction } from "./SignOff";
+import { SignNote, confirmWhy, gapLine, openComposer, signAction } from "./SignOff";
 import { MicButton, combineText } from "../../v1/voice";
 
 const POLL_MS = 3000;
@@ -185,7 +185,7 @@ export default function ThreadPage() {
     panel = (
       <div className="v3-dec">
         <span className="v3-kicker">Decision 1 · Is this what you want?</span>
-        {updating && <p className="v3-updating" role="status">Updating the brief with what you just said. Changed lines will be marked.</p>}
+        {updating && <p className="v3-updating" role="status">Harbor is updating the brief. Changed lines will be marked.</p>}
         {b.doc?.length ? (
           b.doc.map((g) => (
             <section key={g.title} className="v3-bgroup">
@@ -205,12 +205,13 @@ export default function ThreadPage() {
           </dl>
         )}
         <ReuseOffer offers={(t.reuse ?? []).filter((o) => o.suggest)} value={reuse} onChange={setReuse} />
-        {d.gaps?.length ? <p className="v3-gap">Still needed before you confirm: {d.gaps.join("; ")}.</p> : null}
+        {gapLine(d.gaps, updating, t.signoff) && <p className="v3-gap">{gapLine(d.gaps, updating, t.signoff)}</p>}
         <SignNote s={t.signoff} />
         <div className="v3-row">
           {signAction(t.signoff, "Confirm", busy || updating, () => void run(t.reuse?.length ? decide(id, 1, "confirm", undefined, Object.fromEntries(t.reuse.map((o) => [o.figure_id, reuse[o.figure_id] ?? null]))) : decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
-          <button onClick={() => composer.current?.focus()}>Change something</button>
+          <button onClick={() => openComposer(composer.current)}>Change something</button>
         </div>
+        {confirmWhy(updating, !!err) && <p className="v3-why" role="status">{confirmWhy(updating, !!err)}</p>}
         <small className="v3-mute">or just say it, for example "use 90 days"</small>
       </div>
     );
@@ -246,12 +247,12 @@ export default function ThreadPage() {
           ))}
         </ul>
         {qs.length > 0 && <b>{qs.length === 1 ? "One thing I am not sure about" : `${qs.length} things I am not sure about`}</b>}
-        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => composer.current?.focus()} />)}
+        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => openComposer(composer.current, "Say what is off")} />)}
         <AssumptionsCard assumptions={d.assumptions} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         <div className="v3-row">
           <button className="go" disabled={busy || open > 0} onClick={() => void run(decide(id, 2, "carry_on", answers))}>This is right, carry on</button>
-          <button onClick={() => composer.current?.focus()}>Something is off</button>
+          <button onClick={() => openComposer(composer.current, "Say what is off")}>Something is off</button>
           {open > 0 && <small className="v3-mute">{open} answer{open > 1 ? "s" : ""} needed</small>}
         </div>
       </div>
@@ -317,7 +318,7 @@ export default function ThreadPage() {
           </div>
           {t.stage === "discarded" && <p className="v3-updating" role="status">This thread was discarded. It is kept for the record. <Link to="/v3/desk">Start a new one from the Desk</Link>.</p>}
           <ul className="v3-tl">{t.events.map((e, i) => <Row key={i} ev={e} />)}</ul>
-          {err && <p className="v3-err" role="alert">{err.message}</p>}
+          {err && !panel && <p className="v3-err" role="alert">{err.message}</p>}
           <div className="v3-compose">
             <textarea
               ref={composer}
@@ -335,6 +336,7 @@ export default function ThreadPage() {
         {splitter}
         <aside className="v3-side" aria-label="Where this thread stands">
           {panel}
+          {err && panel && <p className="v3-err" role="alert">{err.message}</p>}{/* next to the buttons that failed */}
           <RecordCard r={t.record} startedBy={t.started_by} startedAt={t.events[0]?.at} />
         </aside>
       </div>

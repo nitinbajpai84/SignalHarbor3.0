@@ -785,7 +785,8 @@ def _north(x, text, first=False):
     th["stage"] = "decision1"
     ev(th, "harbor", _turns(out) or "Here is what I understood you want. Is this right?", by="North")
     if gaps:
-        ev(th, "harbor", "Before you confirm, I still need: " + "; ".join(gaps) + ". Tell me in your own words, or say \"use the usual practice\".")
+        ev(th, "harbor", "Still open: " + "; ".join(gaps) + ". Tell me in your own words, or say \"use the usual practice\"."
+           " If you can sign, Confirm fills what is left with the usual practice first.")  # Confirm with gaps works (v3_signoff.before_sign)
 
 
 FILL = ("Where I have not said it, propose the usual practice for an office like ours and mark each as a suggestion "
@@ -905,7 +906,7 @@ def say(app, plane, tid, text, account_id) -> dict:
 def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
     th = load(plane, tid)
     cur = (th.get("decision") or {}).get("n")
-    if answer == "retry" and th.get("resume"):
+    if answer == "retry" and (th.get("resume") or th["stage"] == "question"):  # a draft cut off by a restart has no resume: redraft
         return say(app, plane, tid, "retry", account_id)
     if th["stage"] != f"decision{n}" or cur != n:
         raise ValueError(f"Decision {n} is not waiting for you.")

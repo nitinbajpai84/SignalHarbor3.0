@@ -147,3 +147,17 @@ def test_a_discarded_thread_leaves_the_desk_but_stays_on_record(client):
     assert r["stage"] == "discarded" and r["events"][-1]["text"] == "Discarded: Not what I meant"
     assert client.get("/api/v3/desk").json()["needs"] == [] and client.get("/api/v3/threads").json()["threads"] == []
     assert client.get(f"/api/v3/threads/{tid}").json()["stage"] == "discarded"  # kept for the record
+
+
+def test_retry_after_a_restart_cut_off_the_draft_redrafts(client):
+    """17 Oct: a restart mid-fill left the thread a question with no resume; the Retry button answered 409 "Decision 1 is not waiting"."""
+    from sh_platform.plane import PlaneStore
+    tid = client.post("/api/v3/threads", json={"text": "Can we meet the capital calls?"}).json()["id"]
+    plane = PlaneStore(client.app.state.settings.data_root).plane_for("evergreen")
+    th = H.load(plane, tid)
+    th["stage"] = "drafting"  # the fill was running when the app stopped
+    H.save(plane, th)
+    H._recover(client.app)
+    assert client.get(f"/api/v3/threads/{tid}").json()["stage"] == "question"
+    r = client.post(f"/api/v3/threads/{tid}/decide", json={"n": 1, "answer": "retry"})
+    assert r.status_code == 200 and client.get(f"/api/v3/threads/{tid}").json()["stage"] == "decision1"

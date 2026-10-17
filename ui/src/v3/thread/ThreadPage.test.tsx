@@ -166,3 +166,15 @@ test("decision1 with a reuse offer sends the choice in the reuse map", async () 
   fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
   await waitFor(() => expect(decide).toHaveBeenCalledWith("t1", 1, "confirm", undefined, { "fig-cash": "fig-cash" }));
 });
+
+test("Retry on a question asks the server to retry (17 Oct: after a restart it answered 409)", async () => {
+  show(base("question", { events: [{ at: "1 Oct", kind: "question", text: "I was interrupted while working (the app restarted)." }] }));
+  fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+  expect(decide).toHaveBeenCalledWith("t1", 1, "retry");
+});
+
+test("while the brief is updating, the greyed Confirm says why next to it", async () => {
+  show(base("drafting", { decision: { n: 1, title: "", gaps: ["When"], brief: { question: "Can we meet calls?", files: [], read_by: "", refresh: "", cases_when: "" } } }));
+  expect(await screen.findByRole("button", { name: "Confirm" })).toBeDisabled();
+  expect(screen.getByText(/Confirm opens when Harbor has finished updating the brief/)).toBeInTheDocument();
+});

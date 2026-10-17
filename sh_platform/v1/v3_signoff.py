@@ -233,7 +233,8 @@ def blocking(plane, iid: str | None) -> list[str]:
 
 def gap_question(th, signer: str, gaps: list[str]) -> str:
     return (GAP_Q.format(signer=signer, raiser=th.get("started_by") or "you") + "; ".join(gaps)
-            + ". Tell me in your own words, or say \"use the usual practice\"; then send it again.")
+            + ". Tell me in your own words, or say \"use the usual practice\"; then "
+            + ("confirm it again." if signer == th.get("started_by") else "send it again."))  # a self-signer has no one to send it to
 
 
 def fill(x, gaps: list[str]) -> list[str]:

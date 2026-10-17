@@ -133,3 +133,28 @@ test("a person who may not sign sees Send to the signer on the brief", async () 
   await waitFor(() => expect(sendForSignature).toHaveBeenCalledWith("t1"));
   expect(screen.queryByText("Confirm the brief")).toBeNull();
 });
+
+// Nitin, 17 Oct: "the 2 buttons to confirm or to change is not working" (Decision 1 card while Harbor filled the gaps).
+test("a greyed Confirm says why next to it, and Change something opens the box", async () => {
+  getThread.mockResolvedValue({ ...thread("drafting"), decision: { ...thread("drafting").decision!, gaps: ["Who reads the result"] } });
+  at("/v3/build/t1");
+  await screen.findByText("Hello there");
+  expect(screen.getByRole("button", { name: "Confirm the brief" })).toBeDisabled();
+  expect(screen.getByText(/Confirm opens when Harbor has finished updating the brief/)).toBeInTheDocument();
+  expect(screen.getByText(/Harbor is working on these now: Who reads the result/)).toBeInTheDocument();
+  fireEvent.click(screen.getByText("Change something"));
+  expect(screen.getByLabelText("Say something to Harbor")).toHaveFocus();
+  expect(screen.getByLabelText("Say something to Harbor")).toHaveAttribute("placeholder", expect.stringMatching(/Say what to change/));
+});
+
+test("Confirm with open gaps confirms (Harbor fills at signing) and a failed click shows its error next to the buttons", async () => {
+  getThread.mockResolvedValue({ ...thread("decision1"), decision: { ...thread("decision1").decision!, gaps: ["When it is needed"] }, signoff: { state: "can_sign", signers: [] } });
+  decide.mockRejectedValueOnce(new Error("We could not reach the service."));
+  at("/v3/build/t1");
+  await screen.findByText(/Still open: When it is needed\. Confirm and Harbor tries the usual practice/);
+  fireEvent.click(screen.getByRole("button", { name: "Confirm the brief" }));
+  expect(decide).toHaveBeenCalledWith("t1", 1, "confirm");
+  const err = await screen.findByRole("alert");
+  expect(err).toHaveTextContent("We could not reach the service.");
+  expect(screen.getByLabelText("The intent, drawn as you talk")).toContainElement(err);
+});

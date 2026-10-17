@@ -12,7 +12,7 @@ import FigureChecks from "../thread/FigureChecks";
 import QuestionBlock from "../thread/QuestionBlock";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
-import { SignNote, signAction } from "../thread/SignOff";
+import { SignNote, confirmWhy, gapLine, openComposer, signAction } from "../thread/SignOff";
 import { Row } from "../thread/ThreadPage";
 import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
@@ -263,13 +263,14 @@ function Case({ id }: { id: string }) {
   } else if (t.stage === "decision1" || updating) {
     act = (
       <div className="v3-dec">
-        {updating && <p className="v3-updating" role="status">Updating the brief with what you just said. Changed boxes glow.</p>}
-        {d?.gaps?.length ? <p className="v3-gap">Still needed before you confirm: {d.gaps.join("; ")}.</p> : null}
+        {updating && <p className="v3-updating" role="status">Harbor is updating the brief. Changed boxes glow.</p>}
+        {gapLine(d?.gaps, updating, t.signoff) && <p className="v3-gap">{gapLine(d?.gaps, updating, t.signoff)}</p>}
         <SignNote s={t.signoff} />
         <div className="v3-row">
           {signAction(t.signoff, "Confirm the brief", busy || updating || !doc?.length, () => void run(decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
-          <button onClick={() => composer.current?.focus()}>Change something</button>
+          <button onClick={() => openComposer(composer.current)}>Change something</button>
         </div>
+        {confirmWhy(updating, !!err, !doc?.length) && <p className="v3-why" role="status">{confirmWhy(updating, !!err, !doc?.length)}</p>}
       </div>
     );
   } else if (t.stage === "working") {
@@ -295,12 +296,12 @@ function Case({ id }: { id: string }) {
           ))}
         </ul>
         {qs.length > 0 && <b>{qs.length === 1 ? "One thing I am not sure about" : `${qs.length} things I am not sure about`}</b>}
-        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => composer.current?.focus()} />)}
+        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => openComposer(composer.current, "Say what is off")} />)}
         <AssumptionsCard assumptions={d.assumptions} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         <div className="v3-row">
           <button className="go" disabled={busy || open > 0} onClick={() => void run(decide(id, 2, "carry_on", answers))}>This is right, carry on</button>
-          <button onClick={() => composer.current?.focus()}>Something is off</button>
+          <button onClick={() => openComposer(composer.current, "Say what is off")}>Something is off</button>
           {open > 0 && <small className="v3-mute">{open} answer{open > 1 ? "s" : ""} needed</small>}
         </div>
       </div>
@@ -347,6 +348,8 @@ function Case({ id }: { id: string }) {
     );
   }
 
+  if (act && err) act = <>{act}<p className="v3-err" role="alert">{err.message}</p></>;  // next to the buttons that failed
+
   const send = () => {
     const s0 = text.trim();
     if (s0) void run(say(id, s0).then((r) => { setText(""); return r; }));
@@ -367,7 +370,7 @@ function Case({ id }: { id: string }) {
       {phone && <>{progress}{nowLine}{act}</>}
       {t.stage === "discarded" && <p className="v3-updating" role="status">This use case was discarded. It is kept for the record. <Link to="/v3/build">Back to the use cases</Link>.</p>}
       <ul className="v3-tl">{t.events.map((e, i) => <Row key={i} ev={e} />)}</ul>
-      {err && <p className="v3-err" role="alert">{err.message}</p>}
+      {err && !act && <p className="v3-err" role="alert">{err.message}</p>}
       <div className="v3-compose">
         <textarea
           ref={composer}

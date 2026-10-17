@@ -21,3 +21,30 @@ export function SignNote({ s }: { s?: SignOff | null }) {
   if (s.state === "none" || s.state === "fill") return <p className="v3-gap" role="status">{s.message}</p>;
   return null;
 }
+
+/** Decision 1's gap line: what Confirm will do about the open parts, so a Confirm with gaps never looks like it does nothing. */
+export function gapLine(gaps: string[] | undefined, updating: boolean, s: SignOff | null | undefined): string | null {
+  if (!gaps?.length) return null;
+  const list = gaps.join("; ").replace(/[.?!]$/, "");  // "Which figures do you want?" never ends as "?."
+  if (updating) return `Harbor is working on these now: ${list}.`;
+  if (!s || s.state === "can_sign" || s.state === "awaiting_you") {
+    return `Still open: ${list}. Confirm and Harbor tries the usual practice for these before signing; anything only you can say comes back here as a question. Or tell me in the box below.`;
+  }
+  return `Still needed before you confirm: ${list}.`;
+}
+
+/** Why Confirm is greyed, said next to it (Nitin, 17 Oct: a grey button with no reason looks broken). Null when it is not greyed for these. */
+export function confirmWhy(updating: boolean, lost: boolean, noDoc = false): string | null {
+  if (updating && lost) return "The page lost touch with Harbor while it was updating the brief. It keeps trying; Confirm opens when the brief is back.";
+  if (updating) return "Confirm opens when Harbor has finished updating the brief. This can take a few minutes; you can leave this page.";
+  if (noDoc) return "Confirm opens once the brief has its first lines.";
+  return null;
+}
+
+/** "Change something" / "Something is off": bring the box into view, focus it and say what to type there. */
+export function openComposer(box: HTMLTextAreaElement | null, hint = "Say what to change, for example \"use 90 days\""): void {
+  if (!box) return;
+  box.placeholder = hint;
+  box.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  box.focus();
+}
