@@ -123,6 +123,7 @@ def test_nothing_in_the_office_folders_is_left_without_a_reader(office):
     from tools.gen_office6m.more import NEW_KINDS  # the kinds of the other 49 cards wait for their readers and recipes
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     NEW_KINDS = [k for k in NEW_KINDS if k not in ("custody_statements", "insurance_schedule", "property_valuations", "title_deeds")]  # read by v3_pack_readers_assets
+    NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("expense_ledger", "office_budget", "payroll_drafts", "sops", "access_register", "kyc_register", "onboarding", "bank_forms", "family_access", "glossary", "break_register", "load_log", "inbox", "new_feed"))  # read by v3_pack_readers_controls
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     kinds = {p.parts[-2] for p in OFFICE.glob("20??-??/*/*") if p.is_file()} - set(NEW_KINDS)
     assert kinds <= set(office.report), kinds - set(office.report)
@@ -199,7 +200,7 @@ def test_a_renamed_administrator_column_is_read_flagged_and_proposed_as_a_new_ma
     june = office.rows("select p.source_market_value from position_snapshots p join instruments i on i.id = p.instrument_id "
                        "where p.position_date = date '2026-06-30' and i.canonical_name = 'Harborview Semiconductor' and p.view_type = 'accounting'")
     assert len(june) == 1 and float(june[0]["source_market_value"]) > 0  # read through the synonym 'valuation amount'
-    maps = office.rows("select mapping_status, version_number from sheet_mappings order by version_number")
+    maps = office.rows("select mapping_status, version_number from sheet_mappings where file_pattern like 'administrator%' order by version_number")
     assert maps == [{"mapping_status": "approved", "version_number": 1}, {"mapping_status": "proposed", "version_number": 2}]
     assert any("Valuation Amount (USD)" in f for f in office.report["administrator_nav"]["flagged"])
     changed = office.run("columns_changed")

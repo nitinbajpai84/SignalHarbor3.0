@@ -59,6 +59,7 @@ def test_every_file_of_the_office_is_recognised_as_its_kind_from_a_flat_name():
     from tools.gen_office6m.more import NEW_KINDS  # the kinds of the other 49 cards wait for their readers
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     NEW_KINDS = [k for k in NEW_KINDS if k not in ("custody_statements", "insurance_schedule", "property_valuations", "title_deeds")]  # read by v3_pack_readers_assets
+    NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("expense_ledger", "office_budget", "payroll_drafts", "sops", "access_register", "kyc_register", "onboarding", "bank_forms", "family_access", "glossary", "break_register", "load_log"))  # read by v3_pack_readers_controls from their content; inbox and new_feed are folders of unknown files, read by folder only
     NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     seen = {}
     for p in sorted(OFFICE.rglob("*")):
