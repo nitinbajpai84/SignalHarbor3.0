@@ -225,6 +225,19 @@ def liquidity_answer(plane, viewer, text: str, pid=None) -> dict | None:
     return hit
 
 
+def verified_answer(plane, viewer, text: str, pid=None, th: dict | None = None) -> dict | None:
+    """The office's verified figures first (the ready tables of the live thread's figures, through their figure records), then the liquidity tool.
+    A "no calls due" from the tool never stands over a calls figure the thread holds (w6: the tool counted a pack notice as no call)."""
+    from sh_platform.v1 import v3_figures as F
+    got = F.figure_answer(plane, viewer, text, (th or {}).get("pid") or pid, th)
+    if got and not str(got.get("answer") or "").startswith("Not available yet"):
+        return got
+    liq = liquidity_answer(plane, viewer, text, (th or {}).get("id"))
+    if liq and not (got and CALLS.search(text) and (liq.get("figure") or {}).get("value") == "None"):
+        return liq
+    return got
+
+
 # ---- GET /consume ------------------------------------------------------------------------------------------------------------------
 
 def _fig(label: str, value: str) -> dict:
@@ -281,7 +294,7 @@ def consume(plane, viewer, boards: list[dict], note: dict | None = None) -> dict
         note = {"headline": f"Cash is {by['Total cash']} USD across {n} entit{'ies' if n != 1 else 'y'}; "
                             + ("no capital calls are due in the next 30 days." if c30 == "None" else f"calls due in 30 days are {c30} USD.")}
         try:
-            first = answer(plane, viewer, g[0], lambda: liquidity_answer(plane, viewer, g[0], (live or {}).get("id")) or (_ for _ in ()).throw(LookupError()), count=False) | {"q": g[0]}
+            first = answer(plane, viewer, g[0], lambda: verified_answer(plane, viewer, g[0], None, live) or (_ for _ in ()).throw(LookupError()), count=False) | {"q": g[0]}
         except LookupError:
             first = None
     return {"office": office_name(plane), "as_of": day.isoformat() if day else None, "figures": figs, "watchlist": watch, "boards": boards, "note": note,

@@ -109,7 +109,8 @@ recipes:
   - id: called_to_date
     label: Called to date and unfunded
     cards: [2, 36]
-    names: [called to date, unfunded after call, capital called, uncalled commitments, unfunded commitments]
+    names: [called to date, unfunded after call, capital called, uncalled commitments, unfunded commitments, unfunded commitment after call, unfunded commitment after the call]
+    words_all: [[fit, fits, within], [commit, committed, commitment]]  # "does call 7 fit what we committed" (w6)
     may_read: [cash_movements, commitments, instruments, legal_entities]
     never_read: [position_snapshots, transactions]
     why: A call is a cash movement of type call linked to its commitment; the commitment file states the called amount at its own date. Cash balances say nothing about what was called.
@@ -250,6 +251,7 @@ recipes:
     label: Cash after calls due
     cards: [4]
     names: [cash after calls, cash cover after calls, cash after calls due]
+    words_all: [[short, shortfall, shortage, shortfalls], [buffer, buffers]]  # "Shortfall" after the buffer, "Cash short after the buffer" (w6)
     may_read: [position_snapshots, cash_movements, instruments, portfolios, legal_entities, business_rules, rule_versions, bank_accounts]
     never_read: [commitments, transactions]
     why: The cash is the administrator's balance, a position snapshot of the cash instrument. The calls are call movements. The buffer is the signed office rule, never a number typed in.
@@ -304,6 +306,7 @@ recipes:
     label: Payee bank details changed
     cards: [5]
     names: [bank details changed, payee account changed, standing instruction changed, bank account changed]
+    words_all: [[account, wire, bank, payee], [ending, changed, new, different]]  # "wire to an account ending 4471" (w6)
     may_read: [bank_accounts, extracted_fields, documents, cash_movements, instruments]
     never_read: [position_snapshots, commitments]
     why: The account on a notice is compared with the payee account the office has on file, as it stood when the notice came. The notice and the file say it; balances and commitments do not.
@@ -350,6 +353,7 @@ recipes:
     label: FX needed to pay a call
     cards: [6]
     names: [fx required, fx needed, currency to convert, amount to convert]
+    words_all: [[convert, conversion, converted, converting], [short, shortfall, shortage, call, calls]]  # "SGD to convert" for a shortfall or a call (w6)
     may_read: [cash_movements, position_snapshots, market_observations, instruments, portfolios, legal_entities, business_rules, rule_versions, bank_accounts]
     never_read: [commitments, transactions, fx_confirmations]
     why: The amount to convert is the shortfall after calls and buffer at the planning rate of the FX series. A confirmation is checked against it afterwards; it does not set it.
@@ -380,7 +384,7 @@ recipes:
       fx as (select s.entity_id, s.currency, o.quote_currency, o.rate, cast(o.observed_at as date) as rate_date from short as s join fxall as o on o.base_currency = s.currency
       and cast(o.observed_at as date) <= s.position_date qualify row_number() over (partition by s.entity_id, s.currency, o.quote_currency order by o.observed_at desc) = 1)
       select e.entity_name as entity, s.currency, cast(s.shortfall as decimal(18,2)) as shortfall, f.quote_currency as convert_currency, f.rate, f.rate_date,
-      cast(ceil(s.shortfall * f.rate) as decimal(18,2)) as convert_amount, cast(coalesce(o.cash, 0) as decimal(18,2)) as other_cash, coalesce(o.cash, 0) >= ceil(s.shortfall * f.rate) as other_cash_covers
+      cast(ceil(s.shortfall * f.rate) as decimal(18,2)) as convert_amount, cast(coalesce(o.cash, 0) as decimal(18,2)) as other_cash, cast(coalesce(o.cash, 0) / f.rate as decimal(18,2)) as other_cash_in_call_currency, coalesce(o.cash, 0) >= ceil(s.shortfall * f.rate) as other_cash_covers
       from short as s join legal_entities as e on e.id = s.entity_id join fx as f on f.entity_id = s.entity_id and f.currency = s.currency
       left join lastc0 as o on o.entity_id = s.entity_id and o.currency = f.quote_currency
     measure: convert_amount
@@ -391,6 +395,7 @@ recipes:
       rate_date: The date of that observation.
       convert_amount: The shortfall times the rate, rounded up to the next whole unit.
       other_cash: The cash the entity holds in the convert currency.
+      other_cash_in_call_currency: That cash in the call currency at the same rate (other cash divided by the rate).
       other_cash_covers: True when that cash is enough for the conversion.
     tie_out:
       label: Every row's amount to convert equals its shortfall times its rate, rounded up to the next whole unit

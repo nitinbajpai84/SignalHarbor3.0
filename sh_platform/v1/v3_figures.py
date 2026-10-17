@@ -879,14 +879,20 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return hit
     if hit := missing_statements(plane, viewer, text):  # c4 fund_accountant: a count of statements received is not which one is missing
         return hit
-    from sh_platform.v1 import v3_rule_checks as RC
+    from sh_platform.v1 import v3_consume as C, v3_rule_checks as RC
+    calls = bool(C.CALLS.search(text)) and not C.OTHER.search(text)
+    if calls and (hit := recipe_rows(plane, text, pid, th, kpis)):  # w6: can we pay the call, how much to convert: the recipes' rows, never the old forecast
+        return hit
     k = RC.kpi_by_recipe(text, kpis) or kpi_for(text, kpis)  # the question's words name a recipe: the brief's figure built from it, whatever North called it
     if k is None:
-        return None
+        return recipe_rows(plane, text, pid, th, kpis, floor=2)  # w6: no figure named ("which payments to release"): the recipes the question reads as
     from sh_platform.v1 import v3_recipes as R
     if h := R.held(th, k["name"]):  # Decision 3 held it (a failed tie-out, a missing input): never stated as fact
         return {"answer": f"Not available yet: {k['name']}: {h['reason']}", "figure": None, "rows": [], "source": f"{k['name']} is held at Decision 3", "used": [],
                 "trace": [{"kind": "guard", "label": "A figure held at Decision 3 is not stated"}]}
+    mine = relevance(text, R.bound(k)) if R.bound(k) else 0
+    if max((relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > max(mine, 1) and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+        return rows  # w6 (uc-005 "Account number match ... 250,000"): the figure's name met a word, another figure's recipe fits the question's meaning
     pack = P.latest_approved(plane, pid) or {}
     gold = (pack.get("target") or {}).get("gold") or []
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
@@ -894,18 +900,85 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     ready = [t for t in tabs if t["rows"]]
     run = next((s["run_id"] for s in reversed(th.get("steps") or []) if s.get("run_id")), None)
     trace = [{"kind": "tool", "label": f"Read the ready table for {k['name']}"}, {"kind": "guard", "label": "Every figure comes from the table's rows"}]
+    if not ready and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+        return rows
     if not ready:
-        why = next((f["reason"] for f in th.get("figures") or [] if f.get("kpi") == k["name"] and f.get("reason")), "") if tabs or gold else ""
+        why =next((f["reason"] for f in th.get("figures") or [] if f.get("kpi") == k["name"] and f.get("reason")), "") if tabs or gold else ""
         say = f"Not available yet: {k['name']} has no figure in the ready tables." + (" " + why.split(" Not loaded")[0] if why else "")
         return {"answer": say, "figure": None, "rows": [], "source": f"No rows for {k['name']}", "used": [], "trace": trace}
     meas = recipe_measures(k, gold)  # c6 ops_clerk: a recipe-built figure is read from its own table first, from the column the recipe names
     tabs = sorted(ready, key=lambda t: (t["name"] not in meas, -t["rows"]))
     for t, how in [*((t, RC.answer) for t in tabs), *((t, None) for t in tabs)]:  # a limit or a tolerance on record, on any table, before a plain read
         got = how(plane, k, t, text, th) if how else _read(plane, t, k, text, aliases(plane), th, meas.get(t["name"]))
+        if got and str(got.get("answer") or "").startswith("Not available yet") and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+            return rows  # w6 (uc-001 "no split by email, when"): the figure named cannot say; the recipes the question reads as can
         if got:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
             return {**got, "source": src, "used": [], "trace": trace, "kpi": k["name"]}
-    return None
+    return recipe_rows(plane, text, pid, th, kpis, floor=2)
+
+
+def relevance(text: str, r: dict) -> int:
+    """How many of the question's words the recipe's label, names, formula and columns use: the question's meaning, read against what each recipe holds."""
+    from sh_platform.v1 import v3_recipes as R
+    cols = r.get("columns") or {}
+    return len(R._stems(text) & R._stems(" ".join([r["label"], *(r.get("names") or []), r.get("formula", ""), *cols, *map(str, cols.values())])))
+
+
+ROW_CAP = 25
+
+
+def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1) -> dict | None:
+    """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
+    `relevance`, at least `floor`, and within one of the best), every row of their ready tables for what the question names, each column stated, and a
+    total per money column. Every number is a row's own; whatever North called the figures, the answer reads their recipes' tables. None when no
+    such figure has rows."""
+    from sh_platform.v1 import b10_pack as P, cx_dash as CD, v3_recipes as R
+    scored = [(relevance(text, r), k) for k in kpis if (r := R.bound(k)) and not R.held(th, k["name"])]
+    top = max((sc for sc, _ in scored), default=0)
+    figs = [k for sc, k in sorted(scored, key=lambda t: -t[0]) if sc >= max(floor, top - 1)]
+    if not figs:
+        return None
+    gold = ((P.latest_approved(plane, pid) or {}).get("target") or {}).get("gold") or []
+    live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
+    names, q = aliases(plane), _tokens(text)
+    lines, short, seen, first = [], {}, set(), None
+    for k in figs:
+        t = next((live[g["name"]] for g in covering(k, gold) if g["name"] in live and live[g["name"]]["rows"] and g["name"] not in seen), None)
+        if t is None:
+            continue
+        seen.add(t["name"])
+        cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
+        texts = [c for c, ty in cols.items() if ty.startswith(("varchar", "text", "char")) and c not in META and not c.endswith("_id") and not c.startswith("run")]
+        _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
+        for c in texts:  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds)
+            hit = [x for x in rows if x.get(c) is not None and (_tokens(f"{x[c]} {names.get(str(x[c]), '')}") & q) - GENERIC]
+            rows = hit or rows
+        money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META
+                 and not re.search(r"rate|pct|percent|fixing|ratio|share|price", c)]  # amounts only: a rate or a percent is never added up
+        for x in rows[:ROW_CAP]:
+            who = " · ".join(names.get(str(x[c]), str(x[c])) for c in texts if x.get(c) is not None)
+            said = []
+            for c, ty in cols.items():
+                v = x.get(c)
+                if c in texts or c in META or c.endswith("_id") or c.startswith("run") or v is None:
+                    continue
+                n = _num(v)
+                said.append(f"{c.replace('_', ' ')} " + (_fmt(n, c in money) if n is not None else "yes" if v is True else "no" if v is False else str(v)[:10]))
+            lines.append({"label": f"{k['name']} · {who}" if who else k["name"], "value": "; ".join(said)})
+            if "shortfall" in cols and _num(x.get("shortfall")):  # one line per amount: the shortfall and its conversion are the same short
+                short.setdefault(_num(x["shortfall"]), f"{who} is short by {_fmt(_num(x['shortfall']), True)}")
+            first = first or k["name"]
+        ccy = next((c for c in texts if CCY_COL.match(c)), None)
+        if len(rows) > 1 and money and len({x.get(ccy) for x in rows} if ccy else {None}) == 1:  # "the total across all funds": one currency only
+            tot = [f"{c.replace('_', ' ')} {_fmt(sum((_num(x.get(c)) or Decimal(0) for x in rows), Decimal(0)), True)}" for c in money]
+            lines.append({"label": f"{k['name']} · total of {len(rows)} rows", "value": "; ".join(tot)})
+    if not lines:
+        return None
+    lead = "Not from its own cash alone: " + "; ".join(short.values()) + "." if short else "From the verified figures:"
+    return {"answer": lead + " " + " ".join(f"{r['label']}: {r['value']}." for r in lines), "figure": {"label": lines[0]["label"], "value": lines[0]["value"].split("; ")[0], "change": ""},
+            "rows": lines, "source": ", ".join(plain(n) for n in sorted(seen)), "used": [], "kpi": first,
+            "trace": [{"kind": "tool", "label": "Read the ready tables of the figures the question is about"}, {"kind": "guard", "label": "Every figure comes from the tables' rows"}]}
 
 
 def _not_loaded(th: dict | None) -> str:

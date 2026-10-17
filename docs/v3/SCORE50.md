@@ -1,6 +1,6 @@
 # Score of the top 50 use cases
 
-Written by `python tools/score50.py` on 2026-10-17 16:45. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 59 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 33 s, whole run 74 s.
+Written by `python tools/score50.py` on 2026-10-17 17:48. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 59 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 15 s, whole run 25 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -8,21 +8,21 @@ PASS: every key value matches and the signals behave. FAIL: a number is wrong, o
 
 | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|
-| 44 | 6 | 0 | 0 | 50 |
+| 50 | 0 | 0 | 0 | 50 |
 
-Key values compared: 565, matching: 549.
+Key values compared: 565, matching: 565.
 
 ## By domain
 
 | Domain | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
+| Cash and treasury | 11 | 0 | 0 | 0 | 11 |
 | Family and people | 1 | 0 | 0 | 0 | 1 |
 | Hold and maintain | 6 | 0 | 0 | 0 | 6 |
 | Invest | 8 | 0 | 0 | 0 | 8 |
 | Operate and control | 8 | 0 | 0 | 0 | 8 |
+| Report and govern | 13 | 0 | 0 | 0 | 13 |
 | Run the office | 3 | 0 | 0 | 0 | 3 |
-| Cash and treasury | 10 | 1 | 0 | 0 | 11 |
-| Report and govern | 8 | 5 | 0 | 0 | 13 |
 
 ## By person (card owner)
 
@@ -30,23 +30,19 @@ Key values compared: 565, matching: 549.
 |---|---|---|---|---|---|
 | Anita Rao | 4 | 0 | 0 | 0 | 4 |
 | Daniel Foo | 5 | 0 | 0 | 0 | 5 |
+| Grace Ong | 6 | 0 | 0 | 0 | 6 |
 | Helen Foo | 8 | 0 | 0 | 0 | 8 |
 | Mei Chen | 3 | 0 | 0 | 0 | 3 |
 | Priya Nair | 2 | 0 | 0 | 0 | 2 |
+| Raj Patel | 8 | 0 | 0 | 0 | 8 |
 | Sam Lee | 2 | 0 | 0 | 0 | 2 |
 | Sofia Reyes | 6 | 0 | 0 | 0 | 6 |
-| Grace Ong | 5 | 1 | 0 | 0 | 6 |
-| Tom Hale | 4 | 2 | 0 | 0 | 6 |
-| Raj Patel | 5 | 3 | 0 | 0 | 8 |
+| Tom Hale | 6 | 0 | 0 | 0 | 6 |
 
 ## Failures by root cause, worst first
 
 A card can sit under more than one cause. The cause is what the expected-against-got numbers of the card detail point to.
 
-1. **No benchmark is linked to the liquid book; 'since 1 April' runs to 13 Oct**. FAIL, 2 card(s): 42, 44. Recipes: time_weighted_return.
-2. **The sovereign note counts as a single name (no signed exemption), so every month breaches**. FAIL, 2 card(s): 47, 48. Recipes: limit_changes, pack_items.
-3. **An invoice above its fee schedule is not held in the payment run**. FAIL, 1 card(s): 8. Recipes: payment_batch.
-4. **Reads the latest day (13 Oct), not the 30 Sep month end the key reads**. FAIL, 1 card(s): 12. Recipes: single_name_breach.
 
 ## Every card
 
@@ -59,11 +55,11 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 5 | uc-005-benefcheck: Hold a payment when the bank details changed | Cash and treasury | Grace Ong | **PASS** | 7/7 | all key values match; signals behave |
 | 6 | uc-006-fxneed: FX needed to pay a call in another currency | Cash and treasury | Grace Ong | **PASS** | 53/53 | all key values match; signals behave |
 | 7 | uc-007-pacing: Commitment pacing: where we stand after the call | Invest | Raj Patel | **PASS** | 27/27 | all key values match; signals behave |
-| 8 | uc-008-payrun: Weekly payment run with two approvals | Cash and treasury | Grace Ong | **FAIL** | 15/17 | items[Anchorage Custody (synthetic)].state: expected 'hold: invoice above fee schedule', got 'ready' (payment_batch); states: expected {'hold: invoice above fee schedule': 1, 'ready': 2, 'waiting for approval': 1}, got {'ready': 3, 'waiting for approval': 1} (payment_batch) |
+| 8 | uc-008-payrun: Weekly payment run with two approvals | Cash and treasury | Grace Ong | **PASS** | 17/17 | all key values match; signals behave |
 | 9 | uc9-sop: Process map and SOP for the month-end report | Run the office | Priya Nair | **PASS** | 3/3 | all key values match; signals behave |
 | 10 | uc-010-bankexp: Cash held at each bank against the bank limit | Cash and treasury | Tom Hale | **PASS** | 5/5 | all key values match; signals behave |
 | 11 | uc10-pipeline: A monthly pipeline and insight from the administrator and trading files | Operate and control | Anita Rao | **PASS** | 6/6 | all key values match; signals behave |
-| 12 | uc5-limits: Allocation and limit monitoring | Report and govern | Tom Hale | **FAIL** | 9/11 | holding: expected 'Harborview Semiconductor', got 'Harbour Treasury Note 2029 (synthetic sovereign)' (single_name_breach); over_limit: expected ['Harborview Semiconductor', 'Coastal Rail Holdings', 'Larkspur Health', 'Juniper Consumer Brands', 'Evermore Banking Group', 'Atlas Harbour Shipping', 'Northwind Logistics'], got ['Atlas Harbour Shipping', 'Coastal Rail Holdings', 'Evermore Banking Group', 'Harborview Semiconductor', 'Harbour Treasury Note 2029 (synthetic sovereign)', 'Juniper Consumer Brands', 'Larkspur Health', 'Northwind Logistics'] (single_name_breach) |
+| 12 | uc5-limits: Allocation and limit monitoring | Report and govern | Tom Hale | **PASS** | 11/11 | all key values match; signals behave |
 | 13 | uc-013-secgaps: Securities with no asset class or identifier | Hold and maintain | Anita Rao | **PASS** | 3/3 | all key values match; signals behave |
 | 14 | morning-networth-note: A morning note on what we are worth | Report and govern | Mei Chen | **PASS** | 7/7 | all key values match; signals behave |
 | 15 | uc-015-allowances: Family member allowances and distributions due | Family and people | Mei Chen | **PASS** | 4/4 | all key values match; signals behave |
@@ -93,13 +89,13 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 39 | uc-039-irr: Return of each private fund since we invested | Invest | Sofia Reyes | **PASS** | 40/40 | all key values match; signals behave |
 | 40 | uc-040-icmemo: Investment committee memo for a new commitment | Invest | Sofia Reyes | **PASS** | 8/8 | all key values match; signals behave |
 | 41 | uc-041-commitappr: Approve a new commitment within policy | Invest | Raj Patel | **PASS** | 4/4 | all key values match; signals behave |
-| 42 | uc4-vs-benchmark: How did the portfolio do against its benchmark? | Report and govern | Raj Patel | **FAIL** | 3/5 | benchmark_return_pct: expected 2.7072, got None (time_weighted_return); active_pct: expected 1.4595, got None (time_weighted_return) |
+| 42 | uc4-vs-benchmark: How did the portfolio do against its benchmark? | Report and govern | Raj Patel | **PASS** | 5/5 | all key values match; signals behave |
 | 43 | uc-043-liquidpnl: Liquid book gain or loss so far this month | Hold and maintain | Raj Patel | **PASS** | 5/5 | all key values match; signals behave |
-| 44 | uc-044-twr: Return for the year against the benchmark | Report and govern | Raj Patel | **FAIL** | 4/5 | benchmark_since_1_apr_pct: expected 5.7563, got None (time_weighted_return) |
+| 44 | uc-044-twr: Return for the year against the benchmark | Report and govern | Raj Patel | **PASS** | 5/5 | all key values match; signals behave |
 | 45 | uc-045-reportpack: Monthly investment report: assemble and sign | Report and govern | Raj Patel | **PASS** | 4/4 | all key values match; signals behave |
 | 46 | uc-046-attrib: Where did the return come from | Report and govern | Sofia Reyes | **PASS** | 14/14 | all key values match; signals behave |
-| 47 | uc-047-icpack: Investment committee pack | Report and govern | Raj Patel | **FAIL** | 6/7 | real_breaches: expected 7, got 8 (pack_items) |
-| 48 | uc-048-policyupd: Update the allocation policy and its limits | Report and govern | Tom Hale | **FAIL** | 2/10 | max_single_name_pct_by_month_end.2026-04-30: expected 6.13, got 7.17 (limit_changes); max_single_name_pct_by_month_end.2026-05-31: expected 5.89, got 7.3 (limit_changes); max_single_name_pct_by_month_end.2026-06-30: expected 5.74, got 7.34 (limit_changes); max_single_name_pct_by_month_end.2026-07-31: expected 5.71, got 7.28 (limit_changes); max_single_name_pct_by_month_end.2026-08-31: expected 5.71, got 7.35 (limit_changes); max_single_name_pct_by_month_end.2026-09-30: expected 5.75, got 7.08 (limit_changes); and 2 more |
+| 47 | uc-047-icpack: Investment committee pack | Report and govern | Raj Patel | **PASS** | 7/7 | all key values match; signals behave |
+| 48 | uc-048-policyupd: Update the allocation policy and its limits | Report and govern | Tom Hale | **PASS** | 10/10 | all key values match; signals behave |
 | 49 | uc-049-feedrag: Fees paid to each manager | Invest | Helen Foo | **PASS** | 16/16 | all key values match; signals behave |
 | 50 | uc-050-feeinv: Administrator and custodian invoices against the fee schedule | Run the office | Grace Ong | **PASS** | 17/17 | all key values match; signals behave |
 
@@ -155,18 +151,11 @@ Signals fired: uc-007-pacing-unfunded x1.
 
 Signals that cannot run on the loaded data: uc-007-pacing-over-budget cannot run: doc.budget_room_after on every row.
 
-### 8. uc-008-payrun: FAIL
+### 8. uc-008-payrun: PASS
 
 Figures bound: payment_batch -> payment_batch. Answered from: payment_batch.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 items[Anchorage Custody (synthetic)].state | 'hold: invoice above fee schedule' | 'ready' | payment_batch |
-| q1 states | {'hold: invoice above fee schedule': 1, 'ready': 2, 'waiting for approval': 1} | {'ready': 3, 'waiting for approval': 1} | payment_batch |
-
-Signals fired: uc-008-payrun-changed-account x1; uc-008-payrun-waiting x1.
-
-Signal problems: planted mess not caught by any signal: M15 invoice above schedule.
+Signals fired: uc-008-payrun-changed-account x1; uc-008-payrun-fee-hold x1; uc-008-payrun-waiting x1.
 
 ### 9. uc9-sop: PASS
 
@@ -190,16 +179,11 @@ Signals fired: uc10-pipeline-column-held x1; uc10-pipeline-net-worth-shown x168.
 
 Signals that cannot run on the loaded data: uc10-pipeline-files-ready cannot run: no reader gives doc.file_rows, doc.loaded_rows, doc.mapping_status.
 
-### 12. uc5-limits: FAIL
+### 12. uc5-limits: PASS
 
 Figures bound: single_name_concentration -> concentration. Answered from: concentration, drift_vs_target, single_name_breach.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 holding | 'Harborview Semiconductor' | 'Harbour Treasury Note 2029 (synthetic sovereign)' | single_name_breach |
-| q1 over_limit | ['Harborview Semiconductor', 'Coastal Rail Holdings', 'Larkspur Health', 'Juniper Consumer Brands', 'Evermore Banking Group', 'Atlas Harbour Shipping', 'Northwind Logistics'] | ['Atlas Harbour Shipping', 'Coastal Rail Holdings', 'Evermore Banking Group', 'Harborview Semiconductor', 'Harbour Treasury Note 2029 (synthetic sovereign)', 'Juniper Consumer Brands', 'Larkspur Health', 'Northwind Logistics'] | single_name_breach |
-
-Signals fired: uc5-limits-breach x8; uc5-limits-no-class x1.
+Signals fired: uc5-limits-breach x7; uc5-limits-no-class x1.
 
 ### 13. uc-013-secgaps: PASS
 
@@ -349,7 +333,7 @@ Signals that cannot run on the loaded data: uc-032-driftrep-back-inside cannot r
 
 Figures bound: cost_to_cure -> single_name_breach. Answered from: single_name_breach.
 
-Signals fired: uc-033-breachesc-cost-to-cure x8.
+Signals fired: uc-033-breachesc-cost-to-cure x7.
 
 Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cannot run: no reader gives doc.breach_open, doc.days_past_expiry, doc.expires_on; uc-033-breachesc-waiver-recorded cannot run: no reader gives doc.committee, doc.decided_on, doc.expires_on, doc.outcome, doc.subject_id, doc.title.
 
@@ -405,20 +389,15 @@ Figures bound: commit_check -> commit_check. Answered from: commit_check.
 
 Signals fired: uc-041-commitappr-cash-short x1; uc-041-commitappr-test-not-on-record x1.
 
-### 42. uc4-vs-benchmark: FAIL
+### 42. uc4-vs-benchmark: PASS
 
 Figures bound: active_return -> time_weighted_return. Answered from: time_weighted_return.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 benchmark_return_pct | 2.7072 | None | time_weighted_return |
-| q1 active_pct | 1.4595 | None | time_weighted_return |
-
 Key values not compared (no column answers them yet): q1.equity_index_pct, q1.bond_index_pct.
 
-Signals fired: none.
+Signals fired: uc4-vs-benchmark-month x6.
 
-Signals that cannot run on the loaded data: uc4-vs-benchmark-definition-changed cannot run: no reader gives doc.effective_from, doc.previous_version; uc4-vs-benchmark-index-missing cannot run: doc.benchmark_gap on every row; uc4-vs-benchmark-month cannot run: doc.benchmark_code on every row.
+Signals that cannot run on the loaded data: uc4-vs-benchmark-definition-changed cannot run: no reader gives doc.effective_from, doc.previous_version; uc4-vs-benchmark-index-missing cannot run: doc.benchmark_gap on every row.
 
 ### 43. uc-043-liquidpnl: PASS
 
@@ -426,17 +405,13 @@ Figures bound: liquid_pnl_mtd -> liquid_pnl_mtd. Answered from: liquid_pnl_mtd.
 
 Signals fired: uc-043-liquidpnl-daily x1.
 
-### 44. uc-044-twr: FAIL
+### 44. uc-044-twr: PASS
 
 Figures bound: twr_periods -> time_weighted_return. Answered from: time_weighted_return.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 benchmark_since_1_apr_pct | 5.7563 | None | time_weighted_return |
+Signals fired: uc-044-twr-flow-timing x5; uc-044-twr-periods x2.
 
-Signals fired: uc-044-twr-flow-timing x5.
-
-Signals that cannot run on the loaded data: uc-044-twr-no-link cannot run: recipe time_weighted_return has no column stated_return_pct; uc-044-twr-periods cannot run: doc.portfolio_return_pct on every row.
+Signals that cannot run on the loaded data: uc-044-twr-no-link cannot run: recipe time_weighted_return has no column stated_return_pct.
 
 ### 45. uc-045-reportpack: PASS
 
@@ -450,34 +425,19 @@ Figures bound: attribution -> attribution. Answered from: attribution.
 
 Signals fired: uc-046-attrib-effects x21; uc-046-attrib-slide x21.
 
-### 47. uc-047-icpack: FAIL
+### 47. uc-047-icpack: PASS
 
 Figures bound: pack_items -> pack_items. Answered from: pack_items.
-
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 real_breaches | 7 | 8 | pack_items |
 
 Signals fired: uc-047-icpack-assembled x1.
 
 Signals that cannot run on the loaded data: uc-047-icpack-open-late cannot run: no reader gives doc.days_to_committee; uc-047-icpack-section-done cannot run: recipe pack_items has no column done.
 
-### 48. uc-048-policyupd: FAIL
+### 48. uc-048-policyupd: PASS
 
 Figures bound: limit_changes -> limit_changes. Answered from: limit_changes.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 max_single_name_pct_by_month_end.2026-04-30 | 6.13 | 7.17 | limit_changes |
-| q1 max_single_name_pct_by_month_end.2026-05-31 | 5.89 | 7.3 | limit_changes |
-| q1 max_single_name_pct_by_month_end.2026-06-30 | 5.74 | 7.34 | limit_changes |
-| q1 max_single_name_pct_by_month_end.2026-07-31 | 5.71 | 7.28 | limit_changes |
-| q1 max_single_name_pct_by_month_end.2026-08-31 | 5.71 | 7.35 | limit_changes |
-| q1 max_single_name_pct_by_month_end.2026-09-30 | 5.75 | 7.08 | limit_changes |
-| q1 breaches_at_6_pct | 1 | 0 | limit_changes |
-| q1 proposed_limit | 6 | "0 rows where approval_status='proposed', is_latest=1" | limit_changes |
-
-Signals fired: none.
+Signals fired: uc-048-policyupd-review x1.
 
 Signals that cannot run on the loaded data: uc-048-policyupd-approved cannot run: no reader gives doc.decided_on, doc.effective_from, doc.outcome.
 

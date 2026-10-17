@@ -117,6 +117,8 @@ BIND_SYSTEM = (
     "does not change the figure: it is applied when the figure is answered. The drafted formula can be loose or only restate the threshold; decide by "
     "what the figure measures. A total, a split or a subset of the recipe's quantity (summed, by entity, only the unmatched ones, only those over a "
     "threshold) is that recipe's figure: the answer reads the recipe's table. A figure that only uses the recipe's result (its share, its count) is none. "
+    "A number the brief states for an office rule that the recipe reads from the signed rules (a buffer, a limit, a tolerance) does not change the "
+    "figure either: the recipe reads the signed value. A quantity the recipe's formula states as its result (a shortfall, an amount to convert) is that recipe's figure. "
     "When the evidence is not clear, answer none. Never invent a recipe id. `brief_question` is North's summary; `said` is the person's own words. "
     'Reply with JSON only: {"bindings": [{"figure": <figure id>, "recipe": <recipe id or "none">, "why": <one plain sentence>}]}.')
 
@@ -243,6 +245,16 @@ def bind(plane, model, kpis: list[dict], question: str = "", sources: list[dict]
         for b in got.get("bindings") or []:
             if isinstance(b, dict) and str(b.get("figure")) in ids and str(b.get("recipe")) in near:  # only a recipe it was shown
                 ids[str(b["figure"])].update(built_from=b["recipe"], built_from_why=str(b.get("why") or "")[:300], built_from_by=SPAN)
+        for k in left:  # w6: still unbound and its name is two recipes' name ("Unfunded commitments"): the brief's question decides, when one leads
+            if k.get("built_from"):
+                continue
+            text = _words(THRESHOLD.sub("", str(k["name"])))
+            tied = [r for r in recipes() if any(" " in n.strip() and _words(n) in text for n in r.get("names") or [])]
+            ask = _stems(f"{question} {said}")
+            near_q = sorted(((len(ask & _stems(f"{r['label']} {' '.join(r.get('names') or [])} {r['formula']}")), r) for r in tied), key=lambda t: -t[0])
+            if len(near_q) > 1 and near_q[0][0] > near_q[1][0]:
+                r = near_q[0][1]
+                k.update(built_from=r["id"], built_from_by=RULES, built_from_why=f"Its name is also another recipe's; the brief's question reads as the {r['label'].lower()} recipe.")
     have = {k.get("built_from") for k in kpis if isinstance(k, dict)}
     first = todo[0]
     for r in recipes():  # ponytail: the question's own words name the recipe and no figure is bound to it: added as a suggestion the person can drop.
@@ -265,7 +277,7 @@ def asks(question: str, r: dict) -> bool:
 def shown(k: dict) -> str:
     """The brief's "Built from" line: "Cash break recipe (suggested)", or who confirmed it."""
     r = bound(k)
-    what = f"{r['label']} recipe" if r else "No recipe: Span designs it"
+    what = f"{r['label']} recipe" if r else "No recipe yet: Span designs it"
     return what + (f" (confirmed by {k['built_from_confirmed']})" if k.get("built_from_confirmed") else " (suggested)")
 
 

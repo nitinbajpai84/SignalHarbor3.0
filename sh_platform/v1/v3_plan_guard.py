@@ -62,7 +62,8 @@ def rate_without_division(t: dict) -> str | None:
     100 x matched trades). A cheap SQL text check; a rate read as it is (no count or sum) is left alone. None when it passes."""
     sql = re.sub(r"--[^\n]*|'[^']*'", " ", str(t.get("sql") or ""))
     names = [str(k) for k in t.get("kpis") or []] + [c for c in t.get("col_defs") or {}]
-    rates = [n for n in names if RATE_WORDS.search(n.replace("_", " "))]
+    rates = [n for n in names if RATE_WORDS.search(n.replace("_", " ")) and not re.search(r"(?:date|day|_at|currency)$", n, re.I)  # the rate's date is not a rate
+             and not re.search(rf"\*\s*(?:\w+\.)?{re.escape(n)}\b|\b{re.escape(n)}\s*\*", sql)]  # a rate the SQL multiplies by is a conversion rate read as it is (fx_required, w6)
     if not rates or DIVIDES.search(sql) or not AGGREGATES.search(sql):
         return None
     return (f"{rates[0]} is a rate, share, ratio or percent, but the SQL never divides: it counts or sums without dividing by the total. "

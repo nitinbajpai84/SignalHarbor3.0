@@ -97,13 +97,9 @@ def _trace(plane, trace_id: str | None) -> list[dict]:
 
 
 def _ask(plane, viewer, text: str, pid: str | None) -> dict:
-    fast = P.answer(plane, text) or C.liquidity_answer(plane, viewer, text, pid)  # the steps of a live procedure (the SOP); cash, calls due: tool calls, ahead of Lumen
+    fast = P.answer(plane, text) or C.verified_answer(plane, viewer, text, pid, _live(plane))  # the live procedure (the SOP); the verified figures, then the cash tool; ahead of Lumen
     if fast:
         return fast
-    from sh_platform.v1 import v3_figures as F  # the ready table of the figure the question names, ahead of Lumen's free answer
-    fig = F.figure_answer(plane, viewer, text, pid, _live(plane))
-    if fig:
-        return fig
     if not _live(plane) and asks_figure(text, []):
         # nothing is live, so no figure can be on record: say so at once instead of a 40-second model call that ends in the same place
         return {"answer": "Not available yet: no build is live, so there is no figure on record for that. Start one in Build: say what you need and drop your files.",
