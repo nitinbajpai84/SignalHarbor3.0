@@ -121,6 +121,8 @@ def test_every_file_kind_of_the_office_is_read_and_the_count_of_files_matches_th
 
 def test_nothing_in_the_office_folders_is_left_without_a_reader(office):
     from tools.gen_office6m.more import NEW_KINDS  # the kinds of the other 49 cards wait for their readers and recipes
+    NEW_KINDS = [k for k in NEW_KINDS if k not in ("custody_statements", "insurance_schedule", "property_valuations", "title_deeds")]  # read by v3_pack_readers_assets
+    NEW_KINDS = tuple(k for k in NEW_KINDS if k not in ("payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"))  # read by v3_pack_readers_treasury
     kinds = {p.parts[-2] for p in OFFICE.glob("20??-??/*/*") if p.is_file()} - set(NEW_KINDS)
     assert kinds <= set(office.report), kinds - set(office.report)
     assert not [k for k, v in office.report.items() if "no reader for this kind" in v["not_loaded"] and k not in NEW_KINDS]

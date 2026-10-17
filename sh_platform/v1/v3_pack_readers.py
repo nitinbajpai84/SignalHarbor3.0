@@ -1293,8 +1293,8 @@ class Office:
             pol = re.search(r"Policy: (\S+)", t)[1]
             self.doc(p, "insurance_renewal", p.stem, received=self.arrival(p), date_=parse_date(re.search(r"Notice date: (.+)", t)[1]),
                      fields=[("policy", pol), ("renewal_date", parse_date(re.search(r"Renewal date: (.+)", t)[1]).isoformat()),
-                             ("expiring_premium", None, money(re.search(r"Expiring premium: [A-Z]{3} ([\d,\.]+)", t)[1]), "SGD"),
-                             ("renewal_premium", None, money(re.search(r"Renewal premium: [A-Z]{3} ([\d,\.]+)", t)[1]), "SGD"),
+                             ("expiring_premium", None, money(re.search(r"Expiring premium: [A-Z]{3} ([\d,\.]+)", t)[1]), re.search(r"Expiring premium: ([A-Z]{3})", t)[1]),
+                             ("renewal_premium", None, money(re.search(r"Renewal premium: [A-Z]{3} ([\d,\.]+)", t)[1]), re.search(r"Renewal premium: ([A-Z]{3})", t)[1]),
                              ("change_pct", None, Decimal(re.search(r"Change: ([\d.]+)%", t)[1]))])
             self.note("insurance", files=1, rows=1)
         for p in self.files("property_bills"):
@@ -1866,3 +1866,6 @@ def monthly(x) -> tuple[set[str], int, list[dict]]:
         return set(), 0, []
     ok, aside = _read(x, list(kinds), kinds)
     return set(kinds), len(ok), aside
+
+from sh_platform.v1 import v3_pack_readers_assets as _assets  # noqa: E402 - the assets kinds register themselves in the tables above
+_assets.register(__import__("sys").modules[__name__])

@@ -14,7 +14,8 @@ recipes:
     grain: By contract
     sql: >-
       create table {name} as with c as (select v.* from vendor_contracts as v where not exists
-      (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(v.status) not in ('ended', 'terminated')),
+      (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(v.status) not in ('ended', 'terminated')
+      and coalesce(v.contract_kind, 'service') <> 'insurance'),
       asat as (select coalesce(max(cast(recorded_at as date)), current_date) as d from vendor_contracts)
       select c.vendor_name, c.service, c.contract_ref, c.currency, cast(c.annual_cost as decimal(18,2)) as annual_cost, c.next_renewal_date,
       cast(date_diff('day', (select d from asat), c.next_renewal_date) as integer) as days_to_renewal,
@@ -37,7 +38,7 @@ recipes:
       label: Contracts equal the contracts on file, not replaced and not ended, whose notice deadline is no later than 90 days after the as-at date
       sql: >-
         select (select count(*) from {name}), (select count(*) from vendor_contracts as v where not exists
-        (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(v.status) not in ('ended', 'terminated')
+        (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(v.status) not in ('ended', 'terminated') and coalesce(v.contract_kind, 'service') <> 'insurance'
         and v.next_renewal_date - cast(coalesce(v.notice_days, 0) as integer) <= (select cast(max(recorded_at) as date) + interval 90 day from vendor_contracts))
 
   - id: allowance_due
