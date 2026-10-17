@@ -738,6 +738,17 @@ CHECKS.update({
         F(0, "trust_usd_shortfall", ["fx_mtm", "cash_by_entity"], lambda x: round(sum(float(r["usd_to_deliver"]) for r in x["fx_mtm"]) - sum(
             float(r["cash"]) for r in x["cash_by_entity"] if r["entity"] == "Evergreen Family Trust" and r["currency"] == "USD" and str(r["position_date"]) == TODAY), 2)),
     ],
+    "uc-057-pricecheck": [  # card 57, price_gap_pct; test_w1b_operate.py test_card57_*
+        FIRST_WHERE(0, "tolerance_pct", "price_gap_pct", "tolerance_pct", lambda r: r["tolerance_pct"] is not None),
+        N(0, "prices_compared", "price_gap_pct", lambda r: r["our_price"] is not None),
+        L(0, "over_tolerance", "price_gap_pct", {"security": "security", "date": "date"}, {"administrator_price": "our_price", "second_source_price": "second_source_price",
+                                                                                           "gap_pct": "gap_pct"}, over_tolerance=1),
+    ],
+    "uc-063-cashcode": [  # card 63, uncoded_bank_lines; test_w1b_operate.py test_card63_*
+        L(0, "uncoded", "uncoded_bank_lines", {"account": "account", "date": "date"}, {"amount": "amount", "description": "description"}),
+        N(0, "count", "uncoded_bank_lines"),
+        F(0, "net_amount", ["uncoded_bank_lines"], lambda x: tot(x["uncoded_bank_lines"], "amount")),
+    ],
     "uc-064-fxexp": [  # card 64, currency_exposure; test_w1b_hold.py test_64_*
         V(0, "sgd_cash", "currency_exposure", "cash", currency="SGD"),
         V(0, "sgd_cash_usd_eq", "currency_exposure", "spot_usd_eq", currency="SGD"),
@@ -903,6 +914,8 @@ MESS.update({
     "uc-061-dqscore": [({"source": "administrator_cash"}, "M04 administrator cash did not add up"), ({"source": "bank_statements"}, "M02b bank statement never arrived"),
                        ({"source": "manager_statements"}, "M02 manager statement never arrived")],
     "uc-062-fxlife": [({"trade": "FXF-2026-002"}, "M16 forward confirmation differs")],
+    "uc-057-pricecheck": [({"security": ["Kingfisher Telecom", "Kingfisher Telecom 4.6% 2030 bond"], "date": SEP30}, "second source differs above tolerance (key)")],
+    "uc-063-cashcode": [({"reference": ["TT-7741XQ", "ACH-55201", "CHQ-000417"]}, "three bank lines with no purpose (key)")],
     "uc-064-fxexp": [({"currency": "SGD"}, "M16 forward confirmed at another rate")],
     "uc-065-realassets": [({"asset_ref": "RA-04"}, "M29 title in a personal name")],
     "uc-066-propreval": [({"asset_ref": "RA-03"}, "M28 appraisal older than a year"), ({"asset_ref": "RA-05"}, "M28 appraisal older than a year")],
@@ -939,8 +952,6 @@ PATH_CAUSE.update({
 
 BLOCKED.update({
     "uc-053-watchlist": "recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads",
-    "uc-057-pricecheck": "no reader for market_data, and no signed price tolerance (A46); recipe price_gap_pct is a stub",
-    "uc-063-cashcode": "no bank line carries a reference or payee to match, and no signed purpose rule",
     "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
                       "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
     "uc-076-scorecard": "recipe manager_score is a stub; the scorecard weights and bands are not signed",

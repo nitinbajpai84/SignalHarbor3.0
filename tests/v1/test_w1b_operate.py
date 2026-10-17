@@ -1,11 +1,10 @@
 """W1b Operate and control, cards 51 to 100 (docs/v3/w1/build51-operate.md), proved on the real pack readers.
 
-Built (8): uc8-trades-vs-admin (trade_breaks, and fx_confirmation_variance from cash.yaml), uc-056-custrecon (position_break), uc-058-settle (unsettled_trades),
-uc-059-breakage (break_age), uc-060-docinbox (unrecognised_files), uc-061-dqscore (source_quality), uc-062-fxlife (fx_mtm) and uc-099-newfeed (feed_mapping).
+Built (10): uc8-trades-vs-admin (trade_breaks, and fx_confirmation_variance from cash.yaml), uc-056-custrecon (position_break), uc-057-pricecheck (price_gap_pct),
+uc-058-settle (unsettled_trades), uc-059-breakage (break_age), uc-060-docinbox (unrecognised_files), uc-061-dqscore (source_quality), uc-062-fxlife (fx_mtm),
+uc-063-cashcode (uncoded_bank_lines) and uc-099-newfeed (feed_mapping).
 Their numbers come from the recipes' output on the office loaded by sh_platform/v1/v3_pack_readers (the `office` fixture of test_w2_loader.py) and are compared
 with answer_keys.yaml, read from the file, never typed.
-Not built (2): uc-057-pricecheck (no reader for market_data, no signed price tolerance) and uc-063-cashcode (no bank line carries a reference to match); the tests
-below prove why and fail the day that changes.
 Synthetic data only."""
 from __future__ import annotations
 
@@ -31,11 +30,8 @@ key, f2, one, TODAY, KEYS, OFFICE = W2.key, W2.f2, W2.one, W2.TODAY, W2.KEYS, W2
 office = W2.office  # the module fixture: the office files loaded through the real readers
 PACK = W2.REPO / "packs" / "family_office" / "1"
 
-BUILT = ["uc8-trades-vs-admin", "uc-056-custrecon", "uc-058-settle", "uc-059-breakage", "uc-060-docinbox", "uc-061-dqscore", "uc-062-fxlife", "uc-099-newfeed"]
-NOT_BUILT = {  # card -> (the file kinds of its key that have no reader, recipe stub or None)
-    "uc-057-pricecheck": ({"market_data"}, "price_gap_pct"),
-    "uc-063-cashcode": (set(), None),  # every file is read; what is missing is a reference on the bank line (see the test)
-}
+BUILT = ["uc8-trades-vs-admin", "uc-056-custrecon", "uc-057-pricecheck", "uc-058-settle", "uc-059-breakage", "uc-060-docinbox", "uc-061-dqscore", "uc-062-fxlife",
+         "uc-063-cashcode", "uc-099-newfeed"]
 
 
 # ---- card 51: uc8-trades-vs-admin -------------------------------------------------------------------------------------------------------
@@ -234,44 +230,72 @@ def test_card99_the_new_feed_columns_mapped_in_doubt_and_not_safe_match_the_key(
     assert all(r["doubt_between"] for r in rows if r["in_doubt"])
 
 
-# ---- the two cards that are not built: proof that the real readers cannot give them ------------------------------------------------------
+# ---- card 57: uc-057-pricecheck --------------------------------------------------------------------------------------------------------
 
-def kinds_of(card: str) -> set[str]:
-    return {m.group(1) for f in KEYS[card]["input_files"] if (m := re.match(r"(?:\*/)?([a-z_]+)/", f))}
-
-
-@pytest.mark.parametrize("card", sorted(NOT_BUILT))
-def test_every_unread_kind_of_an_unbuilt_card_is_still_unread(card, office):
-    unread = {k for k in kinds_of(card) if k in office.report and "no reader for this kind" in office.report[k]["not_loaded"]}
-    assert unread == NOT_BUILT[card][0], f"{card}: the kinds without a reader changed ({sorted(unread)}); build the card (docs/v3/w1/build51-operate.md)"
-    assert office.one("select count(*) from source_batches where " + " or ".join(f"coalesce(storage_uri, '') like '%/{k}/%'" for k in sorted(unread) or ["__none__"])) == 0
-
-
-@pytest.mark.parametrize("rid", ["price_gap_pct"])
-def test_the_recipes_of_unbuilt_cards_stay_honest_stubs(rid):
-    r = next((x for x in R.stubs() if x["id"] == rid), None)
-    assert R.recipe(rid) is None and r is not None and r.get("status") == "stub" and not r.get("sql")
+def test_card57_prices_against_the_second_source_match_the_key(office):
+    exp = key("uc-057-pricecheck")
+    rows = office.run("price_gap_pct")
+    assert len([r for r in rows if r["our_price"] is not None]) == exp["prices_compared"] == len(rows)
+    assert {float(r["tolerance_pct"]) for r in rows} == {exp["tolerance_pct"]}  # read from the signed rule, never typed
+    over = [r for r in rows if r["over_tolerance"]]
+    assert sorted((str(r["date"]), r["security"]) for r in over) == sorted((k["date"], k["security"]) for k in exp["over_tolerance"])
+    for k in exp["over_tolerance"]:
+        r = one(over, security=k["security"])
+        assert (float(r["our_price"]), float(r["second_source_price"]), float(r["gap_pct"]), r["price_source"]) == (
+            k["administrator_price"], k["second_source_price"], k["gap_pct"], "administrator"), k["security"]
+    # 13 Oct has no administrator file: our price of that day is the custodian's daily position
+    assert {r["price_source"] for r in rows if str(r["date"]) == "2026-10-13"} == {"custodian"}
 
 
-def test_card57_no_second_price_source_is_in_the_plane_and_no_tolerance_is_signed(office):
-    assert {r["series_key"] for r in office.rows("select distinct series_key from market_observations")} == {"IDX:GLBD:SYN", "IDX:GLEQ:SYN", "USD/SGD", "FX:USDSGD:WMR4PM"}
-    assert office.one("select count(*) from business_rules where rule_code like 'price%'") == 0  # price_tolerance_pct (A46) is named, not signed
+def test_card57_is_held_while_the_price_tolerance_is_unsigned(office):
+    r = R.recipe("price_gap_pct")
+    assert R.needs(office.con, r) is None
+    office.con.execute("create or replace temp table keep_v as select v.* from rule_versions as v join business_rules as b on b.id = v.business_rule_id where b.rule_code = 'price_tolerance_pct'")
+    office.con.execute("update rule_versions set approval_status = 'proposed' where id in (select id from keep_v)")
+    try:
+        assert R.needs(office.con, r)
+        assert all(x["over_tolerance"] is None for x in office.run("price_gap_pct"))
+    finally:
+        office.con.execute("update rule_versions set approval_status = k.approval_status from keep_v as k where k.id = rule_versions.id")
 
 
-def test_card63_the_three_unexplained_bank_lines_are_loaded_but_no_bank_line_carries_a_reference_to_match(office):
-    """A45: an unexplained line is a bank line with no matching reference in the schedule, the ledger, the grants or a notice. The bank statement reader
-    writes no reference and no payee on a bank line, so no line can be matched, and telling the three apart by their movement type would be an unsigned rule."""
+# ---- card 63: uc-063-cashcode -----------------------------------------------------------------------------------------------------------
+
+def test_card63_the_unexplained_bank_lines_match_the_key(office):
     exp = key("uc-063-cashcode")
-    for u in exp["uncoded"]:
-        n = office.one("select count(*) from cash_movements where amount = ? and effective_date = ?", Decimal(str(u["amount"])), dt.date.fromisoformat(u["date"]))
-        assert n >= 1, u
-    assert office.one("select count(*) from cash_movements where confirmation_status = 'confirmed' and (reference is not null or payee_name is not null)") == 0
-    assert office.one("select count(*) from business_rules where rule_code like '%purpose%' or rule_code like '%uncoded%'") == 0
+    rows = office.run("uncoded_bank_lines")
+    assert len(rows) == exp["count"]
+    assert sorted((r["account"], str(r["date"])) for r in rows) == sorted((k["account"], k["date"]) for k in exp["uncoded"])
+    for k in exp["uncoded"]:
+        r = one(rows, account=k["account"])
+        assert (f2(r["amount"]), r["description"]) == (f2(k["amount"]), k["description"]), k["account"]
+    assert f2(sum(r["amount"] for r in rows)) == f2(exp["net_amount"])
+
+
+def test_card63_a_line_is_explained_by_its_reference_or_payee_and_the_rule_must_be_signed(office):
+    """The reader writes the statement's reference and counterparty on every bank line (A51 matches on them); a payee the office knows explains the line."""
+    assert office.one("select count(*) from cash_movements as m join source_records as s on s.id = m.source_record_id where s.record_type = 'bank_line'"
+                      " and m.supersedes_cash_movement_id is null and m.reference is null") == 0  # a confirmed call that supersedes its notice keeps the notice's fields
+    r = R.recipe("uncoded_bank_lines")
+    assert R.needs(office.con, r) is None
+    office.con.execute("create or replace temp table keep_m as select * from cash_movements where reference = 'CHQ-000417'")
+    office.con.execute("update cash_movements set payee_name = 'Lakeside Legal LLP' where reference = 'CHQ-000417'")
+    try:
+        assert "HB-B-USD" not in {x["account"] for x in office.run("uncoded_bank_lines")}
+    finally:
+        office.con.execute("update cash_movements set payee_name = k.payee_name from keep_m as k where k.id = cash_movements.id")
+    office.con.execute("create or replace temp table keep_v as select v.* from rule_versions as v join business_rules as b on b.id = v.business_rule_id where b.rule_code = 'bank_line_purpose'")
+    office.con.execute("update rule_versions set approval_status = 'proposed' where id in (select id from keep_v)")
+    try:
+        assert R.needs(office.con, r)
+    finally:
+        office.con.execute("update rule_versions set approval_status = k.approval_status from keep_v as k where k.id = rule_versions.id")
 
 
 # ---- recipes: shape ---------------------------------------------------------------------------------------------------------------------
 
-OWN = ["trade_breaks", "fx_mtm", "position_break", "unsettled_trades", "break_age", "unrecognised_files", "source_quality", "feed_mapping"]
+OWN = ["trade_breaks", "fx_mtm", "position_break", "unsettled_trades", "break_age", "unrecognised_files", "source_quality", "feed_mapping", "price_gap_pct",
+       "uncoded_bank_lines"]
 
 
 def test_every_recipe_of_the_slice_is_ready_and_reads_only_what_it_may():
@@ -333,10 +357,13 @@ EXPECTED = {  # id -> (figure, severity, hold, role)
     "uc-062-fxlife-confirmation-differs": ("fx_mtm", "problem", "settle_forward", "ops_clerk"),
     "uc-062-fxlife-no-confirmation": ("fx_mtm", "problem", "settle_forward", "ops_clerk"),
     "uc-099-newfeed-in-doubt": ("feed_mapping", "problem", "load_new_feed", "head_of_data"),
+    "uc-057-pricecheck-over-tolerance": ("price_gap_pct", "problem", "accept_administrator_prices", "ops_lead"),
+    "uc-063-cashcode-uncoded": ("uncoded_bank_lines", "problem", None, "ops_clerk"),
 }
-NO_HOLD = {"uc-059-breakage", "uc-061-dqscore"}  # the story is a hand-over (to Finance) or a score; nothing waits on it
+NO_HOLD = {"uc-059-breakage", "uc-061-dqscore", "uc-063-cashcode"}  # a hand-over (to Finance), a score, or a line to code; nothing waits on it
 ROW_ID = {"trade_breaks": "trade", "fx_mtm": "trade", "fx_confirmation_variance": "trade_reference", "position_break": "security", "unsettled_trades": "trade",
-          "break_age": "break_id", "unrecognised_files": "file", "source_quality": "source", "feed_mapping": "source_column"}
+          "break_age": "break_id", "unrecognised_files": "file", "source_quality": "source", "feed_mapping": "source_column", "price_gap_pct": "ticker",
+          "uncoded_bank_lines": "reference"}
 
 
 def fires(sig: dict, row: dict) -> bool:
@@ -406,6 +433,8 @@ def test_each_signal_fires_on_exactly_the_rows_of_the_key(office):
     assert who("uc-062-fxlife-confirmation-differs") == ["FXF-2026-002"]
     assert who("uc-062-fxlife-no-confirmation") == []
     assert who("uc-099-newfeed-in-doubt") == sorted(key("uc-099-newfeed")["in_doubt"])
+    assert who("uc-057-pricecheck-over-tolerance") == ["KFB30.SYN", "KFT.SYN"]  # the two Kingfisher prices of the key, on 30 Sep
+    assert who("uc-063-cashcode-uncoded") == ["ACH-55201", "CHQ-000417", "TT-7741XQ"]
 
 
 def _msg(sig: dict, row: dict) -> str:
@@ -427,6 +456,10 @@ def test_the_messages_carry_the_numbers_of_the_key(office):
     assert "5 of 7" in msg and "71.4" in msg and "{" not in msg
     msg = _msg(sigs["uc-099-newfeed-in-doubt"], one(office.run("feed_mapping"), source_column="Dt"))
     assert "8 of 10" in msg and "Dt" in msg and "{" not in msg
+    msg = _msg(sigs["uc-057-pricecheck-over-tolerance"], one(office.run("price_gap_pct"), ticker="KFT.SYN", date=dt.date(2026, 9, 30)))
+    assert "Kingfisher Telecom" in msg and "-1.8628" in msg and "{" not in msg
+    msg = _msg(sigs["uc-063-cashcode-uncoded"], one(office.run("uncoded_bank_lines"), reference="TT-7741XQ"))
+    assert "48,250.00" in msg and "remitter name not stated" in msg and "{" not in msg
 
 
 def test_builds_are_the_built_cards_only_and_expect_numbers_from_the_key():

@@ -124,12 +124,51 @@ recipes:
 
   - id: price_gap_pct
     label: Price gap against a second source
-    status: stub
     cards: [57]
-    names: [price gap, prices against second source]
-    may_read: [market_observations, position_snapshots, instruments]
-    formula: (price from the first source less price from the second) / second, per instrument and date, from two series of market_observations; flagged above the signed tolerance.
-    sql: null
+    names: [price gap, prices against second source, prices against a second source, price difference to second source, second source prices]
+    may_read: [market_observations, position_snapshots, instruments, source_records, source_batches, source_systems, business_rules, rule_versions]
+    never_read: [transactions, cash_movements, commitments]
+    why: The second source (market_data, A46) is a price series of its own in market_observations. Each of its prices is checked against our price of the same security and day, and flagged only above the signed price_tolerance_pct (A51).
+    formula: 'For each second-source price (market_observations of type price_second_source, a superseded one out), our price of the same security and day: the administrator''s (accounting position, market value over quantity) when the administrator holds that day, otherwise the custodian''s daily position (operational, market value over quantity). gap_pct = (our price less the second-source price) over the second-source price, in percent. over_tolerance = 1 when the size of gap_pct is above max_pct of the signed price_tolerance_pct rule; empty when no rule is signed.'
+    grain: By security and day
+    sql: >-
+      create table {name} as with tol as (select cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,4)) as max_pct
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'price_tolerance_pct' and v.approval_status = 'approved'
+      qualify row_number() over (order by v.version_number desc, v.effective_from desc) = 1),
+      px as (select y.source_type, s.instrument_id, s.position_date, sum(s.source_market_value) / nullif(sum(s.quantity), 0) as price from position_snapshots as s
+      join source_records as sr on sr.id = s.source_record_id join source_batches as sb on sb.id = sr.source_batch_id join source_systems as y on y.id = sb.source_system_id
+      where y.source_type in ('administrator', 'custodian') and not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id) group by all),
+      o as (select o.instrument_id, cast(o.observed_at as date) as day, o.series_key, o.value from market_observations as o where o.observation_type = 'price_second_source'
+      and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      g as (select o.day, i.canonical_name as security, o.series_key as ticker, coalesce(a.price, c.price) as our_price,
+      case when a.price is not null then 'administrator' when c.price is not null then 'custodian' end as price_source, o.value as second_source_price
+      from o join instruments as i on i.id = o.instrument_id
+      left join px as a on a.source_type = 'administrator' and a.instrument_id = o.instrument_id and a.position_date = o.day
+      left join px as c on c.source_type = 'custodian' and c.instrument_id = o.instrument_id and c.position_date = o.day)
+      select g.day as date, g.security, g.ticker, cast(g.our_price as decimal(18,6)) as our_price, g.price_source, cast(g.second_source_price as decimal(18,6)) as second_source_price,
+      cast(100 * (g.our_price - g.second_source_price) / g.second_source_price as decimal(18,4)) as gap_pct, t.max_pct as tolerance_pct,
+      cast(case when t.max_pct is not null and g.our_price is not null then case when abs(100 * (g.our_price - g.second_source_price) / g.second_source_price) > t.max_pct then 1 else 0 end end as integer) as over_tolerance
+      from g left join tol as t on true
+    measure: gap_pct
+    columns:
+      date: The day of the second-source price.
+      security: The security, by the security master's name.
+      ticker: The second source's ticker.
+      our_price: The administrator's price of the day, or the custodian's when the administrator has none for that day.
+      price_source: administrator or custodian, whichever gave our_price; empty when neither holds the security that day.
+      second_source_price: The second source's price.
+      gap_pct: (our price less the second-source price) over the second-source price, percent, four decimals.
+      tolerance_pct: The signed price tolerance, percent.
+      over_tolerance: 1 when the size of the gap is above the tolerance, 0 when inside; empty when no tolerance is signed or we have no price.
+    tie_out:
+      label: Every second-source price is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from market_observations as o where o.observation_type = 'price_second_source'
+        and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id))
+    needs:
+      - why: No signed price_tolerance_pct rule is on file, so a price gap cannot be called off-market.
+        sql: >-
+          select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'price_tolerance_pct' and v.approval_status = 'approved'
 
 
   - id: unsettled_trades
@@ -694,3 +733,55 @@ recipes:
       sql: >-
         select (select count(*) from {name}), (select count(*) from sheet_mapping_columns as c where c.sheet_mapping_id in
         (select sheet_mapping_id from sheet_mapping_columns where confidence is not null))
+
+  - id: uncoded_bank_lines
+    label: Bank lines with no purpose
+    cards: [63]
+    names: [uncoded bank lines, unexplained bank lines, bank lines with no purpose, bank lines to code, bank lines not matched]
+    words_all: [[bank], [uncoded, unexplained, purpose, unmatched, code]]
+    may_read: [cash_movements, source_records, documents, extracted_fields, instruments, portfolios, legal_entities, office_expenses, grants, transactions, fx_confirmations,
+               family_members, bank_accounts, business_rules, rule_versions]
+    never_read: [position_snapshots, commitments]
+    why: A bank line is explained when its reference or payee matches a payment, invoice, capital call notice, payroll, trade, transfer, grant or expense on record; the bank's own fee and interest lines explain themselves (the signed bank_line_purpose rule, A51). Any other line is coded by Operations.
+    formula: 'Bank lines (cash movements whose source record is a bank_line; the reader writes the statement''s reference and counterparty on them, and its description as a field of the statement on the same line). Explained when: the reader tied the line to a fund, commitment, account or entity; or its reference is a reference on record (an expense or grant reference, a trade id, an FX confirmation, a payment or notice of another source), the bank''s own code before it allowed (TS-<trade id>); or its payee is a party on record (an expense payee, a charity, an entity, a family member, a fund manager, an account holder, a trade or FX counterparty, a payee of another source); or it is the bank''s own fee or interest (type fee or interest, paid to the account''s bank). The rest are listed. Needs the signed bank_line_purpose rule.'
+    grain: By bank line
+    sql: >-
+      create table {name} as with l as (select m.*, s.row_number as line_no, s.source_batch_id from cash_movements as m join source_records as s on s.id = m.source_record_id
+      where s.record_type = 'bank_line' and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
+      other as (select m.reference, m.payee_name from cash_movements as m join source_records as s on s.id = m.source_record_id where s.record_type <> 'bank_line'),
+      refs as (select reference as v from office_expenses union select payment_reference from grants union select grant_ref from grants union select external_trade_id from transactions
+      union select trade_reference from fx_confirmations union select reference from other),
+      payees as (select payee_name as v from office_expenses union select charity_name from grants union select entity_name from legal_entities union select member_name from family_members
+      union select manager_name from instruments union select holder_name from bank_accounts union select counterparty_name from transactions union select counterparty from fx_confirmations
+      union select payee_name from other),
+      banks as (select distinct bank_name as v from bank_accounts where bank_name is not null),
+      st as (select d.id as document_id, s.source_batch_id, d.instrument_id from documents as d join source_records as s on s.id = d.source_record_id where d.document_type = 'bank_statement'),
+      u as (select l.* from l where l.instrument_id is null and l.commitment_id is null and l.counterparty_portfolio_id is null and l.bank_account_id is null
+      and not exists (select 1 from refs as r where r.v is not null and (r.v = l.reference or ends_with(l.reference, '-' || r.v)))
+      and not exists (select 1 from payees as p where p.v = l.payee_name)
+      and not (l.movement_type in ('fee', 'interest') and l.payee_name in (select v from banks)))
+      select ci.canonical_name as account, e.entity_name as entity, u.effective_date as date, cast(u.amount as decimal(18,2)) as amount, u.currency, f.value_text as description,
+      u.reference, u.payee_name as payee, u.movement_type, cast(1 as integer) as uncoded
+      from u join st on st.source_batch_id = u.source_batch_id left join instruments as ci on ci.id = st.instrument_id
+      left join extracted_fields as f on f.document_id = st.document_id and f.field_name = 'description' and f.line_number = u.line_no
+      join portfolios as p on p.id = u.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id
+    measure: amount
+    columns:
+      account: The office bank account of the statement.
+      entity: The entity that holds the account.
+      date: The line's value date.
+      amount: The line's amount, signed (money in positive).
+      description: The line as the bank wrote it.
+      reference: The bank's reference on the line.
+      payee: The counterparty the bank names.
+      movement_type: The line's type as read from the statement.
+      uncoded: 1 for every row (a line that needs coding).
+    tie_out:
+      label: The uncoded lines' amounts equal the bank lines of the same reference, day and amount in the cash movements
+      sql: >-
+        select (select coalesce(sum(amount), 0) from {name}), (select coalesce(sum(m.amount), 0) from cash_movements as m join source_records as s on s.id = m.source_record_id
+        where s.record_type = 'bank_line' and exists (select 1 from {name} as t where t.reference = m.reference and t.date = m.effective_date and t.amount = m.amount))
+    needs:
+      - why: No signed bank_line_purpose rule is on file, so the office has not said what explains a bank line.
+        sql: >-
+          select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'bank_line_purpose' and v.approval_status = 'approved'

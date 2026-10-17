@@ -807,24 +807,28 @@ class Office:
             doc_period = re.search(r"_(\d{4})-(\d{2})", p.name)
             month_end = last_day(int(doc_period[1]), int(doc_period[2]))
             sr = self.record("bank", p, recv, effective=month_end)
-            self.doc(p, "bank_statement", p.stem, kind="bank", instrument=a["cash"], valuation=month_end, date_=month_end, received=recv, record=sr)
+            did = self.doc(p, "bank_statement", p.stem, kind="bank", instrument=a["cash"], valuation=month_end, date_=month_end, received=recv, record=sr)
             for r in bal:
                 d = parse_date(r["Value date"])
                 self.add("position_snapshots", source_record_id=sr, portfolio_id=self.cashport[a["entity"]], instrument_id=a["cash"], position_date=d, as_of_at=stamp(d, 20), received_at=stamp(recv, 6),
                          recorded_at=stamp(recv, 6), quantity=r["Closing ledger balance"], source_market_value=r["Closing ledger balance"], currency=r["Currency"], data_status="Final")
                 nbal += 1
             for i, r in enumerate(dicts(sheet_rows(p, "Transactions")), 2):
-                self.bank_line(p, recv, a, acct, r, i)
+                self.bank_line(p, recv, a, acct, r, i, did)
                 nlines += 1
             self.note("bank_statements", files=1)
         self.note("bank_statements", rows=nbal + nlines)
 
-    def bank_line(self, p: Path, recv: date, a: dict, acct: str, r: dict, i: int) -> None:
+    def bank_line(self, p: Path, recv: date, a: dict, acct: str, r: dict, i: int, did: str | None = None) -> None:
         typ, desc, amt, ccy, ref = r["Type"], r["Description"], Decimal(str(r["Amount"])), r["Currency"], r["Reference"]
         d = parse_date(r["Value date"])
         sr = self.record("bank", p, recv, rtype="bank_line", external=ref, sheet="Transactions", row=i, effective=d)
         port = self.cashport[a["entity"]]
-        base = dict(source_record_id=sr, portfolio_id=port, effective_date=d, received_at=stamp(recv, 6), recorded_at=stamp(recv, 6), amount=amt, currency=ccy, confirmation_status="confirmed")
+        # card 63: the line's own reference and counterparty, and its description as a field of the statement (line = the sheet row), so a line no event explains can be shown as the bank wrote it
+        base = dict(source_record_id=sr, portfolio_id=port, effective_date=d, received_at=stamp(recv, 6), recorded_at=stamp(recv, 6), amount=amt, currency=ccy, confirmation_status="confirmed",
+                    reference=ref, payee_name=r["Counterparty"])
+        if did:
+            self.field(did, "description", desc, line=i)
         mt = {"capital_call": "payment", "bank_fee": "fee", "fee": "fee", "vendor_payment": "payment", "wire": "payment", "property": "payment", "insurance": "payment", "payroll": "payment",
               "payroll_tax": "payment", "trade_settlement": "settlement", "internal_transfer": "transfer", "intercompany_transfer": "transfer"}.get(typ, typ)
         if typ == "capital_call":

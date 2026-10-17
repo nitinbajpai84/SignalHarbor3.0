@@ -1,0 +1,37 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-063-cashcode (use cases 51 to 100, no priority): a bank line no payment, invoice, notice, payroll, trade, transfer, grant or expense explains (the signed bank_line_purpose rule) -> the Operations Clerk codes it or asks Finance.
+suggestion: true
+id: uc-063-cashcode-uncoded
+title: A bank line has no purpose and needs coding
+pain_points:
+- PP-01
+- PP-06
+trigger:
+  'on': figure_changed
+  figure: uncoded_bank_lines
+inputs:
+- kind: doc
+  fields:
+  - account
+  - entity
+  - date
+  - amount
+  - currency
+  - description
+  - reference
+  - payee
+  - uncoded
+subject: '{doc.account} {doc.date} {doc.amount:,.2f} not explained'
+condition: doc.uncoded == 1
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Code the line
+  - Ask Finance what it is
+message: '{doc.account} ({doc.entity}) on {doc.date}: {doc.amount:,.2f} {doc.currency}, "{doc.description}" (reference {doc.reference}, payee {doc.payee}). No payment, invoice, notice, payroll, trade, transfer,
+  grant or expense on record explains it.'
+evidence:
+- doc.amount
+- doc.reference
+- doc.payee

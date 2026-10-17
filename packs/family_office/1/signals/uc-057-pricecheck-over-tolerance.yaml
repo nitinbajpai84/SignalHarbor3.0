@@ -1,0 +1,42 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-057-pricecheck (use cases 51 to 100, no priority): our price of a security against the second source -> a gap above the signed price tolerance -> the Operations Lead asks the administrator to confirm.
+suggestion: true
+id: uc-057-pricecheck-over-tolerance
+title: Our price differs from the second source by more than the tolerance
+pain_points:
+- PP-04
+- INT-TRUST
+- PP-06
+trigger:
+  'on': figure_changed
+  figure: price_gap_pct
+inputs:
+- kind: doc
+  fields:
+  - date
+  - security
+  - ticker
+  - our_price
+  - price_source
+  - second_source_price
+  - gap_pct
+  - tolerance_pct
+  - over_tolerance
+subject: '{doc.security} price off by {doc.gap_pct:,.2f} percent'
+condition: doc.over_tolerance == 1
+severity: problem
+route_to: ops_lead
+action:
+  verb: record
+  options:
+  - Ask the administrator to confirm the price
+  - Accept the price with a reason
+hold:
+  blocks: accept_administrator_prices
+  scope: '{doc.security} {doc.date}'
+  until: the administrator confirms or corrects the price
+message: '{doc.security} on {doc.date}: our price ({doc.price_source}) is {doc.our_price}, the second source {doc.second_source_price}, a gap of {doc.gap_pct:,.4f} percent against a tolerance of
+  {doc.tolerance_pct} percent. The administrator''s price is not accepted until it is confirmed or corrected.'
+evidence:
+- doc.our_price
+- doc.second_source_price
+- doc.gap_pct

@@ -1,5 +1,5 @@
 # Persona builds of the 'Operate and control' cards 51 to 100 (no priority) that are built: uc8-trades-vs-admin, uc-056-custrecon, uc-058-settle, uc-059-breakage,
-# uc-060-docinbox, uc-061-dqscore, uc-062-fxlife and uc-099-newfeed. uc-057-pricecheck and uc-063-cashcode are not built, see docs/v3/w1/build51-operate.md.
+# uc-060-docinbox, uc-061-dqscore, uc-062-fxlife, uc-099-newfeed, uc-057-pricecheck and uc-063-cashcode. See docs/v3/w1/build51-operate.md.
 # Same shape as role_builds.yaml, merged by role id (docs/test/uc-live/uc6-scripts/v3_persona.py). files: "office6m:<glob under tests/v1/fixtures/office6m>".
 # check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml (numbers as printed with thousands separators; names as the key spells them).
 # uc8-trades-vs-admin also has an older build in legacy-office6m.yaml (FX leg only, expects 8,100); this one adds the trade breaks of the key and keeps the same id.
@@ -41,6 +41,14 @@ roles:
         dashboard: "Action: each inbox file with where it belongs, duplicate or new, and the unrecognised ones to refuse or query"
         check: {ask: "Where does each unrecognised file belong, or should I refuse it?", expect: ["IMG_2210.pdf", "data_export.xlsx", "scan_0412.pdf"]}
 
+      - id: uc-063-cashcode
+        title: "Unexplained bank lines"
+        say: "When a bank file arrives I go through its lines. Show me every line that no payment, invoice, notice, payroll, trade, transfer, grant or expense explains, leaving out the bank's own fees and interest, so I can code it or ask Finance."
+        files: ["office6m:*/bank_statements/HB_HOLD_USD_2026-08.xlsx", "office6m:*/bank_statements/TCB_HOLD_USD_2026-09.xlsx", "office6m:*/bank_statements/HB_B_USD_2026-10_mtd.xlsx"]
+        skills: ["data.match-identity", "action.detect-exception", "action.route-owner"]
+        dashboard: "Action: bank lines with no purpose, with account, date, amount and the bank's description, to code or send to Finance"
+        check: {ask: "Which bank lines have no purpose and need coding?", expect: ["48,250", "-3,980", "-2,150", "42,120"]}
+
   - id: ops_lead
     title: Operations Lead
     person: Grace Ong
@@ -60,6 +68,14 @@ roles:
         skills: ["action.route-owner", "action.close-with-reason", "consume.answer-question"]
         dashboard: "Action: open breaks by age, the cash breaks over five business days to Finance"
         check: {ask: "Which breaks are older than five days and go to Finance?", expect: ["BRK-003", "BRK-004", "Evergreen Family Trust"]}
+
+      - id: uc-057-pricecheck
+        title: "Prices against a second source"
+        say: "When the daily prices arrive I check our prices against a second source. Show me every security where they differ by more than our signed tolerance, with both prices and the gap, so I can ask the administrator to confirm."
+        files: ["office6m:*/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["check.against-source", "action.detect-exception", "check.explain-difference"]
+        dashboard: "Action: prices compared against the second source, the ones over tolerance with both prices and the gap"
+        check: {ask: "Which prices differ from a second source by more than tolerance?", expect: ["Kingfisher Telecom", "-1.8628", "0.8093", "22.01"]}
 
   - id: head_of_data
     title: Head of Data
