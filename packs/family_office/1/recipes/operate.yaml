@@ -534,7 +534,7 @@ recipes:
       from adm as a join stm as s on s.instrument_id = a.instrument_id and s.rn = 1 join instruments as i on i.id = a.instrument_id
     measure: difference
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {if: difference, sort: difference, lead: "Differs from the administrator:", say: "{fund} statement {statement_value} ({statement_kind}) against {administrator_value} ({administrator_status}), {difference} apart"}
+      - {if: difference, sort: difference, all: true, lead: "Differs from the administrator:", say: "{fund} statement {statement_value} ({statement_kind}) against {administrator_value} ({administrator_status}), {difference} apart"}
       - {if: not difference, once: true, say: "{n} other funds agree"}
     columns:
       statement_value: The latest manager statement value the office has received.

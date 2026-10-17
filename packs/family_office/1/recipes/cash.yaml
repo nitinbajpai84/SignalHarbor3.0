@@ -571,9 +571,9 @@ recipes:
       cast(sum(s.amount) filter (where not s.release_blocked) over (partition by s.currency) as decimal(18,2)) as releasable_total_in_currency from fin as s
     measure: amount
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {if: not release_blocked, lead: "Release", say: "{payee} {currency} {amount}", max: 4}
-      - {if: fee_variance, lead: "Hold", say: "{payee} {currency} {amount}, {fee_variance} above the fee schedule"}
-      - {if: release_blocked, lead: "Hold", say: "{payee} {currency} {amount}: {blocked_by}"}
+      - {if: not release_blocked, sort: due_date, all: true, lead: "Release", say: "{payee} {currency} {amount}"}
+      - {if: fee_variance, sort: due_date, all: true, lead: "Hold", say: "{payee} {currency} {amount}, {fee_variance} above the fee schedule"}
+      - {if: release_blocked, sort: due_date, all: true, lead: "Hold", say: "{payee} {currency} {amount}: {blocked_by}"}
     columns:
       payee: Who is paid, the holder of the account the payment goes to.
       amount: The payment as a positive number.

@@ -43,7 +43,7 @@ recipes:
       where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id)
     measure: change_since_report
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {say: "{fund} moved {change_since_report} since the report, {original_value} to {amended_value} for {valuation_date}"}
+      - {say: "{fund} valuation was amended to {amended_value} for {valuation_date}, {change_since_report} since the report ({original_value})", all: true}
     columns:
       original_value: The valuation in the issued report, the one the amendment replaces.
       amended_value: The amended valuation.
@@ -245,8 +245,8 @@ recipes:
       from y
     measure: exposure
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {if: status = real breach, latest: position_date, sort: concentration_pct, lead: "Over the single-name limit on {position_date}:", say: "{holding} {concentration_pct}% against {limit_pct}%, {cost_to_cure} to sell to cure"}
-      - {if: over_limit, latest: position_date, say: "{holding} {concentration_pct}% is over {limit_pct}% but {status}"}
+      - {if: status = real breach, latest: position_date, sort: concentration_pct, all: true, lead: "Over the single-name limit on {position_date}:", say: "{holding} {concentration_pct}% ({exposure} of {portfolio_total}) against {limit_pct}%, {cost_to_cure} to sell to cure"}
+      - {if: over_limit, latest: position_date, all: true, say: "{holding} {concentration_pct}% is over {limit_pct}% but {status}"}
     columns:
       concentration_pct: The holding's share of the portfolio on the position date, in percent.
       limit_pct: The signed single-name limit of the portfolio, in percent.
