@@ -124,12 +124,12 @@ export default function DeskPage() {
               <div className="v3-head"><h2 id="h-action">Act now</h2>{needs.length > 0 && <span className="v3-pill needs">{needs.length} open</span>}</div>
               {!needs.length && <p className="v3-mute">Nothing needs you right now.</p>}
               {needs.slice(0, 3).map((c, i) => (
-                <article key={c.kind === "signal" ? c.id : `${c.thread}-${i}`} className="v3-card need">
-                  <span className="v3-kicker">{c.kind === "signal" ? "Signal" : KIND[c.kind]}</span>
+                <article key={c.kind === "signal" || c.kind === "signal_draft" ? c.id : `${c.thread}-${i}`} className="v3-card need">
+                  <span className="v3-kicker">{c.kind === "signal" || c.kind === "signal_draft" ? "Signal" : KIND[c.kind]}</span>
                   <b className="desk-title">{c.title}</b>
                   <p>{c.text}</p>
                   <div className="v3-row">
-                    {c.kind === "signal" ? <Link to="/v3/action">See what to do</Link> : c.actions.map((a, j) => (
+                    {c.kind === "signal" || c.kind === "signal_draft" ? <Link to="/v3/action">See what to do</Link> : c.actions.map((a, j) => (
                       <button key={a.answer + j} type="button" className={j === 0 ? "go" : ""} disabled={busy} onClick={() => act(c, a.answer)}>{a.label}</button>
                     ))}
                   </div>

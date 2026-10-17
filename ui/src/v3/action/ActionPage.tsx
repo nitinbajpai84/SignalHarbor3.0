@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import V3Frame from "../Frame";
-import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event, type SignalNeed } from "../api";
+import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event, type SignalNeed, type DraftNeed } from "../api";
+import DraftCard from "./DraftCard";
 import SignalCard from "./SignalCard";
 import { listSkills, when, type SkillRow } from "./actionApi";
 import "./action.css";
@@ -10,7 +11,7 @@ import "./action.css";
 /** A desk card may carry the case it belongs to; the 3.0 desk shape does not name it, so it is optional here. */
 type NeedCard = Card & { case?: string };
 type Kind = "decision" | "exception" | "question" | "skill" | "signal";
-interface Item { key: string; kind: Kind; title: string; text: string; card?: NeedCard; skill?: SkillRow; signal?: SignalNeed }
+interface Item { key: string; kind: Kind; title: string; text: string; card?: NeedCard; skill?: SkillRow; signal?: SignalNeed; draft?: DraftNeed }
 interface Done { by: string; at: string; text: string; thread: string }
 interface Loaded { items: Item[]; done: Done[]; skillsFailed: boolean }
 interface ThreadEvents { id: string; title: string; events: Event[] }
@@ -28,6 +29,7 @@ async function load(): Promise<Loaded> {
   const items: Item[] = [
     ...desk.needs.map((c, i): Item => c.kind === "signal"
       ? { key: `g-${c.id}`, kind: "signal", title: c.title, text: c.text, signal: c }
+      : c.kind === "signal_draft" ? { key: `d-${c.id}`, kind: "signal", title: c.title, text: c.text, draft: c }
       : { key: `c-${c.thread}-${i}`, kind: c.kind, title: c.title, text: c.text, card: c }),
     ...skills.map((s): Item => ({ key: `s-${s.id}`, kind: "skill", title: s.name, text: s.goal, skill: s })),
   ];
@@ -107,7 +109,8 @@ export default function ActionPage() {
       <div className="act-main" data-open={open ? "true" : "false"}>
         <section aria-label="Queue" className="act-queue">
           {!shown.length && <p className="v3-mute">{data.items.length ? "Nothing of this kind needs a person." : "Nothing needs a person right now."}</p>}
-          {shown.map((i) => i.signal ? <SignalCard key={i.key} card={i.signal} onDone={reload} /> : (
+          {shown.map((i) => i.draft ? <DraftCard key={i.key} id={i.draft.id} noticed={i.draft.text} title={i.draft.draft.title} message={i.draft.draft.message} backtest={i.draft.backtest} needs={i.draft.needs} onDone={reload} />
+            : i.signal ? <SignalCard key={i.key} card={i.signal} onDone={reload} /> : (
             // The whole card opens it (a tap on a phone); the Open button toggles it and is the keyboard way in.
             <article key={i.key} className={`act-item ${i.kind}`} data-on={i.key === sel} onClick={() => { if (i.key !== sel) { setSel(i.key); setProblem(""); window.scrollTo?.(0, 0); } }}>
               <div className="v3-head">

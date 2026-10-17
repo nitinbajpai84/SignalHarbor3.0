@@ -1079,6 +1079,9 @@ def m_exceptions(x):
     last = ((runs.get("runs") if isinstance(runs, dict) else runs) or [{}])[0] or {}
     x.th["exceptions"] = [{"title": str(q.get("rule") or "Check"), "text": f"{q.get('count', 'Some')} rows set aside"} for q in last.get("quarantined") or []]
     x.th["exceptions"] += x.th.get("file_problems") or []
+    from sh_platform.v1 import v3_signal_draft as SD
+    for e in x.th["exceptions"]:  # an exception raised is watched: the same kind twice is a signal worth drafting
+        SD.observe(x.plane, "exception", "", e["title"], x.th["title"], text=e.get("text", ""))
     return f"{len(x.th['exceptions'])} exceptions"
 
 
@@ -1155,6 +1158,8 @@ def desk(plane) -> dict:
         needs += [{"kind": "exception", "thread": t["id"], "title": e["title"], "text": e["text"], "actions": [{"label": "Open the thread", "answer": "open"}]} for e in t.get("exceptions") or []]
     from sh_platform.v1 import v3_signals as SG
     needs += SG.cards(plane)  # a fired signal is an Action card for its routed person
+    from sh_platform.v1 import v3_signal_draft as SD
+    needs += SD.cards(plane)  # a signal Harbor drafted from a repeated action waits for the decision maker
     note = next((t["note"] for t in ths if t.get("note")), None)
     return {"needs": needs, "note": note, "threads": [summary(t) for t in ths],
             "files": {"arrived": len(fs), "recognised": sum(f["status"] in ("recognised", "loaded") for f in fs), "waiting": sum(f["status"] in ("waiting", "question") for f in fs)}}

@@ -1,11 +1,13 @@
 """Harbor 3.0 signals (logic in v3_signals; docs/v3/SIGNAL-ENGINE.md). Failures answer a plain message.
 GET /api/v3/signals -> [{id, title, pain_points, trigger, severity, route_to, role_title, action, hold, source, suggestion, error, stats}]
 GET /api/v3/signals/fired?status=open|acted|dismissed -> the cards, newest first, each with its receipts (evidence)
+GET /api/v3/signals/drafts?status= -> the signals Harbor drafted from repeated actions, each with its backtest line (v3_signal_draft)
+POST /api/v3/signals/drafts/{id}/admit|reject|edit -> the draft (403 unless the decision maker or a company admin, when jobs are set)
 POST /api/v3/signals/{fired_id}/act {choice?, note?, dismiss?} -> the card; `next` lists the cards it started"""
 from fastapi import APIRouter, HTTPException, Request
 
 from sh_platform.profile.api import _plane
-from sh_platform.v1 import v3_roles as R, v3_signals as SG
+from sh_platform.v1 import v3_roles as R, v3_signal_draft as SD, v3_signals as SG
 
 router = APIRouter()
 KEEP = ("id", "title", "pain_points", "trigger", "severity", "route_to", "role_title", "action", "hold", "source", "suggestion", "error", "disabled")
@@ -47,3 +49,50 @@ async def act(fired_id: str, request: Request):
     except ValueError as e:
         raise HTTPException(409, str(e)) from None
     return {k: v for k, v in got.items() if k != "event"}
+
+
+KEEP_DRAFT = ("id", "kind", "signal", "status", "needs", "repeats", "who", "subjects", "noticed", "evidence", "backtest", "created", "by", "decided", "reason")
+
+
+@router.get("/api/v3/signals/drafts")
+def drafts(request: Request, status: str | None = None):
+    return [{k: r.get(k) for k in KEEP_DRAFT} for r in SD.listing(_plane(request), status)]
+
+
+async def _decide(did: str, request: Request, what: str):
+    plane = _plane(request)
+    try:
+        body = await request.json()
+    except ValueError:
+        body = None
+    body = body if isinstance(body, dict) else {}
+    me = request.app.state.account_store.get(request.state.account_id) or {}
+    me = me if isinstance(me, dict) else vars(me)
+    email = str(me.get("email") or "").casefold()
+    jobs = R._jobs(plane)
+    if jobs and "company_admin" not in (request.state.roles or []) and jobs.get(email) != SD.DECIDER:
+        raise HTTPException(403, "Only the person who decides what Harbor watches for can do this.")
+    by = me.get("display_name") or email
+    try:
+        got = {"admit": lambda: SD.admit(plane, did, by), "reject": lambda: SD.reject(plane, did, by, str(body.get("reason") or "")),
+               "edit": lambda: SD.edit(plane, did, body)}[what]()
+    except KeyError:
+        raise HTTPException(404, "I cannot find that suggestion.") from None
+    except ValueError as e:
+        raise HTTPException(409, str(e)) from None
+    return {k: got.get(k) for k in KEEP_DRAFT}
+
+
+@router.post("/api/v3/signals/drafts/{did}/admit")
+async def admit(did: str, request: Request):
+    return await _decide(did, request, "admit")
+
+
+@router.post("/api/v3/signals/drafts/{did}/reject")
+async def reject(did: str, request: Request):
+    return await _decide(did, request, "reject")
+
+
+@router.post("/api/v3/signals/drafts/{did}/edit")
+async def edit(did: str, request: Request):
+    return await _decide(did, request, "edit")
