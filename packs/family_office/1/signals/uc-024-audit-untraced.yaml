@@ -1,0 +1,16 @@
+# SUGGESTION. Card 24 row 3. EXCEPTION. A sampled number has no source file: listed as untraced with where it was used.
+suggestion: true
+id: uc-024-audit-untraced
+title: A sampled number has no source
+pain_points: [INT-TRUST, INT-GOV, PP-07]
+trigger: {on: figure_changed, figure: trace_coverage}
+inputs:
+  - {kind: doc, fields: [request_file, item, report_month, line, figure, traced, share_traced_pct, items_in_request, untraced_items]}
+subject: "{doc.request_file} item {doc.item} untraced"
+condition: "doc.traced == 0"
+severity: problem
+route_to: head_of_data
+action: {verb: approve, options: [Find the source, Tell the auditor it cannot be traced]}
+hold: {blocks: send_trace_pack, scope: "{doc.request_file}", until: each untraced item is traced or explained}
+message: "Item {doc.item} ({doc.line} {doc.report_month}, {doc.figure:,.0f}) matches no issued report line. {doc.untraced_items:,.0f} of {doc.items_in_request:,.0f} items are untraced; the traced share is {doc.share_traced_pct}%."
+evidence: [doc.request_file, doc.item, doc.report_month, doc.line, doc.figure]

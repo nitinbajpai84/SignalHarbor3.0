@@ -1,0 +1,15 @@
+# SUGGESTION. Card 33 row 1. A breach is confirmed real: the cost to cure and the note for the CIO.
+suggestion: true
+id: uc-033-breachesc-cost-to-cure
+title: A real breach has a cost to cure
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: cost_to_cure}
+inputs:
+  - {kind: doc, fields: [portfolio, holding, exposure, portfolio_total, limit_pct, status, cost_to_cure]}
+subject: "{doc.portfolio} {doc.holding} cost to cure"
+condition: "doc.status == 'real breach' and doc.cost_to_cure > 0"
+severity: needs
+route_to: risk_officer
+action: {verb: approve, options: [Send the note to the CIO]}
+message: "{doc.holding} is {doc.exposure:,.0f} of {doc.portfolio_total:,.0f} against a {doc.limit_pct:.0f} percent limit. Selling {doc.cost_to_cure:,.2f} brings it back to the limit. Send the note to the CIO to cure or waive."
+evidence: [doc.portfolio, doc.holding, doc.exposure, doc.portfolio_total, doc.limit_pct]

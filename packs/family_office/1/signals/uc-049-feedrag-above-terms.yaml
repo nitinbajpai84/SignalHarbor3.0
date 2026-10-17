@@ -1,0 +1,16 @@
+# SUGGESTION. Card 49 row 3, the exception (M08): a fee row is above the fund terms. Listed with the overcharge; the manager is called before the fee is accepted.
+suggestion: true
+id: uc-049-feedrag-above-terms
+title: Fees charged above the fund terms
+pain_points: [PP-03, INT-BENCH]
+trigger: {on: figure_changed, figure: fee_drag}
+inputs:
+  - {kind: doc, fields: [manager, currency, fees_paid, expected_fees, fees_above_terms]}
+subject: "{doc.manager}"
+condition: doc.fees_above_terms > 0
+severity: problem
+route_to: fund_accountant
+action: {verb: call_back, options: [Record the call with the manager]}
+hold: {blocks: accept_manager_fee, scope: "{doc.manager}", until: the call with the manager is recorded}
+message: "{doc.manager} charged {doc.currency} {doc.fees_above_terms:,.0f} above the fund terms ({doc.fees_paid:,.0f} paid, {doc.expected_fees:,.0f} by the terms). Call the manager."
+evidence: [doc.fees_paid, doc.expected_fees, doc.fees_above_terms]

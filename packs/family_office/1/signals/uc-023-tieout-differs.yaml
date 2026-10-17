@@ -1,0 +1,15 @@
+# SUGGESTION. Card 23 row 1. A report line does not agree with the administrator: shown with the difference to explain or correct.
+suggestion: true
+id: uc-023-tieout-differs
+title: A report line differs from the administrator
+pain_points: [PP-04, PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: report_tie_out}
+inputs:
+  - {kind: doc, fields: [report_month, line, report_value, administrator_value, difference]}
+subject: "{doc.report_month} {doc.line} tie-out"
+condition: "doc.difference != 0"
+severity: needs
+route_to: fund_accountant
+action: {verb: approve, options: [Explain the difference, Correct the report]}
+message: "In the {doc.report_month} report {doc.line} is {doc.report_value:,.0f} and the administrator holds {doc.administrator_value:,.0f}: a difference of {doc.difference:,.0f}. Explain it or correct the report."
+evidence: [doc.report_month, doc.line, doc.report_value, doc.administrator_value, doc.difference]

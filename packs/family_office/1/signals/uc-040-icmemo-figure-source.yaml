@@ -1,0 +1,15 @@
+# SUGGESTION. Card 40 row 2: every figure the memo cites carries its source beside it.
+suggestion: true
+id: uc-040-icmemo-figure-source
+title: A memo figure and its source
+pain_points: [INT-OPS, PP-07, INT-RISK]
+trigger: {on: figure_changed, figure: memo_support}
+inputs:
+  - {kind: doc, fields: [fund, figure, value, source, traced]}
+subject: "{doc.fund} {doc.figure}"
+condition: doc.traced == 1
+severity: info
+route_to: cio
+action: {verb: see, options: [Open the source]}
+message: "{doc.fund}: {doc.figure} {doc.value:,.0f} comes from {doc.source}."
+evidence: [doc.value, doc.source]

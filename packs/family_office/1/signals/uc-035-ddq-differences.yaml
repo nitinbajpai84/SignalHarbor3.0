@@ -1,0 +1,15 @@
+# SUGGESTION. Card 35 row 1: the second questionnaire is matched by topic against the manager's earlier one; each changed answer is listed (five in the office data).
+suggestion: true
+id: uc-035-ddq-differences
+title: A questionnaire answer changed
+pain_points: [INT-TRUST, INT-DOC]
+trigger: {on: figure_changed, figure: ddq_compare}
+inputs:
+  - {kind: doc, fields: [manager, topic, previous_answer, answer, changed]}
+subject: "{doc.manager} {doc.topic}"
+condition: doc.changed == 1
+severity: info
+route_to: investment_analyst
+action: {verb: see, options: [Add it to the meeting list]}
+message: "{doc.manager}, '{doc.topic}': was '{doc.previous_answer}', now '{doc.answer}'. Take it to the meeting."
+evidence: [doc.previous_answer, doc.answer]

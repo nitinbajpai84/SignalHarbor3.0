@@ -1,0 +1,15 @@
+# SUGGESTION. Card 45 row 2. Every section is green: the pack is ready for the family to check.
+suggestion: true
+id: uc-045-reportpack-all-green
+title: Every section is ready
+pain_points: [PP-07, INT-OPS]
+trigger: {on: figure_changed, figure: report_ready}
+inputs:
+  - {kind: doc, fields: [report_file, section, share_ready_pct]}
+subject: "{doc.report_file} ready"
+condition: "doc.section == 'Total' and doc.share_ready_pct == 100"
+severity: needs
+route_to: principal
+action: {verb: approve, options: [Check and send to the family]}
+message: "All sections of {doc.report_file} tie to their source and none rests on an estimate. The pack is ready for the family."
+evidence: [doc.report_file, doc.section, doc.share_ready_pct]

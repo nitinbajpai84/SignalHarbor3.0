@@ -1,0 +1,24 @@
+# SUGGESTION. uc-017 row 3, exception: facility headroom below the covenant line. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-017-liab-headroom
+title: Facility headroom below the covenant line
+pain_points: [INT-SCOPE, PP-01, INT-LIQ]
+trigger: {on: figure_changed, figure: facility_headroom}
+inputs:
+- kind: figure
+  id: facility_headroom
+  recipe: facility_headroom
+  as: fac
+  by: {first_row: true}
+- {kind: rule, id: facility_headroom_line, as: line}
+let: {margin: line.amount - fac.headroom}
+condition: fac.headroom < line.amount
+subject: headroom {fac.facility_ref} {fac.headroom}
+severity: problem
+route_to: cfo
+action:
+  verb: approve
+  options: [Approve, Change]
+hold: {blocks: new_drawdown, scope: '{fac.facility_ref}', until: the decision is recorded}
+message: Headroom on {fac.facility_ref} is {fac.currency} {fac.headroom:,.0f}, below the covenant line of {line.amount:,.0f}; the margin is {margin:,.0f}. No further drawdown until you decide.
+evidence: [fac, line]

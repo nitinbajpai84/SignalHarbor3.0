@@ -1,55 +1,499 @@
 # Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
 # status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
 # and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+# Built here (w1 invest): commitments_by_fund, private_markets_budget, ddq_compare, fund_irr_tvpi, fee_drag (the stubs of cards 7, 35, 39, 49) and manager_timeline (25),
+# mandate_fit (34), memo_support (40), commit_check (41). A call notice is a `call` row (the investment part) and a `fee` row (the fee part) with notice_kind capital_call,
+# commitment_id set, effective_date = due date, received_at = notice date, amounts negative (money out, A5); a distribution is a positive `distribution` row, noticed then confirmed.
 recipes:
   - id: commitments_by_fund
     label: Commitments by fund
-    status: stub
-    cards: [7]
-    names: [commitments by fund, commitment pacing, unfunded by fund, called and unfunded]
+    cards: [7, 34, 41]
+    names: [commitments by fund, commitment pacing, unfunded by fund, called and unfunded, unfunded commitment, unfunded commitments]
     may_read: [commitments, cash_movements, instruments, legal_entities]
-    formula: 'For each fund and entity: the commitment, the capital called to date (the confirmed call movements, else the called_to_date the commitments file states, with its as-at date) and unfunded = commitment less called. A commitment row that a later one supersedes is out. Currencies are never added together.'
-    sql: null
+    never_read: [position_snapshots, transactions]
+    why: >-
+      A commitment is a promise to invest and its calls are movements of capital. Net worth, positions and trades say nothing of it.
+    formula: >-
+      For each fund and entity: the commitment, the capital called (the called_to_date the commitments register states at its as-at date, plus the capital
+      calls logged since: every noticed call, and a confirmed one noticed after the register date; if the register states no called figure, all the
+      confirmed calls) and unfunded = commitment less called. A commitment row that a later one supersedes is out. A call notice is a call row (the
+      investment part) and a fee row (the fee part), both counted. Currencies are never added together; one row per currency adds up the funds.
+    grain: By entity and fund, with one total row per currency
+    sql: >-
+      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
+      = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed, sum(-m.amount) filter (where
+      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as
+      date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
+      m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
+      m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
+      coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), fr as (select
+      e.entity_name as entity, i.canonical_name as fund, c.currency, c.called_as_at as as_at, cast(c.commitment_amount as decimal(18,2)) as committed,
+      cast(c.paid + c.noticed as decimal(18,2)) as called, cast(c.noticed as decimal(18,2)) as noticed, cast(c.commitment_amount - c.paid - c.noticed as
+      decimal(18,2)) as unfunded from cu as c join instruments as i on i.id = c.instrument_id left join legal_entities as e on e.id = c.legal_entity_id)
+      select entity, fund, currency, as_at, committed, called, noticed, unfunded, 0 as is_total from fr union all select 'All entities', 'All funds',
+      currency, max(as_at), sum(committed), sum(called), sum(noticed), sum(unfunded), 1 from fr group by currency
+    measure: unfunded
+    columns:
+      committed: What the office committed to the fund.
+      called: 'Capital called to date: the register''s figure plus the calls logged since, a noticed call included.'
+      noticed: Calls noticed by the manager and not yet recorded against the commitment (part of called).
+      unfunded: Committed less called. What the fund can still ask for.
+      is_total: '1 on the row that adds up all the funds of a currency, 0 on a fund row.'
+    tie_out:
+      label: Committed on the total rows equals the commitments of the register (rows nothing supersedes)
+      sql: >-
+        select (select coalesce(sum(committed), 0) from {name} where is_total = 1), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where
+        not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id))
 
 
   - id: private_markets_budget
     label: Private markets budget headroom
-    status: stub
-    cards: [7]
-    names: [private markets budget, budget headroom, private markets headroom]
+    cards: [7, 34, 41]
+    names: [private markets budget, budget headroom, private markets headroom, room to commit]
     may_read: [rule_versions, business_rules, commitments, position_snapshots, instruments]
-    formula: Budget = the private-markets limit in the signed allocation policy (rule_versions.parameters) times net worth at the date; headroom = budget less commitments to private funds (committed, not only called). With no signed policy the figure is held, not guessed.
-    sql: null
+    never_read: [transactions]
+    why: >-
+      The budget is a signed rule applied to what the family is worth, set against what it has committed. With no signed rule there is no budget to state.
+    formula: >-
+      Budget = the max_pct of the signed rule allocation_private_markets (approved and in force at the register date) times net worth at the latest position
+      date, counted as net_worth counts it; headroom = budget less all the commitments to private funds (committed, not only called). With no signed rule
+      the figure is held, not guessed.
+    grain: By currency
+    sql: >-
+      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id)), reg as (select coalesce(max(called_as_at), current_date) as d from cm), rl as (select b.rule_code, v.id as
+      rule_version_id, cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from business_rules as b join rule_versions as v on
+      v.business_rule_id = b.id where v.approval_status = 'approved' and v.effective_from <= (select d from reg) and (v.effective_to is null or
+      v.effective_to > (select d from reg))), nw as (select p.currency, sum(p.source_market_value) as net_worth from positions as p where p.position_date =
+      (select max(q.position_date) from positions as q where q.currency = p.currency) group by p.currency), cmt as (select currency, sum(commitment_amount)
+      as committed from cm group by currency) select w.currency, cast(w.net_worth as decimal(18,2)) as net_worth, r.max_pct as limit_pct, cast(w.net_worth *
+      r.max_pct / 100 as decimal(18,2)) as budget, cast(coalesce(t.committed, 0) as decimal(18,2)) as committed, cast(w.net_worth * r.max_pct / 100 -
+      coalesce(t.committed, 0) as decimal(18,2)) as headroom, r.rule_version_id from nw as w join rl as r on r.rule_code = 'allocation_private_markets' left
+      join cmt as t on t.currency = w.currency
+    measure: headroom
+    columns:
+      net_worth: What the family holds at the latest position date.
+      limit_pct: 'The private-markets limit of the signed policy, in percent of net worth.'
+      budget: Net worth times the limit.
+      committed: 'Everything committed to private funds, called or not.'
+      headroom: Budget less committed. Negative means the budget is exceeded.
+    tie_out:
+      label: Committed equals the commitments of the register for the same currencies
+      sql: >-
+        select (select coalesce(sum(committed), 0) from {name}), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where not exists (select
+        1 from commitments as y where y.supersedes_commitment_id = x.id) and x.currency in (select currency from {name}))
+    needs:
+      - why: 'No private-markets limit is signed in the allocation policy, so there is no budget to compute and none is guessed.'
+        sql: >-
+          select count(*) from business_rules as b join rule_versions as v on v.business_rule_id = b.id where b.rule_code = 'allocation_private_markets' and
+          v.approval_status = 'approved'
 
 
   - id: ddq_compare
     label: Manager questionnaire comparison
-    status: stub
-    cards: [35]
-    names: [ddq compare, questionnaire comparison, compare managers questionnaires]
+    cards: [35, 40]
+    names: [ddq compare, questionnaire comparison, compare managers questionnaires, compare manager questionnaires, answers side by side]
     may_read: [extracted_fields, documents, instruments]
-    formula: The answers to the same question from each manager questionnaire, matched by topic (the extracted field name), side by side by manager; a topic a manager did not answer shows as a gap.
-    sql: null
+    never_read: [commitments, cash_movements, transactions]
+    why: >-
+      A questionnaire answer is a fact read from a document; it is compared with the same manager's earlier answer, never with a number from the books.
+    formula: >-
+      The answers to the same question from each manager questionnaire (a document of type ddq; its fields named 'ddq: <question>', the manager in its
+      manager_name field), matched by topic, side by side by manager and date. changed = 1 when the answer differs from the same manager's previous
+      questionnaire. A topic the manager did not answer, or answered 'to follow', shows as a gap (open_item = 1). A questionnaire another one supersedes is
+      out.
+    grain: By manager, topic and questionnaire
+    sql: >-
+      create table {name} as with q as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager from documents as d join extracted_fields
+      as m on m.document_id = d.id and m.field_name = 'manager_name' where d.document_type = 'ddq' and not exists (select 1 from documents as s where
+      s.supersedes_document_id = d.id)), a as (select f.document_id as doc_id, substr(f.field_name, 6) as topic, coalesce(f.corrected_value_text,
+      f.value_text) as answer, f.page_number from extracted_fields as f where f.field_name like 'ddq:%' and f.review_status <> 'rejected'), t as (select
+      distinct q.manager, a.topic from q join a on a.doc_id = q.doc_id), j as (select g.manager, t.topic, g.title as questionnaire, g.document_date as
+      answered_on, a.answer, a.page_number as page, lag(a.answer) over (partition by g.manager, t.topic order by g.document_date) as previous_answer,
+      lag(g.document_date) over (partition by g.manager, t.topic order by g.document_date) as previous_on from q as g join t on t.manager = g.manager left
+      join a on a.doc_id = g.doc_id and a.topic = t.topic) select manager, topic, questionnaire, answered_on, answer, page, previous_answer, cast(case when
+      previous_on is not null and answer is distinct from previous_answer then 1 else 0 end as integer) as changed, cast(case when answer is null or
+      lower(answer) like '%to follow%' then 1 else 0 end as integer) as open_item from j
+    measure: changed
+    columns:
+      answer: 'The manager''s answer in this questionnaire, as read from the document.'
+      previous_answer: 'The same manager''s answer in the questionnaire before this one.'
+      changed: '1 when the answer differs from the previous questionnaire''s.'
+      open_item: '1 when the answer is missing or ''to follow''.'
+    tie_out:
+      label: Every answer read from a questionnaire appears once
+      sql: >-
+        select (select count(*) from {name} where answer is not null), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id
+        where d.document_type = 'ddq' and f.field_name like 'ddq:%' and f.review_status <> 'rejected' and not exists (select 1 from documents as s where
+        s.supersedes_document_id = d.id))
 
 
   - id: fund_irr_tvpi
     label: Fund IRR and TVPI
-    status: stub
-    cards: [39]
-    names: [fund irr, irr and tvpi, tvpi, private fund return since inception]
-    may_read: [cash_movements, nav_snapshots, valuation_observations, commitments, instruments]
-    formula: 'For each private fund: IRR from the dated calls (outflows), distributions (inflows) and the latest value at the as-at date; TVPI = (distributions + latest value) / called; DPI = distributions / called; RVPI = latest value / called.'
-    sql: null
+    cards: [39, 40]
+    names: [fund irr, irr and tvpi, tvpi, private fund return since inception, irr tvpi dpi, return of each private fund]
+    may_read: [cash_movements, valuation_observations, commitments, instruments, legal_entities, extracted_fields]
+    never_read: [position_snapshots, transactions]
+    why: >-
+      The return of a private fund is made of the dated calls, the dated distributions and the manager's values, not of market prices.
+    formula: >-
+      For each private fund, from its first value on file (the opening value, paid in on that date) to the register date: the confirmed calls and fees
+      (out), the confirmed distributions (in) and the latest value (in, at the register date). IRR = the annual rate that makes these dated flows sum to
+      zero (actual days over 365, found by bisection), in percent. called = what has been paid (the register's called_to_date plus later confirmed calls; a
+      noticed call is not paid yet). TVPI = (distributions + latest value) / called, DPI = distributions / called, RVPI = latest value / called. history_gap
+      = the cumulative called the latest statement states less what the opening statement states plus the calls on file; when it is not zero, irr_status is
+      'incomplete' and the IRR is not to be relied on.
+    grain: By fund
+    sql: >-
+      create table {name} as with recursive cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed,
+      sum(-m.amount) filter (where m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed'
+      and cast(m.received_at as date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where
+      m.notice_kind = 'capital_call' and m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where
+      z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all,
+      0) else c.called_to_date + coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on
+      v.commitment_id = c.id), reg as (select coalesce(max(called_as_at), current_date) as d from cm), vo as (select v.* from valuation_observations as v
+      where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id) and cast(v.received_at as date) <= (select d from
+      reg)), se as (select c.id as cid, c.instrument_id, (select min(v.valuation_date) from vo as v where v.instrument_id = c.instrument_id) as start_d,
+      (select max(v.valuation_date) from vo as v where v.instrument_id = c.instrument_id) as end_d from cu as c), v0 as (select s.cid, max(v.value_amount)
+      as val, max(v.evidence_document_id) as doc from se as s join vo as v on v.instrument_id = s.instrument_id and v.valuation_date = s.start_d group by
+      s.cid), v1 as (select s.cid, max(v.value_amount) as val, max(v.evidence_document_id) as doc, max(v.valuation_type) as vtype from se as s join vo as v
+      on v.instrument_id = s.instrument_id and v.valuation_date = s.end_d group by s.cid), mf as (select s.cid, m.movement_type, m.effective_date, m.amount
+      from se as s join cash_movements as m on m.commitment_id = s.cid where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution' or
+      m.notice_kind = 'capital_call') and m.effective_date > s.start_d and m.effective_date <= (select d from reg) and not exists (select 1 from
+      cash_movements as z where z.supersedes_cash_movement_id = m.id)), fl as (select cid, cast(0 as double) as d, -val as c from v0 union all select s.cid,
+      cast((select d from reg) - s.start_d as double), v1.val from se as s join v1 on v1.cid = s.cid union all select m.cid, cast(m.effective_date -
+      s.start_d as double), m.amount from mf as m join se as s on s.cid = m.cid), b(cid, lo, hi, n) as (select distinct cid, cast(-0.99 as double),
+      cast(10.0 as double), 0 from fl union all select s.cid, case when s.flo * s.fmid <= 0 then s.lo else s.mid end, case when s.flo * s.fmid <= 0 then
+      s.mid else s.hi end, s.n + 1 from (select t.*, (select sum(c / power(1 + t.lo, d / 365.0)) from fl where fl.cid = t.cid) as flo, (select sum(c /
+      power(1 + t.mid, d / 365.0)) from fl where fl.cid = t.cid) as fmid from (select cid, lo, hi, n, (lo + hi) / 2 as mid from b where n < 60) as t) as s),
+      irr as (select cid, (lo + hi) / 2 as r from b where n = 60 and (select sum(c / power(0.01, d / 365.0)) from fl where fl.cid = b.cid) * (select sum(c /
+      power(11.0, d / 365.0)) from fl where fl.cid = b.cid) <= 0), dist as (select cid, coalesce(sum(amount) filter (where movement_type = 'distribution'),
+      0) as dist from mf group by cid), cum as (select s.cid, (select max(f.value_numeric) from extracted_fields as f where f.document_id = v0.doc and
+      f.field_name = 'cumulative_called') as c0, (select max(f.value_numeric) from extracted_fields as f where f.document_id = v1.doc and f.field_name =
+      'cumulative_called') as c1, (select coalesce(sum(-m.amount), 0) from mf as m where m.cid = s.cid and m.movement_type <> 'distribution' and
+      m.effective_date <= s.end_d) as calls_to_end from se as s join v0 on v0.cid = s.cid join v1 on v1.cid = s.cid) select e.entity_name as entity,
+      i.canonical_name as fund, c.currency, s.start_d as first_value_on, s.end_d as latest_period, (select d from reg) as as_at, cast(v0.val as
+      decimal(18,2)) as opening_value, cast(v1.val as decimal(18,2)) as latest_value, case v1.vtype when 'manager_estimate' then 'estimate' when
+      'manager_amended' then 'amended' else 'final' end as latest_status, cast(c.paid as decimal(18,2)) as called, cast(coalesce(d.dist, 0) as
+      decimal(18,2)) as distributions, cast(round(100 * r.r, 2) as decimal(9,2)) as irr_pct, cast(round((coalesce(d.dist, 0) + v1.val) / nullif(c.paid, 0),
+      4) as decimal(9,4)) as tvpi, cast(round(coalesce(d.dist, 0) / nullif(c.paid, 0), 4) as decimal(9,4)) as dpi, cast(round(v1.val / nullif(c.paid, 0), 4)
+      as decimal(9,4)) as rvpi, cast(u.c1 - (u.c0 + u.calls_to_end) as decimal(18,2)) as history_gap, case when r.r is null or coalesce(abs(u.c1 - (u.c0 +
+      u.calls_to_end)), 0) > 0.005 then 'incomplete' else 'ok' end as irr_status from cu as c join se as s on s.cid = c.id join v0 on v0.cid = c.id join v1
+      on v1.cid = c.id join cum as u on u.cid = c.id join instruments as i on i.id = c.instrument_id left join legal_entities as e on e.id =
+      c.legal_entity_id left join irr as r on r.cid = c.id left join dist as d on d.cid = c.id
+    measure: tvpi
+    columns:
+      opening_value: 'The manager''s value on the first date on file, treated as paid in on that date.'
+      latest_value: 'The manager''s latest value that nothing replaces, at its period end.'
+      called: Capital paid in to date (a noticed call is not counted).
+      distributions: Distributions received (confirmed) after the first value.
+      irr_pct: 'Annualised internal rate of return since the first value, in percent.'
+      tvpi: (Distributions + latest value) / called.
+      dpi: Distributions / called.
+      rvpi: Latest value / called.
+      history_gap: 'Cumulative called on the latest statement less the opening statement''s plus the calls on file. Not zero means a call is missing or extra.'
+      irr_status: 'ok, or incomplete when the call history does not add up or no rate exists.'
+    tie_out:
+      label: 'Called equals the commitments register''s called figure for the same funds (nothing confirmed after the register date)'
+      sql: >-
+        select (select coalesce(sum(called), 0) from {name}), (select coalesce(sum(x.called_to_date), 0) from commitments as x where not exists (select 1 from
+        commitments as y where y.supersedes_commitment_id = x.id))
 
 
   - id: fee_drag
     label: Fees paid to each manager
-    status: stub
     cards: [49]
-    names: [fee drag, fees paid, fees paid to each manager, management fees]
-    may_read: [cash_movements, transactions, extracted_fields, valuation_observations, nav_snapshots, instruments]
-    formula: Management plus performance fees paid to each manager (cash movements of type fee) over the manager's gross gain for the same period; the fee the fund terms say is due (fee-rate fields read from the fund documents) is shown beside it.
-    sql: null
+    names: [fee drag, fees paid, fees paid to each manager, management fees, fees as share of gain]
+    may_read: [cash_movements, commitments, extracted_fields, documents, valuation_observations, instruments]
+    never_read: [position_snapshots, transactions]
+    why: >-
+      Fees are the fee parts the managers billed in their calls, set against the gain their funds made. They are not market costs.
+    formula: >-
+      Per manager, over the window from each fund's first value to the register date: fees_paid = the confirmed fee movements of the manager's funds; gross
+      gain = net gain + fees, net gain = latest value - opening value - calls paid (call and fee parts) + distributions; fee_drag_pct = fees_paid / gross
+      gain in percent, left empty when the gross gain is not positive. expected_fees = for each fee row, the commitment times the fund's management_fee_rate
+      (fund terms, a fraction per billing); fees_above_terms = what the fee rows exceed that.
+    grain: By manager and currency
+    sql: >-
+      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
+      = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed, sum(-m.amount) filter (where
+      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as
+      date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
+      m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
+      m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
+      coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), reg as
+      (select coalesce(max(called_as_at), current_date) as d from cm), vo as (select v.* from valuation_observations as v where not exists (select 1 from
+      valuation_observations as x where x.supersedes_valuation_id = v.id) and cast(v.received_at as date) <= (select d from reg)), se as (select c.id as
+      cid, c.instrument_id, (select min(v.valuation_date) from vo as v where v.instrument_id = c.instrument_id) as start_d, (select max(v.valuation_date)
+      from vo as v where v.instrument_id = c.instrument_id) as end_d from cu as c), v0 as (select s.cid, max(v.value_amount) as val,
+      max(v.evidence_document_id) as doc from se as s join vo as v on v.instrument_id = s.instrument_id and v.valuation_date = s.start_d group by s.cid), v1
+      as (select s.cid, max(v.value_amount) as val, max(v.evidence_document_id) as doc, max(v.valuation_type) as vtype from se as s join vo as v on
+      v.instrument_id = s.instrument_id and v.valuation_date = s.end_d group by s.cid), mf as (select s.cid, m.movement_type, m.effective_date, m.amount
+      from se as s join cash_movements as m on m.commitment_id = s.cid where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution' or
+      m.notice_kind = 'capital_call') and m.effective_date > s.start_d and m.effective_date <= (select d from reg) and not exists (select 1 from
+      cash_movements as z where z.supersedes_cash_movement_id = m.id)), rate as (select d.instrument_id, max(f.value_numeric) as r from documents as d join
+      extracted_fields as f on f.document_id = d.id and f.field_name = 'management_fee_rate' where d.document_type = 'fund_terms' group by d.instrument_id),
+      fr as (select c.id as cid, i.manager_name, c.currency, c.commitment_amount, r.r, m.amount from cu as c join instruments as i on i.id = c.instrument_id
+      join se as s on s.cid = c.id join mf as m on m.cid = c.id and m.movement_type = 'fee' left join rate as r on r.instrument_id = c.instrument_id), ff as
+      (select cid, manager_name, currency, sum(-amount) as fees, sum(commitment_amount * r) as expected, sum(greatest(-amount - commitment_amount * r, 0))
+      as above from fr group by all), fc as (select cid, coalesce(sum(-amount), 0) as calls from mf where movement_type <> 'distribution' group by cid), fd
+      as (select cid, coalesce(sum(amount), 0) as dist from mf where movement_type = 'distribution' group by cid), pf as (select i.manager_name, c.currency,
+      coalesce(f.fees, 0) as fees, coalesce(f.expected, 0) as expected, coalesce(f.above, 0) as above, v1.val - v0.val - coalesce(k.calls, 0) +
+      coalesce(d.dist, 0) as net from cu as c join instruments as i on i.id = c.instrument_id join v0 on v0.cid = c.id join v1 on v1.cid = c.id left join ff
+      as f on f.cid = c.id left join fc as k on k.cid = c.id left join fd as d on d.cid = c.id) select manager_name as manager, currency, count(*) as funds,
+      cast(sum(fees) as decimal(18,2)) as fees_paid, cast(sum(expected) as decimal(18,2)) as expected_fees, cast(sum(above) as decimal(18,2)) as
+      fees_above_terms, cast(sum(net) as decimal(18,2)) as net_gain, cast(sum(net + fees) as decimal(18,2)) as gross_gain, cast(case when sum(net + fees) >
+      0 then round(100 * sum(fees) / sum(net + fees), 2) end as decimal(9,2)) as fee_drag_pct from pf group by all
+    measure: fees_paid
+    columns:
+      funds: How many funds of the manager the office holds.
+      fees_paid: Fee parts of the calls paid to the manager in the window.
+      expected_fees: 'What the fund terms say those fees should have been (commitment times the fee rate, per fee row).'
+      fees_above_terms: The part of the fees above the terms. Zero when every fee matches.
+      net_gain: 'Latest value less opening value, less calls paid, plus distributions.'
+      gross_gain: Net gain plus the fees.
+      fee_drag_pct: 'Fees as a share of the gross gain, in percent. Empty when the gross gain is not positive.'
+    tie_out:
+      label: The fees paid equal the fee movements confirmed in the window
+      sql: >-
+        select (select coalesce(sum(fees_paid), 0) from {name}), (select coalesce(sum(-m.amount), 0) from cash_movements as m join commitments as c on c.id =
+        m.commitment_id where m.movement_type = 'fee' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as z where
+        z.supersedes_cash_movement_id = m.id) and not exists (select 1 from commitments as y where y.supersedes_commitment_id = c.id) and m.effective_date >
+        (select min(v.valuation_date) from valuation_observations as v where v.instrument_id = c.instrument_id) and m.effective_date <= (select
+        coalesce(max(called_as_at), current_date) from commitments))
+
+
+  - id: manager_timeline
+    label: Manager timeline since the last meeting
+    cards: [25, 35]
+    names: [manager timeline, what changed at the manager, changes since the last meeting, since we last met]
+    may_read: [valuation_observations, documents, extracted_fields, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: >-
+      What changed at a manager is what it sent after the date of the last meeting with it: its statements, restatements and letters. Nothing else.
+    formula: >-
+      For each manager with a recorded meeting (a document with fields counterparty and meeting_date), the items dated after its last meeting, newest first:
+      every valuation of its funds received after that date (final, estimate or amended; restated_from is the value an amended one replaces) and every
+      newsletter with its team change. Each item names its source document.
+    grain: By manager and item, newest first
+    sql: >-
+      create table {name} as with mtg as (select f.value_text as manager, max(cast(d.value_text as date)) as last_meeting from extracted_fields as f join
+      extracted_fields as d on d.document_id = f.document_id and d.field_name = 'meeting_date' where f.field_name = 'counterparty' group by f.value_text),
+      st as (select m.manager, m.last_meeting, cast(v.received_at as date) as item_date, 'statement' as item_kind, i.canonical_name as fund,
+      v.valuation_date as period, case v.valuation_type when 'manager_estimate' then 'estimate' when 'manager_amended' then 'amended' else 'final' end as
+      status_kind, v.value_amount as value, v.currency, p.value_amount as restated_from, cast(null as varchar) as detail, d.title as source from
+      valuation_observations as v join instruments as i on i.id = v.instrument_id join mtg as m on m.manager = i.manager_name left join
+      valuation_observations as p on p.id = v.supersedes_valuation_id left join documents as d on d.id = v.evidence_document_id where cast(v.received_at as
+      date) > m.last_meeting), nl as (select m.manager, m.last_meeting, d.document_date as item_date, 'newsletter' as item_kind, cast(null as varchar) as
+      fund, cast(null as date) as period, 'team change' as status_kind, cast(null as decimal(28,8)) as value, cast(null as varchar) as currency, cast(null
+      as decimal(28,8)) as restated_from, t.value_text as detail, d.title as source from documents as d join extracted_fields as c on c.document_id = d.id
+      and c.field_name = 'counterparty' join mtg as m on m.manager = c.value_text left join extracted_fields as t on t.document_id = d.id and t.field_name =
+      'team_change' where d.document_type = 'newsletter' and d.document_date > m.last_meeting) select * from st union all select * from nl
+    measure: value
+    columns:
+      last_meeting: The date of the last recorded meeting with the manager.
+      item_date: 'The date the item arrived (a statement''s issue date, a letter''s date).'
+      status_kind: 'estimate, final or amended for a statement; team change for a newsletter.'
+      value: The value the statement states.
+      restated_from: 'For an amended statement, the value it replaces.'
+      source: The document the item comes from.
+    tie_out:
+      label: Every valuation received after the last meeting appears as a statement item
+      sql: >-
+        select (select count(*) from {name} where item_kind = 'statement'), (select count(*) from valuation_observations as v join instruments as i on i.id =
+        v.instrument_id join (select f.value_text as manager, max(cast(d.value_text as date)) as last_meeting from extracted_fields as f join extracted_fields
+        as d on d.document_id = f.document_id and d.field_name = 'meeting_date' where f.field_name = 'counterparty' group by f.value_text) as m on m.manager =
+        i.manager_name where cast(v.received_at as date) > m.last_meeting)
+
+
+  - id: mandate_fit
+    label: Mandate fit of a fund under review
+    cards: [34]
+    names: [mandate fit, fit against the mandate, fit against class size and liquidity limits, screen a new fund]
+    may_read: [deal_pipeline, commitments, cash_movements, instruments, business_rules, rule_versions, position_snapshots]
+    never_read: [transactions]
+    why: >-
+      A fund under review is judged on its ticket against the limits the policy signs and the room left, never on a limit the office has not set.
+    formula: >-
+      For each deal in the pipeline that nothing supersedes (its ticket is target_commitment): uncalled_before = the unfunded of all commitments (as
+      commitments_by_fund counts them), uncalled_after = that plus the ticket, ticket_pct_of_uncalled = ticket / uncalled_before. The private-markets limit
+      and the limit of its asset class are the max_pct of the signed rules allocation_private_markets and allocation_<asset_class> times net worth; a limit
+      that is not signed shows as empty and its status as 'not set', never a guessed number.
+    grain: By deal
+    sql: >-
+      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed,
+      sum(-m.amount) filter (where m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed'
+      and cast(m.received_at as date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where
+      m.notice_kind = 'capital_call' and m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where
+      z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all,
+      0) else c.called_to_date + coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on
+      v.commitment_id = c.id), reg as (select coalesce(max(called_as_at), current_date) as d from cm), rl as (select b.rule_code, v.id as rule_version_id,
+      cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from business_rules as b join rule_versions as v on v.business_rule_id =
+      b.id where v.approval_status = 'approved' and v.effective_from <= (select d from reg) and (v.effective_to is null or v.effective_to > (select d from
+      reg))), nw as (select p.currency, sum(p.source_market_value) as net_worth from positions as p where p.position_date = (select max(q.position_date)
+      from positions as q where q.currency = p.currency) group by p.currency), dl as (select x.* from deal_pipeline as x where not exists (select 1 from
+      deal_pipeline as y where y.supersedes_deal_id = x.id)), unf as (select currency, sum(commitment_amount - paid - noticed) as uncalled,
+      sum(commitment_amount) as committed from cu group by currency), cls as (select i.asset_class, c.currency, sum(c.commitment_amount) as committed from
+      cu as c join instruments as i on i.id = c.instrument_id group by all), x as (select d.deal_name, d.manager_name, d.strategy, d.asset_class, d.stage,
+      d.currency, d.target_commitment as ticket, u.uncalled, u.committed, (select max(r.max_pct) from rl as r where r.rule_code =
+      'allocation_private_markets') as pm_pct, (select max(r.max_pct) from rl as r where r.rule_code = 'allocation_' || d.asset_class) as class_pct,
+      w.net_worth, coalesce(k.committed, 0) as class_committed, (select count(*) from instruments as i join cu as c on c.instrument_id = i.id where
+      i.manager_name = d.manager_name) as held from dl as d left join unf as u on u.currency = d.currency left join nw as w on w.currency = d.currency left
+      join cls as k on k.asset_class = d.asset_class and k.currency = d.currency) select deal_name, manager_name as manager, strategy, asset_class, stage,
+      currency, cast(ticket as decimal(18,2)) as ticket, cast(uncalled as decimal(18,2)) as uncalled_before, cast(uncalled + ticket as decimal(18,2)) as
+      uncalled_after, cast(round(100 * ticket / nullif(uncalled, 0), 2) as decimal(9,2)) as ticket_pct_of_uncalled, cast(case when held > 0 then 1 else 0
+      end as integer) as manager_held, pm_pct as private_markets_limit_pct, cast(net_worth * pm_pct / 100 - committed - ticket as decimal(18,2)) as
+      budget_room_after, case when pm_pct is null or net_worth is null then 'not set' when net_worth * pm_pct / 100 - committed - ticket >= 0 then 'within'
+      else 'over' end as budget_status, class_pct as class_limit_pct, cast(net_worth * class_pct / 100 - class_committed - ticket as decimal(18,2)) as
+      class_room_after, case when class_pct is null or net_worth is null then 'not set' when net_worth * class_pct / 100 - class_committed - ticket >= 0
+      then 'within' else 'over' end as class_status from x
+    measure: ticket
+    columns:
+      ticket: 'The commitment the office would make (the deal''s target commitment).'
+      uncalled_before: 'What the office can still be called for across all its funds, before this ticket.'
+      uncalled_after: The same with this ticket added.
+      ticket_pct_of_uncalled: 'The ticket as a share of the current uncalled commitments, in percent.'
+      manager_held: '1 when the office already holds a fund of this manager, 0 when the manager is new to it.'
+      budget_room_after: Private-markets budget less all commitments less this ticket. Empty when no budget is signed.
+      budget_status: 'within, over, or ''not set'' when the policy signs no private-markets limit.'
+      class_room_after: 'The asset class''s limit less its commitments less this ticket. Empty when the class has no signed limit.'
+      class_status: 'within, over, or ''not set'' when the class has no signed limit.'
+    tie_out:
+      label: The tickets equal the target commitments of the deals nothing supersedes
+      sql: >-
+        select (select coalesce(sum(ticket), 0) from {name}), (select coalesce(sum(x.target_commitment), 0) from deal_pipeline as x where not exists (select 1
+        from deal_pipeline as y where y.supersedes_deal_id = x.id))
+
+
+  - id: memo_support
+    label: Figures cited in an investment committee memo
+    cards: [40]
+    names: [memo support, figures cited in the memo, figures in the committee memo, investment committee memo figures]
+    may_read: [commitments, cash_movements, valuation_observations, documents, extracted_fields, instruments]
+    never_read: [transactions, position_snapshots]
+    why: >-
+      A memo may cite only a figure that traces to a file; each line names its source, and a line with no source is shown as untraced.
+    formula: >-
+      For each fund the memo may cite: the commitment, the capital called (a noticed call included), the unfunded, the latest value (with its status and
+      period, from the statement), the fee part of the latest call notice, and the number of answers that changed between the manager's last two
+      questionnaires. Each line carries its source (the document or the register record) and traced = 1 when it has one.
+    grain: By fund and figure
+    sql: >-
+      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
+      = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed, sum(-m.amount) filter (where
+      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as
+      date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
+      m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
+      m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
+      coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), lv as (select
+      v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc) as rn from valuation_observations as v where
+      not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)), lf as (select m.commitment_id, -m.amount as fee,
+      m.received_at, m.source_record_id, row_number() over (partition by m.commitment_id order by m.effective_date desc, m.received_at desc) as rn from
+      cash_movements as m where m.notice_kind = 'capital_call' and m.movement_type = 'fee' and m.confirmation_status <> 'cancelled' and not exists (select 1
+      from cash_movements as z where z.supersedes_cash_movement_id = m.id)), dq as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager
+      from documents as d join extracted_fields as m on m.document_id = d.id and m.field_name = 'manager_name' where d.document_type = 'ddq'), da as (select
+      q.manager, q.title, q.document_date, coalesce(f.corrected_value_text, f.value_text) as answer, lag(coalesce(f.corrected_value_text, f.value_text))
+      over (partition by q.manager, f.field_name order by q.document_date) as prev from dq as q join extracted_fields as f on f.document_id = q.doc_id and
+      f.field_name like 'ddq:%'), qd as (select manager, count(*) filter (where prev is not null and answer is distinct from prev) as n, max(title) as src
+      from da where document_date = (select max(x.document_date) from dq as x where x.manager = da.manager) group by manager), rows_ as (select
+      i.canonical_name as fund, c.currency, 'commitment' as figure, c.commitment_amount as value, cast(c.committed_on as date) as as_at, cast(null as
+      varchar) as detail, 'register record ' || c.source_record_id as source, c.source_record_id is not null as traced from cu as c join instruments as i on
+      i.id = c.instrument_id union all select i.canonical_name, c.currency, 'called', c.paid + c.noticed, c.called_as_at, 'register called_to_date plus
+      calls logged since', 'register record ' || c.source_record_id, c.source_record_id is not null from cu as c join instruments as i on i.id =
+      c.instrument_id union all select i.canonical_name, c.currency, 'unfunded', c.commitment_amount - c.paid - c.noticed, c.called_as_at, 'commitment less
+      called', 'register record ' || c.source_record_id, c.source_record_id is not null from cu as c join instruments as i on i.id = c.instrument_id union
+      all select i.canonical_name, v.currency, 'latest_value', v.value_amount, v.valuation_date, case v.valuation_type when 'manager_estimate' then
+      'estimate' when 'manager_amended' then 'amended' else 'final' end, d.title, d.id is not null from lv as v join instruments as i on i.id =
+      v.instrument_id left join documents as d on d.id = v.evidence_document_id where v.rn = 1 and exists (select 1 from cu as c where c.instrument_id =
+      v.instrument_id) union all select i.canonical_name, c.currency, 'fee_in_latest_call', f.fee, cast(f.received_at as date), 'fee part of the latest call
+      notice', 'call notice record ' || f.source_record_id, f.source_record_id is not null from lf as f join cu as c on c.id = f.commitment_id join
+      instruments as i on i.id = c.instrument_id where f.rn = 1 union all select i.canonical_name, cast(null as varchar), 'ddq_changes', q.n, cast(null as
+      date), 'answers changed between the manager''s last two questionnaires', q.src, q.src is not null from qd as q join instruments as i on i.manager_name
+      = q.manager where exists (select 1 from cu as c where c.instrument_id = i.id)) select fund, currency, figure, cast(value as decimal(18,2)) as value,
+      as_at, detail, source, cast(traced as integer) as traced from rows_
+    measure: value
+    columns:
+      figure: 'commitment, called, unfunded, latest_value, fee_in_latest_call or ddq_changes.'
+      value: The figure.
+      detail: 'How the figure is counted, or the status of the statement it comes from.'
+      source: The document or record the figure comes from.
+      traced: '1 when the figure has a source, 0 when it has none (to be struck out of the memo).'
+    tie_out:
+      label: Every fund of the register has its commitment line
+      sql: >-
+        select (select count(*) from {name} where figure = 'commitment'), (select count(*) from commitments as x where not exists (select 1 from commitments
+        as y where y.supersedes_commitment_id = x.id))
+
+
+  - id: commit_check
+    label: Budget, limit and cash tests of a new commitment
+    cards: [41]
+    names: [commit check, budget limit and cash tests, can we commit, cash cover after the commitment]
+    may_read: [deal_pipeline, commitments, cash_movements, instruments, business_rules, rule_versions, position_snapshots, market_observations]
+    never_read: [transactions]
+    why: >-
+      A commitment is approved only when it fits the signed budget, the signed class limit and the cash the office will need for its calls; each test is
+      shown, none is guessed.
+    formula: >-
+      For the latest deal in the pipeline that nothing supersedes and is not declined (its ticket is target_commitment): uncalled_after = the unfunded of
+      all commitments plus the ticket; cash_usd = the cash instruments' position snapshots at the latest cash date, other currencies converted at the latest
+      fx_fixing (units per USD) on or before that date; need_24m = uncalled_after, on the stated basis that all uncalled commitments may be called within 24
+      months (assumption of the answer key, no signed pacing rule exists); cash_cover_pct = cash_usd / need_24m in percent, cash_status 'short' under 100.
+      The budget and class tests are those of mandate_fit and read 'not set' when the policy signs no limit.
+    grain: By deal
+    sql: >-
+      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed') as noticed,
+      sum(-m.amount) filter (where m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed'
+      and cast(m.received_at as date) > c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where
+      m.notice_kind = 'capital_call' and m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where
+      z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all,
+      0) else c.called_to_date + coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on
+      v.commitment_id = c.id), reg as (select coalesce(max(called_as_at), current_date) as d from cm), rl as (select b.rule_code, v.id as rule_version_id,
+      cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from business_rules as b join rule_versions as v on v.business_rule_id =
+      b.id where v.approval_status = 'approved' and v.effective_from <= (select d from reg) and (v.effective_to is null or v.effective_to > (select d from
+      reg))), nw as (select p.currency, sum(p.source_market_value) as net_worth from positions as p where p.position_date = (select max(q.position_date)
+      from positions as q where q.currency = p.currency) group by p.currency), dl as (select x.* from deal_pipeline as x where not exists (select 1 from
+      deal_pipeline as y where y.supersedes_deal_id = x.id) and x.stage not in ('declined', 'passed')), tp as (select * from dl order by stage_on desc,
+      received_at desc limit 1), unf as (select currency, sum(commitment_amount - paid - noticed) as uncalled, sum(commitment_amount) as committed from cu
+      group by currency), cd as (select max(p.position_date) as d from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type
+      = 'cash'), fx as (select o.quote_currency as currency, o.value as rate from market_observations as o where o.observation_type = 'fx_fixing' and
+      o.base_currency = 'USD' and not exists (select 1 from market_observations as z where z.supersedes_observation_id = o.id) and cast(o.observed_at as
+      date) = (select max(cast(x.observed_at as date)) from market_observations as x where x.observation_type = 'fx_fixing' and x.base_currency = 'USD' and
+      x.quote_currency = o.quote_currency and cast(x.observed_at as date) <= (select d from cd))), cash as (select sum(case when p.currency = 'USD' then
+      p.source_market_value when f.rate is not null then p.source_market_value / f.rate end) as cash_usd, count(*) filter (where p.currency <> 'USD' and
+      f.rate is null) as unconverted from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' left join fx as f on
+      f.currency = p.currency where p.position_date = (select d from cd)), x as (select t.deal_name, t.currency, t.target_commitment as ticket, u.uncalled,
+      u.committed, (select max(r.max_pct) from rl as r where r.rule_code = 'allocation_private_markets') as pm_pct, w.net_worth from tp as t left join unf
+      as u on u.currency = t.currency left join nw as w on w.currency = t.currency) select x.deal_name, x.currency, cast(x.ticket as decimal(18,2)) as
+      new_commitment, cast(x.uncalled as decimal(18,2)) as uncalled_before, cast(x.uncalled + x.ticket as decimal(18,2)) as uncalled_after,
+      cast(round(c.cash_usd, 2) as decimal(18,2)) as cash_usd, c.unconverted as cash_unconverted, cast(x.uncalled + x.ticket as decimal(18,2)) as need_24m,
+      'all uncalled commitments, called within 24 months (stated assumption)' as need_basis, cast(round(100 * c.cash_usd / nullif(x.uncalled + x.ticket, 0),
+      2) as decimal(9,2)) as cash_cover_pct, case when 100 * c.cash_usd / nullif(x.uncalled + x.ticket, 0) >= 100 then 'covered' else 'short' end as
+      cash_status, cast(c.cash_usd - (x.uncalled + x.ticket) as decimal(18,2)) as cash_gap, x.pm_pct as private_markets_limit_pct, cast(x.net_worth *
+      x.pm_pct / 100 - x.committed - x.ticket as decimal(18,2)) as budget_room_after, case when x.pm_pct is null or x.net_worth is null then 'not set' when
+      x.net_worth * x.pm_pct / 100 - x.committed - x.ticket >= 0 then 'within' else 'over' end as budget_status from x cross join cash as c where x.currency
+      = 'USD'
+    measure: cash_usd
+    columns:
+      new_commitment: The ticket of the deal under approval.
+      uncalled_after: Unfunded commitments of all funds plus the new ticket.
+      cash_usd: 'Cash of all accounts at the latest cash date, in USD (other currencies at the fixing).'
+      need_24m: 'What the cash must cover: all uncalled commitments after the ticket, assumed called within 24 months.'
+      cash_cover_pct: 'Cash as a share of that need, in percent.'
+      cash_status: 'covered, or short when the cash does not cover the need.'
+      cash_gap: Cash less the need. Negative means short.
+      budget_status: 'within, over, or ''not set'' when the policy signs no private-markets limit.'
+    needs:
+      - why: 'No cash position is loaded, so the cash test cannot be stated.'
+        sql: >-
+          select count(*) from position_snapshots as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash'
+      - why: 'No deal is under review in the pipeline, so there is no commitment to test.'
+        sql: >-
+          select count(*) from deal_pipeline as x where x.stage not in ('declined', 'passed')
+
 
 
   - id: watch_flags

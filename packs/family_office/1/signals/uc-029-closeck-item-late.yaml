@@ -1,0 +1,36 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 29 uc-029-closeck, signal row 3: arrives 'An item open past its due date' -> 'Owner named and reminded' -> Grace Ong (1 call).
+suggestion: true
+id: uc-029-closeck-item-late
+title: A close step is open past its due date
+pain_points:
+- PP-07
+- INT-OPS
+- PP-04
+trigger:
+  on: date_passed
+  kind: close_item
+inputs:
+- kind: doc
+  fields:
+  - close_month
+  - step
+  - step_name
+  - owner
+  - due_on
+  - days_past
+subject: close {doc.close_month} step {doc.step}
+condition: doc.days_past > 0
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the reminder to the owner
+hold:
+  blocks: sign_close
+  scope: '{doc.close_month}'
+  until: the step is done or its owner has been reminded
+message: Close {doc.close_month}, step {doc.step} '{doc.step_name}' (owner {doc.owner}) was due {doc.due_on} and is {doc.days_past} days past. The owner is named and needs a reminder.
+evidence:
+- doc.due_on
+- doc.days_past

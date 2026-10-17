@@ -1,0 +1,21 @@
+# SUGGESTION. uc-013 row 1: a new holding appears in the administrator file. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-013-secgaps-found
+title: Holdings with no class or identifier
+pain_points: [INT-RISK, INT-TRUST, INT-DATAGOV]
+trigger: {on: figure_changed, figure: identifier_gaps}
+inputs:
+- kind: figure
+  id: identifier_gaps
+  recipe: identifier_gaps
+  as: gap
+  by: {first_row: true}
+condition: gap.gap_count > 0
+subject: 'identifier gaps: {gap.gap_count} instruments, {gap.gap_value_total}'
+severity: needs
+route_to: head_of_data
+action:
+  verb: record
+  options: [Ask the owner of the security master]
+message: '{gap.gap_count} instrument(s) have no asset class or no approved identifier, {gap.currency} {gap.gap_value_total:,.0f} held in them ({gap.gap_pct_of_net_worth:.2f} percent of what is held). Ask the owner of the security master to complete it?'
+evidence: [gap]

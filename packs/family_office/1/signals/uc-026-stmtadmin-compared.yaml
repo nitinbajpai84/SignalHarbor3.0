@@ -1,0 +1,32 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 26 uc-026-stmtadmin, signal row 1: arrives 'Manager statement and administrator value' -> 'Fund value on the statement against the administrator' -> Helen Foo (see it, no work).
+suggestion: true
+id: uc-026-stmtadmin-compared
+title: The fund value on the statement against the administrator
+pain_points:
+- PP-04
+- PP-05
+- INT-TRUST
+trigger:
+  on: figure_changed
+  figure: statement_vs_admin
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - statement_value
+  - administrator_value
+  - difference
+  - administrator_status
+  - statement_kind
+subject: '{doc.fund} statement against administrator'
+condition: doc.statement_value > 0
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options:
+  - See it
+message: '{doc.fund}: statement {doc.statement_value:,.0f} ({doc.statement_kind}), administrator {doc.administrator_value:,.0f} ({doc.administrator_status}), difference {doc.difference:,.0f}.'
+evidence:
+- doc.statement_value
+- doc.administrator_value

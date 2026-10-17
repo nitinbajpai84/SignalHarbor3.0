@@ -1,0 +1,33 @@
+# Persona builds of the office domain (cards 15, 30, 50; card 9 keeps its build uc9-sop in role_builds.yaml). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
+template: family_office@1
+roles:
+  - id: principal
+    builds:
+      - id: uc-015-allowances
+        title: "Family member allowances and distributions due"
+        say: "At the start of each month I need to know what we owe each of the family: Lin, Maya, Ethan and Wen. Show me what is scheduled, what has actually been paid, and whether the Trust has the cash for it. I approve, Daniel pays."
+        files: ["office6m:2026-09/family_allowances/*.xlsx", "office6m:2026-10/family_allowances/*.xlsx", "office6m:2026-10/bank_statements/HB_TRUST_USD_2026-09.xlsx"]
+        skills: ["data.recognise-file", "check.against-source", "action.detect-exception", "action.route-owner", "consume.answer-question"]
+        dashboard: "Consume: allowance due by member, paid to date and the Trust cash"
+        check: {ask: "What do we owe each family member this month, and do we have the cash?", expect: ["28,000", "8,000", "6,000", "5,000", "4,000", "213,895.52"]}
+
+  - id: hr_admin
+    builds:
+      - id: uc-030-vendors
+        title: "Vendors and contract renewals"
+        say: "Our vendor contracts renew on their own if nobody gives notice. I want to see which ones renew in the next 90 days, what each costs a year and by when I must tell them, so Daniel can decide to renew, renegotiate or end."
+        files: ["office6m:reference/vendor_contract_*.pdf", "office6m:reference/vendor_master.csv", "office6m:2026-09/invoices/*orchard*.pdf"]
+        skills: ["data.read-pdf-fields", "data.recognise-file", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: contracts renewing in 90 days with annual cost and notice deadline"
+        check: {ask: "Which contracts to renew, renegotiate or end?", expect: ["35,400", "19,200", "79", "48"]}
+
+  - id: ops_lead
+    builds:
+      - id: uc-050-feeinv
+        title: "Administrator and custodian invoices against the fee schedule"
+        say: "Each quarter the administrator and the custodian bill us. Check every invoice against the fee schedule, rate times the fee base, tell me if one is above it and by how much, and draft the query so I can send it before Daniel approves payment."
+        files: ["office6m:*/invoices/*FEE-*.pdf", "office6m:reference/fee_schedule.pdf"]
+        skills: ["data.read-pdf-fields", "check.against-source", "check.explain-difference", "action.draft-message", "action.detect-exception"]
+        dashboard: "Consume: fee invoices against the schedule, variance and held for query"
+        check: {ask: "Whether to pay the invoice as billed?", expect: ["15,595.58", "4,940.14", "16,234.5", "6,180", "5,150", "1,030"]}

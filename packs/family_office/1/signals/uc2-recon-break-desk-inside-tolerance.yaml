@@ -1,0 +1,34 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 27 uc2-recon-break-desk, signal row 2: arrives 'Break explained as timing' -> 'Closes itself when the item clears' -> nobody (see it, no work).
+suggestion: true
+id: uc2-recon-break-desk-inside-tolerance
+title: Cash differs but inside the tolerance
+pain_points:
+- PP-01
+- PP-06
+- INT-TRUST
+trigger:
+  on: figure_changed
+  figure: cash_difference_by_source
+inputs:
+- kind: doc
+  fields:
+  - entity
+  - day
+  - source
+  - bank_cash
+  - other_cash
+  - cash_break
+  - tolerance
+  - over_tolerance
+subject: '{doc.entity} {doc.source} {doc.day}'
+condition: doc.over_tolerance == 0
+severity: info
+route_to: ops_lead
+action:
+  verb: see
+  options:
+  - See it
+message: '{doc.entity} on {doc.day}: the {doc.source} differs from the bank by {doc.cash_break:,.2f}, inside the {doc.tolerance:,.0f} tolerance. No work; it closes itself when the item clears.'
+evidence:
+- doc.cash_break
+- doc.tolerance

@@ -1,0 +1,56 @@
+# Runnable persona builds of the six "Hold and maintain" cards of the top 50, merged by role id with role_builds.yaml (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml, by the card's id.
+template: family_office@1
+roles:
+  - id: head_of_data
+    builds:
+      - id: uc-013-secgaps
+        title: "Securities with no asset class or identifier"
+        say: "Every time a new holding shows up in the administrator file I want to know which securities have no asset class or no identifier, how much money sits in them, and who has to complete the security master, before anyone trusts allocation and limits. The security master and the administrator export are the files."
+        files: ["office6m:reference/EG_security_master_20261008.xlsx", "office6m:*/custodian_positions/positions_20260930.csv", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["data.recognise-file", "data.match-identity", "build.write-formula-table", "action.detect-exception", "action.size-impact", "consume.answer-question"]
+        dashboard: "Consume: holdings with no class or identifier, with the value held"
+        check: {ask: "Which instruments need a class or identifier before limits and allocation can be trusted?", expect: ["Pacific Rim Convertible 2029 note", "1,122,000"]}
+  - id: principal
+    builds:
+      - id: uc-017-liab
+        title: "What we owe: loans and facilities, and net worth after debt"
+        say: "At each month end I want to see what we owe on our loans and what the family is worth after that debt, in one line I can take to the board. The September loan statement of Entity B, the loan agreement and the administrator's positions are the files; show me where each number comes from."
+        files: ["office6m:*/loan_statements/loan_statement_TL-B-01_2026-09.xlsx", "office6m:reference/loan_agreement_TL-B-01.pdf", "office6m:*/bank_statements/HB_B_USD_2026-09.xlsx", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["data.read-pdf-fields", "data.recognise-file", "build.write-formula-table", "check.adds-up", "consume.answer-question"]
+        dashboard: "Consume: net worth, debt and net worth after debt, by entity"
+        check: {ask: "What do we owe, and what is our net worth after debt?", expect: ["2,800,000", "105,430,000"]}
+  - id: risk_officer
+    builds:
+      - id: uc-021-stale
+        title: "Valuations that are stale"
+        say: "After the month-end values are loaded I want a list of the fund values that are more than 90 days old, so we do not lean on them in the limits and the reports. Use the manager statements and the administrator export, and tell me the age of the latest value of each fund."
+        files: ["office6m:*/manager_statements/*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "action.detect-exception", "check.explain-difference", "consume.answer-question"]
+        dashboard: "Consume: age of the latest value of each fund, stale ones flagged"
+        check: {ask: "Which fund values are older than 90 days and so not safe to use in limits and reports?", expect: ["Cedarpoint Ventures III", "Cedarpoint Opportunities II", "Saltmarsh Renewables I", "196", "105"]}
+  - id: fund_accountant
+    builds:
+      - id: uc-031-alloc
+        title: "Where is the money: allocation by asset class and entity"
+        say: "At month end I need to see what share of the family sits in each asset class and in each entity, with the total tying to the administrator's net worth. The administrator export and the security master are the files; anything with no class should show as unclassified."
+        files: ["office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:reference/EG_security_master_20261008.xlsx"]
+        skills: ["model.find-reusable", "data.recognise-file", "build.write-formula-table", "check.adds-up", "consume.answer-question"]
+        dashboard: "Consume: allocation by asset class and by entity, with the total"
+        check: {ask: "What share of the family is in each asset class, and in each entity?", expect: ["108,230,000", "36.37", "58.9", "1.04"]}
+      - id: uc-038-navroll
+        title: "Private fund value roll-forward"
+        say: "When a quarterly statement comes in I want to see, for each private fund, the value at the last quarter end, plus the calls, less the distributions, and the gain that is left, against the new value the manager reports, and what is not explained. The statements, the call and distribution notices and the July bank statement are the files."
+        files: ["office6m:*/manager_statements/*.pdf", "office6m:*/notices/*_call*.pdf", "office6m:*/notices/*_distribution.pdf", "office6m:*/bank_statements/HB_HOLD_USD_2026-07.xlsx"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "check.adds-up", "check.explain-difference", "consume.answer-question"]
+        dashboard: "Consume: prior value, calls, distributions, gain and new value, by fund and quarter"
+        check: {ask: "Is the new value of each private fund explained by calls, distributions and gain?", expect: ["1,176,980", "875,000"]}
+  - id: cio
+    builds:
+      - id: uc-043-liquidpnl
+        title: "Liquid book gain or loss so far this month"
+        say: "Each day after prices I want to know how much the liquid book has made or lost since the start of the month, after the money we put in or took out by trading. Use the custodian positions at the last month end and today, and the trading export."
+        files: ["office6m:*/custodian_positions/positions_20260930.csv", "office6m:*/custodian_positions/positions_20261013.csv", "office6m:*/trading_export/trading_export_2026100*.csv"]
+        skills: ["data.recognise-file", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: liquid book value, net trades and gain or loss this month"
+        check: {ask: "How much has the liquid book made or lost so far this month?", expect: ["11,100", "42,273,700", "1,084,800"]}

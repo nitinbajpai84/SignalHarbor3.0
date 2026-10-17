@@ -1,0 +1,38 @@
+# SUGGESTION. The lender would go under its buffer. Card uc-028-interco, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-028-interco-lender-short
+title: The lender would go under its buffer
+pain_points:
+- PP-01
+row: exception
+trigger:
+  'on': action_done
+  signal: uc01-cash-shortfall
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - call_no
+  - currency
+- kind: figure
+  id: funding_plan
+  recipe: funding_plan
+  as: plan
+  by:
+    fund: doc.fund
+    is_named: true
+condition: plan.transfer_needed and plan.best_other_spare > 0 and plan.best_other_spare < plan.shortfall
+subject: '{doc.fund} call {doc.call_no}'
+severity: problem
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Choose another way
+hold:
+  blocks: offer_transfer
+  scope: '{doc.fund}'
+  until: the Head of Finance decides
+message: '{plan.entity} is short {plan.shortfall:,.0f} and {plan.best_other_entity} has only {plan.best_other_spare:,.0f} to spare: a transfer of the whole amount would take it under its buffer. It is not offered.'
+evidence:
+- plan

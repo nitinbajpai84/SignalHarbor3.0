@@ -1,0 +1,18 @@
+# SUGGESTION. Card 41 row 3, the exception: the cash does not cover the calls that may come in 24 months after the commitment (the need is all the uncalled, the stated basis of the answer key). The approval is replaced by the shortfall and the options.
+suggestion: true
+id: uc-041-commitappr-cash-short
+title: Cash cover after the commitment is short
+pain_points: [INT-LIQ, INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: commit_check}
+inputs:
+  - {kind: doc, fields: [deal_name, currency, new_commitment, cash_usd, need_24m, cash_gap, cash_status]}
+let:
+  short: 0 - doc.cash_gap
+subject: "{doc.deal_name}"
+condition: doc.cash_status == 'short'
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Reduce the ticket, Fund it from another source, Defer]}
+hold: {blocks: approve_commitment, scope: "{doc.deal_name}", until: Finance decides how the shortfall is met}
+message: "After the {doc.deal_name} commitment, cash of {doc.cash_usd:,.0f} covers the {doc.need_24m:,.0f} that may be called within 24 months with {short:,.0f} short. The approval waits for your decision."
+evidence: [doc.cash_usd, doc.need_24m, doc.cash_gap]

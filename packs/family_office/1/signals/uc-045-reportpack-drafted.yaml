@@ -1,0 +1,15 @@
+# SUGGESTION. Card 45 row 1. Month-end close is done: the report sections are drafted from traced figures.
+suggestion: true
+id: uc-045-reportpack-drafted
+title: The report sections are drafted
+pain_points: [PP-07, INT-OPS, INT-TRUST]
+trigger: {on: figure_changed, figure: report_ready}
+inputs:
+  - {kind: doc, fields: [report_file, section, share_ready_pct]}
+subject: "{doc.report_file} sections"
+condition: "doc.section == 'Total'"
+severity: info
+route_to: cio
+action: {verb: see}
+message: "The sections of {doc.report_file} are drafted: {doc.share_ready_pct}% are ready to sign. Open the report."
+evidence: [doc.report_file, doc.section, doc.share_ready_pct]

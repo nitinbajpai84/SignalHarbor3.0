@@ -1,0 +1,32 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 11 uc10-pipeline, signal row 3: arrives 'A column name in the administrator file changed' -> 'Load is held; the new name is shown against the old' -> Anita Rao (1 decision).
+suggestion: true
+id: uc10-pipeline-column-held
+title: A column of the administrator file changed, the load is held
+pain_points:
+- PP-01
+- INT-TRUST
+- INT-DATAGOV
+trigger:
+  on: file_arrived
+  kind: administrator_export
+inputs:
+- kind: doc
+  fields:
+  - sheet
+  - columns_changed
+subject: administrator export {doc.sheet} columns
+condition: doc.columns_changed > 0
+severity: problem
+route_to: head_of_data
+action:
+  verb: approve
+  options:
+  - Accept the new column name
+  - Keep the load held
+hold:
+  blocks: load_batch
+  scope: '{doc.sheet}'
+  until: the new column name is accepted or the file is replaced
+message: '{doc.columns_changed} column(s) of {doc.sheet} differ from the approved mapping. The load is held; the new name is shown against the old.'
+evidence:
+- doc.columns_changed

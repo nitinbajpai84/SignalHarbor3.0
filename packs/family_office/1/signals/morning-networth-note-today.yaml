@@ -1,0 +1,15 @@
+# SUGGESTION. Card 14 row 1. Each morning: what we are worth in USD and SGD, from the latest issued report.
+suggestion: true
+id: morning-networth-note-today
+title: What we are worth this morning
+pain_points: [PP-01, INT-TRUST]
+trigger: {on: schedule}
+inputs:
+  - {kind: doc, fields: [report_date, issued_on, total_usd, total_sgd, usd_sgd_fixing, total_status]}
+subject: "morning note {doc.report_date}"
+condition: "doc.total_usd > 0"
+severity: info
+route_to: principal
+action: {verb: see}
+message: "We are worth USD {doc.total_usd:,.0f} (SGD {doc.total_sgd:,.0f} at {doc.usd_sgd_fixing:.4f}) in the report of {doc.report_date}, issued on {doc.issued_on}, status {doc.total_status}."
+evidence: [doc.report_date, doc.issued_on, doc.total_usd, doc.total_sgd, doc.usd_sgd_fixing]

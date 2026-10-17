@@ -1,0 +1,15 @@
+# SUGGESTION. Card 34 row 1: a fund teaser is read; the ticket is set against the uncalled commitments and the policy limits. The analyst proposes, the CIO decides.
+suggestion: true
+id: uc-034-prospect-screened
+title: A new fund screened against the mandate
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: mandate_fit}
+inputs:
+  - {kind: doc, fields: [deal_name, manager, asset_class, currency, ticket, uncalled_before, uncalled_after, ticket_pct_of_uncalled, budget_status, class_status]}
+subject: "{doc.deal_name}"
+condition: doc.ticket > 0
+severity: needs
+route_to: investment_analyst
+action: {verb: approve, options: [Go to diligence, Pass]}
+message: "{doc.deal_name} ({doc.asset_class}): minimum ticket {doc.currency} {doc.ticket:,.0f}, {doc.ticket_pct_of_uncalled:,.1f} percent of the {doc.uncalled_before:,.0f} still uncalled ({doc.uncalled_after:,.0f} after it). Policy limits: budget {doc.budget_status}, class {doc.class_status}. Go to diligence or pass?"
+evidence: [doc.ticket, doc.uncalled_before, doc.budget_status, doc.class_status]

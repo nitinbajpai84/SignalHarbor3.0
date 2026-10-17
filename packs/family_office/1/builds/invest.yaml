@@ -1,0 +1,65 @@
+# Persona builds of the Invest domain (cards 7, 34, 35, 39, 40, 41, 49; card 25 keeps its build uc7-manager-diligence in role_builds.yaml). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
+template: family_office@1
+roles:
+  - id: cio
+    builds:
+      - id: uc-007-pacing
+        title: "Commitment pacing: where we stand after the call"
+        say: "After Cedarpoint's call came in I want to see where we stand on pacing. For every private fund, what we committed, what has been called including the call that just arrived, and what is still unfunded, and the total across all funds. I also want to know whether the policy gives us a private markets budget, and how much room is left under it, before I take another commitment to the committee."
+        files: ["office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/2026-10-13_C_call7.pdf", "office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf"]
+        skills: ["intent.define-figure", "data.read-pdf-fields", "check.adds-up", "consume.answer-question", "consume.explain-number"]
+        dashboard: "Consume: committed, called and unfunded by fund, with the room under the private markets budget"
+        check: {ask: "What's our unfunded commitment across all funds?", expect: ["14,600,000", "3,750,000", "800,000", "2,750,000", "250,000", "6,000,000", "600,000", "300,000", "150,000"]}
+
+      - id: uc-041-commitappr
+        title: "Approve a new commitment within policy"
+        say: "The committee has agreed a 2 million commitment to Harborlight Ventures IV and I need to approve it. Can we commit it and still meet our calls? Show me the room under the private markets budget, the class and single name limits, and whether the cash we hold across all accounts covers what could be called once this ticket is added. If any test fails, show me the shortfall instead of an approve button."
+        files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf", "office6m:*/notices/2026-10-13_C_call7.pdf", "office6m:*/bank_statements/*_2026-10_mtd.xlsx", "office6m:*/fx_rates/fx_usdsgd_20261013.csv"]
+        skills: ["action.size-impact", "action.route-owner", "check.adds-up", "consume.answer-question", "consume.explain-number"]
+        dashboard: "Action: budget, limit and cash tests of the new commitment, green or red"
+        check: {ask: "Does the Harborlight commitment fit our budget, limits and cash?", expect: ["2,000,000", "16,600,000", "6,156,041.41", "37.08"]}
+
+  - id: investment_analyst
+    builds:
+      - id: uc-034-prospect
+        title: "Screen a new fund against the mandate"
+        say: "Harborlight Ventures IV has sent us a teaser. Before I spend time on it, tell me whether it fits our mandate: its class and minimum ticket against the policy limits, and the ticket against the commitments we still have uncalled. If we already hold the manager, link it to what we have. I propose, Raj decides whether it goes to diligence."
+        files: ["office6m:*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf", "office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/2026-10-13_C_call7.pdf"]
+        skills: ["intent.read-company-doc", "data.read-pdf-fields", "action.size-impact", "consume.answer-question"]
+        dashboard: "Action: mandate fit of the fund under review, ticket against uncalled and policy limits"
+        check: {ask: "Does the Harborlight fund fit our mandate, and what is its ticket against what we still have uncalled?", expect: ["2,000,000", "14,600,000", "16,600,000", "13.7"]}
+
+      - id: uc-035-ddq
+        title: "Compare manager questionnaires"
+        say: "Cedarpoint has sent its new due diligence questionnaire. Put the 2025 and the 2026 answers side by side and show me which answers changed, so I can raise them at the meeting: team, assets, fees, controls. Anything left blank or marked to follow I want as an open item."
+        files: ["office6m:*/ddq/cedarpoint_ddq_2025.pdf", "office6m:*/ddq/cedarpoint_ddq_2026.pdf"]
+        skills: ["intent.read-company-doc", "data.read-pdf-fields", "consume.answer-question"]
+        dashboard: "Consume: questionnaire answers side by side by manager, changed answers marked"
+        check: {ask: "Which answers differ between the Cedarpoint 2025 and 2026 questionnaires?", expect: ["12", "14", "820 million", "910 million", "Two named partners", "Three named partners", "2.0% of commitment", "2.25% of commitment", "R. Okafor", "T. Lindqvist"]}
+
+      - id: uc-039-irr
+        title: "Return of each private fund since we invested"
+        say: "Each quarter I want to see what we have made on each private fund since we first held it: IRR, TVPI and DPI from the capital calls, the distributions and the latest value in the manager statements. Put the funds in order of IRR so I can show Raj which earned their place and which to stop adding to. If a fund is missing a call or a distribution, say so and show the IRR as incomplete rather than a number."
+        files: ["office6m:*/manager_statements/*_final.pdf", "office6m:*/manager_statements/*_amended.pdf", "office6m:*/notices/*_call*.pdf", "office6m:*/notices/*_distribution.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/bank_statements/*_USD_*.xlsx"]
+        skills: ["build.write-formula-table", "data.read-pdf-fields", "data.match-identity", "check.adds-up", "consume.answer-question"]
+        dashboard: "Consume: league table of private funds by IRR with TVPI and DPI"
+        check: {ask: "Which funds earned their place and which should we stop adding to?", expect: ["23.24", "32.74", "-40.54", "-2.83", "-9.32", "9.83", "17.28", "-24.85", "0.9282", "0.9222", "1.3792", "1.0168", "2.4875", "1.2833", "1.125", "0.9042"]}
+
+      - id: uc-040-icmemo
+        title: "Investment committee memo for a new commitment"
+        say: "I am writing the committee memo for Cedarpoint Ventures III. Pull together the figures I can cite: the commitment, what has been called including the latest call, what is unfunded, the latest value and whether the manager amended it, the fee in the latest call, and how many questionnaire answers changed since last year. Show every figure with the file it comes from, and strike out any I cannot trace. I send it to Raj when it is ready."
+        files: ["office6m:*/ddq/cedarpoint_ddq_2025.pdf", "office6m:*/ddq/cedarpoint_ddq_2026.pdf", "office6m:*/manager_statements/cedarpoint_C_*.pdf", "office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/2026-10-13_C_call7.pdf"]
+        skills: ["intent.read-company-doc", "data.read-pdf-fields", "check.against-source", "consume.explain-number", "consume.answer-question"]
+        dashboard: "Action: memo figures with their sources, untraced figures struck out"
+        check: {ask: "What figures support recommending the Cedarpoint Ventures III commitment?", expect: ["10,000,000", "7,250,000", "2,750,000", "8,275,000", "350,000", "5"]}
+
+  - id: fund_accountant
+    builds:
+      - id: uc-049-feedrag
+        title: "Fees paid to each manager"
+        say: "For the year end I need to know how much we have paid each manager in fees and what share of its gain that is. Use the fee part of the capital call notices and the fund terms against the manager statements, and give Sofia the numbers by manager. Where a manager charged more than the fund terms say, show me by how much so I can call them."
+        files: ["office6m:*/notices/*_call*.pdf", "office6m:reference/fee_schedule.pdf", "office6m:reference/fund_terms.csv", "office6m:*/manager_statements/*_final.pdf", "office6m:*/manager_statements/*_amended.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/*_distribution.pdf", "office6m:*/bank_statements/*_USD_*.xlsx"]
+        skills: ["data.read-pdf-fields", "build.write-formula-table", "check.adds-up", "consume.answer-question"]
+        dashboard: "Consume: fees paid, gross gain and fee drag by manager, fees above terms listed"
+        check: {ask: "Does each manager earn its fees?", expect: ["46,875", "368,750", "105,000", "44,750", "1,078,912", "-2,445,000", "1,204,204", "-655,000", "1,125,787", "-2,076,250", "1,309,204", "-610,250", "4.16", "8.02"]}

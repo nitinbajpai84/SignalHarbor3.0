@@ -1,0 +1,39 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 26 uc-026-stmtadmin, signal row 3: arrives 'Difference not explained by timing or amendment' -> 'Query draft to the administrator' -> Helen Foo (1 click (send)).
+suggestion: true
+id: uc-026-stmtadmin-ask-administrator
+title: The administrator value differs and no amendment explains it
+pain_points:
+- PP-04
+- PP-05
+- INT-TRUST
+trigger:
+  on: figure_changed
+  figure: statement_vs_admin
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - statement_value
+  - administrator_value
+  - difference
+  - administrator_status
+  - statement_kind
+subject: '{doc.fund} difference unexplained'
+condition: doc.difference != 0 and doc.statement_kind != 'amended'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: approve
+  options:
+  - Send the query to the administrator
+  - Accept the administrator value
+hold:
+  blocks: accept_administrator_value
+  scope: '{doc.fund}'
+  until: the query is sent or the administrator value is accepted
+message: '{doc.fund}: the {doc.statement_kind} statement says {doc.statement_value:,.0f}, the administrator shows {doc.administrator_value:,.0f} ({doc.administrator_status}), a difference of {doc.difference:,.0f}.
+  A query to the administrator is drafted.'
+evidence:
+- doc.statement_value
+- doc.administrator_value
+- doc.administrator_status

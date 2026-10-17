@@ -1,0 +1,37 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 26 uc-026-stmtadmin, signal row 2: arrives 'Difference explained by an amendment' -> 'Closes with the link' -> nobody (see it, no work).
+suggestion: true
+id: uc-026-stmtadmin-explained
+title: The difference is explained by an amendment
+pain_points:
+- PP-04
+- PP-05
+- INT-TRUST
+trigger:
+  on: figure_changed
+  figure: statement_vs_admin
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - statement_value
+  - administrator_value
+  - difference
+  - administrator_status
+  - statement_kind
+- kind: figure
+  id: amendments_open
+  as: a
+  by:
+    fund: doc.fund
+subject: '{doc.fund} difference explained'
+condition: doc.difference != 0 and a.change == doc.difference
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options:
+  - See it
+message: '{doc.fund}: the difference of {doc.difference:,.0f} is the amendment received {a.received_on} ({a.replaces:,.0f} to {a.amended_value:,.0f}). Closed with the link.'
+evidence:
+- a
+- doc.difference

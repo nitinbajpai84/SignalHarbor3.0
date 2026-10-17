@@ -1,0 +1,29 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 11 uc10-pipeline, signal row 1: arrives 'Administrator export and trading files arrive after month end' -> 'Files recognised, mapped to the usual tables, rows in equal rows out' -> Anita Rao (1 click (go live) the first time, none after).
+suggestion: true
+id: uc10-pipeline-files-ready
+title: Month-end files recognised, rows in equal rows out
+pain_points:
+- PP-01
+- INT-TRUST
+- INT-DATAGOV
+trigger:
+  on: file_arrived
+  kind: administrator_export
+inputs:
+- kind: doc
+  fields:
+  - file_rows
+  - loaded_rows
+  - mapping_status
+subject: administrator export {doc.file_rows} rows
+condition: doc.file_rows == doc.loaded_rows and doc.mapping_status == 'approved'
+severity: needs
+route_to: head_of_data
+action:
+  verb: approve
+  options:
+  - Go live
+message: 'The administrator export is recognised and mapped to the usual tables: {doc.file_rows} rows in, {doc.loaded_rows} rows out. Go live?'
+evidence:
+- doc.file_rows
+- doc.loaded_rows

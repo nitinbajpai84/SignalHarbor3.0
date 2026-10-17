@@ -1,0 +1,15 @@
+# SUGGESTION. Card 20 row 2. The amended statement is filed: the bridge from issued to known now updates.
+suggestion: true
+id: uc1-why-nav-moved-bridge
+title: The bridge from issued to known now updated
+pain_points: [PP-04, INT-TRUST]
+trigger: {on: figure_changed, figure: change_since_report}
+inputs:
+  - {kind: doc, fields: [fund, valuation_date, original_value, amended_value, change_since_report]}
+subject: "{doc.fund} {doc.valuation_date} bridge"
+condition: "doc.change_since_report != 0"
+severity: info
+route_to: principal
+action: {verb: see}
+message: "The bridge for {doc.fund} now runs from {doc.original_value:,.0f} (issued) to {doc.amended_value:,.0f} (known now)."
+evidence: [doc.fund, doc.valuation_date, doc.original_value, doc.amended_value, doc.change_since_report]

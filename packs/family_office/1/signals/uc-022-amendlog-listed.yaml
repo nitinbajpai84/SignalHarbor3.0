@@ -1,0 +1,33 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 22 uc-022-amendlog, signal row 2: arrives 'Log updated' -> 'Amendment listed with old and new value' -> nobody (see it, no work).
+suggestion: true
+id: uc-022-amendlog-listed
+title: The amendment is listed with the old and the new value
+pain_points:
+- PP-04
+- INT-DOC
+- INT-TRUST
+trigger:
+  on: action_done
+  signal: uc-022-amendlog-replaces
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - period_end
+- kind: figure
+  id: amendments_open
+  as: a
+  by:
+    fund: doc.fund
+    valuation_date: doc.period_end
+subject: '{doc.fund} {doc.period_end} listed'
+condition: a.change != 0
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options:
+  - See it
+message: 'Amendment listed: {a.fund} {a.valuation_date}, {a.replaces:,.0f} replaced by {a.amended_value:,.0f}.'
+evidence:
+- a

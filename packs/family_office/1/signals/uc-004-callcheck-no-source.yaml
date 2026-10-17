@@ -1,0 +1,39 @@
+# SUGGESTION. No entity can pay without going under the buffer. Card uc-004-callcheck, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-004-callcheck-no-source
+title: No entity can pay without going under the buffer
+pain_points:
+- PP-01
+- PP-02
+row: exception
+trigger:
+  'on': action_done
+  signal: uc01-cash-shortfall
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - call_no
+- kind: figure
+  id: funding_plan
+  recipe: funding_plan
+  as: plan
+  by:
+    fund: doc.fund
+    is_named: true
+condition: plan.transfer_needed and plan.best_other_spare == 0
+subject: '{doc.fund} call {doc.call_no}'
+severity: problem
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Change the amount or the date
+  - Ask the principal
+hold:
+  blocks: prepare_payment
+  scope: '{doc.fund}'
+  until: the Head of Finance decides
+message: 'No entity can pay {doc.fund} call {doc.call_no} without going under the {plan.buffer:,.0f} buffer: {plan.entity} is short {plan.shortfall:,.0f} and no other entity has cash to spare. No source is proposed.'
+evidence:
+- plan

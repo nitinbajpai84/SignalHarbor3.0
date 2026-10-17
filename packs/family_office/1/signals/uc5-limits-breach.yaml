@@ -1,0 +1,15 @@
+# SUGGESTION. Card 12 row 1. One holding is over its single-name limit on a value that is current: a real breach for the committee.
+suggestion: true
+id: uc5-limits-breach
+title: A holding is over its single-name limit
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: single_name_concentration}
+inputs:
+  - {kind: doc, fields: [portfolio, holding, exposure, portfolio_total, concentration_pct, limit_pct, status]}
+subject: "{doc.portfolio} {doc.holding} single-name limit"
+condition: "doc.status == 'real breach'"
+severity: needs
+route_to: risk_officer
+action: {verb: approve, options: [Tell the committee, Mark as a stale value]}
+message: "{doc.holding} is {doc.concentration_pct:.2f} percent of {doc.portfolio} ({doc.exposure:,.0f} of {doc.portfolio_total:,.0f}) against the {doc.limit_pct:.0f} percent single-name limit, and the value is current. Tell the committee, or mark it as a stale value."
+evidence: [doc.portfolio, doc.holding, doc.exposure, doc.portfolio_total, doc.concentration_pct]

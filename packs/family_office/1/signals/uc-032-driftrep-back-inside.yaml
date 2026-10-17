@@ -1,0 +1,15 @@
+# SUGGESTION. Card 32 row 2. A bucket that was outside is back inside its band: the item closes on its own with the date.
+suggestion: true
+id: uc-032-driftrep-back-inside
+title: A drift item closes on its own
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: drift_vs_target}
+inputs:
+  - {kind: doc, fields: [portfolio, bucket, position_date, allocation_pct, min_pct, max_pct, outside_band, was_outside]}
+subject: "{doc.portfolio} {doc.bucket} back inside"
+condition: "doc.outside_band == 0 and doc.was_outside == 1"
+severity: info
+route_to: risk_officer
+action: {verb: see}
+message: "{doc.bucket} in {doc.portfolio} is {doc.allocation_pct:.2f} percent on {doc.position_date}, back inside its {doc.min_pct:.0f} to {doc.max_pct:.0f} percent band. The item is closed."
+evidence: [doc.portfolio, doc.bucket, doc.position_date, doc.allocation_pct, doc.min_pct]

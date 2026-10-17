@@ -1,0 +1,15 @@
+# SUGGESTION. Card 41 row 2: after the CIO approves, the Principal gets one page with the tests and signs.
+suggestion: true
+id: uc-041-commitappr-cosign
+title: The Principal co-signs a commitment
+pain_points: [INT-LIQ, INT-RISK, INT-GOV]
+trigger: {on: action_done, signal: uc-041-commitappr-tests}
+inputs:
+  - {kind: doc, fields: [deal_name, currency, new_commitment, cash_status, budget_status]}
+subject: "{doc.deal_name}"
+condition: doc.new_commitment > 0
+severity: needs
+route_to: principal
+action: {verb: approve, options: [Sign]}
+message: "One page for {doc.deal_name}: commitment {doc.currency} {doc.new_commitment:,.0f}; cash {doc.cash_status}, budget {doc.budget_status}. Sign?"
+evidence: [doc.new_commitment, doc.cash_status, doc.budget_status]

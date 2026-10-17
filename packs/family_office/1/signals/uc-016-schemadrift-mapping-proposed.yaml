@@ -1,0 +1,30 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 16 uc-016-schemadrift, signal row 1: arrives 'Administrator file with a renamed column' -> 'Old and new columns lined up; mapping proposed' -> Anita Rao (1 click (accept)).
+suggestion: true
+id: uc-016-schemadrift-mapping-proposed
+title: A column was renamed, a mapping is proposed
+pain_points:
+- INT-DOC
+- INT-DATAGOV
+- INT-TRUST
+trigger:
+  on: file_arrived
+  kind: administrator_export
+inputs:
+- kind: doc
+  fields:
+  - sheet
+  - old_name
+  - new_name
+  - proposed_target
+subject: '{doc.sheet} {doc.old_name} to {doc.new_name}'
+condition: doc.old_name != doc.new_name
+severity: needs
+route_to: head_of_data
+action:
+  verb: approve
+  options:
+  - Accept the new mapping
+message: 'Old and new columns lined up in {doc.sheet}: ''{doc.old_name}'' is now ''{doc.new_name}''. Proposed: it still fills {doc.proposed_target}.'
+evidence:
+- doc.old_name
+- doc.new_name

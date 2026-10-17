@@ -1,0 +1,34 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 11 uc10-pipeline, signal row 2: arrives 'A month of data loaded' -> 'Net worth by portfolio for 30 Sep: Evergreen Liquid 41,200,000, each figure with its trail' -> everyone (see it, no work).
+suggestion: true
+id: uc10-pipeline-net-worth-shown
+title: Net worth by portfolio is ready, each figure with its trail
+pain_points:
+- PP-01
+- INT-TRUST
+- INT-DATAGOV
+trigger:
+  on: figure_changed
+  figure: net_worth
+inputs:
+- kind: doc
+  fields:
+  - portfolio
+  - position_date
+  - net_worth
+- kind: figure
+  id: net_worth
+  as: nw
+  by:
+    portfolio: doc.portfolio
+    position_date: doc.position_date
+subject: net worth {doc.portfolio} {doc.position_date}
+condition: doc.net_worth > 0
+severity: info
+route_to: principal
+action:
+  verb: see
+  options:
+  - See it
+message: 'Net worth of {doc.portfolio} at {doc.position_date}: {doc.net_worth:,.0f}. Where is this from: open the figure.'
+evidence:
+- nw

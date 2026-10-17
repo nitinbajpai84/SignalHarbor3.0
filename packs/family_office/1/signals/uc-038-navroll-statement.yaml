@@ -1,0 +1,23 @@
+# SUGGESTION. uc-038 row 1: a quarterly statement arrives. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-038-navroll-statement
+title: Prior value + calls - distributions + gain = new value
+pain_points: [INT-PERF, INT-TRUST, PP-03]
+trigger: {on: file_arrived, kind: manager_statement}
+inputs:
+- kind: doc
+  fields: [fund]
+- kind: figure
+  id: nav_rollforward
+  recipe: nav_rollforward
+  as: rf
+  by: {fund: doc.fund, latest: true}
+condition: rf.closing_value > 0
+subject: '{doc.fund} roll-forward to {rf.period_end}'
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options: [Seen]
+message: '{doc.fund}, {rf.period_start} to {rf.period_end}: prior {rf.prior_value:,.0f} + calls {rf.calls:,.0f} - distributions {rf.distributions:,.0f} + gain = new {rf.closing_value:,.0f}.'
+evidence: [doc.fund, rf]

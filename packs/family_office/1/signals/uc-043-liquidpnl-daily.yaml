@@ -1,0 +1,21 @@
+# SUGGESTION. uc-043 row 1: daily prices and positions arrive. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-043-liquidpnl-daily
+title: Liquid book gain or loss this month
+pain_points: [PP-03, INT-PERF]
+trigger: {on: figure_changed, figure: liquid_pnl_mtd}
+inputs:
+- kind: figure
+  id: liquid_pnl_mtd
+  recipe: liquid_pnl_mtd
+  as: pnl
+  by: {first_row: true}
+condition: pnl.value_month_end > 0
+subject: 'liquid book to {pnl.position_date}: {pnl.gain_loss}'
+severity: info
+route_to: cio
+action:
+  verb: see
+  options: [Seen]
+message: 'The liquid book is {pnl.gain_loss:,.0f} ({pnl.gain_pct:.2f} percent) since {pnl.month_end_date}: {pnl.value_today:,.0f} now, {pnl.value_month_end:,.0f} then, net trades {pnl.net_trades:,.0f}.'
+evidence: [pnl]

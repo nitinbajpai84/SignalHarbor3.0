@@ -1,0 +1,39 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 16 uc-016-schemadrift, signal row 3: arrives 'The new column changes a number type or a unit' -> 'Load held, rows not loaded' -> Anita Rao (1 decision).
+suggestion: true
+id: uc-016-schemadrift-type-or-unit-changed
+title: A new column changes a number type or a unit, the load is held
+pain_points:
+- INT-DOC
+- INT-DATAGOV
+- INT-TRUST
+trigger:
+  on: file_arrived
+  kind: administrator_export
+inputs:
+- kind: doc
+  fields:
+  - sheet
+  - column
+  - type_old
+  - type_new
+  - unit_old
+  - unit_new
+subject: '{doc.sheet} {doc.column} type or unit'
+condition: doc.type_old != doc.type_new or doc.unit_old != doc.unit_new
+severity: problem
+route_to: head_of_data
+action:
+  verb: approve
+  options:
+  - Accept the change
+  - Keep the load held
+hold:
+  blocks: load_batch
+  scope: '{doc.sheet}'
+  until: the change of type or unit is accepted or the file is replaced
+message: Column '{doc.column}' of {doc.sheet} changed from {doc.type_old} ({doc.unit_old}) to {doc.type_new} ({doc.unit_new}). The load is held and no rows are loaded.
+evidence:
+- doc.type_old
+- doc.type_new
+- doc.unit_old
+- doc.unit_new

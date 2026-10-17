@@ -1,0 +1,16 @@
+# SUGGESTION. Card 25 row 3, the exception (M03): a statement restates a value we hold. Both values are shown at the top of the page; the committee view waits until the analyst has seen it.
+suggestion: true
+id: uc7-manager-diligence-restated
+title: A statement restates a value we hold
+pain_points: [PP-05, INT-TRUST]
+trigger: {on: figure_changed, figure: manager_timeline}
+inputs:
+  - {kind: doc, fields: [manager, fund, period, item_date, value, restated_from, status_kind, source]}
+subject: "{doc.fund} {doc.period}"
+condition: doc.status_kind == 'amended' and doc.restated_from != doc.value
+severity: problem
+route_to: investment_analyst
+action: {verb: approve, options: [Put it at the top of the page, Ask the manager]}
+hold: {blocks: send_committee_view, scope: "{doc.fund}", until: the analyst has seen the restatement}
+message: "{doc.fund} for {doc.period} was restated on {doc.item_date}: {doc.restated_from:,.0f} became {doc.value:,.0f} ({doc.source}). Both values are at the top of the page."
+evidence: [doc.restated_from, doc.value, doc.source]

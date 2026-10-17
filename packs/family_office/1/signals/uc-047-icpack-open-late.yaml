@@ -1,0 +1,16 @@
+# SUGGESTION. Card 47 row 3. EXCEPTION. A section is still open 2 days before the committee: the owner is named and reminded.
+suggestion: true
+id: uc-047-icpack-open-late
+title: A section is open close to the committee
+pain_points: [PP-07, INT-OPS]
+trigger: {on: schedule}
+inputs:
+  - {kind: doc, fields: [section, owner_role, done, days_to_committee]}
+subject: "pack section {doc.section} open"
+condition: "doc.done == 0 and doc.days_to_committee <= 2"
+severity: problem
+route_to: cio
+action: {verb: call_back, options: [Remind the owner]}
+hold: {blocks: approve_pack, scope: "{doc.section}", until: the section is done}
+message: "The {doc.section} section is still open {doc.days_to_committee:,.0f} days before the committee. Its owner is the {doc.owner_role}. Remind them."
+evidence: [doc.section, doc.owner_role, doc.done, doc.days_to_committee]

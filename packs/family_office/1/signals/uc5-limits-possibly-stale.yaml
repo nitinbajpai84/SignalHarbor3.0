@@ -1,0 +1,16 @@
+# SUGGESTION. Card 12 row 3. EXCEPTION. A breach rests on a value older than the stale-value days: marked possibly stale and not sent to the committee as real.
+suggestion: true
+id: uc5-limits-possibly-stale
+title: A breach rests on an old value
+pain_points: [INT-RISK, INT-TRUST]
+trigger: {on: figure_changed, figure: single_name_concentration}
+inputs:
+  - {kind: doc, fields: [portfolio, holding, concentration_pct, limit_pct, status, value_age_days]}
+subject: "{doc.portfolio} {doc.holding} stale breach"
+condition: "doc.status == 'possibly stale'"
+severity: problem
+route_to: risk_officer
+action: {verb: approve, options: [Ask for a fresh value, Send to the committee as real]}
+hold: {blocks: send_to_committee, scope: "{doc.holding}", until: the value is refreshed or confirmed}
+message: "{doc.holding} is {doc.concentration_pct:.2f} percent against the {doc.limit_pct:.0f} percent limit, but its value is {doc.value_age_days:,.0f} days old. It is marked possibly stale and is not sent to the committee as real until you decide."
+evidence: [doc.portfolio, doc.holding, doc.concentration_pct, doc.limit_pct, doc.status]

@@ -1,0 +1,204 @@
+# W1 cash builder: the persona builds of the cash and treasury cards of the top 50 that had none (merged by role id with role_builds.yaml).
+# uc6-liquidity and uc6-uncalled keep their builds in role_builds.yaml and are not repeated here.
+# files: office6m:<glob under tests/v1/fixtures/office6m>. check.expect: numbers copied from the card's answer key (tests/v1/fixtures/office6m/answer_keys.yaml).
+template: family_office@1
+roles:
+- id: cfo
+  builds:
+  - id: uc-004-callcheck
+    title: Check a call against cash and approve the payment
+    say: A Cedarpoint call is due on the 23rd. I want to know in one answer whether Holdings can pay it from its own cash after the 250,000 buffer, what is short if not, and how much SGD to convert. Show where each number comes from. Anything over 500,000 needs my name on it.
+    files:
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    - office6m:reference/office_rules.csv
+    skills:
+    - check.against-source
+    - action.size-impact
+    - action.suggest-next-step
+    - action.route-owner
+    - consume.answer-question
+    dashboard: 'Consume: cash after calls due, by entity, with the shortfall and the amount to convert'
+    check:
+      ask: Can Holdings pay the Cedarpoint call on the 23rd?
+      expect:
+      - 1,230,000
+      - 1,600,000
+      - 1,194,029.85
+      - 1,250,000
+      - 250,000
+      - 270,000
+      - 361,800
+  - id: uc-018-fundplan
+    title: Which entity pays this call and from where
+    say: A call needs funding. Tell me which entity pays it, what each entity has left in USD after the 250,000 buffer and the call, and whether a transfer is needed first and from whom.
+    files:
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    skills:
+    - check.against-source
+    - action.suggest-next-step
+    - action.size-impact
+    - action.route-owner
+    - consume.answer-question
+    dashboard: 'Consume: which entity pays, cover after calls by entity, transfer needed'
+    check:
+      ask: Which entity pays and whether a transfer is needed first
+      expect:
+      - 270,000
+      - 36,104.48
+      - 618,343.96
+  - id: uc-028-interco
+    title: Move cash between entities
+    say: We moved money between entities in August. Show me which entity lent to which, the amount, the date, the reference and whether the approval is on record, and what is still outstanding between them.
+    files:
+    - office6m:*/bank_statements/HB_TRUST_USD_2026-08.xlsx
+    - office6m:*/bank_statements/HB_HOLD_USD_2026-08.xlsx
+    - office6m:*/approvals/approvals_2026-08.csv
+    skills:
+    - data.recognise-file
+    - data.match-identity
+    - action.suggest-next-step
+    - action.route-owner
+    - consume.answer-question
+    dashboard: 'Consume: intercompany balance by pair of entities, with the transfers behind it'
+    check:
+      ask: Which entity lends to which, and how it is recorded
+      expect:
+      - 600,000
+      - '2026-08-05'
+      - IC-2026-08-01
+- id: ops_lead
+  builds:
+  - id: uc-005-benefcheck
+    title: Hold a payment when the bank details changed
+    say: The Cedarpoint call 7 notice says to wire to an account ending 4471 but we have always paid 2209. Check the notice against the standing instructions and the earlier calls, and hold the payment until I have called them back on the number we have on file.
+    files:
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    - office6m:*/emails/2026-10-13_internal_sam.eml
+    - office6m:reference/standing_instructions.csv
+    skills:
+    - data.read-pdf-fields
+    - check.against-source
+    - action.detect-exception
+    - action.route-owner
+    - action.close-with-reason
+    dashboard: 'Consume: payee bank details on the notice against the account on file, payments on hold'
+    check:
+      ask: Cedarpoint now says to wire to an account ending 4471. Is that really them?
+      expect:
+      - '2209'
+      - '4471'
+  - id: uc-006-fxneed
+    title: FX needed to pay a call in another currency
+    say: We hold SGD and need USD for the Cedarpoint call. Work out how much SGD we convert at the planning rate, and check that each conversion we already did was traded at the right rate against the fixing, and that each has its bank confirmation.
+    files:
+    - office6m:*/fx_confirmations/FXS-*_confirmation.pdf
+    - office6m:*/fx_rates/fx_usdsgd_2026101*.csv
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    skills:
+    - data.recognise-file
+    - check.against-source
+    - action.size-impact
+    - action.draft-message
+    - consume.answer-question
+    dashboard: 'Consume: amount to convert and the rate check on each conversion'
+    check:
+      ask: We hold SGD and need USD for the call. How much do we convert, and did the bank trade at the right rate?
+      expect:
+      - 361,800
+      - '1.34'
+  - id: uc-008-payrun
+    title: Weekly payment run with two approvals
+    say: 'Every Thursday I prepare the payment run. List what is due in the next ten days: which payments are ready, which wait for Daniel''s approval, and which I must hold because the invoice is above the fee schedule. Give me the total by currency.'
+    files:
+    - office6m:*/invoices/*FEE-*.pdf
+    - office6m:*/invoices/2026-09-14_summit_STA-2609.pdf
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    skills:
+    - data.read-pdf-fields
+    - action.detect-exception
+    - action.route-owner
+    - action.close-with-reason
+    - consume.answer-question
+    dashboard: 'Consume: payment batch by approval state, with the total by currency'
+    check:
+      ask: Which payments to release
+      expect:
+      - 5,400
+      - 16,234.5
+      - 6,180
+      - 1,030
+      - 1,250,000
+- id: fund_accountant
+  builds:
+  - id: uc-002-callrecord
+    title: Record a capital call against the commitment
+    say: Daniel's team just handed me the Cedarpoint call 7 notice. Before I record it, tell me whether it fits what we committed to Cedarpoint Ventures III, what is left after it, and whether the fee part is what the fund terms say. If anything is off, stop it and send it to Daniel with the difference.
+    files:
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    - office6m:reference/fund_terms.csv
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - check.adds-up
+    - action.detect-exception
+    - action.route-owner
+    - consume.answer-question
+    dashboard: 'Consume: commitment, called and unfunded for the fund, with the notice added'
+    check:
+      ask: Does call 7 fit what we committed to Cedarpoint Ventures III, and what is left after it?
+      expect:
+      - 10,000,000
+      - 6,000,000
+      - 7,250,000
+      - 2,750,000
+- id: risk_officer
+  builds:
+  - id: uc-010-bankexp
+    title: Cash held at each bank against the bank limit
+    say: At month end I want to know how much of our cash sits at each bank, in USD, and what share of the total that is, so I can tell Daniel if too much is at one bank. The policy may not set a limit; say so if it does not.
+    files:
+    - office6m:*/bank_statements/*_2026-10_mtd.xlsx
+    skills:
+    - data.recognise-file
+    - data.match-identity
+    - action.detect-exception
+    - consume.answer-question
+    dashboard: 'Consume: cash by bank in USD with share of total and the limit if one is signed'
+    check:
+      ask: Whether too much cash sits at one bank
+      expect:
+      - 5,172,998.31
+      - 983,043.1
+      - '84.03'
+      - '15.97'
+      - 6,156,041.41
+- id: ops_clerk
+  builds:
+  - id: uc-037-distrack
+    title: Distributions expected against received
+    say: For each distribution notice a fund sent us, check that the money arrived in the bank on the pay date and in full. Show me what was promised, what came in, and the gap, and draft a chase for any gap.
+    files:
+    - office6m:*/notices/*_distribution.pdf
+    - office6m:*/bank_statements/HB_HOLD_USD_2026-07.xlsx
+    skills:
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.draft-message
+    - consume.answer-question
+    dashboard: 'Consume: distributions promised against received, by fund and pay date'
+    check:
+      ask: Whether money promised by a fund has arrived
+      expect:
+      - 120,000
+      - 180,000
+      - 275,000
+      - 262,500
+      - 55,000
+      - 30,000
+      - 12,500

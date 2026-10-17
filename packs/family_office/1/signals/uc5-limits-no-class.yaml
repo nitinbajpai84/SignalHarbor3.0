@@ -1,0 +1,15 @@
+# SUGGESTION. Card 12 row 2. A holding with no asset class is listed instead of silently dropped from the class limits.
+suggestion: true
+id: uc5-limits-no-class
+title: A holding has no asset class
+pain_points: [INT-RISK, INT-TRUST]
+trigger: {on: figure_changed, figure: single_name_concentration}
+inputs:
+  - {kind: doc, fields: [portfolio, holding, exposure, no_asset_class]}
+subject: "{doc.portfolio} {doc.holding} no asset class"
+condition: "doc.no_asset_class == 1"
+severity: needs
+route_to: risk_officer
+action: {verb: call_back, options: [Ask the data owner for the class]}
+message: "{doc.holding} ({doc.exposure:,.0f} in {doc.portfolio}) has no asset class, so it counts in no class limit. It is on the no-class list. Ask the data owner to set the class."
+evidence: [doc.portfolio, doc.holding, doc.exposure, doc.no_asset_class]

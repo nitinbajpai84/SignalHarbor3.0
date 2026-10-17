@@ -1,0 +1,15 @@
+# SUGGESTION. Card 46 row 1. Quarter end: allocation, selection and interaction that add to the active return.
+suggestion: true
+id: uc-046-attrib-effects
+title: The return split into its effects
+pain_points: [PP-03, INT-PERF, INT-BENCH]
+trigger: {on: figure_changed, figure: attribution}
+inputs:
+  - {kind: doc, fields: [portfolio, month_end, sum_of_effects_pct, active_pct, adds_up]}
+subject: "{doc.portfolio} {doc.month_end} attribution"
+condition: "doc.adds_up == 1"
+severity: info
+route_to: investment_analyst
+action: {verb: see}
+message: "For {doc.portfolio} in the month to {doc.month_end} the effects add to {doc.sum_of_effects_pct:.4f} points, the active return of {doc.active_pct:.4f}."
+evidence: [doc.portfolio, doc.month_end, doc.sum_of_effects_pct, doc.active_pct, doc.adds_up]

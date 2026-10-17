@@ -1,0 +1,37 @@
+# SUGGESTION. Payment held: bank details changed, no call-back. Card uc-005-benefcheck, W1 cash builder (docs/v3/w1/build-cash.md). Same fact as uc01-bank-changed, checked again when the payment is prepared; it fires only while the recipe says no call-back is recorded.
+suggestion: true
+id: uc-005-benefcheck-hold
+title: 'Payment held: bank details changed, no call-back'
+pain_points:
+- PP-02
+row: exception
+trigger:
+  'on': action_done
+  signal: uc01-cash-shortfall
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - call_no
+- kind: figure
+  id: bank_details_changed
+  recipe: bank_details_changed
+  as: chg
+  by:
+    fund: doc.fund
+    call_no: doc.call_no
+condition: chg.on_hold
+subject: '{doc.fund} call {doc.call_no}'
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call-back
+hold:
+  blocks: prepare_payment
+  scope: '{doc.fund}'
+  until: the call-back is recorded
+message: 'The payment for {doc.fund} call {doc.call_no} stays on hold: the notice account ends {chg.new_ending}, the account on file ends {chg.old_ending}, and no call-back is recorded. Call the fund on the number on file; do not pay the new account.'
+evidence:
+- chg

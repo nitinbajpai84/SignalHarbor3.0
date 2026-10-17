@@ -1,0 +1,16 @@
+# SUGGESTION. Card 45 row 3. EXCEPTION. A section rests on a figure with no source: the section is withheld and the gap named.
+suggestion: true
+id: uc-045-reportpack-no-source
+title: A section has no source figure
+pain_points: [PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: report_ready}
+inputs:
+  - {kind: doc, fields: [report_file, section, report_value, has_source]}
+subject: "{doc.report_file} {doc.section} no source"
+condition: "doc.has_source == 0"
+severity: problem
+route_to: fund_accountant
+action: {verb: approve, options: [Find the source, Leave the section out]}
+hold: {blocks: issue_report, scope: "{doc.report_file} {doc.section}", until: the section has a source or is left out}
+message: "The {doc.section} section of {doc.report_file} ({doc.report_value:,.0f}) has no source figure to check it against. It is withheld."
+evidence: [doc.report_file, doc.section, doc.report_value, doc.has_source]

@@ -1,0 +1,22 @@
+# SUGGESTION. uc-043 row 3, exception: a price that moved more than 10 percent in a day. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-043-liquidpnl-price-jump
+title: A price moved more than 10 percent in a day
+pain_points: [PP-03, INT-PERF]
+trigger: {on: figure_changed, figure: liquid_price_move}
+inputs:
+- kind: figure
+  id: liquid_price_move
+  recipe: liquid_price_move
+  as: mv
+  by: {top_move: true}
+condition: abs(mv.move_pct) > 10
+subject: '{mv.instrument} price {mv.position_date}'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options: [Confirm the price, Correct the price]
+hold: {blocks: enter_price, scope: '{mv.instrument}', until: the price is confirmed or corrected}
+message: '{mv.instrument} moved {mv.move_pct:.2f} percent between {mv.previous_date} and {mv.position_date} ({mv.previous_price} to {mv.price}). It is held for review before it enters the liquid book figure.'
+evidence: [mv]

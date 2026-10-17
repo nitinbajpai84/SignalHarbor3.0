@@ -1,0 +1,15 @@
+# SUGGESTION. Card 48 row 2. The committee approves a change: a new limit version with date and signer, used by the limits check from that date.
+suggestion: true
+id: uc-048-policyupd-approved
+title: The committee approved a new limit
+pain_points: [INT-GOV, INT-RISK]
+trigger: {on: file_arrived, kind: committee_minutes}
+inputs:
+  - {kind: doc, fields: [rule_code, version_number, limit_pct, decided_on, effective_from, outcome]}
+subject: "{doc.rule_code} version {doc.version_number}"
+condition: "doc.outcome == 'approved'"
+severity: needs
+route_to: principal
+action: {verb: approve, options: [Sign the new limit]}
+message: "The committee approved {doc.rule_code} version {doc.version_number} at {doc.limit_pct:.0f} percent on {doc.decided_on}. Sign it so the limits check uses it from {doc.effective_from}."
+evidence: [doc.rule_code, doc.version_number, doc.limit_pct, doc.decided_on, doc.effective_from]

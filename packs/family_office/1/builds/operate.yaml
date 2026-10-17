@@ -1,0 +1,60 @@
+# Persona builds of the 'Operate and control' cards of the top 50 that have no build in role_builds.yaml (uc10-pipeline, uc3-statements-inbox and uc2-recon-break-desk keep theirs there).
+# Same shape as role_builds.yaml, merged by role id (docs/test/uc-live/uc6-scripts/v3_persona.py). files: "office6m:<glob under tests/v1/fixtures/office6m>".
+# check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml (numbers as printed with thousands separators; names as the key spells them). The key's due date
+# and 'months_with_old_name' are left out: see docs/v3/w1/build-operate.md.
+template: family_office@1
+roles:
+  - id: ops_clerk
+    title: Operations Clerk
+    person: Sam Lee
+    builds:
+      - id: uc-001-noticelog
+        title: "Log an incoming capital call notice"
+        say: "A Cedarpoint call notice just came in by email. Tell me which fund it is for, how much, by when, what the money is for and which account it is to be paid into, so I can log it and hand it to Helen."
+        files: ["office6m:*/notices/2026-10-13_C_call7.pdf", "office6m:*/emails/2026-10-13_call_C_7.eml"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "data.detect-duplicate", "action.route-owner"]
+        dashboard: "Action: the notice read with page and quoted line, ready to log; notices logged and not yet recorded"
+        check: {ask: "A Cedarpoint call notice just came in by email. Which fund, how much and by when?", expect: ["1,250,000", "900,000", "350,000", "4471"]}
+
+  - id: head_of_data
+    title: Head of Data
+    person: Anita Rao
+    builds:
+      - id: uc-016-schemadrift
+        title: "A source file arrives with a new or renamed column"
+        say: "The administrator renamed a column in their June file. Show me which column changed, what it was called before and what it is called now, how many earlier loads used the old name, and whether the new mapping is safe to accept. Hold the load until I decide."
+        files: ["office6m:*/administrator_nav/administrator_export_2026-06.xlsx", "office6m:*/administrator_nav/administrator_export_2026-05.xlsx"]
+        skills: ["data.profile-file", "map.map-file", "map.explain-doubt", "check.adds-up"]
+        dashboard: "Action: old and new columns lined up, mapping proposed, load held until accepted"
+        check: {ask: "The administrator renamed a column. What breaks, and is the new mapping safe?", expect: ["Market Value", "Valuation Amount (USD)"]}
+
+  - id: fund_accountant
+    title: Fund Accountant
+    person: Helen Foo
+    builds:
+      - id: uc-022-amendlog
+        title: "Amended statements and what they replace"
+        say: "When a manager sends an amended statement I need a log of what it replaces: the old value, the new value, the change, and whether an investment report we already issued used the old number, so I can flag it to Raj."
+        files: ["office6m:*/manager_statements/*_amended.pdf", "office6m:*/emails/*_amended.eml", "office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf"]
+        skills: ["data.read-pdf-fields", "data.match-identity", "action.detect-exception", "action.route-owner"]
+        dashboard: "Consume: amended statements, the value each replaces, and the ones after the last issued report"
+        check: {ask: "Which earlier value is replaced, and do the reports already issued need a note?", expect: ["10,000,000", "10,180,000", "180,000", "8,420,000", "8,275,000", "145,000", "7,050,000", "7,012,500", "37,500"]}
+      - id: uc-026-stmtadmin
+        title: "Manager statement against the administrator value"
+        say: "Every month I compare the latest manager statement for each fund with what the administrator shows. Show me the funds that differ, by how much, the administrator's own status for the value, and whether an amendment explains it, so I know whether to accept the administrator value or ask them to correct it."
+        files: ["office6m:*/manager_statements/*_2026-09-30_*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["data.read-pdf-fields", "check.against-source", "check.explain-difference"]
+        dashboard: "Consume: statement value, administrator value and difference by fund"
+        check: {ask: "Should we accept the administrator value or ask the administrator to correct it?", expect: ["10,180,000", "10,000,000", "180,000", "9,950,000", "9,600,000", "350,000", "7,320,000", "7,210,000", "110,000", "5,180,000", "5,090,000", "90,000", "3,080,000", "2,410,000", "670,000", "2,420,000", "2,090,000", "330,000"]}
+
+  - id: ops_lead
+    title: Operations Lead
+    person: Grace Ong
+    builds:
+      - id: uc-029-closeck
+        title: "Month-end close checklist"
+        say: "At month end I need the close checklist for September: the six steps, which are done, which are still open and which are late, and who owns each, so I know whether the report can start and I can sign the close."
+        files: ["office6m:*/close_checklist/close_checklist_2026-09.csv", "office6m:reference/month_end_process_narrative.md"]
+        skills: ["intent.write-sop", "action.detect-exception", "action.route-owner"]
+        dashboard: "Consume: close steps done, open and late, by owner"
+        check: {ask: "Is the September close complete and can the report start?", expect: ["6", "4", "Collect manager statements", "Read the report", "Review and approve the report"]}

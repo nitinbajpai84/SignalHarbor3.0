@@ -1,0 +1,35 @@
+# SUGGESTION. Release the currency conversion. Card uc-006-fxneed, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-006-fxneed-release
+title: Release the currency conversion
+pain_points:
+- PP-01
+row: normal
+trigger:
+  'on': action_done
+  signal: uc01-cash-shortfall
+inputs:
+- kind: doc
+  fields:
+  - investor
+  - currency
+  - fund
+  - call_no
+- kind: figure
+  id: fx_required
+  recipe: fx_required
+  as: fx
+  by:
+    entity: doc.investor
+    currency: doc.currency
+condition: fx.convert_amount > 0 and fx.other_cash_covers
+subject: '{doc.fund} call {doc.call_no}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Release the trade
+message: Convert about {fx.convert_currency} {fx.convert_amount:,.0f} to {fx.currency} {fx.shortfall:,.0f} at the planning rate {fx.rate:.4f} of {fx.rate_date}, to cover {doc.fund} call {doc.call_no}.
+evidence:
+- fx

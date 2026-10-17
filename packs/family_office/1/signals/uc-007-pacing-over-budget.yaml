@@ -1,0 +1,18 @@
+# SUGGESTION. Card 7 row 3, the exception: the commitments plus the proposed new one exceed the private-markets budget of the signed policy. With no signed limit the budget room is empty and the signal is skipped, never guessed.
+suggestion: true
+id: uc-007-pacing-over-budget
+title: A commitment would take us over the private-markets budget
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: mandate_fit}
+inputs:
+  - {kind: doc, fields: [deal_name, currency, ticket, budget_room_after, budget_status]}
+let:
+  over: 0 - doc.budget_room_after
+subject: "{doc.deal_name}"
+condition: doc.budget_status == 'over'
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Take it to the committee, Reduce the ticket, Drop it]}
+hold: {blocks: propose_commitment, scope: "{doc.deal_name}", until: the CIO decides}
+message: "A commitment of {doc.currency} {doc.ticket:,.0f} to {doc.deal_name} would take private-markets commitments {over:,.0f} over the budget in the signed policy. Take it to the committee, reduce it or drop it?"
+evidence: [doc.ticket, doc.budget_room_after]

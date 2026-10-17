@@ -1,0 +1,32 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 19 uc3-statements-inbox, signal row 3: arrives 'A statement arrives for a fund with no expectation set' -> 'Held as 'unknown fund' with the name seen' -> Helen Foo (1 decision).
+suggestion: true
+id: uc3-statements-inbox-unknown-fund
+title: A statement arrived for a fund with no expectation set
+pain_points:
+- PP-05
+- INT-TRUST
+- INT-DOC
+trigger:
+  on: file_arrived
+  kind: manager_statement
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - fund_match
+subject: unknown fund {doc.fund}
+condition: doc.fund_match == 'none'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: record
+  options:
+  - It is a fund we hold
+  - It is not one of ours
+hold:
+  blocks: load_statement
+  scope: '{doc.fund}'
+  until: someone says whether the fund is one of ours
+message: A statement arrived for '{doc.fund}', a fund with no expected statements. It is held as an unknown fund with the name seen.
+evidence:
+- doc.fund

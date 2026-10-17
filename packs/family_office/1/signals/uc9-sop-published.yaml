@@ -1,0 +1,15 @@
+# SUGGESTION. Card 9 (month-end SOP), row 2: the steps were accepted, so the procedure document for a new joiner is ready to publish.
+suggestion: true
+id: uc9-sop-published
+title: The procedure document is ready to publish
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: action_done, signal: uc9-sop-steps-drawn}
+inputs:
+  - {kind: doc, fields: [process_name, steps]}
+subject: "{doc.process_name} SOP"
+condition: doc.steps > 0
+severity: needs
+route_to: hr_admin
+action: {verb: approve, options: [Publish the SOP]}
+message: "The procedure document for {doc.process_name} is drafted from the {doc.steps:,.0f} accepted steps: owner, system, input, output, control and exception for each. Publish it for new joiners?"
+evidence: [doc.process_name, doc.steps]

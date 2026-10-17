@@ -1,0 +1,33 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 19 uc3-statements-inbox, signal row 1: arrives 'Month end passes' -> 'Statements expected from each manager against those received; two late, one missing 63 days' -> Helen Foo (1 click (send the chase draft)).
+suggestion: true
+id: uc3-statements-inbox-late-arrival
+title: A statement came in late
+pain_points:
+- PP-05
+- INT-TRUST
+- INT-DOC
+trigger:
+  on: file_arrived
+  kind: manager_statement
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - period_end
+- kind: figure
+  id: statement_timeliness
+  as: s
+  by:
+    statement_of: doc.fund
+    period_end: doc.period_end
+subject: '{doc.fund} statement {doc.period_end} late'
+condition: s.status == 'late'
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options:
+  - See it
+message: '{s.statement_of}: the statement for {s.period_end} came {s.business_days_late} business days after its due date ({s.due_date}, received {s.received_on}).'
+evidence:
+- s

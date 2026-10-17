@@ -1,0 +1,16 @@
+# SUGGESTION. Card 30 row 1: a vendor contract renews inside 90 days; HR proposes renew, renegotiate or end.
+# One figure_changed event per row of the renewals_vendors figure, the row passed as the document (recipes/office.yaml, renewals_vendors).
+suggestion: true
+id: uc-030-vendors-renewing
+title: A vendor contract renews within 90 days
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: figure_changed, figure: renewals_vendors}
+inputs:
+  - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date, days_to_renewal, days_to_notice_deadline]}
+subject: "{doc.vendor_name} {doc.next_renewal_date}"
+condition: doc.days_to_renewal >= 0 and doc.days_to_renewal <= 90
+severity: needs
+route_to: hr_admin
+action: {verb: record, options: [Propose renew, Propose renegotiate, Propose end]}
+message: "{doc.vendor_name} renews on {doc.next_renewal_date}, in {doc.days_to_renewal:,.0f} days, at {doc.currency} {doc.annual_cost:,.0f} a year ({doc.days_to_notice_deadline:,.0f} days to give notice). Renew, renegotiate or end?"
+evidence: [doc.vendor_name, doc.annual_cost, doc.next_renewal_date]

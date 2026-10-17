@@ -1,0 +1,23 @@
+# SUGGESTION. uc-031 row 3, exception: the parts do not add up to net worth. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-031-alloc-not-adding-up
+title: The parts do not add up to net worth
+pain_points: [INT-RISK, INT-SCOPE]
+trigger: {on: figure_changed, figure: allocation}
+inputs:
+- kind: figure
+  id: allocation
+  recipe: allocation
+  as: alloc
+  by: {first_row: true}
+let: {gap: alloc.positions_total - alloc.total_value}
+condition: abs(alloc.total_value - alloc.positions_total) > 0.01
+subject: 'allocation difference {alloc.position_date}: {gap}'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: approve
+  options: [Hold the figure, Publish with the difference noted]
+hold: {blocks: publish_allocation, scope: allocation, until: the difference is explained}
+message: The allocation adds up to {alloc.total_value:,.2f} but the position snapshots are {alloc.positions_total:,.2f}; the difference is {gap:,.2f}. The figure is not published.
+evidence: [alloc]

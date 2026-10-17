@@ -1,0 +1,21 @@
+# SUGGESTION. uc-017 row 1: loan statements and bank files arrive. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-017-liab-owed
+title: What we owe and net worth after debt
+pain_points: [INT-SCOPE, PP-01, INT-LIQ]
+trigger: {on: figure_changed, figure: net_worth_after_debt}
+inputs:
+- kind: figure
+  id: net_worth_after_debt
+  recipe: net_worth_after_debt
+  as: nwd
+  by: {is_latest: true}
+condition: nwd.family_net_worth > 0
+subject: 'owed at {nwd.position_date}: {nwd.family_debt}'
+severity: info
+route_to: principal
+action:
+  verb: see
+  options: [Seen]
+message: We owe {nwd.currency} {nwd.family_debt:,.0f}. Net worth after debt is {nwd.currency} {nwd.family_net_worth_after_debt:,.0f} (net worth {nwd.family_net_worth:,.0f}) at {nwd.position_date}.
+evidence: [nwd]

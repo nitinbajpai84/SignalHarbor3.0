@@ -1,0 +1,32 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 29 uc-029-closeck, signal row 1: arrives 'Last business day' -> 'Checklist of close items done, open and late' -> Grace Ong (1 click (sign close)).
+suggestion: true
+id: uc-029-closeck-sign-close
+title: The close checklist is ready to sign
+pain_points:
+- PP-07
+- INT-OPS
+- PP-04
+trigger:
+  on: date_passed
+  kind: close_month
+inputs:
+- kind: doc
+  fields:
+  - close_month
+  - steps
+  - done
+  - open
+  - late
+subject: close {doc.close_month}
+condition: doc.steps > 0
+severity: needs
+route_to: ops_lead
+action:
+  verb: approve
+  options:
+  - Sign the close
+message: 'Close {doc.close_month}: {doc.done} of {doc.steps} steps done, {doc.open} open, {doc.late} late. Sign the close when it is complete.'
+evidence:
+- doc.done
+- doc.open
+- doc.late

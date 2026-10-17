@@ -1,0 +1,16 @@
+# SUGGESTION. Card 50 row 1: an administrator or custodian invoice matches the fee schedule rate times base.
+# One figure_changed event per row of the invoice_variance figure, the row passed as the document (recipes/office.yaml, invoice_variance).
+suggestion: true
+id: uc-050-feeinv-arrives
+title: A fee invoice matches the fee schedule
+pain_points: [INT-OPS, PP-04, INT-GOV]
+trigger: {on: figure_changed, figure: invoice_variance}
+inputs:
+  - {kind: doc, fields: [invoice_no, vendor, currency, billed, expected, variance]}
+subject: "{doc.invoice_no}"
+condition: doc.variance == 0
+severity: needs
+route_to: ops_lead
+action: {verb: approve, options: [Approve for payment]}
+message: "{doc.vendor} invoice {doc.invoice_no}: {doc.currency} {doc.billed:,.2f} billed, {doc.expected:,.2f} on the fee schedule. It matches. Approve?"
+evidence: [doc.invoice_no, doc.billed, doc.expected]

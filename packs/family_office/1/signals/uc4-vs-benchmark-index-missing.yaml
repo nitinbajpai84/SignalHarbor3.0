@@ -1,0 +1,16 @@
+# SUGGESTION. Card 42 row 3. EXCEPTION. An index level is missing for a month end: the return is not computed and the missing series is named.
+suggestion: true
+id: uc4-vs-benchmark-index-missing
+title: An index level is missing
+pain_points: [PP-03, INT-BENCH, INT-PERF]
+trigger: {on: figure_changed, figure: active_return}
+inputs:
+  - {kind: doc, fields: [portfolio, period_label, to_date, months_without_benchmark, benchmark_gap]}
+subject: "{doc.portfolio} {doc.period_label} index missing"
+condition: "doc.months_without_benchmark > 0"
+severity: problem
+route_to: investment_analyst
+action: {verb: call_back, options: [Ask the data provider for the level]}
+hold: {blocks: report_performance, scope: "{doc.portfolio} {doc.period_label}", until: the missing level is loaded}
+message: "The benchmark return for {doc.portfolio} in {doc.period_label} is not computed: {doc.benchmark_gap} has no level for the month ending {doc.to_date}. Ask the data provider."
+evidence: [doc.portfolio, doc.period_label, doc.to_date, doc.months_without_benchmark, doc.benchmark_gap]

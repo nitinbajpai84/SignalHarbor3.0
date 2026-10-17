@@ -1,0 +1,15 @@
+# SUGGESTION. Card 34 row 2: a teaser from a manager we already hold is linked to the existing fund page.
+suggestion: true
+id: uc-034-prospect-known-manager
+title: The teaser is from a manager we already hold
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: mandate_fit}
+inputs:
+  - {kind: doc, fields: [deal_name, manager, manager_held]}
+subject: "{doc.deal_name}"
+condition: doc.manager_held == 1
+severity: info
+route_to: investment_analyst
+action: {verb: see, options: [Open the manager page]}
+message: "{doc.deal_name} comes from {doc.manager}, a manager we already hold. It is linked to the existing fund page."
+evidence: [doc.manager]

@@ -1,0 +1,15 @@
+# SUGGESTION. Card 24 row 1. A sampled number traces to its report file and page.
+suggestion: true
+id: uc-024-audit-traced
+title: A sampled number is traced
+pain_points: [INT-TRUST, INT-GOV, PP-07]
+trigger: {on: figure_changed, figure: trace_coverage}
+inputs:
+  - {kind: doc, fields: [request_file, item, report_month, line, figure, source_file, source_page, traced]}
+subject: "{doc.request_file} item {doc.item}"
+condition: "doc.traced == 1"
+severity: info
+route_to: head_of_data
+action: {verb: see}
+message: "Item {doc.item}, {doc.line} {doc.report_month} ({doc.figure:,.0f}), is in {doc.source_file} on page {doc.source_page:,.0f}."
+evidence: [doc.request_file, doc.item, doc.report_month, doc.line, doc.figure]

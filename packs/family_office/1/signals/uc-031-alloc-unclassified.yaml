@@ -1,0 +1,21 @@
+# SUGGESTION. uc-031 row 2: an entity or class with no mapping. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-031-alloc-unclassified
+title: An unclassified row with the amount
+pain_points: [INT-RISK, INT-SCOPE]
+trigger: {on: figure_changed, figure: allocation}
+inputs:
+- kind: figure
+  id: allocation
+  recipe: allocation
+  as: alloc
+  by: {first_row: true}
+condition: alloc.unclassified_value > 0
+subject: 'allocation unclassified {alloc.position_date}: {alloc.unclassified_value}'
+severity: needs
+route_to: fund_accountant
+action:
+  verb: record
+  options: [Ask the data owner]
+message: '''unclassified'' holds {alloc.currency} {alloc.unclassified_value:,.0f} of {alloc.total_value:,.0f} at {alloc.position_date}: those instruments have no asset class. Ask the data owner?'
+evidence: [alloc]

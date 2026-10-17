@@ -1,0 +1,15 @@
+# SUGGESTION. Card 47 row 2. A section owner marks the section done: a status tick.
+suggestion: true
+id: uc-047-icpack-section-done
+title: A section is done
+pain_points: [PP-07, INT-OPS]
+trigger: {on: figure_changed, figure: pack_items}
+inputs:
+  - {kind: doc, fields: [section, status, done]}
+subject: "pack section {doc.section} done"
+condition: "doc.done == 1"
+severity: info
+route_to: cio
+action: {verb: see}
+message: "The {doc.section} section is done ({doc.status})."
+evidence: [doc.section, doc.status, doc.done]

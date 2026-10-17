@@ -1,0 +1,39 @@
+# SUGGESTION. Payment to an account changed since the last payment. Card uc-008-payrun, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-008-payrun-changed-account
+title: Payment to an account changed since the last payment
+pain_points:
+- PP-02
+row: exception
+trigger:
+  'on': file_arrived
+  kind: invoice
+inputs:
+- kind: doc
+  fields:
+  - payee
+  - amount
+  - currency
+  - due_date
+- kind: figure
+  id: payment_batch
+  recipe: payment_batch
+  as: pay
+  by:
+    payee: doc.payee
+    amount: doc.amount
+condition: pay.account_changed_unverified
+subject: '{doc.payee} {doc.due_date}'
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call-back
+hold:
+  blocks: release_payment
+  scope: '{doc.payee}'
+  until: the call-back is recorded
+message: The payment to {doc.payee} ({doc.currency} {doc.amount:,.0f}, due {doc.due_date}) goes to an account ending {pay.account_ending} that replaced the earlier one and has no call-back. It is held.
+evidence:
+- pay

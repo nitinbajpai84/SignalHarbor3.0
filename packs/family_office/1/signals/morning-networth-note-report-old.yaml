@@ -1,0 +1,15 @@
+# SUGGESTION. Card 14 row 2. The issued report is a month old: the note says so with the date.
+suggestion: true
+id: morning-networth-note-report-old
+title: The issued report is a month old
+pain_points: [PP-01, INT-TRUST]
+trigger: {on: schedule}
+inputs:
+  - {kind: doc, fields: [report_date, issued_on, days_since_issue]}
+subject: "morning note report {doc.report_date}"
+condition: "doc.days_since_issue >= 30"
+severity: info
+route_to: principal
+action: {verb: see}
+message: "The report behind this note was issued on {doc.issued_on}, {doc.days_since_issue:,.0f} days ago. The worth shown is as at {doc.report_date}."
+evidence: [doc.report_date, doc.issued_on, doc.days_since_issue]

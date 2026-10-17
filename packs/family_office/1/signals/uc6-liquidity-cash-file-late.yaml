@@ -1,0 +1,28 @@
+# SUGGESTION. The administrator's cash file has not arrived. Card uc6-liquidity, W1 cash builder (docs/v3/w1/build-cash.md). Needs a dated item for the expected cash file (v3_signals.dated_items) that is emitted only while the file is missing.
+suggestion: true
+id: uc6-liquidity-cash-file-late
+title: The administrator's cash file has not arrived
+pain_points:
+- PP-01
+row: exception
+trigger:
+  'on': date_passed
+  kind: administrator_cash_file
+inputs:
+- kind: doc
+  fields:
+  - due_date
+  - days_past
+condition: doc.days_past >= 0
+subject: administrator cash {doc.due_date}
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call to the administrator
+hold:
+  blocks: state_cash_as_current
+  scope: administrator cash
+  until: the file arrives
+message: The administrator's cash file due {doc.due_date} has not arrived. Cash by entity is shown as stale with its date, not as today's cash. Call the administrator.

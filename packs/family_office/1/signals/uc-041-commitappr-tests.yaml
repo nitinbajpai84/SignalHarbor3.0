@@ -1,0 +1,15 @@
+# SUGGESTION. Card 41 row 1: the committee agrees a commitment; the budget, the limits and the cash cover of the uncalled after it are shown, and the CIO decides. It does not fire when the cash is short (that is the exception).
+suggestion: true
+id: uc-041-commitappr-tests
+title: The budget, limit and cash tests of a new commitment
+pain_points: [INT-LIQ, INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: commit_check}
+inputs:
+  - {kind: doc, fields: [deal_name, currency, new_commitment, uncalled_after, cash_usd, cash_cover_pct, cash_status, budget_status]}
+subject: "{doc.deal_name}"
+condition: doc.cash_status == 'covered' and doc.budget_status != 'over'
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Approve, Change]}
+message: "{doc.deal_name}: commitment {doc.currency} {doc.new_commitment:,.0f}. Budget {doc.budget_status}. Cash {doc.cash_usd:,.0f} covers {doc.cash_cover_pct:,.2f} percent of the {doc.uncalled_after:,.0f} that may be called. Approve?"
+evidence: [doc.new_commitment, doc.cash_usd, doc.cash_cover_pct, doc.budget_status]

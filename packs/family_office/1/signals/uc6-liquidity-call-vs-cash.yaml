@@ -1,0 +1,36 @@
+# SUGGESTION. Cash against the call just recorded. Card uc6-liquidity, W1 cash builder (docs/v3/w1/build-cash.md). Row 2 of the card. Row 1 (daily cash by entity and calls due) has no event to key on: it is the dashboard.
+suggestion: true
+id: uc6-liquidity-call-vs-cash
+title: Cash against the call just recorded
+pain_points:
+- PP-01
+row: normal
+trigger:
+  'on': action_done
+  signal: uc01-call-fits
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - investor
+  - amount
+  - currency
+  - call_no
+  - due_date
+- kind: figure
+  id: cash_after_calls
+  recipe: cash_after_calls
+  as: cash
+  by:
+    entity: doc.investor
+    currency: doc.currency
+condition: doc.amount > 0
+subject: '{doc.fund} call {doc.call_no}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+message: '{doc.investor} has {cash.cash:,.0f} {doc.currency} against {doc.amount:,.0f} due {doc.due_date}.'
+evidence:
+- cash
+- doc.amount

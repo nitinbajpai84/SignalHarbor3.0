@@ -1,0 +1,15 @@
+# SUGGESTION. Card 30 row 2: HR proposed, the Head of Finance approves, and the next renewal date is set.
+suggestion: true
+id: uc-030-vendors-approved
+title: A renewal proposal waits for approval
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: action_done, signal: uc-030-vendors-renewing}
+inputs:
+  - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date]}
+subject: "{doc.vendor_name} {doc.next_renewal_date} approval"
+condition: doc.annual_cost > 0
+severity: needs
+route_to: cfo
+action: {verb: approve, options: [Approve, Send back]}
+message: "HR proposed a decision on {doc.vendor_name} ({doc.currency} {doc.annual_cost:,.0f} a year, renews {doc.next_renewal_date}). Approve? The contract's next renewal date is set once you do."
+evidence: [doc.vendor_name, doc.annual_cost, doc.next_renewal_date]

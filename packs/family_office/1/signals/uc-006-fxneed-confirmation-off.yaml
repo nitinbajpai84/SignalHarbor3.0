@@ -1,0 +1,47 @@
+# SUGGESTION. The bank's confirmation differs from the plan. Card uc-006-fxneed, W1 cash builder (docs/v3/w1/build-cash.md). Needs a signed rule fx_plan_tolerance (parameters pct): the 0.1 percent is in the card and the answer key, not in the office rules.
+suggestion: true
+id: uc-006-fxneed-confirmation-off
+title: The bank's confirmation differs from the plan
+pain_points:
+- PP-01
+row: exception
+trigger:
+  'on': file_arrived
+  kind: fx_confirmation
+inputs:
+- kind: doc
+  fields:
+  - trade_reference
+  - currency_bought
+  - currency_sold
+  - amount_sold
+  - rate
+- kind: figure
+  id: fx_required
+  recipe: fx_required
+  as: plan
+  by:
+    currency: doc.currency_bought
+    convert_currency: doc.currency_sold
+- kind: rule
+  id: fx_plan_tolerance
+  as: tol
+let:
+  diff: doc.amount_sold - plan.convert_amount
+condition: abs(diff) > plan.convert_amount * tol.pct / 100
+subject: '{doc.trade_reference}'
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call to the bank
+hold:
+  blocks: close_fx_match
+  scope: '{doc.trade_reference}'
+  until: the bank corrects or the difference is accepted
+message: 'The confirmation {doc.trade_reference} is {diff:,.0f} {plan.convert_currency} away from the plan: {doc.amount_sold:,.0f} against {plan.convert_amount:,.0f}. Call the bank.'
+evidence:
+- plan
+- tol
+- doc.rate

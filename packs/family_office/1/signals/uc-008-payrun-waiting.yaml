@@ -1,0 +1,35 @@
+# SUGGESTION. A payment waits for the Head of Finance. Card uc-008-payrun, W1 cash builder (docs/v3/w1/build-cash.md). Row 2 of the card. Row 1 (the Thursday list) is the dashboard.
+suggestion: true
+id: uc-008-payrun-waiting
+title: A payment waits for the Head of Finance
+pain_points:
+- PP-02
+row: normal
+trigger:
+  'on': file_arrived
+  kind: invoice
+inputs:
+- kind: doc
+  fields:
+  - payee
+  - amount
+  - currency
+  - due_date
+- kind: figure
+  id: payment_batch
+  recipe: payment_batch
+  as: pay
+  by:
+    payee: doc.payee
+    amount: doc.amount
+condition: pay.state == 'waiting for approval'
+subject: '{doc.payee} {doc.due_date}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Approve
+message: '{doc.payee} {doc.currency} {doc.amount:,.0f}, due {doc.due_date}, waits for your approval before it can be released.'
+evidence:
+- pay

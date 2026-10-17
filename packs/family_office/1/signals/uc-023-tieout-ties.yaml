@@ -1,0 +1,15 @@
+# SUGGESTION. Card 23 row 2. Every line ties: the report is marked ready to sign.
+suggestion: true
+id: uc-023-tieout-ties
+title: Every report line ties to the administrator
+pain_points: [PP-04, PP-07]
+trigger: {on: figure_changed, figure: report_tie_out}
+inputs:
+  - {kind: doc, fields: [report_month, lines_in_month, lines_off]}
+subject: "{doc.report_month} report ready to sign"
+condition: "doc.lines_off == 0"
+severity: info
+route_to: cio
+action: {verb: approve, options: [Sign the report]}
+message: "All {doc.lines_in_month:,.0f} lines of the {doc.report_month} report agree with the administrator. The report is ready to sign."
+evidence: [doc.report_month, doc.lines_in_month, doc.lines_off]

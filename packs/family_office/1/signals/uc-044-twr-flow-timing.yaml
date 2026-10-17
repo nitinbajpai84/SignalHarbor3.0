@@ -1,0 +1,15 @@
+# SUGGESTION. Card 44 row 2. A contribution or withdrawal in the month: the return is worked out with the flow, so it is not distorted.
+suggestion: true
+id: uc-044-twr-flow-timing
+title: A flow in the month is allowed for
+pain_points: [PP-03, INT-PERF]
+trigger: {on: figure_changed, figure: twr_periods}
+inputs:
+  - {kind: doc, fields: [portfolio, period_kind, period_label, start_value, end_value, net_flow]}
+subject: "{doc.portfolio} {doc.period_label} flow"
+condition: "doc.period_kind == 'month' and doc.net_flow != 0"
+severity: info
+route_to: investment_analyst
+action: {verb: see}
+message: "{doc.portfolio} had a net flow of {doc.net_flow:,.0f} in {doc.period_label} (start {doc.start_value:,.0f}, end {doc.end_value:,.0f}). The return counts it at half weight, so the flow does not distort it."
+evidence: [doc.portfolio, doc.period_kind, doc.period_label, doc.start_value, doc.end_value]

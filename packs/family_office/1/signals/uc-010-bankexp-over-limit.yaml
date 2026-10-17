@@ -1,0 +1,33 @@
+# SUGGESTION. Cash at one bank above its limit. Card uc-010-bankexp, W1 cash builder (docs/v3/w1/build-cash.md). Skipped while no bank limit is signed (the policy sets none): the recipe leaves limit_pct empty and the condition cannot be read.
+suggestion: true
+id: uc-010-bankexp-over-limit
+title: Cash at one bank above its limit
+pain_points:
+- PP-01
+row: exception
+trigger:
+  'on': run
+  chain: M
+inputs:
+- kind: figure
+  id: cash_by_bank
+  recipe: cash_by_bank
+  as: bank
+  by:
+    worst: 1
+condition: bank.share_pct > bank.limit_pct
+subject: '{bank.bank}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Accept the excess
+  - Move cash to another bank
+hold:
+  blocks: move_cash_to_bank
+  scope: '{bank.bank}'
+  until: the Head of Finance decides
+message: '{bank.bank} holds {bank.share_pct:.2f} percent of the office''s cash ({bank.usd_equivalent:,.0f} USD), {bank.excess_pct:.2f} points over its signed limit of {bank.limit_pct} percent.'
+evidence:
+- bank

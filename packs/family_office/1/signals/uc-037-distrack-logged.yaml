@@ -1,0 +1,29 @@
+# SUGGESTION. A distribution notice has arrived. Card uc-037-distrack, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-037-distrack-logged
+title: A distribution notice has arrived
+pain_points:
+- PP-02
+row: normal
+trigger:
+  'on': file_arrived
+  kind: distribution_notice
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - amount
+  - currency
+  - pay_date
+condition: doc.amount > 0
+subject: '{doc.fund} distribution {doc.pay_date}'
+severity: needs
+route_to: ops_clerk
+action:
+  verb: log
+  options:
+  - Log it
+message: 'Distribution notice from {doc.fund}: {doc.currency} {doc.amount:,.0f} to be paid {doc.pay_date}. Log it and expect the bank credit?'
+evidence:
+- doc.amount
+- doc.pay_date

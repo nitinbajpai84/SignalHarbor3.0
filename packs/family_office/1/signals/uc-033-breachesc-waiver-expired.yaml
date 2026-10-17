@@ -1,0 +1,16 @@
+# SUGGESTION. Card 33 row 3. EXCEPTION. A waiver is past its expiry and the breach is still open: the breach reopens in the Action list.
+suggestion: true
+id: uc-033-breachesc-waiver-expired
+title: A waiver has expired and the breach is open
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: schedule}
+inputs:
+  - {kind: doc, fields: [holding, expires_on, days_past_expiry, breach_open]}
+subject: "{doc.holding} waiver expired {doc.expires_on}"
+condition: "doc.days_past_expiry > 0 and doc.breach_open == 1"
+severity: problem
+route_to: risk_officer
+action: {verb: record, options: [Reopen the breach]}
+hold: {blocks: close_breach, scope: "{doc.holding}", until: the committee decides again}
+message: "The waiver for {doc.holding} expired on {doc.expires_on}, {doc.days_past_expiry:,.0f} days ago, and the breach is still open. It is back on the Action list."
+evidence: [doc.holding, doc.expires_on, doc.days_past_expiry, doc.breach_open]

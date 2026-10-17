@@ -1,0 +1,15 @@
+# SUGGESTION. Card 32 row 1. A bucket is outside its policy band on current values: ready to send to the CIO.
+suggestion: true
+id: uc-032-driftrep-outside
+title: An asset class is outside its policy band
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: drift_vs_target}
+inputs:
+  - {kind: doc, fields: [portfolio, bucket, position_date, allocation_pct, min_pct, max_pct, status]}
+subject: "{doc.portfolio} {doc.bucket} {doc.position_date} band"
+condition: "doc.status == 'outside band'"
+severity: needs
+route_to: risk_officer
+action: {verb: approve, options: [Send to the CIO]}
+message: "{doc.bucket} is {doc.allocation_pct:.2f} percent of {doc.portfolio} against a band of {doc.min_pct:.0f} to {doc.max_pct:.0f} percent. Send it to the CIO."
+evidence: [doc.portfolio, doc.bucket, doc.position_date, doc.allocation_pct, doc.min_pct]

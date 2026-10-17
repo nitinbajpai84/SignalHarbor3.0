@@ -1,0 +1,15 @@
+# SUGGESTION. Card 44 row 1. Quarter end: the time-weighted return for the quarter against the benchmark, with the year to date beside it.
+suggestion: true
+id: uc-044-twr-periods
+title: The return for the quarter and the year
+pain_points: [PP-03, INT-BENCH, INT-PERF]
+trigger: {on: figure_changed, figure: twr_periods}
+inputs:
+  - {kind: doc, fields: [portfolio, period_kind, period_label, complete, portfolio_return_pct, benchmark_return_pct, active_pct, months_without_benchmark]}
+subject: "{doc.portfolio} {doc.period_label} return"
+condition: "doc.period_kind == 'quarter' and doc.complete == 1 and doc.months_without_benchmark == 0"
+severity: info
+route_to: cio
+action: {verb: see}
+message: "{doc.portfolio} returned {doc.portfolio_return_pct:.4f} percent in {doc.period_label} against {doc.benchmark_return_pct:.4f} percent for the benchmark ({doc.active_pct:.4f} points active)."
+evidence: [doc.portfolio, doc.period_kind, doc.period_label, doc.complete, doc.portfolio_return_pct]

@@ -1,0 +1,16 @@
+# SUGGESTION. Card 40 row 3, the exception: a figure in the memo cannot be traced to a file. It is struck out of the draft with the reason. Row 1 (the memo draft) is the build's output.
+suggestion: true
+id: uc-040-icmemo-untraced
+title: A memo figure cannot be traced to a file
+pain_points: [INT-OPS, PP-07, INT-RISK]
+trigger: {on: figure_changed, figure: memo_support}
+inputs:
+  - {kind: doc, fields: [fund, figure, value, traced]}
+subject: "{doc.fund} {doc.figure}"
+condition: doc.traced == 0
+severity: problem
+route_to: investment_analyst
+action: {verb: approve, options: [Strike it out, Find the file]}
+hold: {blocks: send_memo, scope: "{doc.fund}", until: the figure is struck out or its file is found}
+message: "{doc.fund}: {doc.figure} {doc.value:,.0f} cannot be traced to a file. It is struck out of the draft until it can."
+evidence: [doc.figure, doc.value]

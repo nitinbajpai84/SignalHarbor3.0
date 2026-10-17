@@ -1,0 +1,15 @@
+# SUGGESTION. Card 20 row 1. A manager sends an amended statement: issued value, new value and the change.
+suggestion: true
+id: uc1-why-nav-moved-amended
+title: A manager amended a value
+pain_points: [PP-04, INT-TRUST]
+trigger: {on: figure_changed, figure: change_since_report}
+inputs:
+  - {kind: doc, fields: [fund, valuation_date, currency, original_value, amended_value, change_since_report]}
+subject: "{doc.fund} {doc.valuation_date} amendment"
+condition: "doc.change_since_report != 0"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Take it to the committee, No committee needed]}
+message: "{doc.fund} was {doc.currency} {doc.original_value:,.0f} in the issued report and is now {doc.amended_value:,.0f}: a change of {doc.change_since_report:,.0f}. Does it go to the committee?"
+evidence: [doc.fund, doc.valuation_date, doc.currency, doc.original_value, doc.amended_value]

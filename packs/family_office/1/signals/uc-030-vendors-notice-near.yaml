@@ -1,0 +1,17 @@
+# SUGGESTION. Card 30 row 3, the exception: a contract that renews by itself has 30 days or fewer left to give notice and no decision is recorded.
+# The card says "auto-renewal date within 30 days"; the clock used is the notice deadline (renewal date less notice days), which is the renewal date when no notice period is stated.
+suggestion: true
+id: uc-030-vendors-notice-near
+title: An auto-renewing contract has no decision and the notice deadline is near
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: figure_changed, figure: renewals_vendors}
+inputs:
+  - {kind: doc, fields: [vendor_name, currency, annual_cost, next_renewal_date, days_to_renewal, days_to_notice_deadline, auto_renews, decision_open]}
+subject: "{doc.vendor_name} {doc.next_renewal_date} notice"
+condition: doc.auto_renews == 1 and doc.decision_open == 1 and doc.days_to_notice_deadline <= 30
+severity: problem
+route_to: hr_admin
+action: {verb: call_back, options: [Record the call with the vendor]}
+hold: {blocks: renew_contract, scope: "{doc.vendor_name}", until: a renewal decision is recorded}
+message: "{doc.vendor_name} renews by itself on {doc.next_renewal_date} ({doc.currency} {doc.annual_cost:,.0f}) and no decision is recorded. {doc.days_to_notice_deadline:,.0f} days are left to give notice. Call the vendor."
+evidence: [doc.vendor_name, doc.annual_cost, doc.next_renewal_date, doc.days_to_notice_deadline]

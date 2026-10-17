@@ -1,0 +1,15 @@
+# SUGGESTION. Card 47 row 1. The committee date is set: the pack of report, performance, attribution, breaches and proposals, each with its owner.
+suggestion: true
+id: uc-047-icpack-assembled
+title: The committee pack is assembled
+pain_points: [PP-07, INT-OPS, INT-RISK]
+trigger: {on: figure_changed, figure: pack_items}
+inputs:
+  - {kind: doc, fields: [section, status, as_of]}
+subject: "committee pack as at {doc.as_of}"
+condition: "doc.section == 'Report'"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Approve the pack]}
+message: "The committee pack as at {doc.as_of} has five sections, each with its owner. The report section: {doc.status}. Approve the pack."
+evidence: [doc.section, doc.status, doc.as_of]

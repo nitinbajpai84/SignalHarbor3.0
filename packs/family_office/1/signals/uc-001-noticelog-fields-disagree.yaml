@@ -1,0 +1,35 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 1 uc-001-noticelog, signal row 3: arrives 'Notice carries a different amount in the body and in the table' -> 'Fields disagree, notice is not logged as read; both quotes shown' -> Sam Lee (1 decision (which one is right) or 1 call).
+suggestion: true
+id: uc-001-noticelog-fields-disagree
+title: A capital call notice disagrees with itself
+pain_points:
+- PP-02
+- INT-DOC
+- INT-LIQ
+trigger:
+  on: file_arrived
+  kind: capital_call_notice
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - call_no
+  - amount
+  - amount_in_table
+subject: '{doc.fund} call {doc.call_no}'
+condition: doc.amount != doc.amount_in_table
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - The amount in the text is right
+  - The amount in the table is right
+hold:
+  blocks: log_notice
+  scope: '{doc.fund}'
+  until: someone says which amount is right
+message: '{doc.fund} call {doc.call_no}: the notice says {doc.amount:,.0f} in the text and {doc.amount_in_table:,.0f} in the table. It is not logged as read. Both quotes are shown.'
+evidence:
+- doc.amount
+- doc.amount_in_table

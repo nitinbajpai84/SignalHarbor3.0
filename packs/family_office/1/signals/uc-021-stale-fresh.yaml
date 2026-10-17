@@ -1,0 +1,23 @@
+# SUGGESTION. uc-021 row 2: a fresh statement arrives. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-021-stale-fresh
+title: A fresh statement takes a fund off the stale list
+pain_points: [INT-TRUST, INT-RISK, PP-04]
+trigger: {on: file_arrived, kind: manager_statement}
+inputs:
+- kind: doc
+  fields: [fund]
+- kind: figure
+  id: value_age_days
+  recipe: value_age_days
+  as: age
+  by: {fund: doc.fund}
+condition: not age.stale
+subject: '{doc.fund} value dated {age.valuation_date}'
+severity: info
+route_to: risk_officer
+action:
+  verb: see
+  options: [Seen]
+message: '{doc.fund} now has a value dated {age.valuation_date}, {age.age_days} days old. It leaves the stale list.'
+evidence: [doc.fund, age]

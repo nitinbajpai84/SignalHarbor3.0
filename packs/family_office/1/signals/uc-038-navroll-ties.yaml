@@ -1,0 +1,23 @@
+# SUGGESTION. uc-038 row 2: the roll-forward ties within a cent. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-038-navroll-ties
+title: The roll-forward ties within a cent
+pain_points: [INT-PERF, INT-TRUST, PP-03]
+trigger: {on: file_arrived, kind: manager_statement}
+inputs:
+- kind: doc
+  fields: [fund]
+- kind: figure
+  id: nav_rollforward
+  recipe: nav_rollforward
+  as: rf
+  by: {fund: doc.fund, latest: true}
+condition: abs(rf.unexplained) <= 0.01
+subject: '{doc.fund} ties at {rf.period_end}'
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options: [Seen]
+message: '{doc.fund} ties for {rf.period_end}: the manager reports a gain of {rf.reported_gain:,.0f} and the flows leave {rf.implied_gain:,.0f}.'
+evidence: [doc.fund, rf]

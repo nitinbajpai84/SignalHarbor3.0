@@ -1,0 +1,16 @@
+# SUGGESTION. Card 9 (month-end SOP), row 3, the exception: a step has no owner or no check, so the SOP cannot be signed yet.
+suggestion: true
+id: uc9-sop-step-gap
+title: A step has no owner or no check
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: file_arrived, kind: process_narrative}
+inputs:
+  - {kind: doc, fields: [process_name, steps, steps_without_owner, steps_without_check]}
+subject: "{doc.process_name} gap"
+condition: doc.steps_without_owner + doc.steps_without_check > 0
+severity: problem
+route_to: hr_admin
+action: {verb: call_back, options: [Record the call with the process owner]}
+hold: {blocks: publish_sop, scope: "{doc.process_name}", until: the gap is recorded as settled with the process owner}
+message: "{doc.process_name}: {doc.steps_without_owner:,.0f} step(s) with no owner and {doc.steps_without_check:,.0f} with no check, out of {doc.steps:,.0f}. Listed as a gap; the SOP cannot be signed until the process owner has settled it."
+evidence: [doc.process_name, doc.steps_without_owner, doc.steps_without_check]

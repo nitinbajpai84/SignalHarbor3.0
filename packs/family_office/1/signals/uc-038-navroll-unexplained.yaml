@@ -1,0 +1,24 @@
+# SUGGESTION. uc-038 row 3, exception: unexplained difference. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-038-navroll-unexplained
+title: The roll-forward leaves an unexplained difference
+pain_points: [INT-PERF, INT-TRUST, PP-03]
+trigger: {on: file_arrived, kind: manager_statement}
+inputs:
+- kind: doc
+  fields: [fund]
+- kind: figure
+  id: nav_rollforward
+  recipe: nav_rollforward
+  as: rf
+  by: {fund: doc.fund, latest: true}
+condition: abs(rf.unexplained) > 0.01
+subject: '{doc.fund} unexplained {rf.unexplained} at {rf.period_end}'
+severity: problem
+route_to: fund_accountant
+action:
+  verb: call_back
+  options: [Record the call to the manager]
+hold: {blocks: report_fund, scope: '{doc.fund}', until: the manager has explained the difference}
+message: '{doc.fund}, {rf.period_start} to {rf.period_end}: the manager reports a gain of {rf.reported_gain:,.0f}; prior value, calls and distributions leave {rf.implied_gain:,.0f}. {rf.unexplained:,.0f} is unexplained. The fund is held back from reports.'
+evidence: [doc.fund, rf]

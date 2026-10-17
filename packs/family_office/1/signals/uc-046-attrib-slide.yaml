@@ -1,0 +1,15 @@
+# SUGGESTION. Card 46 row 2. The effects are ready: a slide for the committee pack.
+suggestion: true
+id: uc-046-attrib-slide
+title: A slide for the committee pack
+pain_points: [PP-03, INT-PERF]
+trigger: {on: figure_changed, figure: attribution}
+inputs:
+  - {kind: doc, fields: [portfolio, month_end, adds_up]}
+subject: "{doc.portfolio} {doc.month_end} slide"
+condition: "doc.adds_up == 1"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Include in the committee pack]}
+message: "The effects for {doc.portfolio} to {doc.month_end} add to the active return. A slide is ready for the committee pack."
+evidence: [doc.portfolio, doc.month_end, doc.adds_up]

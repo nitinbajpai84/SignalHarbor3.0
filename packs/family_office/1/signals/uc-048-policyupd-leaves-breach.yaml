@@ -1,0 +1,16 @@
+# SUGGESTION. Card 48 row 3. EXCEPTION. A proposal would leave an existing holding in breach: shown with the holding and the amount.
+suggestion: true
+id: uc-048-policyupd-leaves-breach
+title: A proposal still leaves a holding in breach
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: limit_changes}
+inputs:
+  - {kind: doc, fields: [rule_code, version_number, approval_status, limit_pct, largest_holding, exposure, largest_name_pct, over_limit, is_latest]}
+subject: "{doc.rule_code} version {doc.version_number} leaves {doc.largest_holding}"
+condition: "doc.approval_status == 'proposed' and doc.is_latest == 1 and doc.over_limit == 1"
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Change the proposal, Accept the breach, Plan the cure]}
+hold: {blocks: sign_policy, scope: "{doc.rule_code}", until: the proposal is changed or the breach accepted}
+message: "At {doc.limit_pct:.0f} percent, {doc.largest_holding} ({doc.exposure:,.0f}, {doc.largest_name_pct:.2f} percent) would still be in breach."
+evidence: [doc.rule_code, doc.version_number, doc.approval_status, doc.limit_pct, doc.largest_holding]

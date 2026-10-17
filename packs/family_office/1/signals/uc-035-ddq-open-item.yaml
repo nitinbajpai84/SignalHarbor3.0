@@ -1,0 +1,16 @@
+# SUGGESTION. Card 35 row 3, the exception: an answer is missing or marked 'to follow'. Listed as an open item for the meeting (the data names no 'control question' list, so every topic counts).
+suggestion: true
+id: uc-035-ddq-open-item
+title: A questionnaire answer is missing or to follow
+pain_points: [INT-TRUST, INT-DOC]
+trigger: {on: figure_changed, figure: ddq_compare}
+inputs:
+  - {kind: doc, fields: [manager, topic, questionnaire, open_item]}
+subject: "{doc.manager} {doc.topic}"
+condition: doc.open_item == 1
+severity: problem
+route_to: investment_analyst
+action: {verb: approve, options: [List it for the meeting, Chase the manager]}
+hold: {blocks: send_meeting_pack, scope: "{doc.manager}", until: the open item is listed or answered}
+message: "{doc.manager} left '{doc.topic}' unanswered or to follow in {doc.questionnaire}. List it as an open item for the meeting?"
+evidence: [doc.questionnaire, doc.topic]

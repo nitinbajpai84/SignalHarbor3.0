@@ -1,0 +1,86 @@
+# Persona builds of the report-and-govern domain (cards 23, 24, 32, 33, 44, 45, 46, 47, 48; cards 12, 14, 20 and 42 keep their builds uc5-limits, morning-networth-note, uc1-why-nav-moved and uc4-vs-benchmark in role_builds.yaml).
+# Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py). files: "office6m:<glob under tests/v1/fixtures/office6m>", the files of the card's answer key.
+# check.expect: numbers copied from tests/v1/fixtures/office6m/answer_keys.yaml (a negative difference is written without its sign), never computed.
+template: family_office@1
+roles:
+  - id: fund_accountant
+    builds:
+      - id: uc-023-tieout
+        title: "Does the issued report tie to the administrator"
+        say: "Before the monthly report goes out I check it line by line. Compare each number on our issued report with the administrator's pack for the same month end, show me every line that does not agree and by how much, so I can explain it or correct it before Raj signs."
+        files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_*.xlsx", "office6m:*/administrator_nav/administrator_export_*.xlsx"]
+        skills: ["data.recognise-file", "data.match-identity", "check.against-source", "check.adds-up", "check.explain-difference", "consume.answer-question"]
+        dashboard: "Consume: report line against administrator, by month, with the difference"
+        check: {ask: "Does each number on the report agree with the administrator?", expect: ["4,581", "110,866", "289,043"]}
+
+  - id: head_of_data
+    builds:
+      - id: uc-024-audit
+        title: "Auditor sample: trace a figure to its file"
+        say: "The auditor sent a list of numbers to sample. For every one, show me the report file and page it came from, and list any I cannot trace, so I can tell the auditor before I sign the trace pack."
+        files: ["office6m:*/audit/audit_request_2026-09-22.xlsx", "office6m:*/investment_reports/Evergreen_Office_Investment_Report_*.pdf"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "check.against-source", "consume.explain-number", "consume.answer-question"]
+        dashboard: "Consume: sampled figures with their report file and page, untraced items listed"
+        check: {ask: "Does every figure the auditor sampled trace to a source?", expect: ["87.5", "9,500,000"]}
+
+  - id: risk_officer
+    builds:
+      - id: uc-032-driftrep
+        title: "Allocation drift against the policy targets"
+        say: "Each month after the positions come in I want every asset class and manager measured against the bands in our signed policy, and the ones outside their band. If the cause is one old value, say so, so I do not send a false alarm to Raj."
+        files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["intent.read-company-doc", "data.recognise-file", "build.write-formula-table", "action.detect-exception", "action.size-impact", "consume.answer-question"]
+        dashboard: "Consume: allocation against policy bands, outside-band items, stale values marked"
+        check: {ask: "Which asset classes are outside their policy band?", expect: ["80.61", "54.55", "26.73"]}
+
+      - id: uc-033-breachesc
+        title: "A real breach goes to the committee"
+        say: "When a single-name breach is real I need to tell the committee what it takes to put it right: how much we must sell to bring the holding back inside the limit. Work it out for the breach and write me the note for Raj."
+        files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["intent.read-company-doc", "build.write-formula-table", "action.size-impact", "action.draft-message", "action.route-owner", "consume.answer-question"]
+        dashboard: "Consume: the breach, the limit, the cost to cure and the note for the CIO"
+        check: {ask: "What is the cost to cure the single-name breach?", expect: ["324,210.53", "2,368,000", "41,200,000"]}
+
+      - id: uc-048-policyupd
+        title: "Update the allocation policy and its limits"
+        say: "Our single-name limit is 5 percent and one holding keeps breaching it. Before the annual review show me the largest single name at each month end, and how many breaches a 5 percent limit and a 6 percent limit would have caused, so the committee can decide."
+        files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/custodian_positions/positions_20260630.csv", "office6m:*/meeting_notes/ic_note_2026-06-17.md"]
+        skills: ["intent.read-company-doc", "data.recognise-file", "build.write-formula-table", "action.size-impact", "intent.map-decision-path", "consume.answer-question"]
+        dashboard: "Consume: largest single name by month end against the current and the proposed limit"
+        check: {ask: "Which limits to change and by how much?", expect: ["6.13", "5.89", "5.74", "5.71", "5.75"]}
+
+  - id: cio
+    builds:
+      - id: uc-044-twr
+        title: "Return for the year against the benchmark"
+        say: "At quarter end I need our return for the quarter and for the year so far, against the benchmark, in one table for the committee pack. Use the month-end values and the cash we put in or took out, and chain the months together."
+        files: ["office6m:*/custodian_positions/positions_*.csv", "office6m:*/index_levels/index_levels_2026-0[4-9].csv", "office6m:reference/EG-OFFICE-BLEND_Benchmark_Specification_2026-10.xlsx"]
+        skills: ["intent.define-figure", "data.recognise-file", "build.write-formula-table", "check.adds-up", "consume.attribution", "consume.answer-question"]
+        dashboard: "Consume: return by month, quarter and year against the benchmark"
+        check: {ask: "What to report on performance for the quarter and the year?", expect: ["0.2958", "3.5148", "3.821", "5.7563"]}
+
+      - id: uc-045-reportpack
+        title: "Monthly investment report: assemble and sign"
+        say: "Before I sign the monthly report I want to see each section of it: which tie to the administrator and which rest on an estimate, so I know whether it is ready to sign and what is holding it back."
+        files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.xlsx", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["data.recognise-file", "check.against-source", "check.adds-up", "action.route-owner", "consume.answer-question"]
+        dashboard: "Consume: report sections, ready or not, with the reason"
+        check: {ask: "Whether to sign off and issue the report: which sections are ready?", expect: ["60"]}
+
+      - id: uc-047-icpack
+        title: "Investment committee pack"
+        say: "The investment committee meets soon. Put the pack together: the report, performance, attribution, breaches and proposals, each with the person who owns it and where it stands, so I can approve it."
+        files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf", "office6m:*/meeting_notes/ic_note_2026-08-19.md", "office6m:*/meeting_notes/08_investment_committee_note_2026-10-08.md"]
+        skills: ["data.recognise-file", "check.adds-up", "action.route-owner", "consume.build-board", "consume.answer-question"]
+        dashboard: "Consume: committee pack sections with owner and status"
+        check: {ask: "Which matters to put to the committee and what to recommend?", expect: ["4.1667", "2.7072", "5.75", "270,000", "2,000,000"]}
+
+  - id: investment_analyst
+    builds:
+      - id: uc-046-attrib
+        title: "Where did the return come from"
+        say: "Our liquid book beat its benchmark in September. Show me where the return came from: how much from the mix of equity and bonds, how much from the picking, and the interaction, and check they add up to the active return."
+        files: ["office6m:reference/EG-OFFICE-BLEND_Benchmark_Specification_2026-10.xlsx", "office6m:*/index_levels/index_levels_2026-09.csv", "office6m:*/custodian_positions/positions_20260831.csv", "office6m:*/custodian_positions/positions_20260930.csv"]
+        skills: ["intent.define-figure", "data.recognise-file", "build.write-formula-table", "check.adds-up", "consume.attribution", "consume.answer-question"]
+        dashboard: "Consume: allocation, selection and interaction by asset class, added up to the active return"
+        check: {ask: "Which allocation or selection decision to change?", expect: ["4.1667", "2.2602", "1.9065", "0.2488", "0.4226"]}

@@ -1,0 +1,15 @@
+# SUGGESTION. Card 35 row 2: the fee answer differs. It is quoted both ways (the earlier answer and the new one); the fund terms in the office data are per billing and cannot be set beside a percentage of commitment, so the earlier answer is the comparison.
+suggestion: true
+id: uc-035-ddq-fee-answer
+title: The management fee answer differs
+pain_points: [INT-TRUST, INT-DOC]
+trigger: {on: figure_changed, figure: ddq_compare}
+inputs:
+  - {kind: doc, fields: [manager, topic, previous_answer, answer, changed]}
+subject: "{doc.manager} fee"
+condition: doc.changed == 1 and doc.topic == 'Management fee'
+severity: needs
+route_to: investment_analyst
+action: {verb: call_back, options: [Record the call with the manager]}
+message: "{doc.manager} now answers '{doc.answer}' for the management fee; the earlier questionnaire said '{doc.previous_answer}'. Ask the manager which one applies."
+evidence: [doc.previous_answer, doc.answer]

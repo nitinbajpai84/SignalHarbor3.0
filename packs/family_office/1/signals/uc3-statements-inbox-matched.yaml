@@ -1,0 +1,33 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 19 uc3-statements-inbox, signal row 2: arrives 'A statement arrives' -> 'Matched to the fund and month, tick on the tracker' -> nobody (see it, no work).
+suggestion: true
+id: uc3-statements-inbox-matched
+title: A statement is matched to the tracker
+pain_points:
+- PP-05
+- INT-TRUST
+- INT-DOC
+trigger:
+  on: file_arrived
+  kind: manager_statement
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - period_end
+- kind: figure
+  id: statement_timeliness
+  as: s
+  by:
+    statement_of: doc.fund
+    period_end: doc.period_end
+subject: '{doc.fund} statement {doc.period_end} matched'
+condition: s.status == 'on_time'
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+  options:
+  - See it
+message: '{s.statement_of}: the statement for {s.period_end} is matched and ticked on the tracker.'
+evidence:
+- s

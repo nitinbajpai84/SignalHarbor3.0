@@ -1,0 +1,16 @@
+# SUGGESTION. Card 23 row 3. EXCEPTION. A line differs and the cause is not an amendment: the report is held back with the unexplained amount.
+suggestion: true
+id: uc-023-tieout-unexplained
+title: A difference has no known cause
+pain_points: [PP-04, PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: report_tie_out}
+inputs:
+  - {kind: doc, fields: [report_month, line, difference, explained_by_amendment]}
+subject: "{doc.report_month} {doc.line} unexplained"
+condition: "doc.difference != 0 and doc.explained_by_amendment == 0"
+severity: problem
+route_to: fund_accountant
+action: {verb: call_back, options: [Ask the administrator]}
+hold: {blocks: sign_report, scope: "{doc.report_month}", until: the difference is explained or the report is corrected}
+message: "{doc.line} in the {doc.report_month} report differs from the administrator by {doc.difference:,.0f} and no amended value explains it. The report is held back. Call the administrator."
+evidence: [doc.report_month, doc.line, doc.difference, doc.explained_by_amendment]

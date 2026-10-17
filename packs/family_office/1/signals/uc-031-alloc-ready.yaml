@@ -1,0 +1,21 @@
+# SUGGESTION. uc-031 row 1: month-end positions are loaded. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-031-alloc-ready
+title: Allocation by class and entity is ready
+pain_points: [INT-RISK, INT-SCOPE]
+trigger: {on: figure_changed, figure: allocation}
+inputs:
+- kind: figure
+  id: allocation
+  recipe: allocation
+  as: alloc
+  by: {first_row: true}
+condition: alloc.total_value > 0 and abs(alloc.total_value - alloc.positions_total) <= 0.01
+subject: 'allocation {alloc.position_date}: {alloc.total_value}'
+severity: needs
+route_to: fund_accountant
+action:
+  verb: record
+  options: [Share with the CIO and the Risk Officer]
+message: The allocation at {alloc.position_date} adds up to {alloc.currency} {alloc.total_value:,.0f}, the same as the position snapshots. Share it with the CIO and the Risk Officer?
+evidence: [alloc]

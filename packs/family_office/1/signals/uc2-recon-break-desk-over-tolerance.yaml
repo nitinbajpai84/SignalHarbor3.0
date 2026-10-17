@@ -1,0 +1,42 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 27 uc2-recon-break-desk, signal row 3: arrives 'Break over 5,000 with no explaining item' -> 'Open break with likely cause' -> Grace Ong (1 call to the bank).
+suggestion: true
+id: uc2-recon-break-desk-over-tolerance
+title: A cash break over the tolerance
+pain_points:
+- PP-01
+- PP-06
+- INT-TRUST
+trigger:
+  on: figure_changed
+  figure: cash_difference_by_source
+inputs:
+- kind: doc
+  fields:
+  - entity
+  - day
+  - source
+  - bank_cash
+  - other_cash
+  - cash_break
+  - tolerance
+  - over_tolerance
+subject: '{doc.entity} {doc.source} {doc.day}'
+condition: doc.over_tolerance == 1
+severity: problem
+route_to: ops_lead
+action:
+  verb: call_back
+  options:
+  - Record the call to the bank
+  - Mark it as timing
+  - Mark it as an error
+hold:
+  blocks: close_cash_day
+  scope: '{doc.entity}'
+  until: the break is explained or handed to Finance
+message: '{doc.entity} on {doc.day}: the {doc.source} shows {doc.other_cash:,.2f} and the bank {doc.bank_cash:,.2f}, a break of {doc.cash_break:,.2f}, over the {doc.tolerance:,.0f} tolerance. Look for an
+  item the bank shows that the {doc.source} has not booked.'
+evidence:
+- doc.bank_cash
+- doc.other_cash
+- doc.tolerance

@@ -1,0 +1,29 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 29 uc-029-closeck, signal row 2: arrives 'All items done' -> 'Report can start' -> Raj Patel (see it, no work).
+suggestion: true
+id: uc-029-closeck-report-can-start
+title: Everything for the report is in and checked
+pain_points:
+- PP-07
+- INT-OPS
+- PP-04
+trigger:
+  on: date_passed
+  kind: close_month
+inputs:
+- kind: doc
+  fields:
+  - close_month
+  - steps
+  - open
+subject: close {doc.close_month} report
+condition: doc.steps > 0 and doc.open == 0
+severity: info
+route_to: cio
+action:
+  verb: see
+  options:
+  - See it
+message: All {doc.steps} close steps of {doc.close_month} are done. The report can start.
+evidence:
+- doc.steps
+- doc.open

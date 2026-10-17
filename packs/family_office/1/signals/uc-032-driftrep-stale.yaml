@@ -1,0 +1,16 @@
+# SUGGESTION. Card 32 row 3. EXCEPTION. The drift rests on one stale value: marked stale and not raised as drift.
+suggestion: true
+id: uc-032-driftrep-stale
+title: A drift rests on a stale value
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: figure_changed, figure: drift_vs_target}
+inputs:
+  - {kind: doc, fields: [portfolio, bucket, allocation_pct, oldest_value_days, status]}
+subject: "{doc.portfolio} {doc.bucket} stale drift"
+condition: "doc.status == 'outside band, possibly stale'"
+severity: problem
+route_to: risk_officer
+action: {verb: approve, options: [Ask for a fresh value, Raise it anyway]}
+hold: {blocks: raise_drift, scope: "{doc.portfolio} {doc.bucket}", until: the value is refreshed or you decide}
+message: "{doc.bucket} is {doc.allocation_pct:.2f} percent of {doc.portfolio}, outside its band, but the oldest value in it is {doc.oldest_value_days:,.0f} days old. It is marked stale and not raised as drift."
+evidence: [doc.portfolio, doc.bucket, doc.allocation_pct, doc.oldest_value_days, doc.status]

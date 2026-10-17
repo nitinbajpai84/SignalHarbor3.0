@@ -1,0 +1,18 @@
+# SUGGESTION. Card 34 row 3, the exception: the ticket would push its asset class over the class limit of the signed policy. Raised before any meeting is booked. No signed class limit means the room is empty and the signal is skipped.
+suggestion: true
+id: uc-034-prospect-class-over
+title: The ticket would push the class over its policy limit
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: mandate_fit}
+inputs:
+  - {kind: doc, fields: [deal_name, asset_class, currency, ticket, class_limit_pct, class_room_after, class_status]}
+let:
+  over: 0 - doc.class_room_after
+subject: "{doc.deal_name}"
+condition: doc.class_status == 'over'
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Raise it with the committee, Drop it]}
+hold: {blocks: book_diligence_meeting, scope: "{doc.deal_name}", until: the CIO decides}
+message: "A ticket of {doc.currency} {doc.ticket:,.0f} in {doc.deal_name} would take the {doc.asset_class} class {over:,.0f} over its {doc.class_limit_pct:,.1f} percent limit. No meeting is booked until you decide."
+evidence: [doc.ticket, doc.class_limit_pct, doc.class_room_after]

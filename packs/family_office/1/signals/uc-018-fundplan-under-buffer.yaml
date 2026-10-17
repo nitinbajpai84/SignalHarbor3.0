@@ -1,0 +1,39 @@
+# SUGGESTION. The paying entity would end under the buffer. Card uc-018-fundplan, W1 cash builder (docs/v3/w1/build-cash.md).
+suggestion: true
+id: uc-018-fundplan-under-buffer
+title: The paying entity would end under the buffer
+pain_points:
+- PP-01
+row: exception
+trigger:
+  'on': action_done
+  signal: uc01-call-fits
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - call_no
+  - currency
+- kind: figure
+  id: funding_plan
+  recipe: funding_plan
+  as: plan
+  by:
+    fund: doc.fund
+    is_named: true
+condition: plan.transfer_needed and plan.best_other_spare > 0
+subject: '{doc.fund} call {doc.call_no}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Plan a transfer first
+  - Pay from another source
+hold:
+  blocks: prepare_payment
+  scope: '{doc.fund}'
+  until: the Head of Finance decides
+message: '{plan.entity} would end {plan.shortfall:,.0f} under the buffer if it pays {doc.fund} call {doc.call_no}. A transfer from another entity is needed first; the best has {plan.best_other_spare:,.0f} to spare.'
+evidence:
+- plan

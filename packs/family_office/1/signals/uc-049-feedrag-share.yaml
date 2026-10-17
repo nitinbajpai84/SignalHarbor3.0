@@ -1,0 +1,15 @@
+# SUGGESTION. Card 49 rows 1 and 2: statements and fee terms are loaded; fees as a share of the gross gain by manager. A manager with no gain has no drag (the figure is empty and the signal is skipped).
+suggestion: true
+id: uc-049-feedrag-share
+title: Fees as a share of gain, by manager
+pain_points: [PP-03, INT-BENCH]
+trigger: {on: figure_changed, figure: fee_drag}
+inputs:
+  - {kind: doc, fields: [manager, currency, fees_paid, gross_gain, fee_drag_pct]}
+subject: "{doc.manager}"
+condition: doc.fees_paid > 0
+severity: info
+route_to: fund_accountant
+action: {verb: see, options: [Open it next to the IRR]}
+message: "{doc.manager}: fees paid {doc.currency} {doc.fees_paid:,.0f} are {doc.fee_drag_pct:,.2f} percent of the gross gain of {doc.gross_gain:,.0f}."
+evidence: [doc.fees_paid, doc.gross_gain, doc.fee_drag_pct]

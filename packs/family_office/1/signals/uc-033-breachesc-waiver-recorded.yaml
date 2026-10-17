@@ -1,0 +1,15 @@
+# SUGGESTION. Card 33 row 2. The committee waives the breach: the waiver is recorded with name and date and an expiry is set.
+suggestion: true
+id: uc-033-breachesc-waiver-recorded
+title: The committee waived a breach
+pain_points: [INT-RISK, INT-GOV]
+trigger: {on: file_arrived, kind: committee_minutes}
+inputs:
+  - {kind: doc, fields: [committee, decided_on, title, subject_id, outcome, expires_on]}
+subject: "{doc.subject_id} waiver {doc.decided_on}"
+condition: "doc.outcome == 'waiver'"
+severity: needs
+route_to: cio
+action: {verb: record, options: [Record the waiver with its expiry]}
+message: "The {doc.committee} waived {doc.subject_id} on {doc.decided_on} ({doc.title}). Record the waiver with your name and set it to expire on {doc.expires_on}."
+evidence: [doc.committee, doc.decided_on, doc.title, doc.subject_id, doc.outcome]

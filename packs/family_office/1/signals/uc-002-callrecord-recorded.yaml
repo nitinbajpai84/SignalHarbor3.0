@@ -1,0 +1,33 @@
+# SUGGESTION. Call recorded, commitments updated. Card uc-002-callrecord, W1 cash builder (docs/v3/w1/build-cash.md). Row 2 of the card. Row 1 (log, then record) is carried by uc01-call-arrives and uc01-call-fits.
+suggestion: true
+id: uc-002-callrecord-recorded
+title: Call recorded, commitments updated
+pain_points:
+- PP-02
+row: normal
+trigger:
+  'on': action_done
+  signal: uc01-call-fits
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - investor
+  - amount
+  - currency
+  - call_no
+- kind: figure
+  id: called_to_date
+  recipe: called_to_date
+  as: calls
+  by:
+    fund: doc.fund
+condition: doc.amount > 0
+subject: '{doc.fund} call {doc.call_no}'
+severity: info
+route_to: fund_accountant
+action:
+  verb: see
+message: '{doc.fund} call {doc.call_no} is recorded: {calls.called_after_notice:,.0f} called of {calls.commitment:,.0f}, {calls.unfunded_after_notice:,.0f} unfunded. The commitments figure has updated.'
+evidence:
+- calls

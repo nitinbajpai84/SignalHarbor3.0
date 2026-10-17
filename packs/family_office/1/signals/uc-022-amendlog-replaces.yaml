@@ -1,0 +1,35 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 22 uc-022-amendlog, signal row 1: arrives 'Amended statement arrives' -> 'The value it replaces and the issued report that used it' -> Helen Foo (1 click (note the report)).
+suggestion: true
+id: uc-022-amendlog-replaces
+title: An amended statement replaces an earlier value
+pain_points:
+- PP-04
+- INT-DOC
+- INT-TRUST
+trigger:
+  on: file_arrived
+  kind: manager_statement
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - period_end
+  - status
+- kind: figure
+  id: amendments_open
+  as: a
+  by:
+    fund: doc.fund
+    valuation_date: doc.period_end
+subject: '{doc.fund} {doc.period_end} amended'
+condition: doc.status == 'amended'
+severity: needs
+route_to: fund_accountant
+action:
+  verb: record
+  options:
+  - Note the report
+message: '{a.fund} {a.valuation_date} is amended to {a.amended_value:,.0f}; it replaces {a.replaces:,.0f} ({a.change:,.0f}). The last issued report is dated {a.last_issued_report}. Note the report?'
+evidence:
+- a
+- doc.status

@@ -1,0 +1,39 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 22 uc-022-amendlog, signal row 3: arrives 'Amended after the report was issued to the family' -> 'Flag with the amount' -> Raj Patel (1 decision).
+suggestion: true
+id: uc-022-amendlog-after-report
+title: Amended after the report was issued
+pain_points:
+- PP-04
+- INT-DOC
+- INT-TRUST
+trigger:
+  on: file_arrived
+  kind: manager_statement
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - period_end
+  - status
+- kind: figure
+  id: amendments_open
+  as: a
+  by:
+    fund: doc.fund
+    valuation_date: doc.period_end
+subject: '{doc.fund} {doc.period_end} after report'
+condition: doc.status == 'amended' and a.open_amendments == 1
+severity: problem
+route_to: cio
+action:
+  verb: approve
+  options:
+  - Add a note to the report
+  - Leave the report as issued
+hold:
+  blocks: close_report_period
+  scope: '{doc.fund}'
+  until: the CIO decides whether the issued report needs a note
+message: '{a.fund} {a.valuation_date} was amended by {a.change:,.0f} on {a.received_on}, after the report of {a.last_issued_report} was issued with {a.replaces:,.0f}. Does the report need a note?'
+evidence:
+- a

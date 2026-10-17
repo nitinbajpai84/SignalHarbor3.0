@@ -1,0 +1,29 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card 16 uc-016-schemadrift, signal row 2: arrives 'Mapping accepted' -> 'Next loads use it, old files unchanged' -> nobody (see it, no work).
+suggestion: true
+id: uc-016-schemadrift-mapping-used
+title: The new mapping is used from now on
+pain_points:
+- INT-DOC
+- INT-DATAGOV
+- INT-TRUST
+trigger:
+  on: action_done
+  signal: uc-016-schemadrift-mapping-proposed
+inputs:
+- kind: doc
+  fields:
+  - sheet
+  - old_name
+  - new_name
+subject: '{doc.sheet} {doc.new_name} accepted'
+condition: doc.old_name != doc.new_name
+severity: info
+route_to: head_of_data
+action:
+  verb: see
+  options:
+  - See it
+message: 'Mapping accepted: next loads of {doc.sheet} read ''{doc.new_name}''. Files already loaded under ''{doc.old_name}'' are unchanged.'
+evidence:
+- doc.old_name
+- doc.new_name

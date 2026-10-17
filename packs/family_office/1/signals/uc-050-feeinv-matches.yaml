@@ -1,0 +1,15 @@
+# SUGGESTION. Card 50 row 2: the matching invoice moves to the payment run on its own; the Operations Lead only sees it.
+suggestion: true
+id: uc-050-feeinv-matches
+title: A matched fee invoice moves to the payment run
+pain_points: [INT-OPS, INT-GOV]
+trigger: {on: action_done, signal: uc-050-feeinv-arrives}
+inputs:
+  - {kind: doc, fields: [invoice_no, vendor, currency, billed]}
+subject: "{doc.invoice_no} payment run"
+condition: doc.billed > 0
+severity: info
+route_to: ops_lead
+action: {verb: see, options: [Seen]}
+message: "{doc.vendor} invoice {doc.invoice_no} ({doc.currency} {doc.billed:,.2f}) is in the payment run."
+evidence: [doc.invoice_no, doc.billed]

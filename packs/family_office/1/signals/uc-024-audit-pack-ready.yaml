@@ -1,0 +1,15 @@
+# SUGGESTION. Card 24 row 2. Every sampled number is traced: the trace pack is ready to send.
+suggestion: true
+id: uc-024-audit-pack-ready
+title: The trace pack is ready
+pain_points: [INT-TRUST, INT-GOV]
+trigger: {on: figure_changed, figure: trace_coverage}
+inputs:
+  - {kind: doc, fields: [request_file, items_in_request, untraced_items]}
+subject: "{doc.request_file} trace pack"
+condition: "doc.untraced_items == 0"
+severity: needs
+route_to: head_of_data
+action: {verb: approve, options: [Send the trace pack]}
+message: "All {doc.items_in_request:,.0f} sampled numbers in {doc.request_file} are traced, one page per number. Send the pack to the auditor."
+evidence: [doc.request_file, doc.items_in_request, doc.untraced_items]

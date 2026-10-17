@@ -1,0 +1,15 @@
+# SUGGESTION. Card 7 row 1: a call is recorded and the pacing view shows what is still unfunded across all funds (noticed calls counted). Row 2 (Raj asks) is answered by the build's check.ask.
+suggestion: true
+id: uc-007-pacing-unfunded
+title: Unfunded across all funds
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: commitments_by_fund}
+inputs:
+  - {kind: doc, fields: [currency, committed, called, unfunded, is_total]}
+subject: "All funds {doc.currency}"
+condition: doc.is_total == 1
+severity: info
+route_to: cio
+action: {verb: see, options: [Open the pacing view]}
+message: "Unfunded across all funds: {doc.currency} {doc.unfunded:,.0f} (committed {doc.committed:,.0f}, called {doc.called:,.0f}, a noticed call counted)."
+evidence: [doc.unfunded, doc.called, doc.committed]

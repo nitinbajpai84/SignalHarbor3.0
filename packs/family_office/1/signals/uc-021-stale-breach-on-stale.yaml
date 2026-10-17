@@ -1,0 +1,28 @@
+# SUGGESTION. uc-021 row 3, exception: a limit breach that rests on a stale value. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-021-stale-breach-on-stale
+title: A limit breach that rests on a stale value
+pain_points: [INT-TRUST, INT-RISK, PP-04]
+trigger: {on: figure_changed, figure: concentration}
+inputs:
+- kind: figure
+  id: value_age_days
+  recipe: value_age_days
+  as: age
+  by: {first_row: true}
+- kind: figure
+  id: concentration
+  recipe: concentration
+  as: conc
+  by: {issuer: age.stalest_fund}
+- {kind: rule, id: single_name_limit_pct, as: limit}
+condition: age.stale_count > 0 and conc.concentration_pct > limit.value
+subject: 'breach on stale value: {age.stalest_fund}'
+severity: needs
+route_to: risk_officer
+action:
+  verb: record
+  options: [Label the breach 'possibly stale', The breach stands]
+hold: {blocks: confirm_breach, scope: '{age.stalest_fund}', until: the breach is labelled or confirmed}
+message: '{age.stalest_fund} is {conc.concentration_pct:.2f} percent against the {limit.value} percent limit, and its value is {age.age_days} days old. Label the breach possibly stale?'
+evidence: [age, conc, limit]

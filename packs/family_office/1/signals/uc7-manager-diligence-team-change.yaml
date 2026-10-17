@@ -1,0 +1,15 @@
+# SUGGESTION. Card 25 row 2: a new newsletter carries a team change; it is picked out with the document it comes from. Row 1 (the page since the last meeting) is the build's output.
+suggestion: true
+id: uc7-manager-diligence-team-change
+title: A team change in the manager's newsletter
+pain_points: [PP-05, INT-TRUST, INT-DOC]
+trigger: {on: figure_changed, figure: manager_timeline}
+inputs:
+  - {kind: doc, fields: [manager, last_meeting, item_date, item_kind, detail, source]}
+subject: "{doc.manager} {doc.item_date}"
+condition: doc.item_kind == 'newsletter'
+severity: needs
+route_to: investment_analyst
+action: {verb: log, options: [Add it to the page]}
+message: "{doc.manager} newsletter of {doc.item_date} (since the meeting of {doc.last_meeting}): {doc.detail} Source: {doc.source}. Add it to the page for the next meeting?"
+evidence: [doc.detail, doc.source]

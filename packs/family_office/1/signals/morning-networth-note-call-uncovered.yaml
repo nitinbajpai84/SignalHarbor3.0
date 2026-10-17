@@ -1,0 +1,16 @@
+# SUGGESTION. Card 14 row 3. EXCEPTION. A cash call due within 7 days that the entity cannot cover goes on the top line of the note with the plan.
+suggestion: true
+id: morning-networth-note-call-uncovered
+title: A call due in 7 days cannot be covered
+pain_points: [INT-LIQ, PP-01]
+trigger: {on: figure_changed, figure: cash_after_calls}
+inputs:
+  - {kind: doc, fields: [entity, currency, call_amount, due_in_days, shortfall]}
+subject: "{doc.entity} call due in {doc.due_in_days} days"
+condition: "doc.due_in_days <= 7 and doc.shortfall > 0"
+severity: problem
+route_to: principal
+action: {verb: see}
+hold: {blocks: send_morning_note, scope: "{doc.entity}", until: the funding plan is on the note}
+message: "{doc.entity} cannot cover a call of {doc.currency} {doc.call_amount:,.0f} due in {doc.due_in_days:,.0f} days: it is short {doc.currency} {doc.shortfall:,.0f}. This is the top line of the note, with the Head of Finance's plan."
+evidence: [doc.entity, doc.currency, doc.call_amount, doc.due_in_days, doc.shortfall]

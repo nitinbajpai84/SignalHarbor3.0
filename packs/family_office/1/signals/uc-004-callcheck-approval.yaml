@@ -1,0 +1,33 @@
+# SUGGESTION. Payment over the approval limit. Card uc-004-callcheck, W1 cash builder (docs/v3/w1/build-cash.md). Row 2 of the card. Row 1 (short, convert, approve) is carried by uc01-cash-shortfall.
+suggestion: true
+id: uc-004-callcheck-approval
+title: Payment over the approval limit
+pain_points:
+- PP-02
+row: normal
+trigger:
+  'on': action_done
+  signal: uc01-cash-shortfall
+inputs:
+- kind: doc
+  fields:
+  - fund
+  - investor
+  - amount
+  - currency
+  - call_no
+- kind: rule
+  id: payment_approval
+  as: limit
+condition: doc.amount > limit.amount
+subject: '{doc.fund} call {doc.call_no}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options:
+  - Approve
+message: '{doc.fund} call {doc.call_no} is {doc.amount:,.0f}, over {limit.amount:,.0f}. Office rule: {limit.text} Your name and the time go on the record.'
+evidence:
+- doc.amount
+- limit

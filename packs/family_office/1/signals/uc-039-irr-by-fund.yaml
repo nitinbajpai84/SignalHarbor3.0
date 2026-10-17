@@ -1,0 +1,15 @@
+# SUGGESTION. Card 39 rows 1 and 2: statements and notices are loaded; IRR, TVPI and DPI by private fund since the first value on file. The league table is the dashboard of the build.
+suggestion: true
+id: uc-039-irr-by-fund
+title: IRR, TVPI and DPI of a private fund
+pain_points: [PP-03, INT-BENCH, INT-PERF]
+trigger: {on: figure_changed, figure: fund_irr_tvpi}
+inputs:
+  - {kind: doc, fields: [fund, irr_pct, tvpi, dpi, latest_period, irr_status]}
+subject: "{doc.fund}"
+condition: doc.irr_status == 'ok'
+severity: info
+route_to: investment_analyst
+action: {verb: see, options: [Open the league table]}
+message: "{doc.fund}: IRR {doc.irr_pct:,.2f} percent, TVPI {doc.tvpi:,.4f}, DPI {doc.dpi:,.4f} since the first value on file (latest value as at {doc.latest_period})."
+evidence: [doc.irr_pct, doc.tvpi, doc.dpi]

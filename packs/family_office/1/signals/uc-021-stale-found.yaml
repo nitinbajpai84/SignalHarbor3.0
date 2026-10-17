@@ -1,0 +1,21 @@
+# SUGGESTION. uc-021 row 1: month-end values arrive. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-021-stale-found
+title: Fund values older than 90 days
+pain_points: [INT-TRUST, INT-RISK, PP-04]
+trigger: {on: figure_changed, figure: value_age_days}
+inputs:
+- kind: figure
+  id: value_age_days
+  recipe: value_age_days
+  as: age
+  by: {first_row: true}
+condition: age.stale_count > 0
+subject: 'stale values at {age.as_of}: {age.stale_names}'
+severity: info
+route_to: risk_officer
+action:
+  verb: see
+  options: [Seen]
+message: '{age.stale_count} fund value(s) are older than {age.stale_after_days} days at {age.as_of}: {age.stale_names}. They are marked stale in the limits and report notes.'
+evidence: [age]

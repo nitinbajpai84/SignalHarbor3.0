@@ -1,0 +1,15 @@
+# SUGGESTION. Card 42 row 2. The benchmark definition changed in the workbook: the version change is shown against last month.
+suggestion: true
+id: uc4-vs-benchmark-definition-changed
+title: The benchmark definition changed
+pain_points: [INT-BENCH, INT-GOV]
+trigger: {on: file_arrived, kind: xlsx}
+inputs:
+  - {kind: doc, fields: [benchmark_code, version_number, previous_version, approval_status, effective_from]}
+subject: "{doc.benchmark_code} version {doc.version_number}"
+condition: "doc.version_number != doc.previous_version"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Use the new version from its date, Keep the current version]}
+message: "{doc.benchmark_code} is now version {doc.version_number} ({doc.approval_status}, effective {doc.effective_from}); last month it was version {doc.previous_version}. Decide whether the committee line uses it."
+evidence: [doc.benchmark_code, doc.version_number, doc.previous_version, doc.approval_status, doc.effective_from]
