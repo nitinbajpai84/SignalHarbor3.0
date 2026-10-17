@@ -8,6 +8,7 @@ Where the rows go (docs/v3/ASSUMPTIONS.md A34, A35, A40, A43, A45):
   corporate_actions -> corporate_actions (one row per notice, a re-issued notice supersedes) and a document with its fields (quantity_held, expected_cash ...); no cash
   settlement_status -> transactions: a failed trade is status failed with counterparty_name and status_reason; a trade the desk has no row for is added
   tax_lots          -> tax_lots (a newer register supersedes the lot of the same reference)
+  realised_lots     -> one document per report with extracted_fields per lot sold: realised_gain, proceeds, cost (value_text the lot and the trade, value_numeric USD)
   manager_outlook   -> one document per fund with extracted_fields projected_payout_rate, one per quarter (value_text the quarter end, value_numeric a fraction)
 Synthetic data only."""
 from __future__ import annotations
@@ -23,14 +24,15 @@ KINDS = {
     "corporate_actions": ("corporate action notice", "data.read-corporate-action", "corporate actions and documents"),
     "settlement_status": ("settlement report", "data.read-settlement-status", "transactions"),
     "tax_lots": ("tax lot register", "data.read-tax-lots", "tax lots"),
+    "realised_lots": ("realised gains report", "data.read-tax-lots", "documents and realised gains per lot"),
     "manager_outlook": ("manager distribution outlook", "data.read-manager-outlook", "documents and projected payout rates"),
 }
 
 
 def install(M) -> None:
-    """Register the six kinds in the pack's tables and give Office the step `treasury`."""
+    """Register the seven kinds in the pack's tables and give Office the step `treasury`."""
     M.CSV_KINDS += [("payment_schedule", {"ref", "payee", "due_date", "basis"}), ("income_calendar", {"pay_date", "security_id", "event", "expected_cash_usd"}),
-                    ("settlement_status", {"trade_ref", "settle_date", "cash_booked"})]
+                    ("settlement_status", {"trade_ref", "settle_date", "cash_booked"}), ("realised_lots", {"trade_ref", "lot", "proceeds", "realised_gain"})]
     M.XLSX_KINDS.append(({"Lots"}, "tax_lots"))
     M.PDF_KINDS += [("CORPORATE ACTION NOTICE", "corporate_actions"), ("DISTRIBUTION OUTLOOK FOR INVESTORS", "manager_outlook")]
     M.KINDS.update(KINDS)
@@ -38,7 +40,7 @@ def install(M) -> None:
     M.FLUSH_ORDER += [t for t in ("corporate_actions", "tax_lots") if t not in M.FLUSH_ORDER]
 
     def treasury(self) -> None:  # named: the step's name is how STEP_KINDS finds its kinds
-        for fn in (payment_schedule, income_calendar, corporate_actions, settlement_status, tax_lots, manager_outlook):
+        for fn in (payment_schedule, income_calendar, corporate_actions, settlement_status, tax_lots, realised_lots, manager_outlook):
             fn(M, self)
     M.Office.treasury = treasury
 
@@ -246,6 +248,24 @@ def tax_lots(M, o) -> None:
                   currency="USD", as_at=as_at, status="open")
             n += 1
         o.note("tax_lots", files=1, rows=n)
+
+
+def realised_lots(M, o) -> None:
+    """The custodian's realised gains report: each lot sold, matched first-in first-out, as fields of the report (the lot and the trade in value_text)."""
+    for p in o.files("realised_lots"):
+        recv, n = o.arrival(p), 0
+        did = o.doc(p, "realised_gains_report", p.stem, kind="custodian", received=recv, date_=recv)
+        for i, r in enumerate(M.csv_rows(p), 2):
+            ref = f"{str(r.get('lot') or '').strip()} {str(r.get('trade_ref') or '').strip()} {str(r.get('settle_date') or '').strip()}".strip()
+            vals = {k: _num(r.get(k)) for k in ("realised_gain", "proceeds", "cost")}
+            if not ref or vals["realised_gain"] is None:
+                o.note("realised_lots", flag=f"row {i}: lot {r.get('lot')!r} has no realised gain; set aside")
+                continue
+            for k, v in vals.items():
+                if v is not None:
+                    o.field(did, k, ref, v, "USD", line=i)
+            n += 1
+        o.note("realised_lots", files=1, rows=n)
 
 
 # ---------------------------------------------------------------------------------------------------------------- manager outlooks

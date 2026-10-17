@@ -6,8 +6,9 @@ rules (A48, A49, A54): uc-083-taxcal (tax_due), uc-085-grants (grants_used), uc-
 (estate_cash_need), uc-089-expapp (approval_exceptions), uc-090-offcost (office_cost), uc-094-onbbank (account_setup), uc-100-famaccess (member_access). Their numbers come from
 the recipes' output on the office loaded by sh_platform/v1/v3_pack_readers (the `office` fixture of test_w2_loader.py) and are compared with answer_keys.yaml, read from the
 file, never typed.
-Not built (2): uc-084-taxest (the sold lots are in no file; the tax rates are proposed) and uc-096-automation (which failures count against which SOP is in no file and no rule);
-the tests below prove why and fail the day that changes. Synthetic data only."""
+Recipe only (1): uc-096-automation (automation_score, on the failures each SOP lists and the signed rework minutes, A51); no signals or build yet.
+Not built (1): uc-084-taxest (the sold lots are on file now, in the custodian's realised gains report; the tax rates are proposed); the test below proves why and fails the
+day that changes. Synthetic data only."""
 from __future__ import annotations
 
 import ast
@@ -37,7 +38,8 @@ CARDS = [c["id"] for c in yaml.safe_load((PACK / "use_cases_100.yaml").read_text
 
 BUILT = ["uc-052-insurance", "uc-081-payroll", "uc-082-covergap", "uc-091-jml", "uc-092-accessrev", "uc-093-onbmgr", "uc-095-sopreview", "uc-097-kycrefresh", "uc-098-wordlist",
          "uc-083-taxcal", "uc-085-grants", "uc-086-grantappr", "uc-087-trustdist", "uc-088-estateliq", "uc-089-expapp", "uc-090-offcost", "uc-094-onbbank", "uc-100-famaccess"]
-NOT_BUILT = {"uc-084-taxest", "uc-096-automation"}  # the reason of each is proved below
+NOT_BUILT = {"uc-084-taxest"}  # the reason is proved below
+RECIPE_ONLY = {"uc-096-automation"}  # recipe automation_score agrees with the key; no signals or build yet
 OWN = ["renewals_due", "payroll_total", "cover_gap", "access_review", "onboarding_items", "sop_age", "kyc_expiry", "terms_proposed"]
 RULED = {  # recipe -> the signed rule codes (prefix) it reads; never a number typed in
     "grants_used": ("office_budget_grants",), "grant_check": ("office_budget_grants", "grant_min_charity_months", "cash_buffer"),
@@ -53,7 +55,7 @@ def kinds_of(card: str) -> set[str]:
 
 def test_the_domain_has_twenty_cards_and_each_is_built_or_has_a_reason():
     assert len(CARDS) == 20, CARDS
-    assert sorted(BUILT + list(NOT_BUILT)) == sorted(CARDS)
+    assert sorted(BUILT + list(NOT_BUILT) + list(RECIPE_ONLY)) == sorted(CARDS)
 
 
 # ---- card 52: insurance renewals ------------------------------------------------------------------------------------------------------------
@@ -271,17 +273,30 @@ def test_card100_views_against_the_signed_family_policy_match_the_key(office):
 
 # ---- the cards that are not built: proof of the reason ------------------------------------------------------------------------------------
 
-def test_card84_waits_for_the_sold_lots_and_signed_tax_rates(office):
-    assert office.one("select count(*) from tax_lots where status <> 'open'") == 0  # the register holds only the lots still open: the sold ones are in no file
+def test_card84_has_the_sold_lots_but_waits_for_signed_tax_rates(office):
+    from tools.gen_office6m.keys2 import S0
+    gains = office.rows("select f.value_text, f.value_numeric from extracted_fields as f join documents as d on d.id = f.document_id "
+                        "where d.document_type = 'realised_gains_report' and f.field_name = 'realised_gain'")
+    exp = KEYS["uc-084-taxest"]["questions"]["How much cash to set aside for tax"]["expected"]["by_entity"]["Evergreen Family Trust"]["realised_gains"]
+    assert len(gains) == 12 and f2(sum(r["value_numeric"] for r in gains)) == exp and all(str(S0) <= r["value_text"].split()[-1] for r in gains)  # the sells since 1 Apr, first-in first-out
     rows = office.rows("select r.rule_code, v.approval_status from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'tax_rate_')")
     assert len(rows) == 3 and {r["approval_status"] for r in rows} == {"proposed"}, f"a tax rate is signed now ({rows}); build the card (docs/v3/w1/build51-office.md)"
 
 
-def test_card96_has_the_rework_minutes_but_no_rule_for_which_failures_count(office):
-    assert office.one("select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'automation_rework_minutes' "
-                      "and v.approval_status = 'approved'") == 1
-    assert office.one("select count(*) from business_rules where (rule_code like '%automation%' or rule_code like '%failure%') and rule_code <> 'automation_rework_minutes'") == 0
-    assert "failures counted from" in KEYS["uc-096-automation"]["questions"]["Which process to automate"]["how"]
+def test_card96_the_automation_score_is_the_key(office):
+    exp, rows = key("uc-096-automation"), office.run("automation_score")
+    assert [r["sop"] for r in sorted(rows, key=lambda r: r["rank"])] == [k["sop"] for k in exp["ranking"]]
+    for k in exp["ranking"]:
+        r = one(rows, sop=k["sop"])
+        assert {c: (f2(r[c]) if c != "slowest_manual_step" else r[c]) for c in k if c != "sop"} == {c: v for c, v in k.items() if c != "sop"}, k["sop"]
+    assert one(rows, automate_next=True)["sop"] == exp["automate_next"]
+    con = office.con
+    con.execute("begin")
+    try:  # without the signed rework minutes there is no score, never a guess
+        con.execute("update rule_versions set approval_status = 'proposed' where business_rule_id in (select id from business_rules where rule_code = 'automation_rework_minutes')")
+        assert all(r["score"] is None and not r["automate_next"] for r in office.run("automation_score"))
+    finally:
+        con.execute("rollback")
 
 
 # ---- recipes: shape ---------------------------------------------------------------------------------------------------------------------

@@ -14,10 +14,10 @@ _SPEC.loader.exec_module(W2)
 key, OFFICE = W2.key, W2.OFFICE
 office = W2.office  # the module fixture: the office loaded through the real readers
 
-KINDS = ["payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "manager_outlook"]
+KINDS = ["payment_schedule", "income_calendar", "corporate_actions", "settlement_status", "tax_lots", "realised_lots", "manager_outlook"]
 ONE = {"payment_schedule": "2026-10/payment_schedule/payment_schedule_2026-10-13.csv", "income_calendar": "2026-10/income_calendar/income_calendar_2026-10-13.csv",
        "corporate_actions": "2026-10/corporate_actions/2026-10-08_TWE_tender_offer.pdf", "settlement_status": "2026-10/settlement_status/settlement_report_2026-10-13.csv",
-       "tax_lots": "2026-10/tax_lots/lot_register_2026-09-30.xlsx", "manager_outlook": "2026-10/manager_outlook/bluewater_distribution_outlook_2026-27.pdf"}
+       "tax_lots": "2026-10/tax_lots/lot_register_2026-09-30.xlsx", "realised_lots": "2026-10/realised_lots/realised_lots_2026-10-13.csv", "manager_outlook": "2026-10/manager_outlook/bluewater_distribution_outlook_2026-27.pdf"}
 
 
 def test_each_kind_is_recognised_from_its_content_not_its_name():
@@ -33,7 +33,7 @@ def test_every_kind_is_read_and_says_what_it_did(office):
 
 def test_payment_schedule_gives_the_stage_and_counts_what_the_key_counts(office):
     rows = office.rows("select * from cash_movements where payment_stage is not null")
-    assert len(rows) == 32 and {r["payment_stage"] for r in rows} == {"approved", "scheduled", "held", "expected"}
+    assert len(rows) == 109 and {r["payment_stage"] for r in rows} == {"approved", "scheduled", "held", "expected"}
     assert all(r["amount"] < 0 and r["confirmation_status"] == "expected" and r["reference"] and r["payee_name"] for r in rows)
     # the key: Holdings, next 30 days, approved and scheduled only (SGD at 1.34), the held and expected leave out
     fx = Decimal("1.34")

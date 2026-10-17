@@ -50,7 +50,7 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 | `fund_documents` | 2 | pdf, redemption terms of the two hedge funds. | `2026-04/fund_documents/kestrel_H1_redemption_terms.pdf` |
 | `fund_holdings` | 1 | xlsx, look-through holdings of the eight private funds. | `2026-10/fund_holdings/fund_holdings_2026-09-30.xlsx` |
 | `fx_confirmations` | 9 | pdf, bank confirmations of FX conversions and forwards. | `2026-04/fx_confirmations/FXS-20260416-HOLD_confirmation.pdf` |
-| `fx_rates` | 139 | csv, one per business day, USD/SGD WMR 4pm fixing. | `2026-04/fx_rates/fx_usdsgd_20260401.csv` |
+| `fx_rates` | 140 | csv, one per business day, USD/SGD WMR 4pm fixing (the 31 Mar opening fixing is filed with April). | `2026-04/fx_rates/fx_usdsgd_20260331.csv` |
 | `glossary` | 3 | csv + eml + md, the office word list and proposed words. | `2026-10/glossary/office_words_2026-10-01.csv` |
 | `grant_ledger` | 1 | xlsx, philanthropy ledger and budget 2026. | `2026-10/grant_ledger/grant_ledger_2026.xlsx` |
 | `grant_requests` | 2 | pdf + eml, a grant request. | `2026-10/grant_requests/grant_request_REQ-2026-06.pdf` |
@@ -74,15 +74,16 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 | `notices` | 17 | pdf, capital call notices and distribution notices, by notice date. | `2026-04/notices/2026-04-07_C_call5.pdf` |
 | `office_budget` | 1 | xlsx, office budget 2026 by category. | `2026-04/office_budget/office_budget_2026.xlsx` |
 | `onboarding` | 3 | csv + pdf, onboarding checklist, KYC pack and draft subscription document of a new manager. | `2026-10/onboarding/onboarding_checklist_Harborlight.csv` |
-| `payment_schedule` | 1 | csv, treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments, 90 days. | `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` |
+| `payment_schedule` | 1 | csv, treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments to 30 Sep 2027. | `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` |
 | `payroll` | 6 | xlsx, monthly payroll of Evergreen Holdings. | `2026-04/payroll/payroll_2026-04.xlsx` |
 | `payroll_drafts` | 1 | xlsx, draft October pay file, not released. | `2026-10/payroll_drafts/payroll_run_2026-10_draft.xlsx` |
 | `property_bills` | 14 | pdf, monthly property bills for two properties. | `2026-04/property_bills/2026-04-05_PB-BV-2604.pdf` |
 | `property_valuations` | 7 | pdf, appraisals of six real assets. | `2026-04/property_valuations/valuation_RA-01_2024-11-20.pdf` |
 | `prospects` | 1 | pdf, a fund teaser. | `2026-09/prospects/fund_teaser_Harborlight_Ventures_IV.pdf` |
+| `realised_lots` | 1 | csv, custodian realised gains report: the lots sold 1 Apr to 13 Oct, matched first-in first-out. | `2026-10/realised_lots/realised_lots_2026-10-13.csv` |
 | `reference` | 15 | standing data and reused documents: standing instructions, fund terms, vendor master, accounts, office rules, policy, benchmark workbook, security master, process narrative, research documents. | `reference/accounts.csv` |
 | `settlement_status` | 1 | csv, custodian settlement report as at 13 Oct. | `2026-10/settlement_status/settlement_report_2026-10-13.csv` |
-| `sops` | 8 | md, eight SOPs with last review date and step minutes. | `2026-10/sops/sop_month-end-report.md` |
+| `sops` | 8 | md, eight SOPs with last review date, step minutes and the failures logged against each. | `2026-10/sops/sop_month-end-report.md` |
 | `target_allocation` | 1 | xlsx, proposed interim targets of the liquid book (not signed). | `2026-10/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx` |
 | `tax_calendar` | 1 | xlsx, tax calendar 2026-27 with the rates. | `2026-10/tax_calendar/tax_calendar_2026-27.xlsx` |
 | `tax_lots` | 1 | xlsx, custodian tax lot register as at 30 Sep. | `2026-10/tax_lots/lot_register_2026-09-30.xlsx` |
@@ -92,7 +93,7 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 | `trust_deed` | 1 | pdf, deed of the Evergreen Family Trust. | `2026-04/trust_deed/evergreen_family_trust_deed.pdf` |
 | `vendor_contracts` | 4 | pdf, vendor contracts with renewal dates. | `reference/vendor_contract_orchard_it.pdf` |
 
-Total: 819 files.
+Total: 821 files.
 
 ## Mess planted on purpose
 
@@ -305,6 +306,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml`: all 100 ca
 | `2026-04/fund_documents/kestrel_H1_redemption_terms.pdf` | Redemption terms of Kestrel Ridge Macro Fund: dealing monthly, notice 45 days |  |  |
 | `2026-04/fund_documents/kestrel_H2_redemption_terms.pdf` | Redemption terms of Kestrel Ridge Equity Long/Short Fund: dealing quarterly, notice 60 days |  |  |
 | `2026-04/fx_confirmations/FXS-20260416-HOLD_confirmation.pdf` | Bank confirmation of the EG-HOLD spot conversion FXS-20260416-HOLD: USD 1,000,000.00 at 1.3374 |  |  |
+| `2026-04/fx_rates/fx_usdsgd_20260331.csv` | USD/SGD WMR 4pm fixing for 2026-03-31 |  |  |
 | `2026-04/fx_rates/fx_usdsgd_20260401.csv` | USD/SGD WMR 4pm fixing for 2026-04-01 |  |  |
 | `2026-04/fx_rates/fx_usdsgd_20260402.csv` | USD/SGD WMR 4pm fixing for 2026-04-02 |  |  |
 | `2026-04/fx_rates/fx_usdsgd_20260403.csv` | USD/SGD WMR 4pm fixing for 2026-04-03 |  |  |
@@ -1036,10 +1038,11 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml`: all 100 ca
 | `2026-10/onboarding/kyc_pack_Harborlight_Capital_Partners.pdf` | KYC pack of Harborlight Capital Partners, four documents |  |  |
 | `2026-10/onboarding/onboarding_checklist_Harborlight.csv` | Onboarding checklist of Harborlight Capital Partners: five items, two missing | M37 |  |
 | `2026-10/onboarding/subscription_document_Harborlight_Ventures_IV_draft.pdf` | Draft subscription document, unsigned, bank details to be advised |  |  |
-| `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` | Treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments for the next 90 days |  |  |
+| `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` | Treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments to 30 Sep 2027 |  |  |
 | `2026-10/payroll_drafts/payroll_run_2026-10_draft.xlsx` | Draft pay file for October 2026, not yet released | M32 |  |
 | `2026-10/property_bills/2026-10-05_PB-BV-2610.pdf` | Property bill PB-BV-2610 for Bayview Residence, SGD 8,245.40 |  |  |
 | `2026-10/property_bills/2026-10-05_PB-HC-2610.pdf` | Property bill PB-HC-2610 for Hillcrest House, SGD 6,161.54 |  |  |
+| `2026-10/realised_lots/realised_lots_2026-10-13.csv` | Custodian realised gains report 1 Apr to 13 Oct: 12 lots sold, matched first-in first-out |  |  |
 | `2026-10/settlement_status/settlement_report_2026-10-13.csv` | Custodian settlement report as at 13 Oct: trades settling from 28 Sep, two failed | M23 |  |
 | `2026-10/sops/sop_access-review.md` | SOP Quarterly access review, last reviewed 2026-07-14 |  |  |
 | `2026-10/sops/sop_bank-statement-chase.md` | SOP Bank statement chase, last reviewed 2026-05-09 |  |  |

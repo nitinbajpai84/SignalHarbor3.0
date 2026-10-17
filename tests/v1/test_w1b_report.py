@@ -1,8 +1,8 @@
 """W1b report (cards 51 to 100 of the Report and govern domain: 74 and 75), proved on the real pack readers.
 
 Result: card 74 (the board pack) is built: recipe `board_summary`, three signals, one build. Card 75 (the net worth walk) is built: recipe `networth_walk`, three
-signals, one build; it gives every figure the files carry and leaves empty the two the files cannot give (the opening net worth and the balancing item need the
-31 March USD/SGD fixing, which is in no file), and its income is short by one bank statement that never arrived (M02b). The office files are loaded through the
+signals, one build; the opening net worth uses the 31 March USD/SGD fixing (filed with April), and its income is short by one bank statement that never
+arrived (M02b), which the balancing item takes up. The office files are loaded through the
 real loader (tests/v1/test_w2_loader.py); every expected number comes from tests/v1/fixtures/office6m/answer_keys.yaml, never typed here. Synthetic data only."""
 from __future__ import annotations
 
@@ -193,27 +193,11 @@ def test_card_75_every_figure_the_files_carry_is_the_key(office):
     assert r["closing_fixing_missing"] == 0 and r["flows_fixing_missing"] == 0 and r["other_currency_lines"] == 0 and r["closing_estimated_funds"] == 2
 
 
-def test_card_75_the_opening_and_the_balancing_item_are_empty_because_the_31_march_fixing_is_in_no_file(office):
-    r = office.run("networth_walk")[0]
-    assert office.one("select count(*) from market_observations where observation_type = 'fx' and cast(observed_at as date) <= date '2026-03-31'") == 0
-    assert r["opening"] is None and r["fx_and_other"] is None and r["fx_and_other_pct_of_closing"] is None and r["adds_up"] is False
-    assert r["opening_fixing_missing"] == 3 and r["opening_cash_usd_eq"] is None  # the three SGD groups; nothing is estimated from the 1 April fixing
-    assert (f2(r["opening_funds"]), f2(r["opening_book"]), f2(r["opening_loan"])) == (64551403.0, 39672360.0, 3000000.0)  # the parts that need no fixing are there
-
-
-def test_card_75_with_the_31_march_fixing_loaded_the_opening_is_the_key_and_the_walk_adds_up(office):
-    """The generator's own fixing of 31 March goes into the warehouse for this test only (rolled back): the opening net worth is then the key's to the cent."""
-    from tools.gen_office6m.world import World, d as gd
-    fix = World().fx[gd("2026-03-31")]
-    k, con = key("uc-075-yearwalk"), office.con
-    con.execute("begin")
-    try:
-        con.execute("insert into market_observations select uuid(), organization_id, source_record_id, instrument_id, series_key, observation_type, timestamp '2026-03-31 16:00:00+00', received_at, recorded_at, ?, base_currency, quote_currency, quality_status, null "
-                    "from market_observations where observation_type = 'fx' and series_key = 'FX:USDSGD:WMR4PM' and cast(observed_at as date) = date '2026-04-01'", [str(fix)])
-        r = office.run("networth_walk")[0]
-    finally:
-        con.execute("rollback")
+def test_card_75_the_31_march_fixing_is_on_file_so_the_opening_is_the_key_and_the_walk_adds_up(office):
+    k, r = key("uc-075-yearwalk"), office.run("networth_walk")[0]
+    assert office.one("select count(*) from market_observations where observation_type = 'fx' and cast(observed_at as date) = date '2026-03-31'") == 1
     assert f2(r["opening"]) == k["opening"] and r["opening_fixing_missing"] == 0 and r["adds_up"] is True
+    assert (f2(r["opening_funds"]), f2(r["opening_book"]), f2(r["opening_loan"])) == (64551403.0, 39672360.0, 3000000.0)
     assert f2(r["opening"]) + f2(r["investment_gains"]) + f2(r["income"]) - f2(r["spending"]) + f2(r["fx_and_other"]) == pytest.approx(f2(r["closing"]), abs=0.01)
     # the only gap left is the bank statement that never arrived: the key's income is 44.71 larger and its balancing item 44.71 smaller
     assert round(f2(r["income"]) + 44.71, 2) == k["income"] and f2(r["fx_and_other"]) - 44.71 == pytest.approx(k["fx_and_other"], abs=0.01)
@@ -271,6 +255,6 @@ def test_card_75_signals_fire_on_the_office_data_and_stay_quiet_when_they_should
     assert "From 2026-04-01 to 2026-09-30" in head and "USD 540,967" in head and "liquid book 1,514,870" in head and "funds -973,903" in head and "USD 114,394,995.51" in head
     assert "2 fund value(s)" in fire(sg["uc-075-yearwalk-estimate"], row) and fire(sg["uc-075-yearwalk-estimate"], {**row, "closing_estimated_funds": 0}) is False
     held = fire(sg["uc-075-yearwalk-incomplete"], row)
-    assert "3 Singapore dollar account(s) have no USD/SGD fixing on or before 2026-03-31" in held and "1 account month(s) have no bank statement" in held and "It is held." in held
+    assert "0 Singapore dollar account(s) have no USD/SGD fixing on or before 2026-03-31" in held and "1 account month(s) have no bank statement" in held and "It is held." in held
     assert fire(sg["uc-075-yearwalk-incomplete"], {**row, "opening_fixing_missing": 0, "bank_months_missing": 0}) is False
     assert fire(sg["uc-075-yearwalk-headline"], {**row, "closing": None}) is None  # a figure that is not there is skipped, never guessed
