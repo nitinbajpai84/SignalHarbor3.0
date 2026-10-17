@@ -4,6 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useSession } from "../useSession";
 import ModeSwitch from "../v1/router/ModeSwitch";  // Testing or Real use models, the same company switch as 2.0
 import { getDesk } from "./api";
+import ThemePick from "./ThemePick";
 import "./v3.css";
 
 const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
@@ -49,7 +50,7 @@ export default function V3Frame({ children, back }: { children: ReactNode; back?
           <NavLink to="/v3/consume"><Ico d={CONSUME} />Consume</NavLink>
           <NavLink to="/v3/knowledge"><Ico d={KNOW} />Knowledge</NavLink>
         </nav>
-        <span className="v3-mode"><ModeSwitch /></span>
+        <span className="v3-mode"><ModeSwitch /><ThemePick /></span>
         <span className="v3-mute">{user?.display_name ?? ""}</span>
       </header>
       {children}

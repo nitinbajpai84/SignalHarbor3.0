@@ -1,7 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap");
-/* Legacy names kept for other folders. --green is NOT green here: it is the old name for the navy action colour,
+/* Legacy names kept for other folders, pointed at the meaning tokens below. --green is NOT green here: it is the old name for the act colour,
    so the old app's green (styles/legacy/sh.css) never reaches a 3.0 page. Green appears only as --done. */
-:root,.v3,.v3c{--paper:#F4F6F9;--ink:#0E1A2B;--green:#1B3A5C;--amber:#B7791F;--card:#FFFFFF;--line:#DCE3EB;--mute:#5A6878;--primary:#1B3A5C;--primary-dark:#12293F;--primary-soft:#E6ECF3;--accent:#B08D57;--accent-soft:#F3ECE0;--pos:#1E7B4F;--pos-soft:#E3F1EA;--neg:#B23B32;--neg-soft:#F8E6E4;--warn:#B7791F;--warn-soft:#FBF1DF;--font-head:Fraunces,Georgia,serif;--font-body:'Instrument Sans','Segoe UI',sans-serif;--font-num:'JetBrains Mono',monospace}
+.v3,.v3c{--green:var(--act);--amber:var(--needs);--primary:var(--act);--primary-dark:var(--act-dark);--primary-soft:var(--act-soft);--accent:var(--harbor);--accent-soft:var(--harbor-soft);--pos:var(--done);--pos-soft:var(--done-soft);--neg:var(--problem);--neg-soft:var(--problem-soft);--warn:var(--needs);--warn-soft:var(--needs-soft)}
+:root,.v3,.v3c{--font-head:Fraunces,Georgia,serif;--font-body:'Instrument Sans','Segoe UI',sans-serif;--font-num:'JetBrains Mono',monospace}
 .v3{
   min-height:100vh;box-sizing:border-box;background:var(--paper);color:var(--ink);font-family:var(--font-body);display:flex;flex-direction:column}
 .v3 a{color:var(--act);text-decoration:none}.v3 a:hover{color:var(--act-dark)}
@@ -68,8 +69,8 @@
 .v3-side{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:14px}
 .v3-side h2{font-size:20px}
 .v3-side ol{margin:0;padding-left:20px;font-size:14px;line-height:1.7}
-.v3-dark{background:var(--ink);color:var(--paper);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
-.v3-dark p{margin:0;font-size:14px;line-height:1.5;color:var(--line)}.v3-dark b{color:var(--paper)}
+.v3-dark{background:var(--deep);color:var(--deep-ink);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.v3-dark p{margin:0;font-size:14px;line-height:1.5;color:var(--deep-mute)}.v3-dark b{color:var(--deep-ink)}
 @media (max-width:640px){.v3-top,.v3-main{padding-left:16px;padding-right:16px}.v3-dec dl{grid-template-columns:1fr}}
 .v3-brandrow{display:flex;align-items:center;gap:14px}
 .v3-logo{width:28px;height:28px;border-radius:8px;background:var(--act);display:inline-block}
@@ -161,26 +162,47 @@
   .v3 .v3c-tabs{bottom:calc(64px + env(safe-area-inset-bottom));padding-bottom:6px}
   .v3:has(.v3c-tabs) .v3c{padding-bottom:76px}
 }
-/* Colour means one thing everywhere (see docs/v3/COLOURS.md). Use these names, never a raw colour. */
-:root,.v3,.v3c{--act:#1B3A5C;--act-dark:#12293F;--act-soft:#E6ECF3;--needs:#B7791F;--needs-soft:#FBF1DF;--done:#1E7B4F;--done-soft:#E3F1EA;
+/* Colour means one thing everywhere, in both themes (see docs/v3/COLOURS.md). Use these names, never a raw colour.
+   Light on :root and every v3 surface; dark redefines the same names when the person picks Dark, or picks System on a dark device.
+   Dark is designed, not inverted: deep navy-grey grounds, meaning colours lifted until text holds 4.5:1. */
+:root,.v3,.v3c,.lg-page{--paper:#F4F6F9;--card:#FFFFFF;--ink:#0E1A2B;--ink-2:#3A4A59;--mute:#5A6878;--line:#DCE3EB;--line-2:#B9C4D0;
+  --act:#1B3A5C;--act-dark:#12293F;--act-soft:#E6ECF3;--needs:#B7791F;--needs-soft:#FBF1DF;--done:#1E7B4F;--done-soft:#E3F1EA;
   --problem:#B23B32;--problem-soft:#F8E6E4;--harbor:#B08D57;--harbor-soft:#F3ECE0;--info:#5A6878;--info-soft:#EEF2F6;
-  --lift:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent)}
-:root,.v3,.v3c{--on-fill:#FFFFFF;--lift-sm:0 1px 2px rgba(14,26,43,.05);--lift-lg:0 4px 16px rgba(14,26,43,.10);--print-ink:#000000;--print-line:#999999;--print-soft:#EEEEEE}
-
-/* Light only, for now (dark mode is not approved). A dark OS must not leak in: the page says it is light, and the
-   old app's dark tokens (read by its bare p, a, input rules) are re-pointed at the light values inside every v3 surface. */
-:root,.v3,.v3c{--l-ground:#F4F6F9;--l-white:#FFFFFF;--l-ink2:#3A4A59;--l-line2:#B9C4D0;--l-rule:rgba(14,26,43,.09);--l-edge:rgba(14,26,43,.22)}
-:root:has(.v3),:root:has(.lg-page){color-scheme:light}
-html:has(.v3),body:has(.v3){background:var(--paper);color:var(--ink)}
-.v3,.v3c{color-scheme:light;--bg:var(--l-ground);--bg2:var(--l-white);--ink2:var(--l-ink2);--faint:var(--info);--rule:var(--l-rule);
+  --on-fill:#FFFFFF;--deep:#0E1A2B;--deep-ink:#F4F6F9;--deep-mute:#DCE3EB;
+  --rule:rgba(14,26,43,.09);--edge:rgba(14,26,43,.22);
+  --lift:0 1px 2px rgba(14,26,43,.06);--lift-sm:0 1px 2px rgba(14,26,43,.05);--lift-lg:0 4px 16px rgba(14,26,43,.10);
+  --print-paper:#FFFFFF;--print-ink:#000000;--print-line:#999999;--print-soft:#EEEEEE}
+:root[data-theme="dark"]:has(.v3,.lg-page),:root[data-theme="dark"] :is(.v3,.v3c,.lg-page){color-scheme:dark;
+  --paper:#0F1621;--card:#172230;--ink:#E7EDF4;--ink-2:#C3CEDB;--mute:#A3B2C2;--line:#2B3A4C;--line-2:#3E5269;
+  --act:#8EB6E6;--act-dark:#B3CEF0;--act-soft:#1D2E44;--needs:#E8B05A;--needs-soft:#2F2616;--done:#62C493;--done-soft:#152B21;
+  --problem:#F08479;--problem-soft:#361B1C;--harbor:#D6B47E;--harbor-soft:#2D261B;--info:#A3B2C2;--info-soft:#1E2A39;
+  --on-fill:#0F1621;--deep:#22344B;--deep-ink:#F1F5FA;--deep-mute:#C6D2DF;
+  --rule:rgba(231,237,244,.09);--edge:rgba(0,0,0,.5);
+  --lift:0 1px 2px rgba(0,0,0,.35);--lift-sm:0 1px 2px rgba(0,0,0,.3);--lift-lg:0 4px 16px rgba(0,0,0,.45)}
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]):has(.v3,.lg-page),:root:not([data-theme="light"]) :is(.v3,.v3c,.lg-page){color-scheme:dark;
+  --paper:#0F1621;--card:#172230;--ink:#E7EDF4;--ink-2:#C3CEDB;--mute:#A3B2C2;--line:#2B3A4C;--line-2:#3E5269;
+  --act:#8EB6E6;--act-dark:#B3CEF0;--act-soft:#1D2E44;--needs:#E8B05A;--needs-soft:#2F2616;--done:#62C493;--done-soft:#152B21;
+  --problem:#F08479;--problem-soft:#361B1C;--harbor:#D6B47E;--harbor-soft:#2D261B;--info:#A3B2C2;--info-soft:#1E2A39;
+  --on-fill:#0F1621;--deep:#22344B;--deep-ink:#F1F5FA;--deep-mute:#C6D2DF;
+  --rule:rgba(231,237,244,.09);--edge:rgba(0,0,0,.5);
+  --lift:0 1px 2px rgba(0,0,0,.35);--lift-sm:0 1px 2px rgba(0,0,0,.3);--lift-lg:0 4px 16px rgba(0,0,0,.45)}
+}
+/* The page says which theme it is, so form controls and scrollbars match. The old app's tokens (read by its bare
+   p, a, input rules) are re-pointed at these inside every v3 surface, so sh.css never leaks into a 3.0 page. */
+:root:has(.v3,.lg-page),.v3,.v3c,.lg-page{color-scheme:light}
+html:has(.v3),body:has(.v3),html:has(.lg-page),body:has(.lg-page){background:var(--paper);color:var(--ink)}
+.v3,.v3c{--bg:var(--paper);--bg2:var(--card);--ink2:var(--ink-2);--faint:var(--info);
   --surface:var(--paper);--surface-elevated:var(--card);--border-hairline:var(--line);--text-primary:var(--ink);--text-muted:var(--mute)}
 .v3 .v3-card,.v3 .v3-note,.v3 .v3-bubble,.v3 .v3-dec,.v3 .v3-link{background:var(--card);color:var(--ink)}
-.v3 select{background:var(--card);color:var(--ink);color-scheme:light}
-/* Sign-in: the same light page and the act navy, never teal. */
-.lg-page{color-scheme:light;--ds-ground:var(--l-ground);--ds-surface:var(--l-white);--ds-surface-2:var(--act-soft);--ds-line:var(--line);--ds-line-2:var(--l-line2);
-  --ds-ink:var(--ink);--ds-ink-soft:var(--l-ink2);--ds-ink-muted:var(--info);--ds-ink-faint:var(--info);--ds-teal:var(--act);--ds-teal-bright:var(--act);
-  --ds-link-hover:var(--act-dark);--ds-on-teal:var(--on-fill);--ds-amber:var(--needs);--ds-red:var(--problem)}
-.lg-page .lg-theme{display:none} /* the theme chips are off while dark mode is not approved */
+.v3 select{background:var(--card);color:var(--ink)}
+/* Sign-in: the same page and the act colour, never teal. */
+.lg-page{--ds-ground:var(--paper);--ds-surface:var(--card);--ds-surface-2:var(--act-soft);--ds-line:var(--line);--ds-line-2:var(--line-2);
+  --ds-ink:var(--ink);--ds-ink-soft:var(--ink-2);--ds-ink-muted:var(--info);--ds-ink-faint:var(--info);--ds-teal:var(--act);--ds-teal-bright:var(--act);
+  --ds-link-hover:var(--act-dark);--ds-on-teal:var(--on-fill);--ds-amber:var(--needs);--ds-red:var(--problem);
+  --teal:var(--act);--teal2:var(--act);--teal-tint:var(--act-soft)}
+.lg-page .theme-choice span{background:var(--card);color:var(--info);border-color:var(--line)}
+.lg-page .theme-choice input:checked+span{background:var(--act-soft);color:var(--ink);border-color:var(--act);box-shadow:0 0 0 1px var(--act) inset}
 /* A figure never overflows its tile: it wraps or shrinks, and tiles wrap in the grid. */
 .v3-figs{grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
 .v3-fig{min-width:0}
@@ -189,7 +211,7 @@ html:has(.v3),body:has(.v3){background:var(--paper);color:var(--ink)}
 @media (max-width:719px){
   .v3 .v3-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
     background:linear-gradient(90deg,var(--paper) 30%,transparent) 0 0/36px 100% no-repeat local,linear-gradient(270deg,var(--paper) 30%,transparent) 100% 0/36px 100% no-repeat local,
-      linear-gradient(90deg,var(--l-edge),transparent) 0 0/14px 100% no-repeat scroll,linear-gradient(270deg,var(--l-edge),transparent) 100% 0/14px 100% no-repeat scroll}
+      linear-gradient(90deg,var(--edge),transparent) 0 0/14px 100% no-repeat scroll,linear-gradient(270deg,var(--edge),transparent) 100% 0/14px 100% no-repeat scroll}
   .v3 .v3-tabs a{white-space:nowrap;flex:none}
 }
 
@@ -202,3 +224,5 @@ html:has(.v3),body:has(.v3){background:var(--paper);color:var(--ink)}
 .v3 .v3-mode .ms-track[aria-checked="true"] { background: color-mix(in srgb, var(--act) 25%, transparent); }
 .v3 .v3-mode .ms-track[aria-checked="true"] .ms-knob { background: var(--act); }
 .v3-why{margin:0;font-size:13px;color:var(--mute)}
+.v3 .v3-mode{gap:12px}
+.v3 .v3-mode select.v3-theme{width:auto;min-width:0;height:32px;min-height:0;padding:0 8px;border-radius:10px;border:1px solid var(--line);font:500 13px var(--font-body);cursor:pointer}
