@@ -1,0 +1,16 @@
+# SUGGESTION. UC01 row 5: the bank statement line matches the approved call, so the call can be closed.
+suggestion: true
+id: uc01-paid-matched
+title: The call is paid and matched
+pain_points: [PP-02]
+trigger: {on: file_arrived, kind: bank_statement}
+inputs:
+  - {kind: doc, fields: [amount, value_date]}
+  - {kind: figure, id: capital_calls, as: call, by: {amount: doc.amount}}
+condition: call.status == 'Approved' and doc.value_date == call.due_date
+subject: "{call.fund} call {call.call_no}"
+severity: info
+route_to: fund_accountant
+action: {verb: record, options: [Close the call]}
+message: "{call.fund} call {call.call_no} paid (USD {doc.amount:,.0f} on {doc.value_date}). The statement line matches the approved call. Close it?"
+evidence: [doc.amount, doc.value_date, call]
