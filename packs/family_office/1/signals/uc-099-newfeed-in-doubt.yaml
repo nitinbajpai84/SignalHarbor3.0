@@ -1,0 +1,36 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-099-newfeed (use cases 51 to 100, no priority): a new file profiled and a mapping proposed per column -> the columns in doubt -> the Head of Data decides them and approves the mapping.
+suggestion: true
+id: uc-099-newfeed-in-doubt
+title: A column of a new feed is in doubt
+pain_points:
+- INT-DOC
+- INT-DATAGOV
+trigger:
+  'on': figure_changed
+  figure: feed_mapping
+inputs:
+- kind: doc
+  fields:
+  - feed
+  - source_column
+  - target
+  - doubt_between
+  - in_doubt
+  - mapped_with_confidence
+  - columns
+subject: '{doc.feed}: {doc.source_column} in doubt'
+condition: doc.in_doubt == 1
+severity: problem
+route_to: head_of_data
+action:
+  verb: approve
+  options:
+  - Decide the column and approve the mapping
+hold:
+  blocks: load_new_feed
+  scope: '{doc.feed}'
+  until: the Head of Data decides the column and approves the mapping
+message: '{doc.feed}: {doc.mapped_with_confidence:,.0f} of {doc.columns:,.0f} columns are mapped with confidence. {doc.source_column} is in doubt ({doc.doubt_between}). Nothing is loaded from the feed until
+  the mapping is approved.'
+evidence:
+- doc.source_column

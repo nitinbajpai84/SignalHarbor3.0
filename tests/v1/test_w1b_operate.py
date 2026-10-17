@@ -1,8 +1,11 @@
 """W1b Operate and control, cards 51 to 100 (docs/v3/w1/build51-operate.md), proved on the real pack readers.
 
-Built: uc8-trades-vs-admin (recipe trade_breaks, and fx_confirmation_variance from cash.yaml) and uc-062-fxlife (recipe fx_mtm). Their numbers come from the recipes' output on
-the office loaded by sh_platform/v1/v3_pack_readers (the `office` fixture of test_w2_loader.py) and are compared with answer_keys.yaml, read from the file, never typed.
-Not built (8): each reads a file kind the pack has no reader for, or a fact no table holds; the tests below prove why and fail the day a card's files are all read.
+Built (8): uc8-trades-vs-admin (trade_breaks, and fx_confirmation_variance from cash.yaml), uc-056-custrecon (position_break), uc-058-settle (unsettled_trades),
+uc-059-breakage (break_age), uc-060-docinbox (unrecognised_files), uc-061-dqscore (source_quality), uc-062-fxlife (fx_mtm) and uc-099-newfeed (feed_mapping).
+Their numbers come from the recipes' output on the office loaded by sh_platform/v1/v3_pack_readers (the `office` fixture of test_w2_loader.py) and are compared
+with answer_keys.yaml, read from the file, never typed.
+Not built (2): uc-057-pricecheck (no reader for market_data, no signed price tolerance) and uc-063-cashcode (no bank line carries a reference to match); the tests
+below prove why and fail the day that changes.
 Synthetic data only."""
 from __future__ import annotations
 
@@ -28,16 +31,10 @@ key, f2, one, TODAY, KEYS, OFFICE = W2.key, W2.f2, W2.one, W2.TODAY, W2.KEYS, W2
 office = W2.office  # the module fixture: the office files loaded through the real readers
 PACK = W2.REPO / "packs" / "family_office" / "1"
 
-BUILT = ["uc8-trades-vs-admin", "uc-062-fxlife"]
+BUILT = ["uc8-trades-vs-admin", "uc-056-custrecon", "uc-058-settle", "uc-059-breakage", "uc-060-docinbox", "uc-061-dqscore", "uc-062-fxlife", "uc-099-newfeed"]
 NOT_BUILT = {  # card -> (the file kinds of its key that have no reader, recipe stub or None)
-    "uc-056-custrecon": ({"custody_statements"}, "position_break"),
     "uc-057-pricecheck": ({"market_data"}, "price_gap_pct"),
-    "uc-058-settle": ({"settlement_status"}, "unsettled_trades"),
-    "uc-059-breakage": ({"break_register"}, None),
-    "uc-060-docinbox": ({"inbox"}, None),
-    "uc-061-dqscore": ({"load_log"}, "source_quality"),
-    "uc-063-cashcode": (set(), None),  # every file is read; what is missing is a purpose on the bank line (see the test)
-    "uc-099-newfeed": ({"new_feed"}, None),
+    "uc-063-cashcode": (set(), None),  # every file is read; what is missing is a reference on the bank line (see the test)
 }
 
 
@@ -118,7 +115,126 @@ def test_card62_a_forward_without_a_rate_is_held_and_one_without_a_confirmation_
         office.con.execute("insert into fx_confirmations select * from keep_conf")
 
 
-# ---- the eight cards that are not built: proof that the real readers cannot give them ------------------------------------------------------
+def test_card51_a_failed_trade_of_the_settlement_report_is_not_a_desk_trade_break(office):
+    """The settlement report adds Broker Two's two failed buys as transactions (A45); the administrator books no failed trade, so they are card 58's, not breaks."""
+    rows = office.run("trade_breaks")
+    assert not [r for r in rows if str(r["trade"]).startswith("BR2-")]
+
+
+# ---- card 56: uc-056-custrecon ----------------------------------------------------------------------------------------------------------
+
+def test_card56_the_statement_against_the_administrator_gives_the_two_breaks_of_the_key(office):
+    exp = key("uc-056-custrecon")
+    rows = office.run("position_break")
+    assert len([r for r in rows if r["administrator_quantity"] is not None and r["custodian_quantity"] is not None]) == exp["holdings_compared"]
+    breaks = [r for r in rows if r["breaks"]]
+    assert sorted(r["security"] for r in breaks) == sorted(b["security"] for b in exp["breaks"])
+    for b in exp["breaks"]:
+        r = one(rows, security=b["security"])
+        assert (r["administrator_quantity"], r["custodian_quantity"], r["difference_quantity"], f2(r["difference_value"]), r["reason"], r["break_kind"]) == (
+            Decimal(b["administrator_qty"]), Decimal(b["custodian_qty"]), Decimal(b["difference"]), f2(b["value_usd"]), b["reason"], "quantity differs"), b["security"]
+    assert {str(r["position_date"]) for r in rows} == {"2026-09-30"} and {r["currency"] for r in breaks} == {"USD"}
+
+
+def test_card56_a_holding_the_custodian_does_not_list_is_missing_at_the_custodian(office):
+    office.con.execute("create or replace temp table keep_f as select * from extracted_fields where field_name = 'custody_quantity' and value_text = 'Bay Street Utilities'")
+    office.con.execute("delete from extracted_fields where field_name = 'custody_quantity' and value_text = 'Bay Street Utilities'")
+    try:
+        r = one([x for x in office.run("position_break") if x["security"] == "Bay Street Utilities"], security="Bay Street Utilities")
+        assert r["break_kind"] == "missing at custodian" and r["breaks"] == 1 and r["custodian_quantity"] is None
+    finally:
+        office.con.execute("insert into extracted_fields select * from keep_f")
+
+
+# ---- card 58: uc-058-settle -------------------------------------------------------------------------------------------------------------
+
+def test_card58_the_failed_trades_late_amount_reason_and_broker_match_the_key(office):
+    exp = key("uc-058-settle")
+    rows = office.run("unsettled_trades")
+    assert len(rows) == exp["count"] == 2
+    for k in exp["failed"]:
+        r = one(rows, trade=k["trade"])
+        assert (r["security"], r["side"], r["quantity"], f2(r["amount"]), str(r["settle_date"]), r["business_days_late"], r["chase"], r["reason"], bool(r["cash_booked"])) == (
+            k["security"], k["side"], Decimal(k["quantity"]), f2(k["amount"]), k["settle_date"], k["business_days_late"], k["chase"], k["reason"], k["cash_booked"]), k["trade"]
+    assert sorted({r["chase"] for r in rows}) == exp["chase_counterparties"]
+    settled = {r["external_trade_id"]: r["status"] for r in office.rows("select external_trade_id, status from transactions where external_trade_id in (" + ", ".join("?" * len(exp["settled_in_report"])) + ")", *exp["settled_in_report"])}
+    assert settled == {t: "settled" for t in exp["settled_in_report"]} and not [r for r in rows if r["trade"] in settled]
+
+
+# ---- card 59: uc-059-breakage -----------------------------------------------------------------------------------------------------------
+
+def test_card59_every_open_break_its_age_and_the_cash_breaks_over_five_days_match_the_key(office):
+    exp = key("uc-059-breakage")
+    rows = office.run("break_age")
+    assert sorted(r["break_id"] for r in rows) == sorted(b["id"] for b in exp["all_open"])
+    for b in exp["all_open"]:
+        r = one(rows, break_id=b["id"])
+        assert (r["break_type"], r["entity"], r["subject"], str(r["detected"]), r["age_business_days"]) == (b["type"], b["entity"], b["subject"], b["detected"], b["age_business_days"]), b["id"]
+    assert len([r for r in rows if r["break_type"] == "cash break"]) == exp["open_cash_breaks"]
+    assert sorted(r["break_id"] for r in rows if r["break_type"] == "cash break" and r["over_five_business_days"]) == sorted(b["id"] for b in exp["cash_breaks_over_5_days"])
+
+
+def test_card59_the_five_days_is_the_cards_question_not_a_signed_rule():
+    r = R.recipe("break_age")
+    assert "not a signed" in r["formula"] and "not a signed rule" in r["columns"]["over_five_business_days"]
+
+
+# ---- card 60: uc-060-docinbox -----------------------------------------------------------------------------------------------------------
+
+def test_card60_each_inbox_file_where_it_belongs_and_what_to_do_match_the_key(office):
+    exp = key("uc-060-docinbox")
+    rows = office.run("unrecognised_files")
+    assert len(rows) == exp["files"]
+    for k in exp["recognised"]:
+        r = one(rows, file=k["file"])
+        assert (r["recognition"], r["belongs_in"], r["status"]) == ("recognised", k["belongs_in"], "duplicate" if "duplicate" in k["action"] else "final"), k["file"]
+        assert r["action"].split()[0].rstrip(",") == k["action"].split()[0].rstrip(","), k["file"]
+    for k in exp["unrecognised"]:
+        r = one(rows, file=k["file"])
+        assert (r["recognition"], r["belongs_in"], r["unrecognised"], r["action"].split()[0]) == ("unrecognised", k["belongs_in"], 1, k["action"].split()[0]), k["file"]
+    assert sum(r["unrecognised"] for r in rows) == len(exp["unrecognised"])
+
+
+# ---- card 61: uc-061-dqscore ------------------------------------------------------------------------------------------------------------
+
+def test_card61_the_score_of_every_source_and_the_one_to_fix_first_match_the_key(office):
+    exp = key("uc-061-dqscore")
+    rows = office.run("source_quality")
+    assert sorted(r["source"] for r in rows) == sorted(s["source"] for s in exp["by_source"])
+    for k in exp["by_source"]:
+        r = one(rows, source=k["source"])
+        assert (r["loads"], r["passed"], r["late_or_missing"], r["did_not_add_up"], r["manual_fixes"], float(r["score_pct"])) == (
+            k["loads"], k["passed"], k["late_or_missing"], k["did_not_add_up"], k["manual_fixes"], float(k["score_pct"])), k["source"]
+    assert [r["source"] for r in rows if r["fix_first"]] == [exp["fix_first"]]
+    # a statement that never arrived has no batch: it is the expected statement still missing, one per source here
+    assert {r["source"]: r["never_arrived"] for r in rows if r["never_arrived"]} == {"bank_statements": 1, "manager_statements": 1}
+
+
+def test_card61_is_held_when_no_load_log_marked_a_batch(office):
+    r = R.recipe("source_quality")
+    assert R.needs(office.con, r) is None
+    office.con.execute("create or replace temp table keep_b as select id, arrived_on_time from source_batches where arrived_on_time is not null")
+    office.con.execute("update source_batches set arrived_on_time = null")
+    try:
+        assert R.needs(office.con, r)
+    finally:
+        office.con.execute("update source_batches set arrived_on_time = k.arrived_on_time from keep_b as k where k.id = source_batches.id")
+
+
+# ---- card 99: uc-099-newfeed ------------------------------------------------------------------------------------------------------------
+
+def test_card99_the_new_feed_columns_mapped_in_doubt_and_not_safe_match_the_key(office):
+    exp = key("uc-099-newfeed")
+    rows = [r for r in office.run("feed_mapping") if r["feed"].startswith("pinnacle")]
+    assert len(rows) == exp["columns"]
+    r0 = rows[0]
+    assert (r0["columns"], r0["mapped_with_confidence"], r0["share_mapped_pct"], r0["rows_in_sample"], bool(r0["safe_to_go_live"])) == (
+        exp["columns"], exp["mapped_with_confidence"], exp["share_mapped_pct"], exp["rows_in_sample"], exp["safe_to_go_live"])
+    assert sorted(r["source_column"] for r in rows if r["in_doubt"]) == sorted(exp["in_doubt"])
+    assert all(r["doubt_between"] for r in rows if r["in_doubt"])
+
+
+# ---- the two cards that are not built: proof that the real readers cannot give them ------------------------------------------------------
 
 def kinds_of(card: str) -> set[str]:
     return {m.group(1) for f in KEYS[card]["input_files"] if (m := re.match(r"(?:\*/)?([a-z_]+)/", f))}
@@ -131,66 +247,31 @@ def test_every_unread_kind_of_an_unbuilt_card_is_still_unread(card, office):
     assert office.one("select count(*) from source_batches where " + " or ".join(f"coalesce(storage_uri, '') like '%/{k}/%'" for k in sorted(unread) or ["__none__"])) == 0
 
 
-@pytest.mark.parametrize("rid", ["position_break", "price_gap_pct", "unsettled_trades", "source_quality"])
+@pytest.mark.parametrize("rid", ["price_gap_pct"])
 def test_the_recipes_of_unbuilt_cards_stay_honest_stubs(rid):
     r = next((x for x in R.stubs() if x["id"] == rid), None)
     assert R.recipe(rid) is None and r is not None and r.get("status") == "stub" and not r.get("sql")
 
 
-def test_card56_the_custodian_daily_file_and_the_administrator_agree_the_two_breaks_are_only_in_the_statement_pdf(office):
-    """The key's two breaks (Bay Street +1,250 units, Redwood Pharma -400) are on the custodian's safekeeping statement (a PDF kind with no reader); the daily
-    custodian file the loader reads agrees with the administrator on 30 September, so a recipe over the plane would report no break at all."""
-    exp = key("uc-056-custrecon")
-    rows = office.rows("select i.canonical_name as n, c.quantity as cq, a.quantity as aq from position_snapshots as c join source_records as r on r.id = c.source_record_id "
-                       "join source_batches as b on b.id = r.source_batch_id join source_systems as s on s.id = b.source_system_id join position_snapshots as a on a.instrument_id = c.instrument_id "
-                       "and a.portfolio_id = c.portfolio_id and a.position_date = c.position_date join source_records as r2 on r2.id = a.source_record_id join source_batches as b2 on b2.id = r2.source_batch_id "
-                       "join source_systems as s2 on s2.id = b2.source_system_id join instruments as i on i.id = c.instrument_id where s.source_type = 'custodian' and s2.source_type = 'administrator' "
-                       "and c.position_date = date '2026-09-30' and c.view_type = 'operational' and a.view_type = 'accounting'")
-    assert len(rows) == exp["holdings_compared"] == 20
-    assert not [r for r in rows if r["cq"] != r["aq"]] and len(exp["breaks"]) == 2
-
-
-def test_card57_no_second_price_source_is_in_the_plane(office):
+def test_card57_no_second_price_source_is_in_the_plane_and_no_tolerance_is_signed(office):
     assert {r["series_key"] for r in office.rows("select distinct series_key from market_observations")} == {"IDX:GLBD:SYN", "IDX:GLEQ:SYN", "USD/SGD", "FX:USDSGD:WMR4PM"}
-    assert office.one("select count(*) from business_rules where rule_code like 'price%'") == 0  # and no signed price tolerance (the 0.5 percent is in the card text only)
+    assert office.one("select count(*) from business_rules where rule_code like 'price%'") == 0  # price_tolerance_pct (A46) is named, not signed
 
 
-def test_card58_no_trade_has_failed_to_settle_in_the_plane(office):
-    assert office.one("select count(*) from transactions where status not in ('settled', 'executed', 'rejected')") == 0
-    assert office.one("select count(*) from transactions where external_trade_id like 'BR2-%'") == 0  # the key's two failed trades are Broker Two's, only in the settlement report
-    assert len(key("uc-058-settle")["failed"]) == 2
-
-
-def test_card59_the_plane_holds_three_of_the_six_open_breaks_of_the_register(office):
-    assert office.one("select count(*) from exceptions where exception_type = 'cash_break' and status = 'open'") == 3
-    assert len(key("uc-059-breakage")["all_open"]) == 6 and key("uc-059-breakage")["open_cash_breaks"] == 4
-    assert office.one("select count(*) from business_rules where rule_code like '%break_age%'") == 0  # the five days is in the card text only
-
-
-def test_card60_and_61_have_no_inbox_and_no_load_log_in_the_plane(office):
-    assert office.one("select count(*) from documents where original_filename in ('IMG_2210.pdf', 'data_export.xlsx', 'scan_0412.pdf', 'account_extract.xlsx')") == 0
-    assert office.one("select count(*) from source_batches where validation_status not in ('loaded', 'validated')") == 0  # no batch carries a late, failed or fixed-by-hand mark
-
-
-def test_card63_the_three_unexplained_bank_lines_are_loaded_but_nothing_says_they_have_no_purpose(office):
+def test_card63_the_three_unexplained_bank_lines_are_loaded_but_no_bank_line_carries_a_reference_to_match(office):
+    """A45: an unexplained line is a bank line with no matching reference in the schedule, the ledger, the grants or a notice. The bank statement reader
+    writes no reference and no payee on a bank line, so no line can be matched, and telling the three apart by their movement type would be an unsigned rule."""
     exp = key("uc-063-cashcode")
     for u in exp["uncoded"]:
         n = office.one("select count(*) from cash_movements where amount = ? and effective_date = ?", Decimal(str(u["amount"])), dt.date.fromisoformat(u["date"]))
         assert n >= 1, u
+    assert office.one("select count(*) from cash_movements where confirmation_status = 'confirmed' and (reference is not null or payee_name is not null)") == 0
     assert office.one("select count(*) from business_rules where rule_code like '%purpose%' or rule_code like '%uncoded%'") == 0
-    # the columns of a cash movement hold no purpose or counterparty name: telling these three lines from a coded one needs a rule nobody has signed
-    cols = {r["column_name"] for r in office.rows("select column_name from information_schema.columns where table_name = 'cash_movements'")}
-    assert not cols & {"purpose", "counterparty", "counterparty_name", "payee"}
-
-
-def test_card99_the_new_feed_is_not_in_the_plane(office):
-    assert office.one("select count(*) from sheet_mapping_columns where source_column in ('SecRef', 'Dt')") == 0
-    assert key("uc-099-newfeed")["in_doubt"] == ["Value", "Dt"]
 
 
 # ---- recipes: shape ---------------------------------------------------------------------------------------------------------------------
 
-OWN = ["trade_breaks", "fx_mtm"]
+OWN = ["trade_breaks", "fx_mtm", "position_break", "unsettled_trades", "break_age", "unrecognised_files", "source_quality", "feed_mapping"]
 
 
 def test_every_recipe_of_the_slice_is_ready_and_reads_only_what_it_may():
@@ -201,8 +282,11 @@ def test_every_recipe_of_the_slice_is_ready_and_reads_only_what_it_may():
 
 
 def test_new_recipes_do_not_take_over_the_names_of_other_figures():
-    for n in ["FX forward confirmation variance", "Cash break", "Net worth by portfolio", "Statements missing by fund", "Statement against administrator value", "Called to date"]:
+    for n in ["FX forward confirmation variance", "Cash break", "Net worth by portfolio", "Statements missing by fund", "Statement against administrator value", "Called to date",
+              "Columns changed", "Statement timeliness", "Missing statements", "Notices open"]:
         assert (R.match({"name": n}) or {}).get("id") not in OWN, n
+    for rid in OWN:
+        assert (R.match({"name": R.recipe(rid)["label"]}) or {}).get("id") == rid, rid
     assert (R.match({"name": "Trade breaks"}) or {}).get("id") == "trade_breaks"
     assert (R.match({"name": "FX forwards mark to market"}) or {}).get("id") == "fx_mtm"
 
@@ -227,17 +311,32 @@ def role_ids() -> set[str]:
     return ids
 
 
-EXPECTED = {  # id -> (figure, severity, hold)
-    "uc8-trades-vs-admin-quantity-differs": ("trade_breaks", "problem", "accept_administrator_trades"),
-    "uc8-trades-vs-admin-missing-at-administrator": ("trade_breaks", "problem", "accept_administrator_trades"),
-    "uc8-trades-vs-admin-missing-at-desk": ("trade_breaks", "problem", "accept_administrator_trades"),
-    "uc8-trades-vs-admin-booked-twice": ("trade_breaks", "needs", None),
-    "uc8-trades-vs-admin-fx-confirmation-differs": ("fx_confirmation_variance", "problem", "settle_forward"),
-    "uc-062-fxlife-marked": ("fx_mtm", "info", None),
-    "uc-062-fxlife-due-soon": ("fx_mtm", "needs", None),
-    "uc-062-fxlife-confirmation-differs": ("fx_mtm", "problem", "settle_forward"),
-    "uc-062-fxlife-no-confirmation": ("fx_mtm", "problem", "settle_forward"),
+EXPECTED = {  # id -> (figure, severity, hold, role)
+    "uc8-trades-vs-admin-quantity-differs": ("trade_breaks", "problem", "accept_administrator_trades", "ops_clerk"),
+    "uc8-trades-vs-admin-missing-at-administrator": ("trade_breaks", "problem", "accept_administrator_trades", "ops_clerk"),
+    "uc8-trades-vs-admin-missing-at-desk": ("trade_breaks", "problem", "accept_administrator_trades", "ops_clerk"),
+    "uc8-trades-vs-admin-booked-twice": ("trade_breaks", "needs", None, "ops_clerk"),
+    "uc8-trades-vs-admin-fx-confirmation-differs": ("fx_confirmation_variance", "problem", "settle_forward", "ops_clerk"),
+    "uc-056-custrecon-quantity-differs": ("position_break", "problem", "accept_administrator_positions", "ops_lead"),
+    "uc-056-custrecon-missing-one-side": ("position_break", "problem", "accept_administrator_positions", "ops_lead"),
+    "uc-058-settle-failed": ("unsettled_trades", "problem", "release_trade_cash", "ops_clerk"),
+    "uc-058-settle-late": ("unsettled_trades", "needs", None, "ops_clerk"),
+    "uc-059-breakage-to-finance": ("break_age", "problem", None, "ops_lead"),
+    "uc-059-breakage-open": ("break_age", "info", None, "ops_lead"),
+    "uc-060-docinbox-unrecognised": ("unrecognised_files", "problem", "load_inbox_file", "ops_clerk"),
+    "uc-060-docinbox-duplicate": ("unrecognised_files", "info", None, "ops_clerk"),
+    "uc-060-docinbox-new": ("unrecognised_files", "needs", None, "ops_clerk"),
+    "uc-061-dqscore-fix-first": ("source_quality", "problem", None, "head_of_data"),
+    "uc-061-dqscore-never-arrived": ("source_quality", "needs", None, "head_of_data"),
+    "uc-062-fxlife-marked": ("fx_mtm", "info", None, "ops_clerk"),
+    "uc-062-fxlife-due-soon": ("fx_mtm", "needs", None, "ops_clerk"),
+    "uc-062-fxlife-confirmation-differs": ("fx_mtm", "problem", "settle_forward", "ops_clerk"),
+    "uc-062-fxlife-no-confirmation": ("fx_mtm", "problem", "settle_forward", "ops_clerk"),
+    "uc-099-newfeed-in-doubt": ("feed_mapping", "problem", "load_new_feed", "head_of_data"),
 }
+NO_HOLD = {"uc-059-breakage", "uc-061-dqscore"}  # the story is a hand-over (to Finance) or a score; nothing waits on it
+ROW_ID = {"trade_breaks": "trade", "fx_mtm": "trade", "fx_confirmation_variance": "trade_reference", "position_break": "security", "unsettled_trades": "trade",
+          "break_age": "break_id", "unrecognised_files": "file", "source_quality": "source", "feed_mapping": "source_column"}
 
 
 def fires(sig: dict, row: dict) -> bool:
@@ -254,21 +353,21 @@ def test_signals_follow_the_engine_format_have_a_role_and_an_exception_with_a_ho
     sigs = signals()
     assert set(sigs) == set(EXPECTED)
     roles = role_ids()
-    for sid, (fig, sev, hold) in EXPECTED.items():
+    for sid, (fig, sev, hold, role) in EXPECTED.items():
         s = sigs[sid]
         assert s["_file"] == f"{sid}.yaml" and s["suggestion"] is True and s["subject"] and s["message"] and s["pain_points"]
         assert S.check(s, {r: r for r in roles}) is None, (sid, S.check(s, {r: r for r in roles}))
-        assert s["trigger"] == {"on": "figure_changed", "figure": fig} and s["severity"] == sev and s["route_to"] == "ops_clerk", sid
+        assert s["trigger"] == {"on": "figure_changed", "figure": fig} and s["severity"] == sev and s["route_to"] == role, sid
         assert (s.get("hold") or {}).get("blocks") == hold and (not hold or (s["hold"]["scope"] and s["hold"]["until"])), sid
-        assert not re.search(r"\b(Sam|Helen|Raj|Mei|Daniel|Grace|Sofia)\b", yaml.safe_dump(s)), sid  # a role, never a person
+        assert not re.search(r"\b(Sam|Helen|Raj|Mei|Daniel|Grace|Sofia|Anita)\b", yaml.safe_dump(s)), sid  # a role, never a person
         tree = ast.parse(str(s["condition"]), mode="eval")
         assert all(n.func.id in {"abs", "min", "max", "round", "last4", "num", "same_fund"} for n in ast.walk(tree) if isinstance(n, ast.Call))
     for card in BUILT:
-        assert any(sid.startswith(card + "-") and EXPECTED[sid][1] == "problem" and EXPECTED[sid][2] for sid in EXPECTED), card
+        assert any(sid.startswith(card + "-") and EXPECTED[sid][1] == "problem" and (EXPECTED[sid][2] or card in NO_HOLD) for sid in EXPECTED), card
 
 
 def test_signal_fields_are_columns_of_the_figure_they_watch(office):
-    for fig in ("trade_breaks", "fx_mtm", "fx_confirmation_variance"):
+    for fig in ROW_ID:
         office.run(fig)
     for sid, s in signals().items():
         have = {r["column_name"] for r in office.rows(f"select column_name from information_schema.columns where table_name = 't_{s['trigger']['figure']}'")}
@@ -280,32 +379,54 @@ def test_signal_fields_are_columns_of_the_figure_they_watch(office):
 
 def test_each_signal_fires_on_exactly_the_rows_of_the_key(office):
     sigs = signals()
-    rows = {fig: office.run(fig) for fig in ("trade_breaks", "fx_mtm", "fx_confirmation_variance")}
+    rows = {fig: office.run(fig) for fig in ROW_ID}
 
     def who(sid):
-        s = sigs[sid]
-        return sorted(r.get("trade") or r.get("trade_reference") for r in rows[s["trigger"]["figure"]] if fires(s, r))
+        fig = sigs[sid]["trigger"]["figure"]
+        return sorted(r[ROW_ID[fig]] for r in rows[fig] if fires(sigs[sid], r))
 
     assert who("uc8-trades-vs-admin-quantity-differs") == ["T-20261002-003"]
     assert who("uc8-trades-vs-admin-missing-at-administrator") == ["T-20261006-005"]
     assert who("uc8-trades-vs-admin-missing-at-desk") == []
     assert who("uc8-trades-vs-admin-booked-twice") == ["T-20260602-005"]
     assert who("uc8-trades-vs-admin-fx-confirmation-differs") == ["FXF-2026-002"]
+    assert who("uc-056-custrecon-quantity-differs") == sorted(b["security"] for b in key("uc-056-custrecon")["breaks"])
+    assert who("uc-056-custrecon-missing-one-side") == []
+    assert who("uc-058-settle-failed") == sorted(f["trade"] for f in key("uc-058-settle")["failed"])
+    assert who("uc-058-settle-late") == []
+    assert who("uc-059-breakage-to-finance") == sorted(b["id"] for b in key("uc-059-breakage")["cash_breaks_over_5_days"])
+    assert who("uc-059-breakage-open") == sorted(b["id"] for b in key("uc-059-breakage")["all_open"])
+    assert who("uc-060-docinbox-unrecognised") == sorted(f["file"] for f in key("uc-060-docinbox")["unrecognised"])
+    assert who("uc-060-docinbox-duplicate") == sorted(f["file"] for f in key("uc-060-docinbox")["recognised"] if "duplicate" in f["action"])
+    assert who("uc-060-docinbox-new") == sorted(f["file"] for f in key("uc-060-docinbox")["recognised"] if "duplicate" not in f["action"])
+    assert who("uc-061-dqscore-fix-first") == [key("uc-061-dqscore")["fix_first"]]
+    assert who("uc-061-dqscore-never-arrived") == ["bank_statements", "manager_statements"]
     assert who("uc-062-fxlife-marked") == ["FXF-2026-001", "FXF-2026-002"]
     assert who("uc-062-fxlife-due-soon") == []
     assert who("uc-062-fxlife-confirmation-differs") == ["FXF-2026-002"]
     assert who("uc-062-fxlife-no-confirmation") == []
+    assert who("uc-099-newfeed-in-doubt") == sorted(key("uc-099-newfeed")["in_doubt"])
+
+
+def _msg(sig: dict, row: dict) -> str:
+    return S.render(sig["message"], {"doc": {k: (v if isinstance(v, (str, dt.date)) else S.num(v)) for k, v in row.items() if v is not None}})
 
 
 def test_the_messages_carry_the_numbers_of_the_key(office):
     sigs = signals()
     rows = {r["trade"]: r for r in office.run("trade_breaks") if r["breaks"]}
-    ns = {"doc": {k: (v if isinstance(v, (str, dt.date)) else S.num(v)) for k, v in rows["T-20261002-003"].items() if v is not None}}
-    msg = S.render(sigs["uc8-trades-vs-admin-quantity-differs"]["message"], ns)
+    msg = _msg(sigs["uc8-trades-vs-admin-quantity-differs"], rows["T-20261002-003"])
     assert "12,000" in msg and "10,200" in msg and "75,870" in msg and "-1,800" in msg and "{" not in msg
-    fx = one(office.run("fx_mtm"), trade="FXF-2026-002")
-    msg = S.render(sigs["uc-062-fxlife-marked"]["message"], {"doc": {k: (v if isinstance(v, (str, dt.date)) else S.num(v)) for k, v in fx.items() if v is not None}})
+    msg = _msg(sigs["uc-062-fxlife-marked"], one(office.run("fx_mtm"), trade="FXF-2026-002"))
     assert "5,597" in msg and "1.3400" in msg and "2027-01-05" in msg and "{" not in msg
+    msg = _msg(sigs["uc-056-custrecon-quantity-differs"], one(office.run("position_break"), security="Bay Street Utilities"))
+    assert "40,000" in msg and "41,250" in msg and "-60,062.50" in msg and "{" not in msg
+    msg = _msg(sigs["uc-058-settle-failed"], one(office.run("unsettled_trades"), trade="BR2-20261002-001"))
+    assert "281,150" in msg and "Synthetic Broker Two" in msg and "seller short delivery" in msg and "5 business days" in msg and "{" not in msg
+    msg = _msg(sigs["uc-061-dqscore-fix-first"], one(office.run("source_quality"), source="administrator_cash"))
+    assert "5 of 7" in msg and "71.4" in msg and "{" not in msg
+    msg = _msg(sigs["uc-099-newfeed-in-doubt"], one(office.run("feed_mapping"), source_column="Dt"))
+    assert "8 of 10" in msg and "Dt" in msg and "{" not in msg
 
 
 def test_builds_are_the_built_cards_only_and_expect_numbers_from_the_key():

@@ -1,0 +1,42 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-056-custrecon (use cases 51 to 100, no priority): a holding the custodian's statement and the administrator count differently -> the break with its value and the custodian's note -> the Operations Lead closes it with a reason or chases the custodian.
+suggestion: true
+id: uc-056-custrecon-quantity-differs
+title: The custodian and the administrator hold another quantity
+pain_points:
+- PP-06
+- PP-04
+- INT-TRUST
+trigger:
+  'on': figure_changed
+  figure: position_break
+inputs:
+- kind: doc
+  fields:
+  - security
+  - portfolio
+  - position_date
+  - break_kind
+  - administrator_quantity
+  - custodian_quantity
+  - difference_quantity
+  - difference_value
+  - currency
+subject: '{doc.security} quantity differs'
+condition: doc.break_kind == 'quantity differs'
+severity: problem
+route_to: ops_lead
+action:
+  verb: record
+  options:
+  - Close the break with the custodian's reason
+  - Chase the custodian
+hold:
+  blocks: accept_administrator_positions
+  scope: '{doc.security}'
+  until: the break is closed with a reason or the custodian is chased
+message: '{doc.security} ({doc.portfolio}) on {doc.position_date}: the administrator holds {doc.administrator_quantity:,.0f}, the custodian''s statement {doc.custodian_quantity:,.0f}, a difference of {doc.difference_quantity:,.0f}
+  units ({doc.difference_value:,.2f} {doc.currency}). The administrator''s positions are not accepted until the break is closed.'
+evidence:
+- doc.administrator_quantity
+- doc.custodian_quantity
+- doc.difference_value

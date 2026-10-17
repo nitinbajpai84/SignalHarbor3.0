@@ -72,12 +72,54 @@ recipes:
 
   - id: position_break
     label: Custodian against administrator positions
-    status: stub
     cards: [56]
-    names: [position break, custodian positions against administrator]
-    may_read: [position_snapshots, source_records, source_batches, source_systems, instruments, portfolios]
-    formula: 'By portfolio, instrument and date: the custodian''s quantity and value against the administrator''s (two source systems); the break is the difference, shown beside its tolerance rule.'
-    sql: null
+    names: [position break, position breaks, custodian positions against administrator, custodian against administrator, holdings that differ between custodian and administrator]
+    words_all: [[custodian, custody], [administrator, admin], [position, positions, holding, holdings, quantity, quantities], [differ, differs, difference, break, breaks]]
+    may_read: [documents, extracted_fields, position_snapshots, portfolios, instruments]
+    never_read: [transactions, cash_movements, commitments]
+    why: The custodian's own count is its safekeeping statement (A46), read as one field per holding with the custodian's note beside it; the custodian's daily file is not that statement. The administrator's count is its accounting position of the same day.
+    formula: 'For each custodian safekeeping statement (documents of type custody_statement, its portfolio and statement date) and each holding on it (field custody_quantity: the holding''s name and the custodian''s quantity), the administrator''s accounting position of the same portfolio and day (latest row). difference_quantity = administrator quantity less custodian quantity; difference_value = that difference at the administrator''s price of the day (its market value over its quantity). The reason is the custodian''s note on the statement for that holding (field custodian_note, "<holding>: <reason>"). A holding on one side only is missing at the custodian or at the administrator. No tolerance is signed, so any difference is a break.'
+    grain: By portfolio, holding and statement date
+    sql: >-
+      create table {name} as with st as (select d.id, d.valuation_date as position_date from documents as d where d.document_type = 'custody_statement'
+      and coalesce(d.document_status, '') <> 'amended'),
+      cq as (select s.position_date, p.value_text as portfolio, f.value_text as security, f.value_numeric as custodian_quantity, f.document_id
+      from extracted_fields as f join st as s on s.id = f.document_id join extracted_fields as p on p.document_id = f.document_id and p.field_name = 'portfolio'
+      where f.field_name = 'custody_quantity'),
+      nt as (select n.document_id, n.value_text from extracted_fields as n where n.field_name = 'custodian_note'),
+      adm as (select p.portfolio_code as portfolio, i.canonical_name as security, s.position_date, s.quantity, s.source_market_value, s.currency
+      from position_snapshots as s join portfolios as p on p.id = s.portfolio_id join instruments as i on i.id = s.instrument_id where s.view_type = 'accounting'
+      and not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id)
+      and exists (select 1 from cq where cq.portfolio = p.portfolio_code and cq.position_date = s.position_date)),
+      j as (select coalesce(c.position_date, a.position_date) as position_date, coalesce(c.portfolio, a.portfolio) as portfolio, coalesce(c.security, a.security) as security,
+      a.quantity as administrator_quantity, c.custodian_quantity, a.source_market_value / nullif(a.quantity, 0) as price, a.currency, c.document_id
+      from cq as c full join adm as a on a.portfolio = c.portfolio and a.security = c.security and a.position_date = c.position_date),
+      k as (select j.*, case when administrator_quantity is null then 'missing at administrator' when custodian_quantity is null then 'missing at custodian'
+      when administrator_quantity <> custodian_quantity then 'quantity differs' else 'matches' end as break_kind,
+      (select min(substr(n.value_text, length(j.security) + 3)) from nt as n where n.document_id = j.document_id and starts_with(n.value_text, j.security || ': ')) as reason from j)
+      select position_date, portfolio, security, cast(administrator_quantity as decimal(18,2)) as administrator_quantity, cast(custodian_quantity as decimal(18,2)) as custodian_quantity,
+      cast(administrator_quantity - custodian_quantity as decimal(18,2)) as difference_quantity,
+      cast((administrator_quantity - custodian_quantity) * price as decimal(18,2)) as difference_value, currency, cast(price as decimal(18,4)) as price, break_kind, reason,
+      cast(case when break_kind = 'matches' then 0 else 1 end as integer) as breaks from k
+    measure: breaks
+    columns:
+      position_date: The date of the custodian's statement.
+      administrator_quantity: The administrator's quantity that day; empty when it does not hold the security.
+      custodian_quantity: The quantity on the custodian's statement; empty when the statement does not list it.
+      difference_quantity: Administrator quantity less custodian quantity.
+      difference_value: The difference at the administrator's price of the day, in its currency.
+      price: The administrator's price of the day (market value over quantity).
+      break_kind: matches, quantity differs, missing at custodian or missing at administrator.
+      reason: The custodian's own note on the statement for the holding; empty when it gives none.
+      breaks: 1 when the row is a break.
+    tie_out:
+      label: Every holding on a custodian statement is in the figure once
+      sql: >-
+        select (select count(*) from {name} where custodian_quantity is not null), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id
+        where f.field_name = 'custody_quantity' and d.document_type = 'custody_statement' and coalesce(d.document_status, '') <> 'amended')
+    needs:
+      - why: No custodian safekeeping statement is on file, so there is nothing to compare the administrator with.
+        sql: select count(*) from documents where document_type = 'custody_statement'
 
 
   - id: price_gap_pct
@@ -92,22 +134,91 @@ recipes:
 
   - id: unsettled_trades
     label: Trades not settled on time
-    status: stub
     cards: [58]
-    names: [unsettled trades, trades not settled]
-    may_read: [transactions, instruments]
-    formula: Trades whose settlement_date has passed and whose status is not settled, with days late.
-    sql: null
+    names: [unsettled trades, trades not settled, failed trades, failed settlements, trades that failed to settle, settlement fails]
+    words_all: [[trade, trades, settlement, settlements], [failed, fail, fails, unsettled, settle, settled, chase]]
+    may_read: [transactions, instruments, position_snapshots, documents]
+    never_read: [cash_movements, commitments]
+    why: A trade is unsettled when its settle date has passed and the custodian has not settled it (A45, the settlement report's status, broker and reason on the trade). A failed trade carries no cash, so its money at stake is valued at the custodian's price of the trade date.
+    formula: 'Buys and sells (transactions no later row replaces) whose settle date is before the latest day a file was received and whose status is neither settled nor rejected. business_days_late = Monday to Friday days from the day after the settle date to that day. amount = the booked cash, or, for a trade with no cash, its quantity at the custodian''s price of the trade date (the operational position''s market value over its quantity, the latest day on or before the trade date). chase = the counterparty the settlement report names; reason = its reason.'
+    grain: By trade
+    sql: >-
+      create table {name} as with asat as (select cast(max(received_at) as date) as d from documents),
+      t as (select t.* from transactions as t where t.transaction_type in ('buy', 'sell') and coalesce(t.status, '') not in ('settled', 'rejected')
+      and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id) and t.settlement_date < (select d from asat)),
+      px as (select s.instrument_id, s.position_date, s.source_market_value / nullif(s.quantity, 0) as price from position_snapshots as s where s.view_type = 'operational'
+      and not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id))
+      select t.external_trade_id as trade, i.canonical_name as security, t.transaction_type as side, cast(abs(t.quantity_delta) as decimal(18,2)) as quantity,
+      cast(coalesce(abs(t.cash_amount), abs(t.quantity_delta) * (select arg_max(p.price, p.position_date) from px as p where p.instrument_id = t.instrument_id
+      and p.position_date <= t.trade_date)) as decimal(18,2)) as amount, t.currency, t.trade_date, t.settlement_date as settle_date,
+      cast((select count(*) from generate_series(t.settlement_date + 1, (select d from asat), interval 1 day) as g(x) where dayofweek(g.x) between 1 and 5) as integer) as business_days_late,
+      t.counterparty_name as chase, t.status_reason as reason, t.status, cast(case when t.cash_amount is null then 0 else 1 end as integer) as cash_booked,
+      cast(1 as integer) as unsettled
+      from t left join instruments as i on i.id = t.instrument_id
+    measure: unsettled
+    columns:
+      side: buy or sell.
+      amount: The booked cash, or for a trade with no cash its quantity at the custodian's price of the trade date.
+      settle_date: The date the trade should have settled.
+      business_days_late: Monday to Friday days from the settle date to the latest day a file was received.
+      chase: The counterparty to chase, as the settlement report names it.
+      reason: Why it failed, as the settlement report says.
+      cash_booked: 1 when cash was booked for the trade.
+      unsettled: 1 for every row.
+    tie_out:
+      label: Every buy and sell past its settle date and not settled is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from transactions as t where t.transaction_type in ('buy', 'sell')
+        and coalesce(t.status, '') not in ('settled', 'rejected') and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)
+        and t.settlement_date < (select cast(max(received_at) as date) from documents))
 
 
   - id: source_quality
     label: Data quality by source
-    status: stub
     cards: [61]
-    names: [source quality, data quality score]
-    may_read: [source_batches, source_records, batch_control_totals, exceptions, source_systems]
-    formula: 'For each source: the share of records with good quality status, the batches whose control totals tie, and the open exceptions raised against its records.'
-    sql: null
+    names: [source quality, data quality score, data quality by source, quality score per source, which source to fix first, least reliable source]
+    words_all: [[source, sources, feed, feeds], [quality, reliable, reliability, score, fix]]
+    may_read: [source_batches, batch_control_totals, expected_statements, documents, instruments]
+    never_read: [cash_movements, transactions, position_snapshots]
+    why: A load is good when it arrived on time, its control totals added up and nobody fixed it by hand (A45, the load log's marks on the batch). A statement that never arrived has no batch; it is the expected statement still missing, and counts as a load that was late and did not add up.
+    formula: 'For each source named by the load log (source_batches with a load_log_source, joined to their batch_control_totals): loads, passed (on time, added up and no manual fix), late_or_missing, did_not_add_up and manual_fixes. A statement expected (expected_statements, the latest row) whose due date has passed by the latest day a file was received and for whose month no statement was received (amended re-issues not counted) is one more load of bank_statements (a cash account) or manager_statements, late and not added up. score_pct = passed over loads, in percent, one decimal. fix_first = 1 for the lowest score.'
+    grain: By source
+    sql: >-
+      create table {name} as with b as (select json_extract_string(b.validation_summary, '$.load_log_source') as source, b.arrived_on_time, b.manual_fix, t.passed
+      from source_batches as b join batch_control_totals as t on t.source_batch_id = b.id where json_extract_string(b.validation_summary, '$.load_log_source') is not null),
+      asat as (select cast(max(received_at) as date) as d from documents),
+      due as (select e.* from expected_statements as e where not exists (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
+      miss as (select case when k.instrument_type = 'cash' then 'bank_statements' else 'manager_statements' end as source from due as e join instruments as k on k.id = e.instrument_id
+      where e.due_date < (select d from asat) and not exists (select 1 from documents as d where d.instrument_id = e.instrument_id
+      and d.document_type in ('manager_statement', 'bank_statement') and coalesce(d.document_status, '') <> 'amended'
+      and date_trunc('month', d.valuation_date) = date_trunc('month', e.period_end))),
+      u as (select source, arrived_on_time, manual_fix, passed, 0 as never from b union all select source, false, false, false, 1 from miss),
+      g as (select source, count(*) as loads, sum(case when arrived_on_time and passed and not manual_fix then 1 else 0 end) as passed,
+      sum(case when arrived_on_time then 0 else 1 end) as late_or_missing, sum(case when passed then 0 else 1 end) as did_not_add_up,
+      sum(case when manual_fix then 1 else 0 end) as manual_fixes, sum(never) as never_arrived from u group by source)
+      select source, cast(loads as integer) as loads, cast(passed as integer) as passed, cast(late_or_missing as integer) as late_or_missing,
+      cast(did_not_add_up as integer) as did_not_add_up, cast(manual_fixes as integer) as manual_fixes, cast(never_arrived as integer) as never_arrived,
+      cast(round(100.0 * passed / loads, 1) as decimal(5,1)) as score_pct,
+      cast(case when rank() over (order by 1.0 * passed / loads) = 1 then 1 else 0 end as integer) as fix_first from g
+    measure: score_pct
+    columns:
+      source: The source as the load log names it (the folder kind).
+      loads: Loads of the source, with each statement that never arrived counted as one.
+      passed: Loads on time, added up and not fixed by hand.
+      late_or_missing: Loads that arrived late or never.
+      did_not_add_up: Loads whose control totals did not tie (a statement that never arrived included).
+      manual_fixes: Loads someone fixed by hand.
+      never_arrived: Expected statements that never arrived.
+      score_pct: Passed over loads, in percent.
+      fix_first: 1 for the source with the lowest score.
+    tie_out:
+      label: Every marked batch is a load of its source once
+      sql: >-
+        select (select coalesce(sum(loads - never_arrived), 0) from {name}), (select count(*) from source_batches as b join batch_control_totals as t on t.source_batch_id = b.id
+        where json_extract_string(b.validation_summary, '$.load_log_source') is not null)
+    needs:
+      - why: No load log has marked a batch, so no source can be scored.
+        sql: select count(*) from source_batches where arrived_on_time is not null
 
 
   - id: fx_mtm
@@ -438,10 +549,10 @@ recipes:
     may_read: [transactions, extracted_fields, documents, instruments]
     never_read: [cash_movements, position_snapshots, commitments]
     why: A trade is matched by its reference, trade for trade, against what the administrator booked. The administrator's file is read as documents with one field per trade; positions and cash say nothing about it.
-    formula: 'For each buy or sell the desk booked (transactions that no later row replaces) and each trade in an administrator trades file (a document of type administrator_trades, one field "trade:<reference>" with the quantity): matches when the references and the quantities agree; quantity differs when both exist and the quantities differ (the difference in money is the unit difference at the desk''s own price); missing at administrator when the desk has the trade, an administrator file for the trade''s month (valued at or after its month end) has arrived and does not list it; awaiting administrator file when no such file has arrived yet; missing at our desk when only the administrator lists it. A second row of the same trade that the desk export carried (type duplicate) is listed as booked twice, under the first trade''s reference, with the amount counted twice.'
+    formula: 'For each buy or sell the desk booked (transactions that no later row replaces; a trade the custodian reports as failed to settle is card 58''s, unsettled_trades, and the administrator does not book it) and each trade in an administrator trades file (a document of type administrator_trades, one field "trade:<reference>" with the quantity): matches when the references and the quantities agree; quantity differs when both exist and the quantities differ (the difference in money is the unit difference at the desk''s own price); missing at administrator when the desk has the trade, an administrator file for the trade''s month (valued at or after its month end) has arrived and does not list it; awaiting administrator file when no such file has arrived yet; missing at our desk when only the administrator lists it. A second row of the same trade that the desk export carried (type duplicate) is listed as booked twice, under the first trade''s reference, with the amount counted twice.'
     grain: By trade
     sql: >-
-      create table {name} as with t as (select t.* from transactions as t where t.transaction_type in ('buy', 'sell') and not exists
+      create table {name} as with t as (select t.* from transactions as t where t.transaction_type in ('buy', 'sell') and coalesce(t.status, '') <> 'failed' and not exists
       (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
       a as (select substr(f.field_name, 7) as trade, f.value_numeric as quantity, f.value_text as note from extracted_fields as f
       join documents as d on d.id = f.document_id where d.document_type = 'administrator_trades' and f.field_name like 'trade:%'),
@@ -474,4 +585,112 @@ recipes:
       label: Every buy and sell of the desk is in the figure once
       sql: >-
         select (select count(*) from {name} where our_quantity is not null and break_kind <> 'booked twice'), (select count(*) from transactions as t
-        where t.transaction_type in ('buy', 'sell') and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id))
+        where t.transaction_type in ('buy', 'sell') and coalesce(t.status, '') <> 'failed' and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id))
+
+  - id: break_age
+    label: Open breaks by age
+    cards: [59]
+    names: [break age, open breaks by age, open breaks, breaks by age, old breaks, aged breaks, break register]
+    words_all: [[break, breaks], [open, age, aged, old, older, days]]
+    may_read: [exceptions, legal_entities, documents]
+    never_read: [cash_movements, transactions, position_snapshots]
+    why: The break register is the office's list of open breaks, read as exceptions of type break with the register's id and entity (A45). Its age runs in business days from detection to the latest day a file was received.
+    formula: 'Open exceptions of type break (the break register). break_type = the register''s type (the description before its first ";"). age_business_days = Monday to Friday days from the day after detection to the latest day a file was received. over_five_business_days is 1 when the age is above five: the card''s own question ("older than five days"), shown as a column, not a signed policy.'
+    grain: By break
+    sql: >-
+      create table {name} as with asat as (select cast(max(received_at) as date) as d from documents),
+      b as (select e.* from exceptions as e where e.exception_type = 'break' and e.status = 'open'),
+      k as (select b.external_ref as break_id, trim(split_part(b.description, ';', 1)) as break_type, l.entity_name as entity, b.title as subject,
+      cast(b.detected_at as date) as detected, cast((select count(*) from generate_series(cast(b.detected_at as date) + 1, (select d from asat), interval 1 day) as g(x)
+      where dayofweek(g.x) between 1 and 5) as integer) as age_business_days from b left join legal_entities as l on l.id = b.legal_entity_id)
+      select break_id, break_type, entity, subject, detected, age_business_days, cast(case when age_business_days > 5 then 1 else 0 end as integer) as over_five_business_days,
+      cast(1 as integer) as open_breaks from k
+    measure: open_breaks
+    columns:
+      break_id: The break register's id.
+      break_type: cash break, confirmation break or statement break, as the register says.
+      entity: The entity the break is on.
+      subject: What the break is.
+      detected: The day the break was detected.
+      age_business_days: Monday to Friday days from detection to the latest day a file was received.
+      over_five_business_days: 1 when the age is above five business days (the card's question, not a signed rule).
+      open_breaks: 1 for every row.
+    tie_out:
+      label: Every open break of the register is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from exceptions where exception_type = 'break' and status = 'open')
+
+  - id: unrecognised_files
+    label: Inbox files and where they belong
+    cards: [60]
+    names: [unrecognised files, files not recognised, unrecognised documents, inbox files, documents the office could not recognise, unknown files]
+    words_all: [[file, files, document, documents, inbox], [unrecognised, unrecognized, recognise, recognize, unknown, belong, belongs, refuse]]
+    may_read: [documents, extracted_fields]
+    never_read: [cash_movements, transactions, position_snapshots]
+    why: 'An inbox file is read by its content (A46): one the office knows is an inbox_file with the kind it belongs in, one it does not is unrecognised. What to do with each is the reader''s own field.'
+    formula: 'Each file of the inbox (documents of type inbox_file or unrecognised) with its fields: what it looks like (what), the folder kind it belongs in (belongs_in, unknown when not recognised) and the action (inbox_action: duplicate of a file already loaded, new, refuse, or hold and ask the sender). unrecognised = 1 for a file the office does not know.'
+    grain: By file
+    sql: >-
+      create table {name} as with d as (select d.* from documents as d where d.document_type in ('inbox_file', 'unrecognised')),
+      f as (select f.document_id, max(case when f.field_name = 'what' then f.value_text end) as what, max(case when f.field_name = 'belongs_in' then f.value_text end) as belongs_in,
+      max(case when f.field_name = 'inbox_action' then f.value_text end) as action from extracted_fields as f where f.document_id in (select id from d) group by f.document_id)
+      select d.original_filename as file, case when d.document_type = 'unrecognised' then 'unrecognised' else 'recognised' end as recognition, f.belongs_in, f.action, f.what,
+      d.document_status as status, cast(d.received_at as date) as received_on, cast(case when d.document_type = 'unrecognised' then 1 else 0 end as integer) as unrecognised
+      from d left join f on f.document_id = d.id
+    measure: unrecognised
+    columns:
+      file: The file's name as it arrived.
+      recognition: recognised or unrecognised.
+      belongs_in: The folder kind the file belongs in; unknown when not recognised.
+      action: What to do with it, as the reader decided from its content.
+      what: What the file looks like (its first lines or its sheet and columns).
+      status: duplicate when the same content is already loaded, otherwise final.
+      unrecognised: 1 for a file the office does not know.
+    tie_out:
+      label: Every inbox file is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from documents where document_type in ('inbox_file', 'unrecognised'))
+
+  - id: feed_mapping
+    label: New feed columns mapped and in doubt
+    cards: [99]
+    names: [feed mapping, new feed mapping, columns mapped and in doubt, new source file mapping, columns in doubt, safe to go live]
+    words_all: [[feed, file, source, mapping], [mapped, mapping, doubt, live, confidence]]
+    may_read: [sheet_mappings, sheet_mapping_columns, source_batches]
+    never_read: [position_snapshots, transactions, cash_movements]
+    why: A new file is profiled and a mapping proposed with a confidence mark per column (A45); nothing is loaded from it until the Head of Data approves the mapping.
+    formula: 'For each mapping whose columns carry a confidence mark (a profiled new feed) and each of its columns: the target and the confidence (high, medium or doubt). Per mapping: columns, mapped_with_confidence (high), share_mapped_pct (high over columns, whole percent), rows_in_sample (from the batch that profiled the file) and safe_to_go_live = 1 only when the mapping is approved and no column is in doubt.'
+    grain: By mapping and column
+    sql: >-
+      create table {name} as with m as (select m.* from sheet_mappings as m where exists (select 1 from sheet_mapping_columns as c where c.sheet_mapping_id = m.id and c.confidence is not null)),
+      c as (select m.id as mapping_id, m.file_pattern as feed, m.mapping_status, c.source_column, c.target_table, c.target_field, c.confidence, c.transform_rule
+      from m join sheet_mapping_columns as c on c.sheet_mapping_id = m.id),
+      s as (select b.sheet_mapping_id, max(cast(json_extract_string(b.validation_summary, '$.rows_in_sample') as integer)) as rows_in_sample from source_batches as b
+      where b.sheet_mapping_id in (select id from m) group by b.sheet_mapping_id)
+      select c.feed, c.mapping_status, c.source_column, c.target_table || '.' || c.target_field as target, c.confidence, c.transform_rule as doubt_between,
+      cast(count(*) over (partition by c.mapping_id) as integer) as columns,
+      cast(sum(case when c.confidence = 'high' then 1 else 0 end) over (partition by c.mapping_id) as integer) as mapped_with_confidence,
+      cast(round(100.0 * sum(case when c.confidence = 'high' then 1 else 0 end) over (partition by c.mapping_id) / count(*) over (partition by c.mapping_id)) as integer) as share_mapped_pct,
+      s.rows_in_sample,
+      cast(case when c.mapping_status = 'approved' and sum(case when c.confidence = 'doubt' then 1 else 0 end) over (partition by c.mapping_id) = 0 then 1 else 0 end as integer) as safe_to_go_live,
+      cast(case when c.confidence = 'doubt' then 1 else 0 end as integer) as in_doubt
+      from c left join s on s.sheet_mapping_id = c.mapping_id
+    measure: in_doubt
+    columns:
+      feed: The file pattern of the new feed.
+      mapping_status: proposed or approved.
+      source_column: The column of the file.
+      target: The model field proposed for it.
+      confidence: high, medium or doubt.
+      doubt_between: For a column in doubt, the fields it could be.
+      columns: Columns of the file.
+      mapped_with_confidence: Columns mapped with high confidence.
+      share_mapped_pct: Mapped with confidence over columns, whole percent.
+      rows_in_sample: Rows in the file that was profiled.
+      safe_to_go_live: 1 only when the mapping is approved and no column is in doubt.
+      in_doubt: 1 when the column is in doubt.
+    tie_out:
+      label: Every column of a profiled mapping is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from sheet_mapping_columns as c where c.sheet_mapping_id in
+        (select sheet_mapping_id from sheet_mapping_columns where confidence is not null))

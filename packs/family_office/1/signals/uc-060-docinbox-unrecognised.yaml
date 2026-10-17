@@ -1,0 +1,34 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-060-docinbox (use cases 51 to 100, no priority): a file in the inbox read by its content -> where it belongs, or that it is not office business -> the Operations Clerk names its source or refuses it.
+suggestion: true
+id: uc-060-docinbox-unrecognised
+title: A file in the inbox is not a kind the office knows
+pain_points:
+- INT-DOC
+- INT-GOV
+trigger:
+  'on': figure_changed
+  figure: unrecognised_files
+inputs:
+- kind: doc
+  fields:
+  - file
+  - recognition
+  - action
+  - what
+  - unrecognised
+subject: '{doc.file} not recognised'
+condition: doc.unrecognised == 1
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Name its source
+  - Refuse it and return it to the sender
+hold:
+  blocks: load_inbox_file
+  scope: '{doc.file}'
+  until: the Operations Clerk names its source or refuses it
+message: '{doc.file} is not a kind the office knows ({doc.what}). Suggested: {doc.action}. Nothing is loaded from it until its source is named.'
+evidence:
+- doc.what
