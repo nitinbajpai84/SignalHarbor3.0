@@ -573,6 +573,8 @@ recipes:
     label: Board pack headline figures
     cards: [74]
     names: [board pack headline figures, board headline figures, headline figures for the family board, what to tell the board of the family, "net worth, return, liquidity, decisions"]
+    words_all: [[board], [tell, headline, headlines, pack, figures, family]]
+    answer: [{once: true, say: "Net worth is {net_worth_usd} USD and {net_worth_sgd} SGD at the fixing of {usd_sgd_fixing}, from the issued report of {report_date}"}, {once: true, say: "{estimate_note}"}, {once: true, say: "The liquid book returned {last_quarter_return_pct}% in {last_quarter} against {last_quarter_benchmark_pct}% for its benchmark; since {performance_from} it returned {since_start_return_pct}% against {since_start_benchmark_pct}%"}, {once: true, say: "Cash is {cash_usd_eq} USD at {cash_as_of}"}, {once: true, say: "The call shortfall is {call_shortfall_usd} USD after the calls due, against the signed buffer"}, {once: true, say: "Uncalled commitments are {uncalled_commitments_usd} USD"}, {once: true, say: "Statements amended after the report: {amendments_after_report}"}]
     may_read: [documents, extracted_fields, market_observations, position_snapshots, transactions, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions, bank_accounts, instruments, cash_movements, commitments, legal_entities, valuation_observations]
     never_read: [deal_pipeline, committee_decisions]
     why: The board sees the figures the office already stands behind, each from its own recipe, with the state it rests on. The report total is the one the issued report states (A3), the return is the signed benchmark link's, the cash is the banks' balances, the shortfall is cash less the calls due less the signed buffer, and the uncalled is the commitment file less the calls. A deal in the pipeline or a committee decision is not a headline figure here.
@@ -742,6 +744,7 @@ recipes:
     label: Net worth walk
     cards: [75]
     names: [net worth walk, what happened to our worth, networth walk, what happened to our worth this year, what to tell the family about the year]
+    answer: [{once: true, say: "Net worth went from {opening} on {opening_date} to {closing} on {period_to}"}, {once: true, say: "Investment gains were {investment_gains} (liquid book {liquid_book_gain}, private and hedge funds {private_and_hedge_fund_gain}); income {income}; spending {spending}; FX and other {fx_and_other}, the balancing item"}, {once: true, say: "Capital calls paid were {capital_calls_paid}, and distributions received {distributions_received}"}]
     may_read: [position_snapshots, instruments, bank_accounts, valuation_observations, cash_movements, transactions, market_observations, office_expenses, credit_facilities, documents, extracted_fields]
     never_read: [deal_pipeline, committee_decisions]
     why: The walk says how the family got from what it was worth at the start of the period to what it is worth at the end, each part shown. Net worth is the funds at the value the office knows today, the liquid book, the office banks' cash and less the loan, so every part is a table of the model and none is typed. The balancing item is what the other parts do not explain; it is never spread over them.

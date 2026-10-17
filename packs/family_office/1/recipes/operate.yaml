@@ -77,6 +77,7 @@ recipes:
     label: Custodian against administrator positions
     cards: [56]
     names: [position break, position breaks, custodian positions against administrator, custodian against administrator, holdings that differ between custodian and administrator]
+    answer: [{if: "breaks", all: true, say: "{security} in {portfolio} on {position_date}: the administrator holds {administrator_quantity} and the custodian {custodian_quantity}, a difference of {difference_quantity} units worth {difference_value} {currency}. Reason: {reason}"}, {if: "breaks", all: true, say: "{security} in {portfolio} on {position_date}: a difference of {difference_quantity} units worth {difference_value} {currency}"}]
     words_all: [[custodian, custody], [administrator, admin], [position, positions, holding, holdings, quantity, quantities], [differ, differs, difference, break, breaks]]
     may_read: [documents, extracted_fields, position_snapshots, portfolios, instruments]
     never_read: [transactions, cash_movements, commitments]
@@ -178,6 +179,7 @@ recipes:
     label: Trades not settled on time
     cards: [58]
     names: [unsettled trades, trades not settled, failed trades, failed settlements, trades that failed to settle, settlement fails]
+    answer: [{if: "unsettled", all: true, say: "{trade} {security}: a {side} of {quantity} for {amount} {currency}, settle date {settle_date}, {business_days_late} business days late. Reason: {reason}. Chase {chase}"}, {if: "unsettled", all: true, say: "{trade} {security}: {amount} {currency}, {business_days_late} business days late, chase {chase}"}]
     words_all: [[trade, trades, settlement, settlements], [failed, fail, fails, unsettled, settle, settled, chase]]
     may_read: [transactions, instruments, position_snapshots, documents]
     never_read: [cash_movements, commitments]
@@ -219,6 +221,7 @@ recipes:
     label: Data quality by source
     cards: [61]
     names: [source quality, data quality score, data quality by source, quality score per source, which source to fix first, least reliable source]
+    answer: [{if: "fix_first", say: "Fix first: {source}, with {passed} of {loads} loads on time, added up and unfixed, a score of {score_pct}%"}, {if: "not fix_first", all: true, lead: "Then, by score:", say: "{source} {score_pct}%"}]
     words_all: [[source, sources, feed, feeds], [quality, reliable, reliability, score, fix]]
     may_read: [source_batches, batch_control_totals, expected_statements, documents, instruments]
     never_read: [cash_movements, transactions, position_snapshots]
@@ -612,6 +615,7 @@ recipes:
     label: Desk trades against the administrator
     cards: [51]
     names: [trade breaks, trades against administrator, trades against the administrator, unmatched trades, trade differences, trades that do not match]
+    answer: [{if: "breaks", all: true, say: "{trade} {security} ({trade_date}): {break_kind}, amount {difference_amount} {currency}"}]
     words_all: [[trade, trades], [administrator, admin], [break, breaks, differ, differs, differences, match, matches, missing]]
     may_read: [transactions, extracted_fields, documents, instruments]
     never_read: [cash_movements, position_snapshots, commitments]
@@ -658,6 +662,7 @@ recipes:
     label: Open breaks by age
     cards: [59]
     names: [break age, open breaks by age, open breaks, breaks by age, old breaks, aged breaks, break register]
+    answer: [{if: "over_five_business_days and break_type = cash break", all: true, lead: "Cash breaks older than five business days:", say: "{break_id} ({entity}): {subject}, detected {detected}, {age_business_days} business days old"}, {if: "over_five_business_days and not break_type = cash break", all: true, lead: "Other breaks older than five business days:", say: "{break_id} ({break_type}, {entity}): {subject}, {age_business_days} business days old"}, {if: "not over_five_business_days", all: true, lead: "Within five business days:", say: "{break_id} ({break_type}, {entity}): {subject}, {age_business_days} business days old"}]
     words_all: [[break, breaks], [open, age, aged, old, older, days]]
     may_read: [exceptions, legal_entities, documents]
     never_read: [cash_movements, transactions, position_snapshots]
@@ -691,6 +696,7 @@ recipes:
     label: Inbox files and where they belong
     cards: [60]
     names: [unrecognised files, files not recognised, unrecognised documents, inbox files, documents the office could not recognise, unknown files]
+    answer: [{if: "unrecognised", all: true, say: "{file} is not recognised ({what}); {action}"}, {if: "not unrecognised", all: true, lead: "The other inbox files:", say: "{file} belongs in {belongs_in}: {action}"}]
     words_all: [[file, files, document, documents, inbox], [unrecognised, unrecognized, recognise, recognize, unknown, belong, belongs, refuse]]
     may_read: [documents, extracted_fields]
     never_read: [cash_movements, transactions, position_snapshots]
@@ -722,6 +728,7 @@ recipes:
     label: New feed columns mapped and in doubt
     cards: [99]
     names: [feed mapping, new feed mapping, columns mapped and in doubt, new source file mapping, columns in doubt, safe to go live]
+    answer: [{if: "in_doubt", all: true, say: "{source_column} in {feed} is in doubt: it {doubt_between}"}, {if: "not safe_to_go_live", all: true, say: "{feed}: {mapped_with_confidence} of {columns} columns map with high confidence ({share_mapped_pct}%), from {rows_in_sample} sample rows; not safe to go live yet"}, {if: "safe_to_go_live", all: true, say: "{feed}: safe to go live, the mapping is approved and no column is in doubt"}]
     words_all: [[feed, file, source, mapping], [mapped, mapping, doubt, live, confidence]]
     may_read: [sheet_mappings, sheet_mapping_columns, source_batches]
     never_read: [position_snapshots, transactions, cash_movements]
@@ -766,6 +773,7 @@ recipes:
     label: Bank lines with no purpose
     cards: [63]
     names: [uncoded bank lines, unexplained bank lines, bank lines with no purpose, bank lines to code, bank lines not matched]
+    answer: [{if: "uncoded", all: true, lead: "Bank lines with no purpose:", say: "{date} {entity}, {account}: {amount} {currency}, {description}, payee {payee}"}]
     words_all: [[bank], [uncoded, unexplained, purpose, unmatched, code]]
     may_read: [cash_movements, source_records, documents, extracted_fields, instruments, portfolios, legal_entities, office_expenses, grants, transactions, fx_confirmations,
                family_members, bank_accounts, business_rules, rule_versions]
