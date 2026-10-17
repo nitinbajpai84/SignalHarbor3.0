@@ -708,3 +708,76 @@ recipes:
       label: Coupons and dividends add up to the total
       sql: >-
         select (select coalesce(sum(coupons + dividends), 0) from (select distinct currency, coupons, dividends from {name}) as t), (select coalesce(sum(amount), 0) from {name})
+
+  - id: lookthrough_exposure
+    label: Look-through exposure by company
+    status: ready
+    cards: [69]
+    names: [look-through exposure, lookthrough exposure, what the funds own, look through the funds, exposure through funds, company exposure through funds, fund overlap]
+    may_read: [fund_holdings, source_records, valuation_observations, position_snapshots, instruments, portfolios, business_rules, rule_versions]
+    never_read: [commitments, cash_movements, transactions]
+    why: "What the family owns through a fund is the fund's value times the weight the manager's holdings list gives the company. A commitment or a call says nothing of what the fund holds."
+    formula: >-
+      For each fund with a holdings list (the latest list of each fund, a superseded row out): its latest statement value (the valuation nothing supersedes with the latest
+      valuation date, as expected_distributions) times each company's weight, rounded to the cent, summed by company and by sector. 'Other holdings' is the manager's
+      remainder, not a company, and has no row. funds = the fund keys the holdings list gives (the office's own fund codes), fund_names the funds. The liquid book is
+      what the portfolios with a signed single-name limit hold at their latest position date (as the single-name limit measures it); direct_value is the company's own
+      holding in it. family_investments = the liquid book plus the latest value of every fund (cash out). Shares are percent, two decimals.
+    grain: By company
+    sql: >-
+      create table {name} as with {positions},
+      vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+      lv as (select instrument_id, valuation_date, value_amount from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc,
+      v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+      fh as (select h.* from fund_holdings as h where not exists (select 1 from fund_holdings as x where x.supersedes_fund_holding_id = h.id)
+      and h.as_at = (select max(y.as_at) from fund_holdings as y where y.instrument_id = h.instrument_id)),
+      line as (select h.holding_name as company, h.sector, split_part(s.external_record_id, ':', 1) as fund_key, i.canonical_name as fund, l.valuation_date, h.as_at,
+      round(l.value_amount * h.weight_pct / 100, 2) as amount from fh as h join lv as l on l.instrument_id = h.instrument_id join instruments as i on i.id = h.instrument_id
+      left join source_records as s on s.id = h.source_record_id where lower(h.holding_name) <> 'other holdings'),
+      lim as (select p.id as portfolio_id from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
+      where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      book as (select l.instrument_id, l.position_date, l.source_market_value as v from positions as l join lim as m on m.portfolio_id = l.portfolio_id
+      where l.position_date = (select max(z.position_date) from positions as z where z.portfolio_id = l.portfolio_id)),
+      tot as (select (select sum(v) from book) as liquid_book, (select max(position_date) from book) as book_date,
+      (select sum(v) from book) + (select coalesce(sum(l.value_amount), 0) from lv as l join instruments as i on i.id = l.instrument_id where i.instrument_type like '%fund') as family_investments),
+      co as (select company, min(sector) as sector, sum(amount) as through_funds, list(distinct fund_key order by fund_key) as funds,
+      string_agg(distinct fund, ', ' order by fund) as fund_names, count(distinct fund_key) as fund_count, min(valuation_date) as oldest_value, max(as_at) as holdings_as_at
+      from line group by company),
+      dir as (select lower(i.canonical_name) as company, sum(b.v) as direct_value from book as b join instruments as i on i.id = b.instrument_id group by 1),
+      x as (select c.*, coalesce(d.direct_value, 0) as direct_value, t.liquid_book, t.book_date, t.family_investments,
+      sum(c.through_funds) over (partition by c.sector) as sector_total from co as c cross join tot as t left join dir as d on d.company = lower(c.company))
+      select company, sector, cast(through_funds as decimal(18,2)) as through_funds, funds, fund_names, cast(fund_count as integer) as fund_count, (fund_count > 1) as in_several_funds,
+      cast(round(100 * through_funds / nullif(family_investments, 0), 2) as decimal(9,2)) as share_of_family_pct, cast(sector_total as decimal(18,2)) as sector_through_funds,
+      cast(direct_value as decimal(18,2)) as direct_value, cast(round(100 * direct_value / nullif(liquid_book, 0), 2) as decimal(9,2)) as direct_pct_of_liquid_book,
+      cast(round(100 * (direct_value + through_funds) / nullif(liquid_book, 0), 2) as decimal(9,2)) as with_funds_pct_of_liquid_book,
+      cast(liquid_book as decimal(18,2)) as liquid_book, book_date, cast(family_investments as decimal(18,2)) as family_investments, oldest_value, holdings_as_at,
+      cast(row_number() over (order by through_funds desc, company) as integer) as rank,
+      cast(count(*) filter (where fund_count > 1) over () as integer) as several_count,
+      string_agg(company, ', ' order by through_funds desc, company) filter (where fund_count > 1) over () as several_names,
+      (row_number() over (order by through_funds desc, company) = 1) as first_row
+      from x
+    measure: through_funds
+    columns:
+      through_funds: What the family holds in the company through its funds (fund value times weight, summed over the funds).
+      funds: The fund keys of the holdings lists the company is in.
+      fund_names: The funds the company is in.
+      in_several_funds: True when the company sits in more than one fund.
+      share_of_family_pct: through_funds as a percent of family_investments.
+      sector_through_funds: The look-through total of the company's sector (the same on every row of the sector).
+      direct_value: The company's own holding in the liquid book at its latest position date (0 when not held directly).
+      direct_pct_of_liquid_book: direct_value as a percent of the liquid book.
+      with_funds_pct_of_liquid_book: direct_value plus through_funds, as a percent of the liquid book.
+      family_investments: The liquid book plus the latest value of every fund (the same on every row).
+      oldest_value: The oldest fund statement date the company's figure rests on.
+      several_count: How many companies sit in more than one fund (the same on every row).
+      several_names: Those companies, largest first (the same on every row).
+      first_row: True on the largest company, so a signal can read the totals once.
+    tie_out:
+      label: The companies and the managers' 'Other holdings' add up to the latest values of the funds with a holdings list
+      sql: >-
+        with vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+        lv as (select instrument_id, value_amount from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+        fh as (select h.* from fund_holdings as h where not exists (select 1 from fund_holdings as x where x.supersedes_fund_holding_id = h.id)
+        and h.as_at = (select max(y.as_at) from fund_holdings as y where y.instrument_id = h.instrument_id))
+        select (select coalesce(sum(through_funds), 0) from {name}) + (select coalesce(sum(round(l.value_amount * h.weight_pct / 100, 2)), 0) from fh as h join lv as l on l.instrument_id = h.instrument_id where lower(h.holding_name) = 'other holdings'),
+        (select coalesce(sum(l.value_amount), 0) from lv as l where l.instrument_id in (select instrument_id from fh))

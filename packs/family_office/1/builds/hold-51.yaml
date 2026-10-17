@@ -53,3 +53,12 @@ roles:
         skills: ["data.recognise-file", "build.write-formula-table", "consume.answer-question"]
         dashboard: "Consume: the expected coupons and dividends of the next 12 months, by quarter and by security"
         check: {ask: "How much income to plan for next year?", expect: ["811,406.6", "362,000", "449,406.6", "151,690.2", "122,500", "208,302.2", "272,302.2", "56,612", "54"]}
+  - id: investment_analyst
+    builds:
+      - id: uc-069-lookthru
+        title: "What the private funds really own"
+        say: "Each quarter I want to see through our private funds: what we own of each company and each sector through them, which companies sit in more than one fund, and Harborview Semiconductor with what we hold directly beside it, as the single-name limit measures it. The managers' holdings lists, their statements and the day's positions are the files. If the same company sits in several funds, I flag it to the CIO."
+        files: ["office6m:*/fund_holdings/fund_holdings_2026-09-30.xlsx", "office6m:*/manager_statements/*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:reference/EG_security_master_20261008.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: each company and sector through the funds, the companies in several funds, and Harborview direct and through the funds against the liquid book"
+        check: {ask: "Whether the family is over-exposed to one company or sector through funds?", expect: ["2,740,050", "2,378,900", "1,393,000", "1,381,200", "1,374,600", "4,114,650", "1,779,300", "4.21", "7.46", "111,033,700"]}

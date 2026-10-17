@@ -1,5 +1,5 @@
-"""W1b hold: the recipes of the "Hold and maintain" cards of 51 to 100 (55, 64, 65, 66, 67, 68), run on the real loader's warehouse and compared with
-answer_keys.yaml. Card 69 is unbuilt: the fund holdings lists have no reader yet (docs/v3/w1/build51-hold.md, Needs).
+"""W1b hold: the recipes of the "Hold and maintain" cards of 51 to 100 (55, 64, 65, 66, 67, 68, 69), run on the real loader's warehouse and compared with
+answer_keys.yaml (docs/v3/w1/build51-hold.md).
 
 Real: the office6m files copied into a company's dropbox, the platform's warehouse and the real loader (as tests/v1/test_w2_loader.py), the recipe and its tie-out,
 the signal yaml run through the engine's own parser. Nothing is stubbed. No expected number is typed here: they come from the key. The cases that change the data
@@ -25,10 +25,9 @@ OFFICE = W.OFFICE
 PACK = REPO / "packs" / "family_office" / "1"
 KEYS = W.KEYS
 CARD = "uc-064-fxexp"
-BUILT = [CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl", "uc-068-incomef"]
-UNBUILT = ["uc-069-lookthru"]
+BUILT = [CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl", "uc-068-incomef", "uc-069-lookthru"]
 # cards whose story has an exception (a signal that is not info); 68 has none
-EXCEPTION = {CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl"}
+EXCEPTION = {CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl", "uc-069-lookthru"}
 
 
 @pytest.fixture(scope="module")
@@ -397,9 +396,55 @@ def test_the_build_carries_the_exact_answer_keys(card):
         assert any(abs(float(e.replace(",", "")) - v) < 1e-9 for v in numbers), e
 
 
-def test_card_69_is_honestly_unbuilt():
-    """No recipe claims it: the fund holdings lists have no reader, so the fund_holdings table is empty (build51-hold.md)."""
-    assert R.recipe("lookthrough_exposure") is None
-    assert not [r for r in R.recipes() if 69 in (r.get("cards") or [])]
-    built = {x["id"] for p in (PACK / "builds").glob("*.yaml") for r in (yaml.safe_load(p.read_text(encoding="utf-8")) or {}).get("roles", []) for x in r.get("builds", [])}
-    assert not built & set(UNBUILT)
+# ---- card 69: what the private funds really own ----------------------------------------------------------------------------------------------
+
+def test_69_the_recipe_is_built_on_the_holdings_lists_and_its_tie_out_holds(office):
+    r = R.recipe("lookthrough_exposure")
+    assert r["status"] == "ready" and r["cards"] == [69] and r["tie_out"]
+    rows = office.run("lookthrough_exposure")  # renders, checks the tables read and runs the tie-out (companies plus 'Other holdings' = the funds' values)
+    assert rows and "Other holdings" not in {x["company"] for x in rows}
+
+
+def test_69_the_look_through_equals_the_key(office):
+    k = key("uc-069-lookthru")
+    rows = office.run("lookthrough_exposure")
+    by = {r["company"]: r for r in rows}
+    top = sorted(rows, key=lambda r: r["rank"])[:5]
+    assert [{"company": r["company"], "through_funds": f2(r["through_funds"]), "funds": sorted(r["funds"]), "share_of_family_pct": f2(r["share_of_family_pct"])}
+            for r in top] == k["top_companies"]
+    assert sorted(r["company"] for r in rows if r["in_several_funds"]) == sorted(k["companies_in_more_than_one_fund"])
+    assert rows[0]["several_names"].split(", ") == k["companies_in_more_than_one_fund"]
+    assert {r["sector"]: f2(r["sector_through_funds"]) for r in rows} == k["by_sector"]
+    hv = by["Harborview Semiconductor"]
+    assert (f2(hv["direct_value"]), f2(hv["through_funds"]), f2(hv["direct_pct_of_liquid_book"]), f2(hv["with_funds_pct_of_liquid_book"])) == (
+        k["harborview_direct"], k["harborview_through_funds"], k["harborview_direct_pct_of_liquid_book"], k["harborview_with_funds_pct_of_liquid_book"])
+    assert {f2(r["family_investments"]) for r in rows} == {k["family_investments"]}
+
+
+def test_69_a_newer_holdings_list_replaces_the_old_one(office):
+    """The latest list of a fund counts; a newer weight of Helix in Evergreen Growth I moves the look-through by the value times the change."""
+    k = key("uc-069-lookthru")
+    con = office.con
+    con.execute("begin")
+    try:
+        fid, val = con.execute("select h.instrument_id, (select value_amount from valuation_observations as v where v.instrument_id = h.instrument_id "
+                               "and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id) order by valuation_date desc limit 1) "
+                               "from fund_holdings as h join instruments as i on i.id = h.instrument_id where i.canonical_name = 'Evergreen Growth I' limit 1").fetchone()
+        con.execute("insert into fund_holdings select uuid(), organization_id, source_record_id, source_document_id, source_page, received_at, recorded_at, null, "
+                    "instrument_id, holding_name, sector, case when holding_name = 'Helix Cloud Systems' then weight_pct + 1 when holding_name = 'Other holdings' "
+                    "then weight_pct - 1 else weight_pct end, date '2026-12-31' from fund_holdings where instrument_id = ?", [fid])
+        helix = next(r for r in office.run("lookthrough_exposure") if r["company"] == "Helix Cloud Systems")
+        assert f2(helix["through_funds"]) == pytest.approx(k["top_companies"][0]["through_funds"] + float(val) / 100)
+    finally:
+        con.execute("rollback")
+
+
+def test_69_the_signals_name_the_overlap_and_are_silent_without_it(office):
+    k = key("uc-069-lookthru")
+    rows = office.run("lookthrough_exposure")
+    msg = fire("uc-069-lookthru-overlap", {"lookthrough_exposure": rows})
+    assert msg and all(c in msg for c in k["companies_in_more_than_one_fund"]) and str(len(k["companies_in_more_than_one_fund"])) in msg
+    top = fire("uc-069-lookthru-top", {"lookthrough_exposure": rows})
+    assert top and k["top_companies"][0]["company"] in top and f"{k['top_companies'][0]['through_funds']:,.0f}" in top
+    alone = [dict(r, several_count=0, several_names=None, in_several_funds=False, fund_count=1) for r in rows]
+    assert fire("uc-069-lookthru-overlap", {"lookthrough_exposure": alone}) is False
