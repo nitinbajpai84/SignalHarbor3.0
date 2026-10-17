@@ -22,11 +22,11 @@ recipes:
       investment part) and a fee row (the fee part), both counted. Currencies are never added together; one row per currency adds up the funds.
     grain: By entity and fund, with one total row per currency
     sql: >-
-      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
-      = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
+      = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id
       = x.id) and exists (select 1 from commitments as r where r.instrument_id = x.instrument_id and r.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where
-      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
-      m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
+      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as confirmed_after from cmv as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
+      m.movement_type in ('call', 'fee') and not exists (select 1 from cmv as z where z.supersedes_cash_movement_id = m.id) group by
       m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
       coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), fr as (select
       e.entity_name as entity, i.canonical_name as fund, c.currency, c.called_as_at as as_at, cast(c.commitment_amount as decimal(18,2)) as committed,
@@ -47,9 +47,9 @@ recipes:
     tie_out:
       label: Committed on the total rows equals the commitments of the register (rows nothing supersedes, shadow rows left out)
       sql: >-
-        select (select coalesce(sum(committed), 0) from {name} where is_total = 1), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where
+        with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id) select (select coalesce(sum(committed), 0) from {name} where is_total = 1), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where
         not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null
-        and not exists (select 1 from cash_movements as m where m.commitment_id = x.id) and exists (select 1 from commitments as r where r.instrument_id =
+        and not exists (select 1 from cmv as m where m.commitment_id = x.id) and exists (select 1 from commitments as r where r.instrument_id =
         x.instrument_id and r.called_to_date is not null)))
 
 
@@ -69,8 +69,8 @@ recipes:
       held, not guessed.
     grain: One row, in USD
     sql: >-
-      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
-      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), reg as (select coalesce(max(called_as_at), current_date) as d from cm), rl as (select b.rule_code, v.id as
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), reg as (select coalesce(max(called_as_at), current_date) as d from cm), rl as (select b.rule_code, v.id as
       rule_version_id, cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from business_rules as b join rule_versions as v on
       v.business_rule_id = b.id where v.approval_status = 'approved' and v.effective_from <= (select d from reg) and (v.effective_to is null or
       v.effective_to > (select d from reg)) qualify row_number() over (partition by b.rule_code order by v.effective_from desc, v.version_number desc) = 1),
@@ -351,12 +351,12 @@ recipes:
       status as 'not set'; a signed limit that cannot be computed shows 'not stated'.
     grain: By deal
     sql: >-
-      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
-      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and
       (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where m.confirmation_status =
       'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as
-      confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and m.movement_type in ('call',
-      'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*,
+      confirmed_after from cmv as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and m.movement_type in ('call',
+      'fee') and not exists (select 1 from cmv as z where z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*,
       case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date + coalesce(v.confirmed_after, 0) end as paid,
       coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), reg as (select coalesce(max(called_as_at), current_date)
       as d from cm), rl as (select b.rule_code, v.id as rule_version_id, cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from
@@ -427,14 +427,14 @@ recipes:
       questionnaires. Each line carries its source (the document or the register record) and traced = 1 when it has one.
     grain: By fund and figure
     sql: >-
-      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
-      = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where
-      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
-      m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
+      = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where
+      m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as confirmed_after from cmv as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
+      m.movement_type in ('call', 'fee') and not exists (select 1 from cmv as z where z.supersedes_cash_movement_id = m.id) group by
       m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
       coalesce(v.confirmed_after, 0) end as paid, coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), lv as (select
       v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc) as rn from valuation_observations as v where
-      not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)), lf as (select m.commitment_id, coalesce(f.value_numeric, 0) as fee, m.received_at, coalesce(z.source_record_id, m.source_record_id) as source_record_id, row_number() over (partition by m.commitment_id order by m.effective_date desc, m.received_at desc) as rn from cash_movements as m left join cash_movements as z on z.id = m.supersedes_cash_movement_id left join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) left join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call' and m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id)), dq as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager
+      not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id)), lf as (select m.commitment_id, coalesce(f.value_numeric, 0) as fee, m.received_at, coalesce(z.source_record_id, m.source_record_id) as source_record_id, row_number() over (partition by m.commitment_id order by m.effective_date desc, m.received_at desc) as rn from cmv as m left join cmv as z on z.id = m.supersedes_cash_movement_id left join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) left join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call' and m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and not exists (select 1 from cmv as y where y.supersedes_cash_movement_id = m.id)), dq as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager
       from documents as d join extracted_fields as m on m.document_id = d.id and m.field_name = 'manager_name' where d.document_type = 'ddq' and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)), da as (select
       q.manager, q.title, q.document_date, coalesce(f.corrected_value_text, f.value_text) as answer, lag(coalesce(f.corrected_value_text, f.value_text))
       over (partition by q.manager, f.field_name order by q.document_date) as prev from dq as q join extracted_fields as f on f.document_id = q.doc_id and
@@ -469,8 +469,8 @@ recipes:
     tie_out:
       label: Every fund of the register has its commitment line
       sql: >-
-        select (select count(*) from {name} where figure = 'commitment'), (select count(*) from commitments as x where not exists (select 1 from commitments
-        as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null)))
+        with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id) select (select count(*) from {name} where figure = 'commitment'), (select count(*) from commitments as x where not exists (select 1 from commitments
+        as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null)))
 
 
   - id: commit_check
@@ -493,12 +493,12 @@ recipes:
       cannot be computed. A shadow commitment row (no register source, no called figure, no call movement, in a fund whose other rows in the same currency state a called figure) is left out, as in commitments_by_fund.
     grain: By deal
     sql: >-
-      create table {name} as with {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
-      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), {positions}, cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where
+      y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and
       (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where m.confirmation_status =
       'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as
-      confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and m.movement_type in ('call',
-      'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*,
+      confirmed_after from cmv as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and m.movement_type in ('call',
+      'fee') and not exists (select 1 from cmv as z where z.supersedes_cash_movement_id = m.id) group by m.commitment_id), cu as (select c.*,
       case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date + coalesce(v.confirmed_after, 0) end as paid,
       coalesce(v.noticed, 0) as noticed from cm as c left join mv as v on v.commitment_id = c.id), reg as (select coalesce(max(called_as_at), current_date)
       as d from cm), rl as (select b.rule_code, v.id as rule_version_id, cast(json_extract_string(v.parameters, '$.max_pct') as double) as max_pct from
@@ -753,7 +753,7 @@ recipes:
       With no signed rule the score and verdict are empty.
     grain: By manager and currency
     sql: >-
-      create table {name} as with asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
       rl as (select b.rule_code, v.parameters as p from business_rules as b join rule_versions as v on v.business_rule_id = b.id where b.rule_code in ('manager_score_weights', 'manager_score_bands')
       and v.approval_status = 'approved' and v.effective_from <= (select d from asat) and (v.effective_to is null or v.effective_to > (select d from asat))
       qualify row_number() over (partition by b.rule_code order by v.effective_from desc, v.version_number desc) = 1),
@@ -765,14 +765,14 @@ recipes:
       fv as (select i.id as iid, i.manager_name as m, min(v.valuation_date) as d0, max(v.valuation_date) as d1 from vo as v join instruments as i on i.id = v.instrument_id where i.manager_name is not null group by all),
       f0 as (select f.*, (select max(v.value_amount) from vo as v where v.instrument_id = f.iid and v.valuation_date = f.d0) as v0, (select max(v.value_amount) from vo as v where v.instrument_id = f.iid
       and v.valuation_date = f.d1) as v1, (select max(v.currency) from vo as v where v.instrument_id = f.iid and v.valuation_date = f.d1) as ccy from fv as f),
-      cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))),
+      cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cmv as m0 where m0.commitment_id = x.id) and exists (select 1 from commitments as r0 where r0.instrument_id = x.instrument_id and r0.currency = x.currency and r0.called_to_date is not null))),
       mf as (select c.instrument_id as iid, sum(-m.amount) filter (where m.movement_type <> 'distribution') as calls, sum(m.amount) filter (where m.movement_type = 'distribution') as dist
-      from cm as c join cash_movements as m on m.commitment_id = c.id join f0 on f0.iid = c.instrument_id where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution'
-      or m.notice_kind = 'capital_call') and m.effective_date > f0.d0 and m.effective_date <= (select d from asat) and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by 1),
-      fp as (select c.instrument_id as iid, sum(f.value_numeric) as fees from cash_movements as m join cm as c on c.id = m.commitment_id join f0 on f0.iid = c.instrument_id left join cash_movements as z on
+      from cm as c join cmv as m on m.commitment_id = c.id join f0 on f0.iid = c.instrument_id where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution'
+      or m.notice_kind = 'capital_call') and m.effective_date > f0.d0 and m.effective_date <= (select d from asat) and not exists (select 1 from cmv as z where z.supersedes_cash_movement_id = m.id) group by 1),
+      fp as (select c.instrument_id as iid, sum(f.value_numeric) as fees from cmv as m join cm as c on c.id = m.commitment_id join f0 on f0.iid = c.instrument_id left join cmv as z on
       z.id = m.supersedes_cash_movement_id join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists
       (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call'
-      and m.movement_type = 'call' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id) and m.effective_date > f0.d0
+      and m.movement_type = 'call' and m.confirmation_status = 'confirmed' and not exists (select 1 from cmv as y where y.supersedes_cash_movement_id = m.id) and m.effective_date > f0.d0
       and m.effective_date <= (select d from asat) group by 1),
       ex as (select e.instrument_id, e.period_end, min(e.due_date) as due_date from expected_statements as e where not exists (select 1 from expected_statements as x
       where x.supersedes_expected_statement_id = e.id) group by all),
