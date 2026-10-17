@@ -1,4 +1,4 @@
-# Persona builds of the Invest domain, cards 51 to 100 (only card 80 is built; 53, 71, 76, 77, 78 and 79 wait for readers or signed rules, see docs/v3/w1/build51-invest.md). Merged with role_builds.yaml by role id.
+# Persona builds of the Invest domain, cards 51 to 100 (cards 80 and 71 are built; 53, 76, 77, 78 and 79 wait for readers or signed rules, see docs/v3/w1/build51-invest.md). Merged with role_builds.yaml by role id.
 # files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
 template: family_office@1
 roles:
@@ -11,3 +11,12 @@ roles:
         skills: ["build.write-formula-table", "check.adds-up", "consume.answer-question", "consume.explain-number"]
         dashboard: "Consume: commitments by vintage year with share of total, funds in each year, the largest year marked"
         check: {ask: "Are our private commitments too bunched in one year?", expect: ["15,000,000", "13,000,000", "10,000,000", "12,500,000", "4,350,000", "54,850,000", "27.35", "23.7", "18.23", "22.79", "7.93", "2021"]}
+  - id: investment_analyst
+    builds:
+      - id: uc-071-expdist
+        title: "Distributions we expect from the funds in the next year"
+        say: "At the start of each quarter the CFO needs to know how much money the private funds will pay back to us over the next twelve months. Take each fund's latest statement value and the payout rates in the managers' distribution outlooks, and give me the amount per fund and per quarter end, the total per quarter and the total for the year. Tell me which funds rest on an old statement. I hand it to the CFO for the forecast; there is nothing to sign."
+        files: ["office6m:*/manager_outlook/*_distribution_outlook_2026-27.pdf", "office6m:*/manager_statements/*_final.pdf"]
+        skills: ["data.read-pdf-fields", "build.write-formula-table", "check.adds-up", "consume.answer-question", "consume.explain-number"]
+        dashboard: "Consume: expected distributions by fund and quarter end, quarter totals and the year total, funds on an old statement marked"
+        check: {ask: "How much money should we expect back from the funds over the next year?", expect: ["628,215", "464,215", "787,115", "781,265", "2,660,810", "1,068,900", "10,180,000"]}

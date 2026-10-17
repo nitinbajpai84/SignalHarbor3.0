@@ -4,7 +4,7 @@
 # Built here (w1 invest): commitments_by_fund, private_markets_budget, ddq_compare, fund_irr_tvpi, fee_drag (the stubs of cards 7, 35, 39, 49) and manager_timeline (25),
 # mandate_fit (34), memo_support (40), commit_check (41). A call notice is a `call` row (the investment part) and a `fee` row (the fee part) with notice_kind capital_call,
 # commitment_id set, effective_date = due date, received_at = notice date, amounts negative (money out, A5); a distribution is a positive `distribution` row, noticed then confirmed.
-# Built here (w1b, cards 51 to 100): vintage_split (80). watch_flags (53), expected_distributions (71) and manager_score (76) stay stubs: docs/v3/w1/build51-invest.md, Needs.
+# Built here (w1b, cards 51 to 100): vintage_split (80), expected_distributions (71). watch_flags (53) and manager_score (76) stay stubs: docs/v3/w1/build51-invest.md, Needs.
 recipes:
   - id: commitments_by_fund
     label: Commitments by fund
@@ -588,12 +588,63 @@ recipes:
 
   - id: expected_distributions
     label: Distributions expected in the next year
-    status: stub
     cards: [71]
-    names: [expected distributions, distributions we expect]
-    may_read: [cash_movements, commitments, instruments, extracted_fields]
-    formula: Noticed distributions by due date, plus for funds with none noticed the trailing twelve months of confirmed distributions as a run rate, shown separately and labelled an estimate.
-    sql: null
+    names: [expected distributions, distributions we expect, money back from the funds, distributions in the next year, expected payouts, distribution outlook]
+    may_read: [valuation_observations, documents, extracted_fields, instruments]
+    never_read: [cash_movements, transactions, position_snapshots]
+    why: >-
+      An expected distribution is the manager's projected payout rate applied to the fund's value. Cash already moved, trades and positions say nothing of what the
+      manager plans to pay back; the noticed or paid distributions are another figure (distribution_gap).
+    formula: >-
+      For each fund with a distribution outlook: its latest statement value (the valuation nothing supersedes with the latest valuation date, so an amended statement
+      replaces the one it corrects) times the projected payout rate of each quarter of the manager's latest outlook (a rate is a fraction of the value at quarter end).
+      Rows per fund and quarter, a total per fund, a total per quarter and one total, per currency (currencies are never added). A fund whose value is older than the
+      newest statement date among the funds of its currency is marked stale: the amount rests on an old value. No rate is assumed for a fund without an outlook.
+    grain: By currency, fund and quarter end, with a total per fund, per quarter and for all funds
+    sql: >-
+      create table {name} as with vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+      lv as (select instrument_id, valuation_date, value_amount, currency from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc,
+      v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+      od as (select d.id, d.instrument_id from (select d.*, row_number() over (partition by d.instrument_id order by d.received_at desc, d.recorded_at desc) as rn from documents as d
+      where d.document_type = 'manager_distribution_outlook' and d.instrument_id is not null and not exists (select 1 from documents as z where z.supersedes_document_id = d.id)) as d where d.rn = 1),
+      q as (select o.instrument_id, cast(f.value_text as date) as quarter_end, f.value_numeric as rate from od as o join extracted_fields as f on f.document_id = o.id and f.field_name = 'projected_payout_rate'),
+      fq as (select l.currency, i.canonical_name as fund, l.valuation_date, l.value_amount as latest_value, q.quarter_end, q.rate, round(l.value_amount * q.rate, 2) as amount,
+      max(l.valuation_date) over (partition by l.currency) as newest from q join lv as l on l.instrument_id = q.instrument_id join instruments as i on i.id = q.instrument_id)
+      select currency, fund, valuation_date, cast(latest_value as decimal(18,2)) as latest_value, quarter_end, cast(round(100 * rate, 4) as decimal(9,4)) as payout_pct,
+      cast(amount as decimal(18,2)) as amount, cast(case when valuation_date < newest then 1 else 0 end as integer) as is_stale, 'fund_quarter' as row_kind from fq
+      union all select currency, fund, max(valuation_date), cast(max(latest_value) as decimal(18,2)), cast(null as date), cast(null as decimal(9,4)), cast(sum(amount) as decimal(18,2)),
+      cast(max(case when valuation_date < newest then 1 else 0 end) as integer), 'fund_total' from fq group by currency, fund
+      union all select currency, 'All funds', cast(null as date), cast(null as decimal(18,2)), quarter_end, cast(null as decimal(9,4)), cast(sum(amount) as decimal(18,2)), 0, 'quarter_total'
+      from fq group by currency, quarter_end
+      union all select currency, 'All funds', cast(null as date), cast(sum(v) as decimal(18,2)), cast(null as date), cast(null as decimal(9,4)), cast(sum(a) as decimal(18,2)), 0, 'total'
+      from (select currency, fund, max(latest_value) as v, sum(amount) as a from fq group by currency, fund) as f group by currency
+    measure: amount
+    columns:
+      fund: 'The fund; All funds on the quarter and total rows.'
+      valuation_date: The date of the statement value the amount rests on.
+      latest_value: 'The fund''s latest statement value (on the total row, the funds'' values added up).'
+      quarter_end: 'The quarter end the manager projects the payout for; empty on the fund and total rows.'
+      payout_pct: 'The manager''s projected payout for the quarter, in percent of the fund value.'
+      amount: The distribution expected (value times rate), added up on the fund, quarter and total rows.
+      is_stale: '1 when the fund''s value is older than the newest statement date among the funds of its currency.'
+      row_kind: 'fund_quarter, fund_total, quarter_total or total.'
+    tie_out:
+      label: The total rows equal the latest values times the outlook rates, recomputed from the statements and the outlooks
+      sql: >-
+        select (select coalesce(sum(amount), 0) from {name} where row_kind = 'total'), (select coalesce(sum(round(v.value_amount * f.value_numeric, 2)), 0)
+        from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'projected_payout_rate'
+        join (select o.instrument_id, arg_max(o.value_amount, (o.valuation_date, o.received_at, o.recorded_at)) as value_amount from valuation_observations as o
+        where o.id not in (select x.supersedes_valuation_id from valuation_observations as x where x.supersedes_valuation_id is not null) group by o.instrument_id) as v on v.instrument_id = d.instrument_id
+        where d.document_type = 'manager_distribution_outlook' and d.id not in (select z.supersedes_document_id from documents as z where z.supersedes_document_id is not null)
+        and d.received_at = (select max(e.received_at) from documents as e where e.document_type = 'manager_distribution_outlook' and e.instrument_id = d.instrument_id
+        and e.id not in (select z.supersedes_document_id from documents as z where z.supersedes_document_id is not null)))
+    needs:
+      - why: 'No manager distribution outlook is loaded, so there is no payout rate to apply.'
+        sql: >-
+          select count(*) from documents as d join extracted_fields as f on f.document_id = d.id where d.document_type = 'manager_distribution_outlook' and f.field_name = 'projected_payout_rate'
+      - why: 'No statement value of a fund is loaded, so there is nothing to apply the payout rates to.'
+        sql: >-
+          select count(*) from valuation_observations
 
 
   - id: manager_score

@@ -1,0 +1,16 @@
+# SUGGESTION. Card 71, the exception: a fund's expected distributions rest on a statement older than the newest one the other funds of its currency have sent
+# (a missing or late statement), so the amount may be off. The story is read only (signs: none), so there is no hold: the analyst says so when handing it to the CFO.
+suggestion: true
+id: uc-071-expdist-stale-value
+title: Expected distributions rest on an old statement
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: expected_distributions}
+inputs:
+  - {kind: doc, fields: [currency, fund, valuation_date, latest_value, amount, is_stale, row_kind]}
+subject: "{doc.currency} {doc.fund}"
+condition: doc.row_kind == 'fund_total' and doc.is_stale == 1
+severity: needs
+route_to: investment_analyst
+action: {verb: see, options: [Chase the statement, Tell the CFO the amount rests on an old value]}
+message: "{doc.fund}: the {doc.currency} {doc.amount:,.0f} expected rests on the {doc.valuation_date} statement value of {doc.latest_value:,.0f}; the other funds have a newer statement. Chase the statement or tell the CFO."
+evidence: [doc.valuation_date, doc.latest_value, doc.amount]

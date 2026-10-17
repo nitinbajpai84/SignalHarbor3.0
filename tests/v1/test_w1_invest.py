@@ -289,7 +289,7 @@ def close(a, b, places=4):
 
 def test_the_invest_recipes_are_built_and_the_others_stay_stubs():
     stubs = {r["id"] for r in R.stubs()}
-    assert {"watch_flags", "expected_distributions", "manager_score"} <= stubs  # cards 53, 71, 76 are outside the top 50
+    assert {"watch_flags", "manager_score"} <= stubs  # cards 53, 76 are outside the top 50 and wait (card 71, expected_distributions, is built in w1b)
     for rid in MY_RECIPES:
         r = R.recipe(rid)
         assert r and r.get("status") != "stub", rid

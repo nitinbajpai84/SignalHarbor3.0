@@ -1,0 +1,15 @@
+# SUGGESTION. Card 71 row 1: the outlooks and statements are loaded; each fund's expected distributions over the next four quarters go to the Investment Analyst, who hands them to the CFO for the forecast. Read only, nothing to sign.
+suggestion: true
+id: uc-071-expdist-fund
+title: Distributions expected from one fund
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: expected_distributions}
+inputs:
+  - {kind: doc, fields: [currency, fund, valuation_date, latest_value, amount, row_kind]}
+subject: "{doc.currency} {doc.fund}"
+condition: doc.row_kind == 'fund_total'
+severity: info
+route_to: investment_analyst
+action: {verb: see, options: [Hand to the CFO]}
+message: "{doc.fund}: {doc.currency} {doc.amount:,.0f} expected over the next four quarters, from the manager's payout outlook on the {doc.valuation_date} value of {doc.latest_value:,.0f}."
+evidence: [doc.amount, doc.latest_value]
