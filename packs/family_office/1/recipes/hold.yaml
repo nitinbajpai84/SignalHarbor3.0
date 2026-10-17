@@ -1,0 +1,107 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: net_worth
+    label: Net worth
+    names: [net worth, networth, worth, total worth, nav, net asset value, assets under management, aum]
+    may_read: [position_snapshots, valuation_observations, portfolios, legal_entities, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: "Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding."
+    formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.
+    grain: By portfolio (or entity) and position date
+    always_dims: true   # one split on every build, so the table is the same whatever the brief says it is split by (an entity total is the sum of its portfolios)
+    default_dims: [portfolio]
+    dims:
+      entity: [e.entity_name, entity]
+      portfolio: [p.portfolio_name, portfolio]
+    sql: >-
+      create table {name} as with {positions} select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as net_worth
+      from positions as l join portfolios as p on p.id = l.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id group by all
+    measure: net_worth
+    columns:
+      net_worth: The market value of everything held at the position date, in the currency shown.
+      position_date: The date the positions are as at.
+    tie_out:
+      label: Net worth equals the sum of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(net_worth), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+
+  - id: identifier_gaps
+    label: Instruments with no class or identifier
+    status: stub
+    cards: [13]
+    names: [identifier gaps, securities with no asset class, unclassified holdings, missing identifiers]
+    may_read: [instruments, instrument_identifiers, position_snapshots]
+    formula: Instruments with no asset class or with no approved identifier, with how many and the market value held in them at the latest position date.
+    sql: null
+
+
+  - id: value_age_days
+    label: Valuation age
+    status: stub
+    cards: [21]
+    names: [value age, stale valuations, valuation age, days since valuation]
+    may_read: [valuation_observations, nav_snapshots, instruments]
+    formula: As-of date less the latest valuation date of each instrument, in days; flagged above the signed stale threshold (90 days unless the office has its own).
+    sql: null
+
+
+  - id: allocation
+    label: Allocation by asset class and entity
+    status: stub
+    cards: [31]
+    names: [allocation, allocation by asset class, asset allocation]
+    may_read: [position_snapshots, instruments, portfolios, legal_entities]
+    formula: Market value of the position snapshots (counted as net_worth counts them) by asset class and entity over the total of the same date and currency.
+    sql: null
+
+
+  - id: nav_rollforward
+    label: Private fund value roll-forward
+    status: stub
+    cards: [38]
+    names: [nav rollforward, value roll-forward, nav roll-forward]
+    may_read: [nav_snapshots, valuation_observations, cash_movements, instruments]
+    formula: 'By fund and quarter: opening value + calls - distributions + gain or loss = closing value; the unexplained difference is the closing value the manager reports less that roll-forward.'
+    sql: null
+
+
+  - id: liquid_pnl_mtd
+    label: Liquid book gain or loss this month
+    status: stub
+    cards: [43]
+    names: [liquid pnl, gain or loss this month, month to date gain]
+    may_read: [position_snapshots, transactions, instruments]
+    formula: Value today less value at the last month end less net trades (purchases positive, sales negative), over the listed instruments, in one currency.
+    sql: null
+
+
+  - id: net_worth_after_debt
+    label: Net worth after debt
+    status: stub
+    cards: [17]
+    names: [net worth after debt, net of debt, net worth less loans]
+    may_read: [position_snapshots, credit_facilities, portfolios, legal_entities, instruments]
+    formula: Net worth (as net_worth counts it) less the drawn amount of each credit facility's latest row at or before the date, same currency and date; currencies are never added together.
+    sql: null
+
+
+  - id: currency_exposure
+    label: Currency exposure
+    status: stub
+    cards: [64]
+    names: [currency exposure, exposure by currency]
+    may_read: [position_snapshots, fx_confirmations, market_observations, instruments]
+    formula: Market value by currency over net worth, before and after the open FX forwards (the bought leg added, the sold leg taken off).
+    sql: null
+
+
+  - id: income_forecast
+    label: Dividend and coupon income forecast
+    status: stub
+    cards: [68]
+    names: [income forecast, dividend forecast, coupon income]
+    may_read: [position_snapshots, cash_movements, instruments, market_observations]
+    formula: 'Dividend and coupon cash received in the last twelve months by instrument, carried forward on the instruments held today and labelled an estimate. ponytail: a trailing run rate until a corporate-actions source exists.'
+    sql: null

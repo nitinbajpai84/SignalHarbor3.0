@@ -1,0 +1,12 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: renewals_vendors
+    label: Vendor contract renewals
+    status: stub
+    cards: [30]
+    names: [vendor renewals, contract renewals, renewals due vendors]
+    may_read: [vendor_contracts]
+    formula: Contracts whose next renewal date falls inside 90 days (signed window if the office has one), with the date by which notice must be given (renewal date less notice_days) and the annual cost.
+    sql: null

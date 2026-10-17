@@ -1,0 +1,210 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: cash_by_entity
+    label: Cash by entity
+    names: [cash by entity, cash position, cash balance, closing cash, cash on hand, cash]
+    may_read: [position_snapshots, instruments, portfolios, legal_entities]
+    never_read: [commitments, transactions, cash_movements]
+    why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.
+    formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.
+    grain: By entity and position date
+    sql: >-
+      create table {name} as with {positions} select e.entity_name as entity, l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as cash
+      from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      join legal_entities as e on e.id = p.legal_entity_id group by all
+    measure: cash
+    columns:
+      cash: The cash the administrator reports at the end of the day.
+    tie_out:
+      label: Cash equals the cash positions of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(cash), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c join instruments as i on i.id = c.instrument_id
+        and i.instrument_type = 'cash' join portfolios as p on p.id = c.portfolio_id join legal_entities as e on e.id = p.legal_entity_id)
+
+  - id: cash_break
+    label: Cash break
+    names: [cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break]
+    words_all: [[cash], [break, breaks, variance, difference, differences, differs, mismatch]]
+    may_read: [position_snapshots, cash_movements, instruments, portfolios, legal_entities]
+    never_read: [commitments, transactions]
+    why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.
+    formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.
+    grain: By entity and day
+    sql: >-
+      create table {name} as with {positions},
+      bal as (select p.legal_entity_id as entity_id, e.entity_name as entity, l.position_date, l.currency, sum(l.source_market_value) as closing_cash
+      from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      join legal_entities as e on e.id = p.legal_entity_id group by all),
+      first_day as (select entity_id, currency, min(position_date) as start_date from bal group by all),
+      held as (select distinct l.portfolio_id from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash'),
+      mv as (select p.legal_entity_id as entity_id, m.currency, m.effective_date, sum(m.amount) as moved from cash_movements as m
+      join portfolios as p on p.id = m.portfolio_id where m.portfolio_id in (select portfolio_id from held)
+      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) group by all),
+      moved as (select b.entity_id, b.currency, b.position_date, coalesce(sum(mv.moved), 0) as moved from bal as b
+      join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
+      left join mv on mv.entity_id = b.entity_id and mv.currency = b.currency and mv.effective_date > f.start_date and mv.effective_date <= b.position_date group by all)
+      select b.entity, b.position_date as day, b.currency, cast(b.closing_cash as decimal(18,2)) as closing_cash,
+      cast(b.closing_cash - o.closing_cash as decimal(18,2)) as cash_change, cast(m.moved as decimal(18,2)) as movements,
+      cast(b.closing_cash - o.closing_cash - m.moved as decimal(18,2)) as cash_break
+      from bal as b join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
+      join bal as o on o.entity_id = f.entity_id and o.currency = f.currency and o.position_date = f.start_date
+      join moved as m on m.entity_id = b.entity_id and m.currency = b.currency and m.position_date = b.position_date
+    measure: cash_break
+    columns:
+      closing_cash: The administrator's closing cash of the day.
+      cash_change: The administrator's closing cash less the cash at the start of the period.
+      movements: The cash movements recorded on the same portfolios after the period start, up to the day.
+      cash_break: The cash change less the movements. Zero when the two sources agree.
+    tie_out:
+      label: The administrator cash in the break equals the cash positions of the position snapshots for the same days
+      sql: >-
+        select (select coalesce(sum(closing_cash), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c join instruments as i on i.id = c.instrument_id
+        and i.instrument_type = 'cash' join portfolios as p on p.id = c.portfolio_id where p.legal_entity_id is not null)
+    needs:   # an input with no rows: the figure is held at Decision 3, never stated (c6 ops_lead: with no movements the break was the plain change in cash)
+      - why: No cash movements are loaded for the portfolios whose cash the administrator reports, so the break would only be the change in that cash, not a break.
+        sql: >-
+          select count(*) from cash_movements as m where m.portfolio_id in (select s.portfolio_id from position_snapshots as s
+          join instruments as i on i.id = s.instrument_id and i.instrument_type = 'cash')
+          and m.effective_date > (select min(s.position_date) from position_snapshots as s join instruments as i on i.id = s.instrument_id and i.instrument_type = 'cash')
+
+  - id: fx_confirmation_variance
+    label: FX forward confirmation variance
+    names: [fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs]
+    words_all: [[fx, forward, forwards], [confirmation, confirmations, confirm], [differ, differs, difference, variance, mismatch, match]]
+    may_read: [fx_confirmations, transactions, instruments, instrument_identifiers]
+    never_read: [commitments, cash_movements, position_snapshots]
+    why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it.
+    formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.
+    grain: By trade reference
+    sql: >-
+      create table {name} as with conf as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)),
+      trade as (select t.id, t.external_trade_id, t.trade_date, t.currency, abs(t.cash_amount) as trade_amount, t.instrument_id from transactions as t
+      where t.supersedes_transaction_id is null and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      ref as (select t.id as trade_id, t.external_trade_id as ref from trade as t union select t.id, x.identifier_value from trade as t
+      join instrument_identifiers as x on x.instrument_id = t.instrument_id)
+      select c.trade_reference, c.trade_date, c.counterparty, t.currency, cast(case when c.currency_bought = t.currency then c.amount_bought
+      when c.currency_sold = t.currency then c.amount_sold end as decimal(18,2)) as confirmed_amount, cast(t.trade_amount as decimal(18,2)) as trade_amount,
+      cast(case when c.currency_bought = t.currency then c.amount_bought when c.currency_sold = t.currency then c.amount_sold end - t.trade_amount as decimal(18,2)) as variance
+      from conf as c join ref as r on r.ref = c.trade_reference join trade as t on t.id = r.trade_id
+    measure: variance
+    columns:
+      confirmed_amount: The confirmation's amount in the currency of the desk's trade.
+      trade_amount: The desk's trade amount, as a positive number.
+      variance: The confirmed amount less the trade amount. Zero when they agree.
+    tie_out:
+      label: Every confirmation is compared once with a trade
+      sql: >-
+        select (select count(distinct trade_reference) from {name}), (select count(distinct c.trade_reference) from fx_confirmations as c
+        where exists (select 1 from transactions as t where t.external_trade_id = c.trade_reference)
+        or exists (select 1 from transactions as t join instrument_identifiers as x on x.instrument_id = t.instrument_id where x.identifier_value = c.trade_reference))
+
+  - id: called_to_date
+    label: Called to date and unfunded
+    status: stub
+    cards: [2]
+    names: [called to date, unfunded after call, capital called]
+    may_read: [cash_movements, commitments, instruments]
+    formula: Called to date for each commitment = its confirmed call movements to the date; "after this notice" adds the logged notice (a noticed call movement); unfunded = commitment less called. A call larger than unfunded is flagged.
+    sql: null
+
+
+  - id: cash_after_calls
+    label: Cash after calls due
+    status: stub
+    cards: [4]
+    names: [cash after calls, cash cover after calls]
+    may_read: [position_snapshots, cash_movements, instruments, portfolios, legal_entities, business_rules, rule_versions, market_observations]
+    formula: Cash by entity (as cash_by_entity counts it, per currency) less the calls due by the due date less the buffer in the signed office rule; negative means the entity is short and the amount is the shortfall.
+    sql: null
+
+
+  - id: bank_details_changed
+    label: Payee bank details changed
+    status: stub
+    cards: [5]
+    names: [bank details changed, payee account changed, standing instruction changed]
+    may_read: [bank_accounts, extracted_fields, documents, cash_movements, instruments]
+    formula: 'The account ending on the notice against the active payee account on file for the fund: yes or no, with the old and the new ending. A payment to a changed account stays on hold until a bank_accounts row records a call-back (verified_on after the change).'
+    sql: null
+
+
+  - id: fx_required
+    label: FX needed to pay a call
+    status: stub
+    cards: [6]
+    names: [fx required, fx needed, currency to convert]
+    may_read: [cash_movements, position_snapshots, market_observations, instruments, portfolios, legal_entities, bank_accounts]
+    formula: The shortfall (cash_after_calls) in the call currency, converted at the planning rate from the FX series in market_observations, rounded up to the next whole unit; the rate and its date are shown.
+    sql: null
+
+
+  - id: payment_batch
+    label: Payment batch by approval state
+    status: stub
+    cards: [8]
+    names: [payment batch, payment run, payments awaiting approval]
+    may_read: [cash_movements, approvals, bank_accounts, users]
+    formula: 'Payments (cash movements of type payment, status expected) grouped by approval state from approvals.cash_movement_id: awaiting first approval, awaiting second, approved, released; with the total by currency.'
+    sql: null
+
+
+  - id: cash_by_bank
+    label: Cash by bank
+    status: stub
+    cards: [10]
+    names: [cash by bank, cash at each bank, bank concentration]
+    may_read: [position_snapshots, bank_accounts, instruments]
+    formula: Closing balance of each account (the position snapshots of bank_accounts.cash_instrument_id) summed by bank name and currency; shown against the bank limit in the signed rule.
+    sql: null
+
+
+  - id: funding_plan
+    label: Which entity pays a call
+    status: stub
+    cards: [18]
+    names: [funding plan, entity that pays, which entity pays]
+    may_read: [commitments, position_snapshots, cash_movements, instruments, portfolios, legal_entities]
+    formula: The entity named in the commitment; otherwise the entity with the most cash cover after calls (cash_after_calls), with the cover shown for each candidate.
+    sql: null
+
+
+  - id: intercompany_balance
+    label: Intercompany balance
+    status: stub
+    cards: [28]
+    names: [intercompany balance, transfers between entities, due to due from]
+    may_read: [cash_movements, portfolios, legal_entities]
+    formula: 'For each pair of entities: transfers out less transfers in, from cash movements of type transfer that name the other side in counterparty_portfolio_id; both sides of one transfer must agree in amount and date or the pair is flagged.'
+    sql: null
+
+
+  - id: distribution_gap
+    label: Distributions expected against received
+    status: stub
+    cards: [37]
+    names: [distribution gap, distributions expected against received]
+    may_read: [cash_movements, instruments, commitments, bank_accounts, documents, extracted_fields]
+    formula: The noticed distribution amount less the matching confirmed bank credit, by fund and pay date; a notice with no credit shows its full amount as the gap.
+    sql: null
+
+
+  - id: liquidity_ladder
+    label: Liquidity ladder
+    status: stub
+    cards: [54]
+    names: [liquidity ladder, 30 60 90 day liquidity]
+    may_read: [position_snapshots, instruments, extracted_fields, cash_movements]
+    formula: 'Market value placed in 30, 60, 90 day and longer buckets by days to cash: listed and cash at once, funds by the notice and lock-up terms read from their documents; calls due are taken off the matching bucket.'
+    sql: null
+
+
+  - id: cash_forecast
+    label: Twelve month cash forecast
+    status: stub
+    cards: [72]
+    names: [cash forecast, 12 month cash forecast]
+    may_read: [position_snapshots, cash_movements, commitments, family_members, vendor_contracts, instruments]
+    formula: 'Month by month for twelve months: opening cash by entity plus expected cash movements (noticed calls and distributions by due date, scheduled payments, allowances from family_members, vendor contract costs), closing cash by entity; every line says whether it is noticed, scheduled or estimated.'
+    sql: null

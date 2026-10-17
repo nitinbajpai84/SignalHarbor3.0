@@ -26,7 +26,8 @@ from sh_platform.v1.e1_write import org_id  # noqa: E402
 from tools import seed_evergreen as EG  # noqa: E402
 
 FIX = ROOT / "tests" / "v1" / "fixtures" / "10uc" / "otc_confirms"
-NEW = ("fx_confirmations", "expected_statements")
+NEW = ("fx_confirmations", "expected_statements", "bank_accounts", "credit_facilities", "family_members", "vendor_contracts", "deal_pipeline", "committee_decisions")
+ADDED_COLS = {"cash_movements": ("bank_account_id", "counterparty_portfolio_id"), "approvals": ("cash_movement_id",)}  # assumption A18: columns added to existing tables
 OLD = "11111111-1111-4111-8111-111111111111"
 
 
@@ -48,7 +49,12 @@ def tables(plane) -> set[str]:
         return {r[0] for r in con.execute("select table_name from information_schema.tables where table_schema = 'main'").fetchall()}
 
 
-def test_old_office_gets_both_tables_and_keeps_its_data(office):
+def columns(plane, table) -> set[str]:
+    with wh.connect(plane, read_only=True) as con:
+        return {r[0] for r in con.execute("select column_name from information_schema.columns where table_name = ?", [table]).fetchall()}
+
+
+def test_old_office_gets_the_new_tables_and_columns_and_keeps_its_data(office):
     _, plane = office
     with wh.connect(plane) as con:
         con.execute("insert into instruments (id, organization_id, canonical_name, instrument_type, created_at) values (?, ?, 'Old Fund', 'fund', now())", [OLD, org_id(plane)])
@@ -57,8 +63,14 @@ def test_old_office_gets_both_tables_and_keeps_its_data(office):
     cat = json.loads(p.read_text(encoding="utf-8"))
     cat["tables"] = [t for t in cat["tables"] if t["name"] not in NEW]
     cat["refs"] = [r for r in cat["refs"] if r["from"]["table"] not in NEW and r["to"]["table"] not in NEW]
+    for t in cat["tables"]:
+        t["columns"] = [c for c in t["columns"] if c["name"] not in ADDED_COLS.get(t["name"], ())]
+    cat["refs"] = [r for r in cat["refs"] if r["from"]["columns"][0] not in sum(ADDED_COLS.values(), ())]
     p.write_text(json.dumps(cat), encoding="utf-8")
     with wh.connect(plane) as con:
+        for t, cs in ADDED_COLS.items():
+            for c in cs:
+                con.execute(f"alter table {t} drop column {c}")
         for t in NEW:
             con.execute(f"drop table {t}")
     C._cache.clear()
@@ -68,7 +80,11 @@ def test_old_office_gets_both_tables_and_keeps_its_data(office):
     with wh.connect(plane) as con:  # the next start
         assert con.execute("select canonical_name from instruments where id = ?", [OLD]).fetchone()[0] == "Old Fund"
     assert set(NEW) <= tables(plane)
+    assert all(set(cs) <= columns(plane, t) for t, cs in ADDED_COLS.items())
     assert C.version_of(plane) == n + 1  # one new approved version, add-only
+    with wh.connect(plane) as con:  # the new tables take a row with the shared columns
+        con.execute("insert into bank_accounts (id, organization_id, source_record_id, received_at, recorded_at, holder_kind, account_purpose, bank_name, account_ref, status) "
+                    "values (?, ?, ?, now(), now(), 'payee', 'payee', 'Harbour Bank (synthetic)', '4471', 'active')", [wh.new_id(), org_id(plane), wh.new_id()])
 
 
 def test_fx_confirmation_pdf_loads_one_row_per_confirmation_with_its_page(office):

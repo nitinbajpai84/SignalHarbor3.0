@@ -4,6 +4,7 @@ check, the warehouse of the seeded Evergreen office. Stubbed: the model."""
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 from sh_platform.plane import PlaneStore
 from sh_platform.v1 import b10_design as D
@@ -237,3 +238,25 @@ def test_a_recipe_the_question_names_that_no_figure_is_bound_to_is_added_as_a_su
     R.bind(plane, object(), kpis, "Match the FX forward confirmations against our own record: by how much do they differ?")
     assert [k["built_from"] for k in kpis] == ["", "", "fx_confirmation_variance"] and kpis[2]["name"] == "FX forward confirmation variance"  # net worth: not named
     assert kpis[2]["pack_suggested"] and kpis[2]["owner"] == "Sam Lee" and kpis[2]["code"] == "K03" and len(seen) == 1
+
+
+def test_recipes_load_from_the_domain_folder_stubs_are_skipped_and_the_old_file_is_still_read(tmp_path, monkeypatch):
+    from sh_platform.v1 import e0a_catalogue as C
+    built = {r["id"] for r in R.recipes()}
+    assert built == {"net_worth", "cash_by_entity", "cash_break", "missing_statements", "concentration", "change_since_report", "fx_confirmation_variance"}
+    assert {p.stem for p in R.DIR.glob("*.yaml")} >= {"_shared", "invest", "hold", "cash", "report", "operate", "family", "office"} and R.PACK.joinpath("signals").is_dir()
+    stubs = R.stubs()
+    assert len(stubs) >= 38 and not built & {s["id"] for s in stubs} and all(s["sql"] is None and s["formula"] and s["names"] and s["may_read"] for s in stubs)
+    assert R.match({"name": "Allowance due"}) is None and R.recipe("allowance_due") is None  # a stub is never matched, bound or run
+    core = {t["name"] for t in C._core()["tables"]}
+    assert all(set(s["may_read"]) <= core for s in stubs), [(s["id"], set(s["may_read"]) - core) for s in stubs if not set(s["may_read"]) <= core]
+    assert "positions" in R._file()["snippets"]  # the snippets of _shared.yaml reach every domain
+    old = tmp_path / "recipes.yaml"  # the old single file keeps working; a recipe id that is also in the folder keeps the folder's
+    old.write_text(yaml.safe_dump({"recipes": [{"id": "legacy_one", "label": "Legacy", "names": ["legacy"]}, {"id": "net_worth", "label": "Replaced"}]}), encoding="utf-8")
+    monkeypatch.setattr(R, "FILE", old)
+    R._file.cache_clear()
+    try:
+        assert R.recipe("legacy_one")["label"] == "Legacy" and R.recipe("net_worth")["label"] == "Net worth"
+    finally:
+        monkeypatch.undo()
+        R._file.cache_clear()

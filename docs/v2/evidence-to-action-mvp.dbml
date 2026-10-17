@@ -502,7 +502,7 @@ Table cash_movements {
   portfolio_id uuid [not null, ref: > portfolios.id]
   instrument_id uuid [ref: > instruments.id]
 
-  movement_type varchar(80) [not null, note: 'subscription, redemption, call, distribution, dividend, fee']
+  movement_type varchar(80) [not null, note: 'subscription, redemption, call, distribution, dividend, fee, payment, transfer, allowance']
   effective_date date [not null]
   received_at timestamptz [not null]
   recorded_at timestamptz [not null, note: 'ADDED']
@@ -513,6 +513,8 @@ Table cash_movements {
   due_date date [note: 'ADDED: when a call must be paid or a distribution is expected']
   notice_kind varchar(40) [note: 'ADDED: call, distribution, recallable']
   commitment_id uuid [ref: > commitments.id, note: 'ADDED']
+  bank_account_id uuid [ref: > bank_accounts.id, note: 'ADDED (v3): the account the money goes to (a payee account for a payment) or comes from']
+  counterparty_portfolio_id uuid [ref: > portfolios.id, note: 'ADDED (v3): the other side of a transfer between two portfolios of the office; each side is one row naming the other']
 
   indexes {
     (portfolio_id, instrument_id, effective_date)
@@ -568,6 +570,204 @@ Table expected_statements {
 
   indexes {
     (instrument_id, period_end, recorded_at)
+  }
+}
+
+/* ============================================================
+   OFFICE RECORDS (v3, assumptions A11 to A19). Source facts the office receives or records and that no other table can hold.
+   Each row is one observation; a change is a new row that supersedes the old one. Derived things (balances by bank, mandate fit,
+   renewals due, net worth after debt) are figures, never tables.
+   ============================================================ */
+
+/*
+  An account the office holds (holder_kind office: operating, custody, brokerage) or an account on file for someone we pay (payee: a fund,
+  a vendor, a person). Replaces the proposed counterparties and standing_instructions. Only the masked reference is kept, never the full number.
+  A changed payee account is a new row that supersedes the old one; the verified_* columns record the call-back.
+*/
+Table bank_accounts {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_bank_account_id uuid [ref: > bank_accounts.id]
+
+  holder_kind varchar(20) [not null, note: 'office or payee']
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The office entity that holds the account (holder_kind office)']
+  instrument_id uuid [ref: > instruments.id, note: 'The fund the account pays into (holder_kind payee)']
+  holder_name varchar(200) [note: 'Who the account belongs to when it is neither an entity nor a fund: a vendor, a person']
+  account_purpose varchar(40) [not null, note: 'operating, custody, brokerage, loan, payee']
+  bank_name varchar(200) [not null]
+  account_ref varchar(80) [not null, note: 'Masked: the last four characters, or the IBAN tail']
+  currency char(3)
+  cash_instrument_id uuid [ref: > instruments.id, note: 'The cash instrument whose position snapshots are this account balance']
+  status varchar(20) [not null, note: 'active, closed, pending']
+  opened_on date
+  closed_on date
+  verified_on date [note: 'When a person last called the bank or payee back on a known number']
+  verified_by uuid [ref: > users.id]
+
+  indexes {
+    (organization_id, bank_name, account_ref, recorded_at)
+    (instrument_id, recorded_at)
+  }
+}
+
+/*
+  A loan or credit facility the office owes on, as a statement or agreement states it at a date. The balance owed at a date is the
+  drawn amount of the latest row at or before that date; net worth after debt is a figure.
+*/
+Table credit_facilities {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_credit_facility_id uuid [ref: > credit_facilities.id]
+
+  facility_ref varchar(100) [not null, note: 'The lender reference; the same on every observation of one facility']
+  legal_entity_id uuid [not null, ref: > legal_entities.id, note: 'The borrower']
+  lender varchar(200) [not null]
+  facility_type varchar(40) [not null, note: 'loan, credit_line, mortgage, margin']
+  currency char(3) [not null]
+  limit_amount numeric(28,8)
+  drawn_amount numeric(28,8) [not null, note: 'Owed at as_at, a positive number']
+  interest_rate numeric(12,6) [note: 'Annual, as a fraction']
+  rate_basis varchar(80) [note: 'fixed, or the reference rate plus the spread']
+  maturity_date date
+  collateral varchar(300)
+  as_at date [not null]
+  status varchar(20) [not null, note: 'active, repaid, defaulted']
+
+  indexes {
+    (organization_id, facility_ref, as_at, recorded_at)
+  }
+}
+
+/*
+  A person of the family the office pays or reports to. The allowance is the amount the family agreed to pay them, from the
+  schedule the office holds; what was paid is in cash_movements. Personal data: access is scoped by entity.
+*/
+Table family_members {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_family_member_id uuid [ref: > family_members.id]
+
+  member_name varchar(200) [not null]
+  relationship varchar(80) [note: 'principal, spouse, child, grandchild, parent, other']
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The entity or trust that holds or pays for them']
+  user_id uuid [ref: > users.id, note: 'Set when the person signs in']
+  allowance_amount numeric(28,8)
+  allowance_currency char(3)
+  allowance_frequency varchar(20) [note: 'monthly, quarterly, annual']
+  allowance_from date
+  allowance_to date
+  paid_from_portfolio_id uuid [ref: > portfolios.id]
+  active_from date
+  active_to date
+
+  indexes {
+    (organization_id, member_name, recorded_at)
+  }
+}
+
+/* A contract with a vendor or adviser (administrator, auditor, lawyer, software, insurer). Renewals due and annual cost are figures. */
+Table vendor_contracts {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_vendor_contract_id uuid [ref: > vendor_contracts.id]
+
+  vendor_name varchar(200) [not null]
+  service varchar(200)
+  contract_ref varchar(100)
+  legal_entity_id uuid [ref: > legal_entities.id, note: 'The office entity that signed']
+  owner_user_id uuid [ref: > users.id, note: 'The person in the office who manages the vendor']
+  start_date date
+  end_date date
+  next_renewal_date date
+  auto_renews boolean
+  notice_days integer [note: 'Days before the renewal date by which notice must be given']
+  annual_cost numeric(28,8)
+  currency char(3)
+  status varchar(20) [not null, note: 'active, ended, under_review']
+
+  indexes {
+    (organization_id, vendor_name, recorded_at)
+    (organization_id, next_renewal_date)
+  }
+}
+
+/*
+  A new fund or deal the office is looking at, one row for each stage it has reached. Mandate fit and headroom are figures.
+  instrument_id is set when the deal becomes a holding.
+*/
+Table deal_pipeline {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_deal_id uuid [ref: > deal_pipeline.id]
+
+  deal_name varchar(250) [not null]
+  manager_name varchar(200)
+  strategy varchar(200)
+  asset_class varchar(80)
+  instrument_id uuid [ref: > instruments.id]
+  target_commitment numeric(28,8)
+  currency char(3)
+  stage varchar(40) [not null, note: 'screening, diligence, committee, approved, declined, closed']
+  stage_on date [not null]
+  owner_user_id uuid [ref: > users.id]
+
+  indexes {
+    (organization_id, deal_name, recorded_at)
+  }
+}
+
+/*
+  What the committee decided, from its minutes. subject_id points at the deal_pipeline, exceptions or rule_versions row it decided on.
+  An individual sign-off stays in approvals; this is the committee record.
+*/
+Table committee_decisions {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_committee_decision_id uuid [ref: > committee_decisions.id]
+
+  committee varchar(100) [not null, note: 'For example Investment committee']
+  decided_on date [not null]
+  title varchar(250) [not null]
+  subject_type varchar(40) [note: 'deal, exception, policy, commitment, other']
+  subject_id varchar(100)
+  outcome varchar(40) [not null, note: 'approved, declined, deferred, waiver, cured']
+  conditions text
+  amount numeric(28,8)
+  currency char(3)
+  recorded_by uuid [ref: > users.id]
+
+  indexes {
+    (organization_id, committee, decided_on)
   }
 }
 
@@ -932,6 +1132,7 @@ Table approvals {
   report_version_id uuid [ref: > report_versions.id, note: 'ADDED']
   rule_version_id uuid [ref: > rule_versions.id, note: 'ADDED']
   sheet_mapping_id uuid [ref: > sheet_mappings.id, note: 'ADDED']
+  cash_movement_id uuid [ref: > cash_movements.id, note: 'ADDED (v3): a payment or transfer that needs this approval']
 
   approval_type varchar(100) [not null]
   requested_from_user_id uuid [not null, ref: > users.id]
@@ -1043,6 +1244,15 @@ TableGroup observations {
   expected_statements
   market_observations
   nav_snapshots
+}
+
+TableGroup office_records {
+  bank_accounts
+  credit_facilities
+  family_members
+  vendor_contracts
+  deal_pipeline
+  committee_decisions
 }
 
 TableGroup rules_and_benchmarks {

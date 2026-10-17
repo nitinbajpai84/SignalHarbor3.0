@@ -1,0 +1,82 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: commitments_by_fund
+    label: Commitments by fund
+    status: stub
+    cards: [7]
+    names: [commitments by fund, commitment pacing, unfunded by fund, called and unfunded]
+    may_read: [commitments, cash_movements, instruments, legal_entities]
+    formula: 'For each fund and entity: the commitment, the capital called to date (the confirmed call movements, else the called_to_date the commitments file states, with its as-at date) and unfunded = commitment less called. A commitment row that a later one supersedes is out. Currencies are never added together.'
+    sql: null
+
+
+  - id: private_markets_budget
+    label: Private markets budget headroom
+    status: stub
+    cards: [7]
+    names: [private markets budget, budget headroom, private markets headroom]
+    may_read: [rule_versions, business_rules, commitments, position_snapshots, instruments]
+    formula: Budget = the private-markets limit in the signed allocation policy (rule_versions.parameters) times net worth at the date; headroom = budget less commitments to private funds (committed, not only called). With no signed policy the figure is held, not guessed.
+    sql: null
+
+
+  - id: ddq_compare
+    label: Manager questionnaire comparison
+    status: stub
+    cards: [35]
+    names: [ddq compare, questionnaire comparison, compare managers questionnaires]
+    may_read: [extracted_fields, documents, instruments]
+    formula: The answers to the same question from each manager questionnaire, matched by topic (the extracted field name), side by side by manager; a topic a manager did not answer shows as a gap.
+    sql: null
+
+
+  - id: fund_irr_tvpi
+    label: Fund IRR and TVPI
+    status: stub
+    cards: [39]
+    names: [fund irr, irr and tvpi, tvpi, private fund return since inception]
+    may_read: [cash_movements, nav_snapshots, valuation_observations, commitments, instruments]
+    formula: 'For each private fund: IRR from the dated calls (outflows), distributions (inflows) and the latest value at the as-at date; TVPI = (distributions + latest value) / called; DPI = distributions / called; RVPI = latest value / called.'
+    sql: null
+
+
+  - id: fee_drag
+    label: Fees paid to each manager
+    status: stub
+    cards: [49]
+    names: [fee drag, fees paid, fees paid to each manager, management fees]
+    may_read: [cash_movements, transactions, extracted_fields, valuation_observations, nav_snapshots, instruments]
+    formula: Management plus performance fees paid to each manager (cash movements of type fee) over the manager's gross gain for the same period; the fee the fund terms say is due (fee-rate fields read from the fund documents) is shown beside it.
+    sql: null
+
+
+  - id: watch_flags
+    label: Manager watchlist flags
+    status: stub
+    cards: [53]
+    names: [watch flags, manager watchlist, watchlist]
+    may_read: [expected_statements, documents, valuation_observations, instruments]
+    formula: A manager is flagged when a statement is late against expected_statements, a valuation is restated (a later row supersedes it) or its terms document changed; each flag names the evidence.
+    sql: null
+
+
+  - id: expected_distributions
+    label: Distributions expected in the next year
+    status: stub
+    cards: [71]
+    names: [expected distributions, distributions we expect]
+    may_read: [cash_movements, commitments, instruments, extracted_fields]
+    formula: Noticed distributions by due date, plus for funds with none noticed the trailing twelve months of confirmed distributions as a run rate, shown separately and labelled an estimate.
+    sql: null
+
+
+  - id: manager_score
+    label: Manager scorecard
+    status: stub
+    cards: [76]
+    names: [manager score, manager scorecard, scorecard]
+    may_read: [expected_statements, documents, valuation_observations, cash_movements, nav_snapshots, instruments]
+    formula: A score per manager from statement timeliness, restatements, fees against the terms and return against the benchmark, each part shown; the weights come from a signed rule, never fixed in the recipe.
+    sql: null

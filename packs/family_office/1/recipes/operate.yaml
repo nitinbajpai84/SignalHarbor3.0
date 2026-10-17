@@ -1,0 +1,92 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: missing_statements
+    label: Missing statements
+    names: [missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements]
+    words_all: [[statement, statements], [missing, late, overdue, expected, received, outstanding]]
+    may_read: [expected_statements, documents, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.
+    formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.
+    grain: By fund and month
+    sql: >-
+      create table {name} as with due as (select e.* from expected_statements as e where not exists
+      (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
+      asat as (select coalesce(max(cast(received_at as date)), current_date) as d from documents)
+      select i.canonical_name as fund, cast(date_trunc('month', e.period_end) as date) as month, e.period_end, e.due_date,
+      cast(count(d.id) as integer) as received_statements, cast(case when count(d.id) = 0 then 1 else 0 end as integer) as missing_statements,
+      case when count(d.id) = 0 and e.due_date is not null then greatest(date_diff('day', e.due_date, (select d from asat)), 0) end as days_overdue
+      from due as e join instruments as i on i.id = e.instrument_id left join documents as d on d.instrument_id = e.instrument_id
+      and d.document_type = 'manager_statement' and date_trunc('month', coalesce(d.valuation_date, cast(d.received_at as date))) = date_trunc('month', e.period_end)
+      group by all
+    measure: missing_statements
+    columns:
+      received_statements: Manager statements received for the fund and month.
+      missing_statements: 1 when the statement was expected and none was received.
+      days_overdue: Days from the due date to the latest date a document was received; empty when no due date is on file.
+    tie_out:
+      label: Expected statements equal the expected_statements rows that are not replaced
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from expected_statements as e where not exists
+        (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id))
+
+  - id: close_items_done
+    label: Month-end close checklist progress
+    status: stub
+    cards: [29]
+    names: [close items done, close checklist, month end close checklist]
+    may_read: [exceptions, exception_events]
+    formula: 'The close checklist steps of the period (exceptions of type close_item): done (resolved), open, and late (due_at passed and not resolved). The count of each and the late ones by owner.'
+    sql: null
+
+
+  - id: position_break
+    label: Custodian against administrator positions
+    status: stub
+    cards: [56]
+    names: [position break, custodian positions against administrator]
+    may_read: [position_snapshots, source_records, source_batches, source_systems, instruments, portfolios]
+    formula: 'By portfolio, instrument and date: the custodian''s quantity and value against the administrator''s (two source systems); the break is the difference, shown beside its tolerance rule.'
+    sql: null
+
+
+  - id: price_gap_pct
+    label: Price gap against a second source
+    status: stub
+    cards: [57]
+    names: [price gap, prices against second source]
+    may_read: [market_observations, position_snapshots, instruments]
+    formula: (price from the first source less price from the second) / second, per instrument and date, from two series of market_observations; flagged above the signed tolerance.
+    sql: null
+
+
+  - id: unsettled_trades
+    label: Trades not settled on time
+    status: stub
+    cards: [58]
+    names: [unsettled trades, trades not settled]
+    may_read: [transactions, instruments]
+    formula: Trades whose settlement_date has passed and whose status is not settled, with days late.
+    sql: null
+
+
+  - id: source_quality
+    label: Data quality by source
+    status: stub
+    cards: [61]
+    names: [source quality, data quality score]
+    may_read: [source_batches, source_records, batch_control_totals, exceptions, source_systems]
+    formula: 'For each source: the share of records with good quality status, the batches whose control totals tie, and the open exceptions raised against its records.'
+    sql: null
+
+
+  - id: fx_mtm
+    label: 'FX forwards: upcoming value dates and mark to market'
+    status: stub
+    cards: [62]
+    names: [fx mtm, fx forward mark to market, upcoming fx value dates]
+    may_read: [fx_confirmations, market_observations, transactions]
+    formula: Open confirmed forwards by value date, with the mark = amount bought at today's market rate less amount sold, using the FX series in market_observations; value dates inside the window listed first.
+    sql: null

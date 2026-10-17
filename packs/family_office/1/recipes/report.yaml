@@ -1,0 +1,80 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: concentration
+    label: Single-issuer concentration
+    names: [single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position]
+    may_read: [position_snapshots, instruments, portfolios]
+    never_read: [commitments, cash_movements, transactions]
+    why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.
+    formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.
+    grain: By portfolio, issuer and position date
+    sql: >-
+      create table {name} as with {positions}, tot as (select portfolio_id, position_date, currency, sum(source_market_value) as total from positions group by all)
+      select p.portfolio_name as portfolio, i.canonical_name as issuer, l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as exposure,
+      cast(100 * sum(l.source_market_value) / nullif(max(t.total), 0) as decimal(9,2)) as concentration_pct
+      from positions as l join instruments as i on i.id = l.instrument_id left join portfolios as p on p.id = l.portfolio_id
+      join tot as t on t.portfolio_id is not distinct from l.portfolio_id and t.position_date = l.position_date and t.currency = l.currency group by all
+    measure: concentration_pct
+    columns:
+      exposure: The market value held in the issuer.
+      concentration_pct: The issuer's share of everything the portfolio holds on the date, in percent.
+    tie_out:
+      label: The exposures add up to the total of the position snapshots for the same dates
+      sql: >-
+        select (select coalesce(sum(exposure), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+
+  - id: change_since_report
+    label: Change since the issued report
+    names: [change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value]
+    words_all: [[change, changed, revision, revised, amended, amendment, restated], [since, issued, report, original, earlier, previous]]
+    may_read: [valuation_observations, instruments]
+    never_read: [commitments, cash_movements, transactions]
+    why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.
+    formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.
+    grain: By fund and valuation date
+    sql: >-
+      create table {name} as select i.canonical_name as fund, a.valuation_date, a.currency, cast(o.value_amount as decimal(18,2)) as original_value,
+      cast(a.value_amount as decimal(18,2)) as amended_value, cast(a.value_amount - o.value_amount as decimal(18,2)) as change_since_report
+      from valuation_observations as a join valuation_observations as o on o.id = a.supersedes_valuation_id join instruments as i on i.id = a.instrument_id
+      where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id)
+    measure: change_since_report
+    columns:
+      original_value: The valuation in the issued report, the one the amendment replaces.
+      amended_value: The amended valuation.
+      change_since_report: The amended value less the original value.
+    tie_out:
+      label: Every amended valuation that is not itself replaced appears once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from valuation_observations as a where a.supersedes_valuation_id is not null
+        and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = a.id))
+
+  - id: time_weighted_return
+    label: Time weighted return and active return
+    status: stub
+    cards: [42, 44]
+    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year]
+    may_read: [position_snapshots, transactions, cash_movements, market_observations, benchmark_definitions, benchmark_components]
+    formula: Sub-period returns split at each external cash flow, (end value - start value - net flows) / start value, chain-linked into month, QTD, YTD and one year; active return = portfolio return less the blended benchmark return (benchmark_components weights times the series returns) over the same dates. Merges the proposed twr_periods.
+    sql: null
+
+
+  - id: attribution
+    label: Return attribution
+    status: stub
+    cards: [46]
+    names: [attribution, brinson, where did the return come from]
+    may_read: [position_snapshots, instruments, benchmark_definitions, benchmark_components, market_observations]
+    formula: 'Brinson by asset class: allocation + selection + interaction = active return against the blended benchmark, the three parts shown and tied to the active return.'
+    sql: null
+
+
+  - id: networth_walk
+    label: Net worth walk
+    status: stub
+    cards: [75]
+    names: [net worth walk, what happened to our worth, networth walk]
+    may_read: [position_snapshots, transactions, cash_movements, market_observations, instruments]
+    formula: 'From net worth at the start of the year to now: + contributions - withdrawals + market gain + currency effect + other, each part shown; the parts sum to the change.'
+    sql: null

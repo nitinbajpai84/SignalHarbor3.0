@@ -1,0 +1,12 @@
+# Recipes of one domain (family-office pack). Format, snippets and the rules are in recipes/_shared.yaml; assumptions A7, A8 and A11 onward, in docs/v3/ASSUMPTIONS.md.
+# status: stub = named and scoped but not built (sql: null): the loader skips it until the owner of this file fills in sql, grain, measure, columns
+# and tie_out and removes `status: stub`. cards = the use-case cards (docs/v3/USE-CASES-100.md numbers) that need it.
+recipes:
+  - id: allowance_due
+    label: Family allowances due
+    status: stub
+    cards: [15]
+    names: [allowance due, allowances due, family allowances]
+    may_read: [family_members, cash_movements, portfolios]
+    formula: 'For each member: the allowance for the month (allowance_amount for its frequency, inside allowance_from and allowance_to) less the allowance cash movements already paid in the month.'
+    sql: null

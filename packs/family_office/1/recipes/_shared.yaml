@@ -1,0 +1,21 @@
+# Shared snippets for the family-office recipes. Figure recipes for the family-office pack (assumptions A7 and A8, docs/v3/ASSUMPTIONS.md).
+# A recipe is a SUGGESTION: the pack's usual way of building a common figure, which the office can edit or replace. Span builds a figure from its
+# recipe before it asks the model, so the same data gives the same number on every build.
+#   names / words_all  what the figure is called in a brief (a phrase, or one word from each group)
+#   may_read           the only tables the figure's SQL may read (the model's own names); never_read: tables it must not read, with the reason in `why`
+#   dims               what the figure may be split by: name -> [expression, column]; default_dims is used when the brief names none
+#   sql                'create table {name} as ...' over the company model. {positions} is the snippet below; {dims} is the chosen dimensions
+#   tie_out            one query that returns (the ready table's number, the number it must equal); label says it in words
+#   needs              inputs the figure cannot be right without: a query that counts their rows; none means the figure is held, `why` says so
+suggestion: true
+snippets:
+  # the position snapshots as they stand: a snapshot that a later one supersedes is out, and a carried-forward row is out when a real row of the same
+  # portfolio, instrument, date and currency exists
+  positions: >-
+    positions as (select s.* from (select s.*, row_number() over (partition by s.portfolio_id, s.instrument_id, s.position_date, s.currency
+    order by coalesce(s.data_status = 'Carried forward', false), s.recorded_at desc, s.id) as rn from position_snapshots as s
+    where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id)) as s where s.rn = 1)
+  positions_check: >-
+    select s.portfolio_id, s.instrument_id, s.position_date, s.currency,
+    coalesce(max(s.source_market_value) filter (where s.data_status is distinct from 'Carried forward'), max(s.source_market_value)) as v
+    from position_snapshots as s where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id) group by all

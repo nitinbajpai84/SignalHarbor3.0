@@ -320,7 +320,9 @@ CREATE TABLE IF NOT EXISTS cash_movements (
   supersedes_cash_movement_id VARCHAR,
   due_date DATE,
   notice_kind VARCHAR,
-  commitment_id VARCHAR
+  commitment_id VARCHAR,
+  bank_account_id VARCHAR,
+  counterparty_portfolio_id VARCHAR
 );
 
 CREATE TABLE IF NOT EXISTS market_observations (
@@ -553,6 +555,7 @@ CREATE TABLE IF NOT EXISTS approvals (
   report_version_id VARCHAR,
   rule_version_id VARCHAR,
   sheet_mapping_id VARCHAR,
+  cash_movement_id VARCHAR,
   approval_type VARCHAR NOT NULL,
   requested_from_user_id VARCHAR NOT NULL,
   decision_by_user_id VARCHAR,
@@ -631,4 +634,142 @@ CREATE TABLE IF NOT EXISTS expected_statements (
   due_reason VARCHAR,
   recorded_at TIMESTAMPTZ NOT NULL,
   supersedes_expected_statement_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS bank_accounts (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_bank_account_id VARCHAR,
+  holder_kind VARCHAR NOT NULL,
+  legal_entity_id VARCHAR,
+  instrument_id VARCHAR,
+  holder_name VARCHAR,
+  account_purpose VARCHAR NOT NULL,
+  bank_name VARCHAR NOT NULL,
+  account_ref VARCHAR NOT NULL,
+  currency VARCHAR,
+  cash_instrument_id VARCHAR,
+  status VARCHAR NOT NULL,
+  opened_on DATE,
+  closed_on DATE,
+  verified_on DATE,
+  verified_by VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS credit_facilities (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_credit_facility_id VARCHAR,
+  facility_ref VARCHAR NOT NULL,
+  legal_entity_id VARCHAR NOT NULL,
+  lender VARCHAR NOT NULL,
+  facility_type VARCHAR NOT NULL,
+  currency VARCHAR NOT NULL,
+  limit_amount DECIMAL(28,8),
+  drawn_amount DECIMAL(28,8) NOT NULL,
+  interest_rate DECIMAL(12,6),
+  rate_basis VARCHAR,
+  maturity_date DATE,
+  collateral VARCHAR,
+  as_at DATE NOT NULL,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS family_members (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_family_member_id VARCHAR,
+  member_name VARCHAR NOT NULL,
+  relationship VARCHAR,
+  legal_entity_id VARCHAR,
+  user_id VARCHAR,
+  allowance_amount DECIMAL(28,8),
+  allowance_currency VARCHAR,
+  allowance_frequency VARCHAR,
+  allowance_from DATE,
+  allowance_to DATE,
+  paid_from_portfolio_id VARCHAR,
+  active_from DATE,
+  active_to DATE
+);
+
+CREATE TABLE IF NOT EXISTS vendor_contracts (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_vendor_contract_id VARCHAR,
+  vendor_name VARCHAR NOT NULL,
+  service VARCHAR,
+  contract_ref VARCHAR,
+  legal_entity_id VARCHAR,
+  owner_user_id VARCHAR,
+  start_date DATE,
+  end_date DATE,
+  next_renewal_date DATE,
+  auto_renews BOOLEAN,
+  notice_days INTEGER,
+  annual_cost DECIMAL(28,8),
+  currency VARCHAR,
+  status VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS deal_pipeline (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_deal_id VARCHAR,
+  deal_name VARCHAR NOT NULL,
+  manager_name VARCHAR,
+  strategy VARCHAR,
+  asset_class VARCHAR,
+  instrument_id VARCHAR,
+  target_commitment DECIMAL(28,8),
+  currency VARCHAR,
+  stage VARCHAR NOT NULL,
+  stage_on DATE NOT NULL,
+  owner_user_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS committee_decisions (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_committee_decision_id VARCHAR,
+  committee VARCHAR NOT NULL,
+  decided_on DATE NOT NULL,
+  title VARCHAR NOT NULL,
+  subject_type VARCHAR,
+  subject_id VARCHAR,
+  outcome VARCHAR NOT NULL,
+  conditions VARCHAR,
+  amount DECIMAL(28,8),
+  currency VARCHAR,
+  recorded_by VARCHAR
 );

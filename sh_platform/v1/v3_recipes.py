@@ -1,6 +1,6 @@
 """Figure recipes (assumptions A7 and A8): a common figure is built from a written recipe, not designed again by the model on every build.
 
-A recipe (packs/family_office/1/recipes.yaml) names the tables its figure MAY read and the ones it must NEVER read, the formula in words, the SQL over the
+A recipe (packs/family_office/1/recipes/<domain>.yaml) names the tables its figure MAY read and the ones it must NEVER read, the formula in words, the SQL over the
 company model, and a tie-out. This module matches a brief's figure to a recipe, renders its SQL for one table name, checks that any design of such a figure reads
 only the allowed tables, runs the tie-out on the trial-run copy (a line of Decision 3), and keeps a model design that worked as an office skill so the next
 build of that figure in that office reuses it word for word. The pack's recipes are suggestions: an office edits or replaces them.
@@ -21,7 +21,8 @@ from pathlib import Path
 import yaml
 
 log = logging.getLogger(__name__)
-FILE = Path(__file__).resolve().parents[2] / "packs" / "family_office" / "1" / "recipes.yaml"
+PACK = Path(__file__).resolve().parents[2] / "packs" / "family_office" / "1"
+DIR, FILE = PACK / "recipes", PACK / "recipes.yaml"  # one file per domain (+ _shared.yaml for the snippets); FILE is the old single file, still read if it exists
 DESIGN = "model.design-ready-table"
 MARK, SAVED = "Recipe ", "Saved design "
 COUNTLIKE = re.compile(r"\b(?:number of|count of|how many|counts?)\b", re.I)  # a count of breaks is not the break ("Matched trades count", c7)
@@ -34,11 +35,28 @@ TOL = 0.01
 
 @lru_cache(maxsize=1)
 def _file() -> dict:
-    return yaml.safe_load(FILE.read_text(encoding="utf-8"))
+    """Every *.yaml of the recipes folder, then the old recipes.yaml if it exists. Snippets merge; a recipe id seen twice keeps the first (the folder wins)."""
+    out: dict = {"suggestion": True, "snippets": {}, "recipes": []}
+    seen: set[str] = set()
+    for p in [*sorted(DIR.glob("*.yaml")), FILE]:
+        if not p.is_file():
+            continue
+        f = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+        out["snippets"] = {**f.get("snippets", {}), **out["snippets"]}
+        for r in f.get("recipes") or []:
+            if r["id"] not in seen:
+                seen.add(r["id"])
+                out["recipes"].append(r)
+    return out
 
 
 def recipes() -> list[dict]:
-    return _file()["recipes"]
+    """The built recipes. A stub (status: stub, sql: null) is named and scoped but not built, so it is never matched, bound or run."""
+    return [r for r in _file()["recipes"] if r.get("status") != "stub"]
+
+
+def stubs() -> list[dict]:
+    return [r for r in _file()["recipes"] if r.get("status") == "stub"]
 
 
 def recipe(rid: str) -> dict | None:

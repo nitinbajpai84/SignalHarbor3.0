@@ -41,14 +41,14 @@ def names_in(plane, sql):
 def test_core_seeds_as_version_one_and_is_described(plane):
     assert E.version_of(plane) == 1
     cat = E.current(plane)
-    assert cat["version"] == 1 and len(cat["tables"]) == 42 and all(t["layer"] == "core" for t in cat["tables"])
+    assert cat["version"] == 1 and len(cat["tables"]) == 50 and all(t["layer"] == "core" for t in cat["tables"])
     assert plane.path("model", "versions", "1", "model.dbml").read_text(encoding="utf-8").startswith("Project investment_evidence_to_action")
     assert E.has_field(plane, "organizations", "id") and not E.has_field(plane, "organizations", "nope") and not E.has_field(plane, "nope", "id")
     d = E.describe(plane, "users")
     assert d["columns"][0]["pk"] and any(r["to"]["table"] == "organizations" for r in d["refs"]) and E.describe(plane, "nope") is None
     assert {t["name"] for t in E.tables(plane)} == {t["name"] for t in cat["tables"]}
     ddl = E.ddl(cat)
-    assert len(ddl) == 42 and "FLOAT[384]" in "".join(ddl) and "TIMESTAMPTZ" in "".join(ddl) and "tsvector" not in "".join(ddl)
+    assert len(ddl) == 50 and "FLOAT[384]" in "".join(ddl) and "TIMESTAMPTZ" in "".join(ddl) and "tsvector" not in "".join(ddl)
 
 
 def test_a_broken_script_is_refused_with_its_line(plane):
@@ -96,7 +96,7 @@ def test_proposer_cannot_approve_and_approval_builds_the_warehouse(plane):
     assert E.has_field(plane, "office_notes", "body") and E.describe(plane, "office_notes")["layer"] == "company"
     assert E.describe(plane, "users")["layer"] == "core"
     names = names_in(plane, "select table_name from information_schema.tables")
-    assert "office_notes" in names and "organizations" in names and len(names) == 43
+    assert "office_notes" in names and "organizations" in names and len(names) == 51
     assert [v["state"] for v in E.versions(plane)] == ["approved", "superseded"]
     E.propose(plane, ADMIN, add_column={"table": "office_notes", "name": "tag", "type": "varchar(20)"})   # a later column migrates add-only
     assert E.approve(plane, HEAD, 3)["state"] == "approved"
@@ -148,7 +148,7 @@ def test_routes_check_the_seats(tmp_path, monkeypatch):
     leela, arjun = client("leela.raman.neera@example.test"), client("arjun.mehta.neera@example.test")
     cat = leela.get("/api/v1/model/catalogue").json()
     nxt = cat["version"] + 1  # a core release that adds columns (UC6 G called_to_date) reloads the copied company to a later version
-    assert cat["version"] in (1, 2) and sum(len(g["tables"]) for g in cat["groups"]) == 42
+    assert cat["version"] in (1, 2) and sum(len(g["tables"]) for g in cat["groups"]) == 50
     assert leela.get("/api/v1/model/tables/users").json()["name"] == "users" and leela.get("/api/v1/model/tables/zzz").status_code == 404
     assert "Table organizations" in leela.get("/api/v1/model/script").text
     r = leela.post("/api/v1/model/proposals", json={"dbml": NEW_TABLE})
