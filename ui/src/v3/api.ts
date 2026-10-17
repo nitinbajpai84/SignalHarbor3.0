@@ -28,10 +28,32 @@ export interface ThreadRecord { started_by?: string | null; started_at?: string;
 export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; reuse?: ReuseOffer[]; figures?: ThreadFigure[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
 export interface CardAction { label: string; answer: string }
 export interface Card { kind: "decision" | "exception" | "question"; thread: string; title: string; text: string; actions: CardAction[] }
+export type Severity = "info" | "needs" | "problem";
+/** One receipt on a signal card: a quoted document line, a figure version, or the office rule. */
+export interface Receipt { kind: "document" | "figure" | "rule" | string; field?: string; id?: string; value?: unknown; v?: number; file?: string; page?: number; quote?: string; text?: string | null }
+export interface SignalHold { blocks: string; scope: string; until: string }
+/** A fired signal on the desk: `kind: "signal"`. */
+export interface SignalNeed {
+  kind: "signal"; id: string; signal: string; title: string; text: string; severity: Severity; role: string; person: string | null;
+  hold: SignalHold | null; evidence: Receipt[]; actions: CardAction[];
+}
+export interface SignalRow {
+  id: string; title: string; pain_points?: string[]; trigger: { on: string; kind?: string; [k: string]: unknown }; severity: Severity; route_to: string; role_title?: string | null;
+  action: { verb: string; options?: string[] }; hold: SignalHold | null; source?: string; suggestion: boolean; error?: string | null; disabled?: boolean;
+  stats: { fired: number; acted: number; dismissed: number; open: number; hit_rate: number | null; last_fired: string | null };
+}
+export interface FiredSignal {
+  id: string; signal: string; title: string; subject: string; severity: Severity; route_to: string; role_title?: string | null; status: "open" | "acted" | "dismissed";
+  at: string; done_at?: string; by?: string; choice?: string | null; note?: string; message: string; hold: SignalHold | null; evidence: Receipt[];
+}
+export const listSignals = () => apiGet<SignalRow[]>("/api/v3/signals");
+export const listFired = (status?: FiredSignal["status"]) => apiGet<FiredSignal[]>(`/api/v3/signals/fired${status ? `?status=${status}` : ""}`);
+export const actSignal = (id: string, body: { choice?: string; note?: string; dismiss?: boolean }) =>
+  apiSend<FiredSignal>("POST", `/api/v3/signals/${encodeURIComponent(id)}/act`, body);
 export interface Figure { label: string; value: string; change: string; id?: string; name?: string; v?: number }
 export interface Note { text: string; figures: Figure[] }
 export interface FilesLine { arrived: number; recognised: number; waiting: number }
-export interface Desk { needs: Card[]; note: Note | null; threads: ThreadSummary[]; files: FilesLine }
+export interface Desk { needs: (Card | SignalNeed)[]; note: Note | null; threads: ThreadSummary[]; files: FilesLine }
 export interface FileRow { name: string; arrived_at: string; status: "recognised" | "loaded" | "waiting" | "question"; source: string; thread: string }
 export interface Step { n: number; at: string; agent: string; action: string; ok: boolean; run_id?: string; detail: string }
 export interface WorkTable { layer: string; name: string; rows: number; state: "reused" | "new" }
