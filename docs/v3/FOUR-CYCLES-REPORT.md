@@ -70,3 +70,10 @@ Reports and screenshots are in `D:/Temp/sh3-cycles/c1..c4`. The runner is `docs/
 
 Round 8 note: Sam's run log ends "DONE ops_clerk: live; check PASS". His saved report was overwritten afterwards by a parallel
 Step 2 test that restored an older backup of the same shared file. The runner keeps its state in shared files; give each run its own.
+
+# Rounds 9 and 10 (17 Oct): merged version (figure records, two-model judge, trust screens, UI audit fixes)
+
+| Round | Correct | Questions to the person | Note |
+|---|---|---|---|
+| 9 | 9 of 10 | 0 for all nine | Anita's start failed: a reader caught the thread file mid-write (HTTP 500); fixed by saving to a side file and swapping it in |
+| 10 | **10 of 10** | **0 for all ten** | Every person live, every answer matches the answer key |
