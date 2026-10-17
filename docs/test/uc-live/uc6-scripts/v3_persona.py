@@ -167,8 +167,9 @@ def run(role: dict, build: dict, n: int) -> None:
             if stage in BUSY:
                 time.sleep(5)
             elif stage == "decision1":
-                if d.get("gaps") and not s.get("gaps_said"):
-                    s["gaps_said"] = True
+                gk = "gaps: " + " | ".join(g if isinstance(g, str) else str(g.get("label")) for g in d.get("gaps") or [])
+                if d.get("gaps") and gk not in s["retried"]:  # the usual practice once per distinct gap set; an unchanged set falls through to confirm (capped)
+                    s["retried"].append(gk)
                     save()
                     p.post(f"/api/v3/threads/{tid}/say", {"text": "use the usual practice"})
                 elif (th.get("signoff") or {}).get("state") == "fill":

@@ -501,3 +501,28 @@ def test_a_figure_question_with_nothing_live_answers_at_once_without_the_model(m
     monkeypatch.setattr(B.T, "ask", lambda *a, **k: (_ for _ in ()).throw(AssertionError("the model was called")))
     out = B._ask(object(), None, "What is our cash by entity today?", None)
     assert out["answer"].startswith("Not available yet: no build is live")
+
+
+# ---- live r1: decision1 loop (uc-013, uc-026), column alias (uc-001), persona runner --------------------------------------------------
+
+def test_last_period_figures_never_block_decision_one():
+    from sh_platform.v1 import t1_seeds as S
+    from sh_platform.v1 import t1_templates as T
+    fields = S.fields_from(S.reporting_sections())
+    bench = next(f for f in fields if f["key"] == "benchmarks")
+    assert not bench["required"]  # a confirm or the usual practice leaves nothing to re-ask
+    assert not [g for g in T.missing_required({"fields": [bench]}, {}) if "reported last period" in g]
+
+
+def test_a_column_alias_with_spaces_is_slugged_before_the_check():
+    from sh_platform.v1 import b10_design as D
+    from sh_platform.v1 import e0a_catalogue as E
+    assert E.slug("unmatched count") == "unmatched_count" and E.slug("Allocation drift (%)") == "allocation_drift" and E.slug("ok_name") == "ok_name"
+    cols = D.check_columns([{"name": "unmatched count", "type": "int"}, {"name": "Allocation Drift", "type": "text"}])
+    assert [c["name"] for c in cols] == ["unmatched_count", "allocation_drift"]
+
+
+def test_persona_runner_says_the_usual_practice_once_per_distinct_gap_set():
+    import pathlib
+    src = pathlib.Path(__file__).resolve().parents[2].joinpath("docs/test/uc-live/uc6-scripts/v3_persona.py").read_text(encoding="utf-8")
+    assert 'gk not in s["retried"]' in src and 'gaps_said' not in src and 's["confirms"] > 4' in src

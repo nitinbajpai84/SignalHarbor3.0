@@ -60,6 +60,7 @@ def check_columns(cols: list[dict]) -> list[dict]:
         raise Refused(400, "Give between 1 and 40 columns.")
     seen = set()
     for c in cols:
+        c["name"] = E.slug(c.get("name"))  # 'unmatched count' becomes unmatched_count; never blocks plan approval
         c["type"] = E.norm_type(c.get("type") or "text")
         if not _NAME.fullmatch(str(c.get("name") or "")) or c["name"] in seen:
             raise Refused(400, f"'{c.get('name')}' is not a usable column name (lowercase letters, digits, underscores, once each).")
@@ -486,7 +487,7 @@ def _from_model(plane, got: dict, slug: str, words: set[str]) -> dict:
             gold.append({"name": str(g["name"]), "purpose": str(g.get("purpose") or "")[:300], "grain": str(g.get("grain") or "")[:200],
                          "keys": [str(x) for x in g.get("keys") or []], "kpis": [str(x) for x in g.get("kpis") or []], "sql": str(g["sql"]),
                          "depends_on": [str(x) for x in g.get("depends_on") or []],
-                         "col_defs": {str(c.get("name")): str(c.get("definition") or "")[:600] for c in g.get("columns") or [] if isinstance(c, dict) and c.get("name")}})
+                         "col_defs": {E.slug(c.get("name")): str(c.get("definition") or "")[:600] for c in g.get("columns") or [] if isinstance(c, dict) and c.get("name")}})
     return {"silver": silver, "gold": gold}
 
 
