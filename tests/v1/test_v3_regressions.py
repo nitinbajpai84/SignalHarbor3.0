@@ -488,3 +488,16 @@ def test_a_thread_save_never_leaves_a_half_written_file_for_a_reader(tmp_path):
     t.join()
     assert not bad
     assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_a_figure_question_with_nothing_live_answers_at_once_without_the_model(monkeypatch):
+    """17 Oct, Nitin: 'What is our cash by entity today?' on an office with no live build took about 45 seconds and the watchlist showed 0.00s."""
+    from sh_platform.v1 import v3_board_routes as B
+    monkeypatch.setattr(B, "_live", lambda plane: None)
+    monkeypatch.setattr(B.P, "answer", lambda plane, text: None)
+    monkeypatch.setattr(B.C, "liquidity_answer", lambda *a, **k: None)
+    import sh_platform.v1.v3_figures as F
+    monkeypatch.setattr(F, "figure_answer", lambda *a, **k: None)
+    monkeypatch.setattr(B.T, "ask", lambda *a, **k: (_ for _ in ()).throw(AssertionError("the model was called")))
+    out = B._ask(object(), None, "What is our cash by entity today?", None)
+    assert out["answer"].startswith("Not available yet: no build is live")

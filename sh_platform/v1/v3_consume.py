@@ -239,7 +239,7 @@ def _read(plane, viewer) -> tuple[date | None, list[dict], list[dict]]:
     except Exception:  # noqa: BLE001 - no warehouse yet: the page still opens
         log.info("consume figures unavailable", exc_info=True)
         return None, [], []
-    if not ents:
+    if not ents or not any(e["cash"] for e in ents):  # entities with no cash loaded would show a row of 0.00s: show nothing instead
         return None, [], []
     try:
         prev = {e["code"]: e["cash"] for e in liquidity(plane, viewer, day.replace(day=1) - timedelta(days=1))}

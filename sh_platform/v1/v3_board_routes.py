@@ -104,6 +104,11 @@ def _ask(plane, viewer, text: str, pid: str | None) -> dict:
     fig = F.figure_answer(plane, viewer, text, pid, _live(plane))
     if fig:
         return fig
+    if not _live(plane) and asks_figure(text, []):
+        # nothing is live, so no figure can be on record: say so at once instead of a 40-second model call that ends in the same place
+        return {"answer": "Not available yet: no build is live, so there is no figure on record for that. Start one in Build: say what you need and drop your files.",
+                "figure": None, "rows": [], "source": "The office's own record", "used": [],
+                "trace": [{"kind": "guard", "label": "No live build holds a figure, so the answer says so without asking the model"}]}
     s, token = teach.open_scope("lumen", text, plane=plane)
     try:
         got = T.ask(plane, viewer, "lumen", text, pid)
