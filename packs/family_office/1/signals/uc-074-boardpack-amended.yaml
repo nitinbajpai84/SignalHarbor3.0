@@ -1,0 +1,16 @@
+# SUGGESTION. Card 74 row 3. EXCEPTION. A statement was amended after the last issued report: the board page is held until the old figure is dealt with.
+suggestion: true
+id: uc-074-boardpack-amended
+title: A statement was amended after the report
+pain_points: [PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: board_summary}
+inputs:
+  - {kind: doc, fields: [report_date, issued_on, amendments_after_report]}
+subject: "board pack, report of {doc.report_date}, amended after issue"
+condition: "doc.amendments_after_report > 0"
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Re-issue the report figure, Say on the page that the report is out of date]}
+hold: {blocks: issue_board_pack, scope: "report of {doc.report_date}", until: the amended figure is in the report or the page says the report is out of date}
+message: "{doc.amendments_after_report:,.0f} statement(s) were amended after the report of {doc.report_date} was issued on {doc.issued_on}, so the board net worth still carries the old value. The board page is held."
+evidence: [doc.report_date, doc.issued_on, doc.amendments_after_report]

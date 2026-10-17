@@ -1,0 +1,29 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc8-trades-vs-admin (use cases 51 to 100, no priority): the same trade twice in the desk export -> counted once -> the Operations Clerk sees it.
+suggestion: true
+id: uc8-trades-vs-admin-booked-twice
+title: A trade appears twice in the desk export
+pain_points:
+- PP-06
+- INT-DOC
+trigger:
+  on: figure_changed
+  figure: trade_breaks
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - security
+  - break_kind
+  - difference_amount
+  - currency
+subject: '{doc.trade} booked twice'
+condition: doc.break_kind == 'booked twice'
+severity: needs
+route_to: ops_clerk
+action:
+  verb: see
+  options:
+  - See it
+message: '{doc.security} {doc.trade}: the desk export carries the trade twice ({doc.difference_amount:,.0f} {doc.currency} counted twice). The second row is kept out of the figures.'
+evidence:
+- doc.difference_amount

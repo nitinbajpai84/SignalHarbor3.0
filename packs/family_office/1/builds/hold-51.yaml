@@ -1,0 +1,14 @@
+# Runnable persona builds of the "Hold and maintain" cards of 51 to 100 that could be built on the real readers (docs/v3/w1/build51-hold.md). Merged by role id with role_builds.yaml (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml, by the card's id.
+# uc-064: the key's SGD payments of the next 90 days (payment schedule, no reader yet) and the SGD forward as the bank confirms it (6,715,600, not the booked 6,707,500) are not in expect.
+template: family_office@1
+roles:
+  - id: risk_officer
+    builds:
+      - id: uc-064-fxexp
+        title: "Currency exposure of the family"
+        say: "At month end I want to know how much of what we own is in each currency, how much of the SGD is covered by the forwards we have bought, and what that leaves, so we can decide whether to hedge. The administrator's cash, the fund and listed values, the forward bookings and the bank's forward confirmations, and the 13 Oct fixing are the files. If the bank's confirmation of a forward is not what we booked, tell me before I decide."
+        files: ["office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv", "office6m:*/fx_confirmations/FXF-*_confirmation.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv", "office6m:*/trading_export/trading_export_20260915.csv", "office6m:*/trading_export/trading_export_20261005.csv", "office6m:*/custodian_positions/positions_20260930.csv", "office6m:*/manager_statements/*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "check.against-source", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: holdings by currency, the open forwards and the exposure after them, with the bank's confirmation beside the booking"
+        check: {ask: "Whether to hedge a currency exposure?", expect: ["5,150,694.59", "3,843,801.93", "6,707,500", "5,005,597.01", "8,849,398.94", "7.62", "112,272,239.48", "116,116,041.41"]}

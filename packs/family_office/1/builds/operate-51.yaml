@@ -1,0 +1,25 @@
+# Persona builds of the 'Operate and control' cards 51 to 100 (no priority) that are built: uc8-trades-vs-admin and uc-062-fxlife. The other eight cards of the domain are not built, see docs/v3/w1/build51-operate.md.
+# Same shape as role_builds.yaml, merged by role id (docs/test/uc-live/uc6-scripts/v3_persona.py). files: "office6m:<glob under tests/v1/fixtures/office6m>".
+# check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml (numbers as printed with thousands separators; names as the key spells them).
+# uc8-trades-vs-admin also has an older build in legacy-office6m.yaml (FX leg only, expects 8,100); this one adds the trade breaks of the key and keeps the same id.
+template: family_office@1
+roles:
+  - id: ops_clerk
+    title: Operations Clerk
+    person: Sam Lee
+    builds:
+      - id: uc8-trades-vs-admin
+        title: "Trades and FX forwards against the administrator and the confirmations"
+        say: "Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record. Show me what matches and what does not, by how much, and which ones I should send to Grace."
+        files: ["office6m:*/trading_export/trading_export_2026100*.csv", "office6m:*/administrator_trades/administrator_trades_2026-10.csv", "office6m:*/fx_confirmations/FXF-2026-002_confirmation.pdf"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "check.against-source", "action.detect-exception", "check.explain-difference", "action.route-owner"]
+        dashboard: "Action: trades matched against the administrator, breaks open with the money at stake, the forward confirmation difference"
+        check: {ask: "How much does the FX forward confirmation differ from our record, and which October trades does the administrator not match?", expect: ["8,100", "75,870", "592,000"]}
+
+      - id: uc-062-fxlife
+        title: "FX forwards: upcoming value dates and mark to market"
+        say: "Show me the FX forwards we have open: when each one settles, what it is worth at today's rate, whether the bank confirmed it as we booked it, and how much USD we deliver. Tell me which ones need settlement cash or a roll."
+        files: ["office6m:*/fx_confirmations/FXF-*_confirmation.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv", "office6m:*/trading_export/trading_export_2026091*.csv", "office6m:*/trading_export/trading_export_2026100*.csv"]
+        skills: ["data.read-pdf-fields", "check.against-source", "action.size-impact"]
+        dashboard: "Action: open forwards by value date with the mark to market, the confirmation status and the USD to deliver"
+        check: {ask: "Which forwards need settlement cash or a roll, and what are they worth now?", expect: ["5,597.01", "FXF-2026-002", "5,000,000"]}

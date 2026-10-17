@@ -4,6 +4,7 @@
 # Built here (w1 invest): commitments_by_fund, private_markets_budget, ddq_compare, fund_irr_tvpi, fee_drag (the stubs of cards 7, 35, 39, 49) and manager_timeline (25),
 # mandate_fit (34), memo_support (40), commit_check (41). A call notice is a `call` row (the investment part) and a `fee` row (the fee part) with notice_kind capital_call,
 # commitment_id set, effective_date = due date, received_at = notice date, amounts negative (money out, A5); a distribution is a positive `distribution` row, noticed then confirmed.
+# Built here (w1b, cards 51 to 100): vintage_split (80). watch_flags (53), expected_distributions (71) and manager_score (76) stay stubs: docs/v3/w1/build51-invest.md, Needs.
 recipes:
   - id: commitments_by_fund
     label: Commitments by fund
@@ -532,6 +533,47 @@ recipes:
         sql: >-
           select count(*) from deal_pipeline as x where x.stage not in ('declined', 'passed')
 
+
+
+  - id: vintage_split
+    label: Commitments by vintage year
+    cards: [80]
+    names: [vintage split, commitments by vintage year, vintage year, spread of commitments by year, commitments bunched in one year, private commitments by year]
+    may_read: [commitments, instruments]
+    never_read: [cash_movements, position_snapshots, transactions]
+    why: >-
+      A vintage is the year a commitment was made. It comes from the commitment date of the register, not from the calls (a call is money moving, not the promise) and not from the value of the fund.
+    formula: >-
+      Commitment amount by the year of its commitment date (committed_on), over the commitments nothing supersedes. Per currency, each year's share is the year's commitment over
+      that currency's total (currencies are never added together). One total row per currency; the largest year per currency is marked. The figure states the spread only: no limit
+      on how bunched is too bunched is signed, so none is applied here.
+    grain: By currency and vintage year, with one total row per currency
+    sql: >-
+      create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id)),
+      f as (select c.currency, cast(year(c.committed_on) as integer) as vintage_year, i.canonical_name as fund, c.commitment_amount as amt from cm as c join instruments as i on i.id = c.instrument_id),
+      y as (select currency, vintage_year, sum(amt) as commitment, count(distinct fund) as funds_count, string_agg(distinct fund, '; ' order by fund) as funds from f group by currency, vintage_year),
+      t as (select currency, sum(commitment) as total, max(commitment) as top, sum(funds_count) as n from y group by currency)
+      select y.currency, y.vintage_year, cast(y.commitment as decimal(18,2)) as commitment, cast(round(100 * y.commitment / t.total, 2) as decimal(9,2)) as share_pct,
+      cast(y.funds_count as integer) as funds_count, y.funds, cast(case when y.commitment = t.top then 1 else 0 end as integer) as is_largest, 0 as is_total from y join t on t.currency = y.currency
+      union all select t.currency, cast(null as integer), cast(t.total as decimal(18,2)), cast(100 as decimal(9,2)), cast(t.n as integer), 'All funds', 0, 1 from t
+    measure: commitment
+    columns:
+      vintage_year: 'The year of the commitment date; empty on the total row.'
+      commitment: 'What the office committed in the year (on the total row, in all years) for the currency.'
+      share_pct: 'The year''s commitment as a percent of the currency''s total commitments.'
+      funds_count: How many funds were committed in the year.
+      funds: The funds committed in the year.
+      is_largest: '1 on the year with the largest commitment of the currency.'
+      is_total: '1 on the row that adds up all the years of a currency, 0 on a year row.'
+    tie_out:
+      label: Commitments on the total rows equal the commitments of the register (rows nothing supersedes)
+      sql: >-
+        select (select coalesce(sum(commitment), 0) from {name} where is_total = 1), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where
+        not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id))
+    needs:
+      - why: 'No commitment is on the register, so there is no spread to state.'
+        sql: >-
+          select count(*) from commitments
 
 
   - id: watch_flags

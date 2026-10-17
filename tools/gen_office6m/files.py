@@ -38,6 +38,8 @@ def generate(out, w=None):
     fx_files(w, R); vendors(w, R); people_and_property(w, R); notes_and_mail(w, R); reports(w, R); loans(w, R); approvals(w, R); reference(w, R)
     from .files2 import generate2
     generate2(w, R)
+    from .more import generate3
+    generate3(w, R)
     write_csv(R.out / "received_log_all.csv", ["file", "kind", "period", "expected_on", "received_on", "status"], RECV)
     return w, R, MESS
 

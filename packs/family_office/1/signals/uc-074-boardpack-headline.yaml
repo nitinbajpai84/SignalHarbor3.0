@@ -1,0 +1,15 @@
+# SUGGESTION. Card 74 row 1. The board date is set: the headline figures of the family, each with the file it comes from.
+suggestion: true
+id: uc-074-boardpack-headline
+title: The board headline is ready
+pain_points: [PP-07, INT-OPS]
+trigger: {on: figure_changed, figure: board_summary}
+inputs:
+  - {kind: doc, fields: [report_date, net_worth_usd, net_worth_sgd, last_quarter_return_pct, since_start_return_pct, since_start_benchmark_pct, cash_usd_eq]}
+subject: "board headline as at {doc.report_date}"
+condition: "doc.net_worth_usd > 0"
+severity: info
+route_to: principal
+action: {verb: see}
+message: "For the board: we are worth USD {doc.net_worth_usd:,.0f} (SGD {doc.net_worth_sgd:,.0f}) in the report of {doc.report_date}. The liquid book returned {doc.last_quarter_return_pct:.4f} percent last quarter and {doc.since_start_return_pct:.4f} percent over the months loaded, against {doc.since_start_benchmark_pct:.4f} for the benchmark. Cash is USD {doc.cash_usd_eq:,.2f}."
+evidence: [doc.report_date, doc.net_worth_usd, doc.net_worth_sgd, doc.last_quarter_return_pct, doc.since_start_return_pct, doc.since_start_benchmark_pct, doc.cash_usd_eq]

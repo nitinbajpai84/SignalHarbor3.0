@@ -1,0 +1,23 @@
+# SUGGESTION. uc-064 row 2, exception: the open forwards in a currency as the bank confirms them differ from the booking, so the exposure rests on a leg the bank disputes. No hedge decision on the currency until the difference is recorded. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-064-fxexp-forward-differs
+title: The bank's confirmation of a forward differs from the booking
+pain_points: [INT-RISK, INT-TRUST, PP-08]
+trigger: {on: figure_changed, figure: currency_exposure}
+inputs:
+- kind: figure
+  id: currency_exposure
+  recipe: currency_exposure
+  as: fx
+  by: {non_base: true}
+let: {booked: fx.fwd_bought - fx.fwd_sold}
+condition: abs(fx.fwd_gap) > 0
+subject: 'forward differs {fx.currency} {fx.fwd_gap:,.0f}'
+severity: problem
+route_to: risk_officer
+action:
+  verb: record
+  options: [Query the bank, Accept the bank's confirmation]
+hold: {blocks: hedge_decision, scope: '{fx.currency}', until: the difference is recorded}
+message: 'The open {fx.currency} forwards are booked at {booked:,.0f} net and the bank confirms {fx.fwd_net_confirmed:,.0f}, a difference of {fx.fwd_gap:,.0f}; the exposure figure uses the booking. No decision to hedge {fx.currency} until you record which stands.'
+evidence: [fx]

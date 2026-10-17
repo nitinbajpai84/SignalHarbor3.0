@@ -100,6 +100,17 @@ DISTS = [("B", "2026-04-08", "2026-04-15", 120000, "income"), ("D", "2026-06-02"
 VENDORS = [("Lakeside Legal LLP", "legal", "SGD", "3047"), ("Brightline Audit LLP", "audit", "USD", "8812"), ("Orchard IT Services", "it", "SGD", "2290"),
            ("Quill Research Subscriptions", "research", "USD", "6615"), ("Marina Office Suites", "rent", "SGD", "7001"), ("Summit Tax Advisory", "tax", "SGD", "4432"),
            ("Harbourview Courier", "courier", "SGD", "1188")]
+# philanthropy: (id, pay or pledge date, charity, USD, purpose, state); the paid ones leave the Holdings USD account at Harbour Bank
+GRANTS = [("GR-2026-01", "2026-05-12", "Tidewater Children's Library Fund", 40000, "Reading rooms, first instalment", "paid"), ("GR-2026-02", "2026-07-09", "Coastal Reef Restoration Society", 60000, "Reef nursery", "paid"),
+          ("GR-2026-03", "2026-09-15", "Hillside Scholars Foundation", 75000, "Scholarships 2026-27", "paid"), ("GR-2026-04", "2026-11-20", "Northpoint Food Bank", 50000, "Winter programme", "pledged"),
+          ("GR-2026-05", "2026-12-15", "Tidewater Children's Library Fund", 40000, "Reading rooms, second instalment", "pledged")]
+GRANT_BUDGET = 300000
+# bank lines nobody can explain (planted): (account, date, amount, type, description, counterparty, reference)
+UNMATCHED = [("HB-HOLD-USD", "2026-08-19", 48250, "transfer_in", "TT IN REF 7741XQ - remitter name not stated", "Unknown remitter", "TT-7741XQ"),
+             ("TCB-HOLD-USD", "2026-09-23", -3980, "card_debit", "ACH DEBIT MERCHANT 55201 SINGAPORE", "Unknown merchant", "ACH-55201"),
+             ("HB-B-USD", "2026-10-06", -2150, "cheque", "CHEQUE 000417 presented, payee not shown", "Unknown payee", "CHQ-000417")]
+
+
 TARGETS = {"HB-HOLD-USD": ("2026-10-13", 1030000), "TCB-HOLD-USD": ("2026-10-13", 200000), "HB-HOLD-SGD": ("2026-10-13", 1350000), "TCB-HOLD-SGD": ("2026-10-13", 250000),
            "HB-TRUST-USD": ("2026-10-08", 1090000), "TCB-TRUST-USD": ("2026-10-08", 60000), "HB-TRUST-SGD": ("2026-10-08", 2000000), "TCB-TRUST-SGD": ("2026-10-08", 300000),
            "HB-B-USD": ("2026-10-08", 668000), "TCB-B-USD": ("2026-10-08", 200000), "HB-B-SGD": ("2026-10-08", 1100000), "TCB-B-SGD": ("2026-10-08", 150000)}
@@ -119,6 +130,7 @@ class World:
         self.stmts = self._stmts()
         self.invoices, self.policies, self.props, self.payroll, self.loan = [], [], [], [], []
         self.convs, self.approvals, self.fee_invoices, self.allow = [], [], [], []
+        self.grants = [dict(id=i, date=d(day), charity=c, amount=D(am), purpose=pu, state=st) for i, day, c, am, pu, st in GRANTS]
         self._events()
         self._calibrate()
 
@@ -354,6 +366,9 @@ class World:
                 rr = rng(f"noise:{a}:{m}")
                 self.add(a, dt.date(2026, m, 28 if m < 10 else 12), -q2(rr.uniform(18, 60)), "bank_fee", "Account maintenance fee", BANK[ACCT[a]["bank"]], f"BF-{a}-{m:02d}")
                 self.add(a, dt.date(2026, m, 30 if m < 10 else 12), q2(rr.uniform(15, 380)), "interest", "Credit interest", BANK[ACCT[a]["bank"]], f"IN-{a}-{m:02d}")
+        for g in self.grants:  # philanthropy and the unexplained lines come last, so every earlier line keeps its number; all sit on or before the day the balances are pinned to
+            if g["state"] == "paid": self.add("HB-HOLD-USD", g["date"], -g["amount"], "grant", f"GRANT {g['id']} {g['charity']}", g["charity"], g["id"], ev=g["id"])
+        for ac, day, amt, typ, desc, cp, ref in UNMATCHED: self.add(ac, day, D(amt), typ, desc, cp, ref)
         self.tx = sorted((t for t in self.tx if t["date"] <= END), key=lambda t: (t["date"], t["n"]))
 
     # ------------------------------------------------------------------ opening balances and the three cash views

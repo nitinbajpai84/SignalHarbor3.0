@@ -1,0 +1,38 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-062-fxlife (use cases 51 to 100, no priority): a forward whose value date is inside 30 days -> the USD to deliver -> the Operations Clerk tells the CFO the cash needed.
+suggestion: true
+id: uc-062-fxlife-due-soon
+title: A forward settles in the next 30 days
+pain_points:
+- PP-06
+- INT-RISK
+- PP-01
+trigger:
+  on: figure_changed
+  figure: fx_mtm
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - value_date
+  - days_to_value
+  - sell_amount
+  - buy_amount
+  - buy_currency
+  - contract_rate
+  - spot
+  - mtm_usd
+  - usd_to_deliver
+  - confirmation_status
+  - due_within_30_days
+subject: '{doc.trade} due soon'
+condition: doc.due_within_30_days == 1
+severity: needs
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Tell the CFO the cash needed
+message: 'Forward {doc.trade} settles on {doc.value_date}, in {doc.days_to_value:,.0f} days: USD {doc.usd_to_deliver:,.0f} has to be delivered. The CFO needs the cash or a roll.'
+evidence:
+- doc.usd_to_deliver
+- doc.value_date

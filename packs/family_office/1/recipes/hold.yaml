@@ -411,13 +411,78 @@ recipes:
 
   - id: currency_exposure
     label: Currency exposure
-    status: stub
+    status: ready
     cards: [64]
-    names: [currency exposure, exposure by currency]
-    may_read: [position_snapshots, fx_confirmations, market_observations, instruments]
-    formula: Market value by currency over net worth, before and after the open FX forwards (the bought leg added, the sold leg taken off).
-    sql: null
-
+    names: [currency exposure, exposure by currency, fx exposure, sgd exposure, unhedged exposure]
+    may_read: [position_snapshots, valuation_observations, transactions, fx_confirmations, market_observations, instruments]
+    never_read: [commitments, cash_movements]
+    why: "What the family owns in each currency is its investments (the funds at their latest value known, the listed holdings at the latest month end, as the allocation counts them) plus the administrator's cash, and an open FX forward moves value from the currency sold to the currency bought. A commitment is a promise, not a holding."
+    formula: One row for each currency. investments = the latest value of each fund known (valuation_observations, valued on or before the latest month end loaded, received by the as-of date; a superseded value out, an estimate only when nothing else of that date) plus the listed holdings at the latest month end (a position of an instrument with no valuation). cash = the administrator's cash positions (the instruments named Cash <currency>) at the latest date. The two added are spot_native, and spot_usd_eq converts it at the latest USD fixing on or before the as-of date (market_observations, fx_fixing; USD is 1). The open forwards are the executed forward bookings (transactions) that settle after the as-of date; the currency bought is the booking's currency with its cash amount, the currency sold is the one on the bank's confirmation of the same reference with the booking's quantity; a forward with no confirmation has no known sold currency and is counted in unplaced_forwards, never guessed. fwd_bought and fwd_sold are those legs, fwd_net_usd_eq their net at the fixing, after_usd_eq = spot_usd_eq + fwd_net_usd_eq, share_after_pct its percent of the family total (spot, in USD). fwd_net_confirmed is the same net read from the bank's confirmations of forwards still open, and fwd_gap = confirmed less booked (zero when the bank agrees with the booking). The family reports in USD (the base currency of every portfolio). No hedge limit is signed, so none is applied here.
+    grain: By currency at the as-of date
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      me as (select max(p.position_date) as d from positions as p where p.position_date = last_day(p.position_date)),
+      fx as (select o.quote_currency as currency, arg_max(o.value, o.observed_at) as rate from market_observations as o
+      where o.observation_type = 'fx_fixing' and o.base_currency = 'USD' and cast(o.observed_at as date) <= (select d from today)
+      and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id) group by o.quote_currency),
+      vals as (select o.*, row_number() over (partition by o.instrument_id order by o.valuation_date desc, coalesce(o.approval_status = 'estimate', false), o.recorded_at desc, o.id) as rn
+      from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)
+      and o.valuation_date <= (select d from me) and cast(o.received_at as date) <= (select d from today)),
+      inv as (select v.currency, sum(v.value_amount) as v from vals as v where v.rn = 1 group by v.currency
+      union all select p.currency, sum(p.source_market_value) from positions as p join instruments as i on i.id = p.instrument_id
+      where p.position_date = (select d from me) and i.instrument_type <> 'cash' and not exists (select 1 from valuation_observations as o where o.instrument_id = p.instrument_id) group by p.currency),
+      cash as (select c.currency, sum(c.source_market_value) as v from (select p.currency, p.source_market_value,
+      row_number() over (partition by p.portfolio_id, p.instrument_id order by p.position_date desc) as rk from positions as p join instruments as i on i.id = p.instrument_id
+      where i.instrument_type = 'cash' and i.canonical_name = 'Cash ' || p.currency and p.position_date <= (select d from today)) as c where c.rk = 1 group by c.currency),
+      cfm as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)
+      and c.value_date > (select d from today) and c.trade_date <= (select d from today)),
+      fwd as (select t.external_trade_id as ref, t.currency as bought_ccy, t.cash_amount as bought, c.currency_sold as sold_ccy, t.quantity_delta as qty
+      from transactions as t join instruments as i on i.id = t.instrument_id
+      left join (select * from fx_confirmations as y where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = y.id)) as c on c.trade_reference = t.external_trade_id
+      where i.instrument_type = 'fx_forward' and t.status = 'executed' and t.settlement_date > (select d from today) and t.trade_date <= (select d from today)
+      and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      legs as (select bought_ccy as currency, bought as amt, 'booked' as src from fwd
+      union all select sold_ccy, qty, 'booked' from fwd where sold_ccy is not null
+      union all select currency_bought, amount_bought, 'confirmed' from cfm
+      union all select currency_sold, -amount_sold, 'confirmed' from cfm),
+      ccy as (select currency from inv union select currency from cash union select currency from legs),
+      m as (select k.currency, (select d from today) as as_of, (select d from me) as month_end, coalesce(f.rate, case when k.currency = 'USD' then 1 end) as rate,
+      coalesce((select sum(v) from inv where inv.currency = k.currency), 0) as investments, coalesce((select v from cash where cash.currency = k.currency), 0) as cash,
+      coalesce((select sum(amt) filter (where amt > 0) from legs where legs.currency = k.currency and src = 'booked'), 0) as fwd_bought,
+      coalesce(-(select sum(amt) filter (where amt < 0) from legs where legs.currency = k.currency and src = 'booked'), 0) as fwd_sold,
+      coalesce((select sum(amt) from legs where legs.currency = k.currency and src = 'confirmed'), 0) as fwd_net_confirmed,
+      (select count(*) from fwd where sold_ccy is null) as unplaced_forwards from ccy as k left join fx as f on f.currency = k.currency),
+      u as (select m.*, m.investments + m.cash as spot_native, round((m.investments + m.cash) / m.rate, 2) as spot_usd_eq,
+      round((m.fwd_bought - m.fwd_sold) / m.rate, 2) as fwd_net_usd_eq from m)
+      select u.currency, u.as_of, u.month_end, cast(u.rate as decimal(18,6)) as rate, cast(u.investments as decimal(18,2)) as investments, cast(u.cash as decimal(18,2)) as cash,
+      cast(u.spot_native as decimal(18,2)) as spot_native, cast(u.spot_usd_eq as decimal(18,2)) as spot_usd_eq, cast(u.fwd_bought as decimal(18,2)) as fwd_bought,
+      cast(u.fwd_sold as decimal(18,2)) as fwd_sold, cast(round(u.fwd_bought / u.rate, 2) as decimal(18,2)) as fwd_bought_usd_eq, cast(u.fwd_net_usd_eq as decimal(18,2)) as fwd_net_usd_eq,
+      cast(u.spot_usd_eq + u.fwd_net_usd_eq as decimal(18,2)) as after_usd_eq,
+      cast(sum(u.spot_usd_eq) over () as decimal(18,2)) as family_total_usd_eq,
+      cast(100 * u.spot_usd_eq / nullif(sum(u.spot_usd_eq) over (), 0) as decimal(9,2)) as share_spot_pct,
+      cast(100 * (u.spot_usd_eq + u.fwd_net_usd_eq) / nullif(sum(u.spot_usd_eq) over (), 0) as decimal(9,2)) as share_after_pct,
+      cast(u.fwd_net_confirmed as decimal(18,2)) as fwd_net_confirmed, cast(u.fwd_net_confirmed - (u.fwd_bought - u.fwd_sold) as decimal(18,2)) as fwd_gap,
+      cast(u.unplaced_forwards as integer) as unplaced_forwards, (u.currency <> 'USD') as non_base, (u.rate is null) as no_rate
+      from u
+    measure: after_usd_eq
+    columns:
+      investments: The funds at their latest value known plus the listed holdings at the latest month end, in the currency shown.
+      cash: The administrator's cash at the latest date, in the currency shown.
+      spot_usd_eq: What is held in the currency (investments and cash), in USD at the latest fixing.
+      fwd_bought: The open forwards' bought leg in the currency, as booked.
+      fwd_sold: The open forwards' sold leg in the currency, as booked (a positive amount).
+      after_usd_eq: What is held in the currency after the open forwards, in USD at the fixing (the bought leg added, the sold leg taken off).
+      family_total_usd_eq: Everything held, in USD (the same on every row).
+      share_after_pct: The currency's after-forward amount as a percent of the family total.
+      fwd_gap: The open forwards in the currency as the bank confirms them, less as booked (positive means the bank confirmed more).
+      unplaced_forwards: How many open forwards have no confirmation, so no known sold currency (the same on every row).
+      non_base: True for a currency other than USD.
+    tie_out:
+      label: The forward legs bought add up to the open forwards as booked
+      sql: >-
+        select (select coalesce(sum(fwd_bought), 0) from {name}), (select coalesce(sum(t.cash_amount), 0) from transactions as t join instruments as i on i.id = t.instrument_id
+        where i.instrument_type = 'fx_forward' and t.status = 'executed' and t.settlement_date > (select max(as_of) from {name}) and t.trade_date <= (select max(as_of) from {name}))
 
   - id: income_forecast
     label: Dividend and coupon income forecast

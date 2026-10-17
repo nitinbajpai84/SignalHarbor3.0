@@ -1,0 +1,14 @@
+# Persona builds of the report-and-govern domain for the cards after the top 50 (card 74; card 75 is not built, see docs/v3/w1/build51-report.md).
+# Merged with role_builds.yaml by role id. files: "office6m:<glob under tests/v1/fixtures/office6m>", the files of the card's answer key.
+# check.expect: numbers copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
+template: family_office@1
+roles:
+  - id: principal
+    builds:
+      - id: uc-074-boardpack
+        title: "What to tell the board of the family"
+        say: "Before the family board I need one page: what we are worth in dollars and Singapore dollars and whether any of it is an estimate, how the liquid book did against its benchmark, how much cash we hold, whether the next call is covered, what is still to be called, and anything amended since the last report. Show where each number comes from."
+        files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf", "office6m:*/meeting_notes/ic_note_*.md", "office6m:*/meeting_notes/08_investment_committee_note_2026-10-08.md"]
+        skills: ["data.recognise-file", "build.write-formula-table", "consume.write-morning-note", "consume.build-board", "consume.explain-number"]
+        dashboard: "Consume: the board page, headline figures with their sources and the state each rests on"
+        check: {ask: "What to tell the board of the family?", expect: ["57,600,000", "77,253,120", "3.5148", "5.7563", "6,156,041.41", "270,000", "14,600,000"]}

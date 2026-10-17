@@ -112,12 +112,53 @@ recipes:
 
   - id: fx_mtm
     label: 'FX forwards: upcoming value dates and mark to market'
-    status: stub
     cards: [62]
-    names: [fx mtm, fx forward mark to market, upcoming fx value dates]
-    may_read: [fx_confirmations, market_observations, transactions]
-    formula: Open confirmed forwards by value date, with the mark = amount bought at today's market rate less amount sold, using the FX series in market_observations; value dates inside the window listed first.
-    sql: null
+    names: [fx mtm, fx forward mark to market, upcoming fx value dates, forwards mark to market, forward value dates, forwards settle]
+    words_all: [[forward, forwards], [mark, marked, mtm, worth, value, settle, settlement, roll]]
+    may_read: [transactions, fx_confirmations, market_observations]
+    never_read: [cash_movements, position_snapshots, commitments]
+    why: A forward is the desk's trade (the amounts the office booked), marked at the market rate of the latest day on file. The bank's confirmation is shown beside it as a check, never used for the mark.
+    formula: 'For each open FX forward (transaction of type fx_forward whose value date is on or after the latest day an FX rate is on file): the amount sold (USD, the desk''s quantity) and the amount bought (the other currency, the desk''s cash), the contract rate (bought over sold), the spot of that latest day (market_observations of type fx, USD against the bought currency), and the mark in USD = amount bought over spot less amount sold (forward points are ignored by convention). days_to_value runs from that day to the value date; due_within_30_days is 1 inside 30 days. usd_to_deliver is the USD the office sells on the value date. confirmation_status: none (no confirmation on file), matched (the confirmation''s leg in the bought currency equals the desk amount) or mismatch.'
+    grain: By forward
+    sql: >-
+      create table {name} as with asat as (select max(cast(o.observed_at as date)) as d from market_observations as o where o.observation_type = 'fx' and o.base_currency = 'USD'),
+      fwd as (select t.* from transactions as t where t.transaction_type = 'fx_forward' and t.status <> 'rejected'
+      and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      conf as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)),
+      spot as (select o.quote_currency as ccy, o.value as rate from market_observations as o where o.observation_type = 'fx' and o.base_currency = 'USD'
+      and cast(o.observed_at as date) <= (select d from asat) and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)
+      qualify row_number() over (partition by o.quote_currency order by o.observed_at desc, o.id) = 1)
+      select f.external_trade_id as trade, f.settlement_date as value_date, cast(date_diff('day', (select d from asat), f.settlement_date) as integer) as days_to_value,
+      cast(case when date_diff('day', (select d from asat), f.settlement_date) <= 30 then 1 else 0 end as integer) as due_within_30_days,
+      'USD' as sell_currency, cast(abs(f.quantity_delta) as decimal(18,2)) as sell_amount, f.currency as buy_currency, cast(abs(f.cash_amount) as decimal(18,2)) as buy_amount,
+      cast(abs(f.cash_amount) / abs(f.quantity_delta) as decimal(12,4)) as contract_rate, cast(s.rate as decimal(12,4)) as spot,
+      cast(f.quantity_delta + f.cash_amount / s.rate as decimal(18,2)) as mtm_usd,
+      cast(case when f.quantity_delta < 0 then -f.quantity_delta else 0 end as decimal(18,2)) as usd_to_deliver,
+      case when c.id is null then 'none' when (c.currency_bought = f.currency and c.amount_bought = abs(f.cash_amount))
+      or (c.currency_sold = f.currency and c.amount_sold = abs(f.cash_amount)) then 'matched' else 'mismatch' end as confirmation_status
+      from fwd as f left join conf as c on c.trade_reference = f.external_trade_id left join spot as s on s.ccy = f.currency
+      where f.settlement_date >= (select d from asat)
+    measure: mtm_usd
+    columns:
+      value_date: The forward's value date.
+      days_to_value: Days from the latest FX rate day on file to the value date.
+      due_within_30_days: 1 when the value date is inside 30 days.
+      sell_amount: Amount sold, in USD, as the desk booked it.
+      buy_amount: Amount bought, in the other currency, as the desk booked it.
+      contract_rate: Amount bought over amount sold.
+      spot: The market rate (bought currency per USD) of the latest day on file; empty when no rate for that currency is on file.
+      mtm_usd: Amount bought over spot less amount sold, in USD. Empty when there is no spot.
+      usd_to_deliver: USD the office sells on the value date.
+      confirmation_status: none, matched or mismatch against the bank's confirmation.
+    tie_out:
+      label: Every open forward of the desk is in the figure once
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from transactions as t where t.transaction_type = 'fx_forward' and t.status <> 'rejected'
+        and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)
+        and t.settlement_date >= (select max(cast(o.observed_at as date)) from market_observations as o where o.observation_type = 'fx' and o.base_currency = 'USD'))
+    needs:
+      - why: No FX rate is on file, so a forward cannot be marked.
+        sql: select count(*) from market_observations where observation_type = 'fx' and base_currency = 'USD'
 
   - id: call_notice_fields
     label: Capital call notice, as read
@@ -388,3 +429,49 @@ recipes:
       - why: No signed cash_tolerance rule is on file, so a difference cannot be called a break.
         sql: >-
           select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'cash_tolerance') and v.approval_status = 'approved'
+
+  - id: trade_breaks
+    label: Desk trades against the administrator
+    cards: [51]
+    names: [trade breaks, trades against administrator, trades against the administrator, unmatched trades, trade differences, trades that do not match]
+    words_all: [[trade, trades], [administrator, admin], [break, breaks, differ, differs, differences, match, matches, missing]]
+    may_read: [transactions, extracted_fields, documents, instruments]
+    never_read: [cash_movements, position_snapshots, commitments]
+    why: A trade is matched by its reference, trade for trade, against what the administrator booked. The administrator's file is read as documents with one field per trade; positions and cash say nothing about it.
+    formula: 'For each buy or sell the desk booked (transactions that no later row replaces) and each trade in an administrator trades file (a document of type administrator_trades, one field "trade:<reference>" with the quantity): matches when the references and the quantities agree; quantity differs when both exist and the quantities differ (the difference in money is the unit difference at the desk''s own price); missing at administrator when the desk has the trade, an administrator file for the trade''s month (valued at or after its month end) has arrived and does not list it; awaiting administrator file when no such file has arrived yet; missing at our desk when only the administrator lists it. A second row of the same trade that the desk export carried (type duplicate) is listed as booked twice, under the first trade''s reference, with the amount counted twice.'
+    grain: By trade
+    sql: >-
+      create table {name} as with t as (select t.* from transactions as t where t.transaction_type in ('buy', 'sell') and not exists
+      (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      a as (select substr(f.field_name, 7) as trade, f.value_numeric as quantity, f.value_text as note from extracted_fields as f
+      join documents as d on d.id = f.document_id where d.document_type = 'administrator_trades' and f.field_name like 'trade:%'),
+      j as (select coalesce(t.external_trade_id, a.trade) as trade, i.canonical_name as security, t.trade_date, t.currency, abs(t.quantity_delta) as our_quantity,
+      a.quantity as administrator_quantity, abs(t.cash_amount) as our_amount, t.id is null as only_admin, a.trade is null as only_desk,
+      exists (select 1 from documents as d where d.document_type = 'administrator_trades' and d.valuation_date >= last_day(t.trade_date)) as admin_file_arrived
+      from t full join a on a.trade = t.external_trade_id left join instruments as i on i.id = t.instrument_id),
+      k as (select j.trade, j.security, j.trade_date, j.currency, j.our_quantity, j.administrator_quantity, j.our_amount,
+      case when only_admin then 'missing at our desk' when only_desk and admin_file_arrived then 'missing at administrator'
+      when only_desk then 'awaiting administrator file' when our_quantity <> administrator_quantity then 'quantity differs' else 'matches' end as break_kind from j),
+      d as (select regexp_replace(t.external_trade_id, '-R$', '') as trade, i.canonical_name as security, t.trade_date, t.currency, abs(t.quantity_delta) as our_quantity,
+      cast(null as decimal(38,10)) as administrator_quantity, abs(t.cash_amount) as our_amount, 'booked twice' as break_kind
+      from transactions as t left join instruments as i on i.id = t.instrument_id where t.transaction_type = 'duplicate'),
+      u as (select * from k union all select * from d)
+      select trade, security, trade_date, break_kind, cast(our_quantity as decimal(18,2)) as our_quantity, cast(administrator_quantity as decimal(18,2)) as administrator_quantity,
+      cast(administrator_quantity - our_quantity as decimal(18,2)) as difference_quantity,
+      cast(case when break_kind = 'quantity differs' then abs(administrator_quantity - our_quantity) * our_amount / our_quantity
+      when break_kind in ('missing at administrator', 'booked twice') then our_amount end as decimal(18,2)) as difference_amount, currency,
+      cast(case when break_kind in ('quantity differs', 'missing at administrator', 'missing at our desk', 'booked twice') then 1 else 0 end as integer) as breaks
+      from u
+    measure: breaks
+    columns:
+      break_kind: matches, quantity differs, missing at administrator, awaiting administrator file, missing at our desk or booked twice.
+      our_quantity: The desk's quantity (positive).
+      administrator_quantity: The administrator's quantity; empty when it does not list the trade.
+      difference_quantity: Administrator quantity less the desk's; empty when one side is missing.
+      difference_amount: The money at stake in the trade's currency (units off at the desk's price; the whole amount of a missing or double-booked trade).
+      breaks: 1 when the row is a break.
+    tie_out:
+      label: Every buy and sell of the desk is in the figure once
+      sql: >-
+        select (select count(*) from {name} where our_quantity is not null and break_kind <> 'booked twice'), (select count(*) from transactions as t
+        where t.transaction_type in ('buy', 'sell') and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id))

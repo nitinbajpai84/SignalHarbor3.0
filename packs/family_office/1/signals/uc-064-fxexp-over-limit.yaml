@@ -1,0 +1,22 @@
+# SUGGESTION. uc-064 row 3, exception: a currency exposure after the open forwards above the limit. The limit is a signed office rule (currency_exposure_limit_pct); none is signed in the office files, so with none on record the signal is skipped and never guesses a number (docs/v3/w1/build51-hold.md, Needs). The office edits or switches it off.
+suggestion: true
+id: uc-064-fxexp-over-limit
+title: Currency exposure above the limit
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: currency_exposure}
+inputs:
+- kind: figure
+  id: currency_exposure
+  recipe: currency_exposure
+  as: fx
+  by: {non_base: true}
+- {kind: rule, id: currency_exposure_limit_pct, as: limit}
+condition: fx.share_after_pct > limit.value
+subject: 'over limit {fx.currency} {fx.share_after_pct:.2f}'
+severity: needs
+route_to: cio
+action:
+  verb: approve
+  options: [Hedge, Accept the exposure]
+message: '{fx.currency} is {fx.share_after_pct:.2f} percent of the family after the open forwards (USD {fx.after_usd_eq:,.0f}), above the limit of {limit.value} percent. Hedge or accept?'
+evidence: [fx, limit]

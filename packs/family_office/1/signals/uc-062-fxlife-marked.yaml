@@ -1,0 +1,40 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-062-fxlife (use cases 51 to 100, no priority): an open forward -> its value date and mark to market -> the Operations Clerk sees it.
+suggestion: true
+id: uc-062-fxlife-marked
+title: An open forward, its value date and what it is worth
+pain_points:
+- PP-06
+- INT-RISK
+- PP-01
+trigger:
+  on: figure_changed
+  figure: fx_mtm
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - value_date
+  - days_to_value
+  - sell_amount
+  - buy_amount
+  - buy_currency
+  - contract_rate
+  - spot
+  - mtm_usd
+  - usd_to_deliver
+  - confirmation_status
+subject: '{doc.trade} marked'
+condition: doc.days_to_value >= 0
+severity: info
+route_to: ops_clerk
+action:
+  verb: see
+  options:
+  - See it
+message: 'Forward {doc.trade}: sells USD {doc.sell_amount:,.0f} on {doc.value_date} ({doc.days_to_value:,.0f} days) for {doc.buy_amount:,.0f} {doc.buy_currency}; marked at {doc.spot:.4f} it is worth {doc.mtm_usd:,.0f}
+  USD.'
+evidence:
+- doc.sell_amount
+- doc.buy_amount
+- doc.spot
+- doc.mtm_usd

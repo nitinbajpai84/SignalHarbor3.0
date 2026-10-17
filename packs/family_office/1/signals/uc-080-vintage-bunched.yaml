@@ -1,0 +1,19 @@
+# SUGGESTION. Card 80, the exception: one vintage year holds more of the private commitments than the signed limit allows. The policy signs no such limit today (rule limit_vintage_year, max_pct, to be signed by the office),
+# so with no signed rule the signal is skipped, never guessed. The story is read only (no sign-off), so there is no hold.
+suggestion: true
+id: uc-080-vintage-bunched
+title: Commitments are bunched in one vintage year
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: vintage_split}
+inputs:
+  - {kind: doc, fields: [currency, vintage_year, commitment, share_pct, funds, is_total]}
+  - {kind: rule, id: limit_vintage_year, as: limit}
+let:
+  over: doc.share_pct - limit.max_pct
+subject: "{doc.currency} {doc.vintage_year}"
+condition: doc.is_total == 0 and doc.share_pct > limit.max_pct
+severity: problem
+route_to: risk_officer
+action: {verb: see, options: [Show the CIO]}
+message: "{doc.vintage_year} holds {doc.share_pct:,.2f} percent of the private commitments ({doc.currency} {doc.commitment:,.0f}: {doc.funds}), {over:,.2f} points over the {limit.max_pct:,.2f} percent vintage limit in the policy. Show the CIO."
+evidence: [doc.commitment, doc.share_pct, limit]

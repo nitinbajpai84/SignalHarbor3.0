@@ -1,0 +1,41 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-062-fxlife (use cases 51 to 100, no priority): a forward with no bank confirmation on file -> the exception -> the Operations Clerk asks the bank for it.
+suggestion: true
+id: uc-062-fxlife-no-confirmation
+title: A forward has no bank confirmation on file
+pain_points:
+- PP-06
+- INT-RISK
+- PP-01
+trigger:
+  on: figure_changed
+  figure: fx_mtm
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - value_date
+  - days_to_value
+  - sell_amount
+  - buy_amount
+  - buy_currency
+  - contract_rate
+  - spot
+  - mtm_usd
+  - usd_to_deliver
+  - confirmation_status
+subject: '{doc.trade} no confirmation'
+condition: doc.confirmation_status == 'none'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Ask the bank for the confirmation
+hold:
+  blocks: settle_forward
+  scope: '{doc.trade}'
+  until: the bank confirmation is on file
+message: Forward {doc.trade} ({doc.value_date}) has no confirmation from the bank on file. It is not settled or rolled until the confirmation is in.
+evidence:
+- doc.confirmation_status
+- doc.value_date

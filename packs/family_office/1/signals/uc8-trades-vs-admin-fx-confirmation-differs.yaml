@@ -1,0 +1,36 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc8-trades-vs-admin (use cases 51 to 100, no priority): an FX forward confirmation that differs from the desk's record -> the variance -> the Operations Clerk raises it with the bank.
+suggestion: true
+id: uc8-trades-vs-admin-fx-confirmation-differs
+title: The FX forward confirmation differs from the desk record
+pain_points:
+- PP-06
+- INT-DOC
+trigger:
+  on: figure_changed
+  figure: fx_confirmation_variance
+inputs:
+- kind: doc
+  fields:
+  - trade_reference
+  - confirmed_amount
+  - trade_amount
+  - variance
+  - currency
+subject: '{doc.trade_reference} confirmation differs'
+condition: doc.variance != 0
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Raise the difference with the bank and send it to the Operations Lead
+hold:
+  blocks: settle_forward
+  scope: '{doc.trade_reference}'
+  until: the difference is raised with the bank and sent to the Operations Lead
+message: 'Forward {doc.trade_reference}: the bank confirms {doc.confirmed_amount:,.0f} {doc.currency}, the desk booked {doc.trade_amount:,.0f}, a difference of {doc.variance:,.0f}. The forward is not settled
+  until the difference is raised.'
+evidence:
+- doc.confirmed_amount
+- doc.trade_amount
+- doc.variance
