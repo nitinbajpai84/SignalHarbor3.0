@@ -1,5 +1,5 @@
-# W1b cash, cards 51 to 100: the persona builds of the cash and treasury cards that could be built on the real readers (54 ladder, 73 runway). Merged by role id with role_builds.yaml.
-# Cards 70 (idle cash) and 72 (12 month forecast) are not built: they wait on the signed rules ladder_window_days, forecast_call_assumption and forecast_floor (A34); see docs/v3/w1/build51-cash.md.
+# W1b cash, cards 51 to 100: the persona builds of the cash and treasury cards that could be built on the real readers (54 ladder, 70 idle cash, 73 runway). Merged by role id with role_builds.yaml.
+# Card 72 (12 month forecast) has its recipe but no build: the payment schedule file stops at 11 Jan 2027, so the key's expenses after it are in no file; see docs/v3/w1/build51-cash.md.
 # files: office6m:<glob under tests/v1/fixtures/office6m>. check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml.
 template: family_office@1
 roles:
@@ -29,6 +29,27 @@ roles:
       - 1,822,351.67
       - 1,801,427.23
       - 1,736,127.24
+  - id: uc-070-idle
+    title: Idle cash above what we need
+    say: At month end I want to know how much cash each entity holds above what it needs for the next 90 days, the calls and the approved or scheduled payments, and above the 250,000 buffer, so I can propose to the CIO whether to invest, repay or hold it. An entity that does not cover its 90 days is short, not idle. Show where each number comes from.
+    files:
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/payment_schedule/payment_schedule_2026-10-13.csv
+    - office6m:reference/office_rules.csv
+    skills:
+    - action.detect-exception
+    - action.size-impact
+    - consume.answer-question
+    dashboard: 'Consume: idle cash by entity, cash less the 90 day outflow less the buffer, with the total and any shortfall'
+    check:
+      ask: How much cash is sitting idle above what we need for 90 days?
+      expect:
+      - 2,424,029.85
+      - 1,643,801.77
+      - 530,228.08
+      - 1,572,351.67
+      - 1,486,127.24
+      - 3,588,706.99
 - id: principal
   builds:
   - id: uc-073-runway

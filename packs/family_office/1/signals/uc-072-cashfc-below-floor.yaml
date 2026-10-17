@@ -1,0 +1,23 @@
+# SUGGESTION. uc-072 row 2, exception: the forecast closes a month under the signed floor (forecast_floor, three buffers). No new commitment is made until the CFO and the Principal decide how to raise the cash. The office edits or switches it off.
+suggestion: true
+id: uc-072-cashfc-below-floor
+title: The cash forecast falls under the floor
+pain_points: [INT-LIQ, PP-01, PP-02]
+row: exception
+trigger: {on: figure_changed, figure: cash_forecast}
+inputs:
+- kind: figure
+  id: cash_forecast
+  recipe: cash_forecast
+  as: fc
+  by: {is_lowest: true}
+condition: fc.below_floor
+subject: 'forecast under floor {fc.lowest_month}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options: [Raise cash, Sell from the liquid book, Draw on a facility, Slow new commitments]
+hold: {blocks: new_commitment, scope: all entities, until: the CFO and the Principal decide how to raise the cash}
+message: 'The 12 month forecast closes under the {fc.floor:,.0f} floor: lowest in {fc.lowest_month} at {fc.lowest_closing:,.2f}, so {fc.cash_to_raise:,.2f} must be raised before then. Raise cash, sell, draw on a facility or slow new commitments?'
+evidence: [fc]

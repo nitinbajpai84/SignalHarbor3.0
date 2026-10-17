@@ -900,7 +900,7 @@ Pain point -> the cards of the top 50 that relieve it (card numbers are the prio
 - **Decision:** How much cash is sitting idle above what we need for 90 days?
 - **Question:** "Whether to invest, repay or hold the surplus"
 - **Inputs:** administrator cash csv
-- **Figure Cash above 90 day need** (`idle_cash`): Cash by entity less 90 day ladder outflow less buffer. Key: Generator: cash less ladder; buffer from policy.
+- **Figure Idle cash above 90 day need** (`idle_cash`): Cash by entity less 90 day ladder outflow less buffer. Key: Generator: cash less ladder; buffer from policy.
 - **Action and sign-off:** CFO proposes deployment to the CIO. Signs: Raj Patel
 - **Reuses:** recipes cash_by_entity; skills action.detect-exception, action.size-impact
 - **Builds on:** #3, #54

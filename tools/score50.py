@@ -684,6 +684,12 @@ CHECKS.update({
         *[V(0, f"by_entity.{e}.cash_usd", "cash_by_entity", "cash", entity=e, currency="USD", position_date=TODAY) for e in _ENT54],
         *[V(0, f"by_entity.{e}.cash_sgd", "cash_by_entity", "cash", entity=e, currency="SGD", position_date=TODAY) for e in _ENT54],
     ],
+    "uc-070-idle": [  # card 70, idle_cash (window: signed ladder_window_days, A50); test_w1b_cash.py test_70_*
+        *[V(0, f"by_entity.{e}.{kf}", "idle_cash", col, entity=e) for e in _ENT54
+          for kf, col in (("cash_usd_equivalent", "cash_usd_equivalent"), ("outflow_90_days", "outflow"), ("buffer", "buffer"), ("idle", "idle"), ("short", "short"))],
+        FIRST(0, "total_idle", "idle_cash", "total_idle"),
+        FIRST(0, "total_short", "idle_cash", "total_short"),
+    ],
     "uc-055-corpact": [  # card 55, actions_next_14d; test_w1b_hold.py test_55_*
         F(0, "window", ["actions_next_14d"], lambda x: [str(x["actions_next_14d"][0]["window_from"]), str(x["actions_next_14d"][0]["window_to"])]),
         L(0, "to_book", "actions_next_14d", {"security": "security"}, {"event": "event", "ex_date": "ex_date", "pay_date": "pay_date", "quantity": "quantity",
@@ -935,8 +941,8 @@ BLOCKED.update({
     "uc-053-watchlist": "recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads",
     "uc-057-pricecheck": "no reader for market_data, and no signed price tolerance (A46); recipe price_gap_pct is a stub",
     "uc-063-cashcode": "no bank line carries a reference or payee to match, and no signed purpose rule",
-    "uc-070-idle": "ladder_window_days (90) is not signed (A34)",
-    "uc-072-cashfc": "recipe cash_forecast is a stub; forecast_call_assumption and forecast_floor are not signed (A34)",
+    "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
+                      "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
     "uc-076-scorecard": "recipe manager_score is a stub; the scorecard weights and bands are not signed",
     "uc-077-deals": "no reader for deal_pipeline beyond the one teaser; the five-deal csv is unread",
     "uc-078-redemption": "no reader for fund_documents (redemption_terms)",

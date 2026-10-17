@@ -247,8 +247,9 @@ def test_recipes_load_from_the_domain_folder_stubs_are_skipped_and_the_old_file_
     assert built >= {"net_worth", "cash_by_entity", "cash_break", "missing_statements", "concentration", "change_since_report", "fx_confirmation_variance"}
     assert {p.stem for p in R.DIR.glob("*.yaml")} >= {"_shared", "invest", "hold", "cash", "report", "operate", "family", "office"} and R.PACK.joinpath("signals").is_dir()
     stubs = R.stubs()
-    assert stubs and not built & {s["id"] for s in stubs} and all(s["sql"] is None and s["formula"] and s["names"] and s["may_read"] for s in stubs)
-    assert R.match({"name": "Cash forecast"}) is None and R.recipe("cash_forecast") is None  # a stub is never matched, bound or run
+    assert not built & {s["id"] for s in stubs} and all(s["sql"] is None and s["formula"] and s["names"] and s["may_read"] for s in stubs)
+    for s in stubs:  # a stub is never matched, bound or run (the 100 cards' stubs are all built now; the check stays for the next one)
+        assert (R.match({"name": s["names"][0]}) or {}).get("id") != s["id"] and R.recipe(s["id"]) is None
     core = {t["name"] for t in C._core()["tables"]}
     assert all(set(s["may_read"]) <= core for s in stubs), [(s["id"], set(s["may_read"]) - core) for s in stubs if not set(s["may_read"]) <= core]
     assert "positions" in R._file()["snippets"]  # the snippets of _shared.yaml reach every domain

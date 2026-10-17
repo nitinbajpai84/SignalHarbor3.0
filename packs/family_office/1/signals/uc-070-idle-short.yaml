@@ -1,0 +1,23 @@
+# SUGGESTION. uc-070 row 2, exception: an entity's cash does not cover the 90 day outflow and the buffer, so it has a shortfall, not idle cash. Its surplus is not offered for investment and no new commitment is made from it until the CFO decides how to cover it. Window and buffer are the signed rules (ladder_window_days, cash_buffer); with no buffer signed short is empty and the signal does not fire. The office edits or switches it off.
+suggestion: true
+id: uc-070-idle-short
+title: An entity is short of its 90 day need
+pain_points: [PP-01, PP-02, INT-LIQ]
+row: exception
+trigger: {on: figure_changed, figure: idle_cash}
+inputs:
+- kind: figure
+  id: idle_cash
+  recipe: idle_cash
+  as: idle
+  by: {is_tightest: true}
+condition: idle.short > 0
+subject: 'short {idle.entity} {idle.short:,.0f}'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options: [Move cash from another entity, Sell from the liquid book, Draw on a facility]
+hold: {blocks: new_commitment, scope: '{idle.entity}', until: the CFO decides how to cover the shortfall}
+message: '{idle.entity} is {idle.short:,.2f} short: its USD {idle.cash_usd_equivalent:,.2f} less {idle.window_days} days of outflow ({idle.outflow:,.2f}) leaves less than the {idle.buffer:,.0f} buffer. Cover it before any of its cash is counted as idle?'
+evidence: [idle]

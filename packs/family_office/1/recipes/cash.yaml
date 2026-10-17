@@ -881,6 +881,87 @@ recipes:
         sql: >-
           select count(*) from cash_movements as m where m.movement_type = 'payment' and m.payment_stage is not null
 
+  - id: idle_cash
+    label: Idle cash above the 90 day need
+    cards: [70]
+    names: [idle cash, cash above 90 day need, cash above what we need, surplus cash, idle cash above the buffer]
+    may_read: [position_snapshots, instruments, portfolios, legal_entities, bank_accounts, cash_movements, market_observations, business_rules, rule_versions]
+    never_read: [commitments, transactions]
+    why: Idle cash is what is left of the administrator's cash after the ladder's outflow of the signed window and the signed buffer. The outflow is the same as the liquidity ladder's (open calls, and payments approved or scheduled); commitments say what may be called, not what is due.
+    formula: For each entity, at the window of the signed rule ladder_window_days counted from the entity's latest cash date, cash in USD (the administrator's cash of that date, each other currency at the latest USD fixing on or before it, SGD per 1 USD) less the outflow (open calls due in the window, as calls_due counts them, plus the expected payments whose stage is approved or scheduled, each line in USD at the same fixing, rounded to the cent) less the signed cash_buffer (USD). A positive result is idle; a negative one is reported as short, never as idle. With no signed window there is no row; with no signed buffer idle and short are empty. A currency with no fixing empties the entity's figures and is counted in unconverted.
+    grain: By entity, with the totals on every row
+    sql: >-
+    sql: >-
+      create table {name} as with {positions},
+      cashp as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      refd as (select entity_id, max(position_date) as d from cashp group by all),
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      fx as (select a.entity_id, f.currency, f.rate from refd as a join fxall as f on f.rate_date <= a.d qualify row_number() over (partition by a.entity_id, f.currency order by f.rate_date desc) = 1),
+      cashu as (select c.entity_id, case when c.currency = 'USD' then c.cash else round(c.cash / f.rate, 2) end as usd from cashp as c join refd as a on a.entity_id = c.entity_id and a.d = c.position_date
+      left join fx as f on f.entity_id = c.entity_id and f.currency = c.currency),
+      mv as (select p.legal_entity_id as entity_id, m.movement_type, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount from cash_movements as m
+      join portfolios as p on p.id = m.portfolio_id where m.due_date is not null and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
+      and ((m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected'))
+      or (m.movement_type = 'payment' and m.confirmation_status = 'expected' and m.payment_stage in ('approved', 'scheduled')))),
+      outu as (select a.entity_id, m.movement_type, m.due_date, case when m.currency = 'USD' then m.amount else round(m.amount / f.rate, 2) end as usd from refd as a
+      join mv as m on m.entity_id = a.entity_id and (m.movement_type = 'payment' or m.status in ('noticed', 'expected') or m.due_date >= a.d)
+      left join fx as f on f.entity_id = a.entity_id and f.currency = m.currency),
+      bufall as (select cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number, v.effective_from, v.effective_to
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status = 'approved'),
+      buf as (select a.entity_id, b.amount from refd as a join bufall as b on b.currency = 'USD' and b.effective_from <= a.d and (b.effective_to is null or b.effective_to >= a.d)
+      qualify row_number() over (partition by a.entity_id order by b.version_number desc) = 1),
+      winall as (select cast(json_extract_string(v.parameters, '$.days') as integer) as days, v.version_number, v.effective_from, v.effective_to
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'ladder_window_days' and v.approval_status = 'approved'),
+      win as (select a.entity_id, a.d, x.days from refd as a join winall as x on x.effective_from <= a.d and (x.effective_to is null or x.effective_to >= a.d)
+      qualify row_number() over (partition by a.entity_id order by x.version_number desc) = 1),
+      w as (select a.entity_id, a.d, a.days, (select sum(u.usd) from cashu as u where u.entity_id = a.entity_id) as cash,
+      (select count(*) from cashu as u where u.entity_id = a.entity_id and u.usd is null) + (select count(*) from outu as o where o.entity_id = a.entity_id and o.usd is null
+      and o.due_date <= a.d + a.days * interval 1 day) as unconverted,
+      coalesce((select sum(o.usd) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'call' and o.due_date <= a.d + a.days * interval 1 day), 0) as calls,
+      coalesce((select sum(o.usd) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'payment' and o.due_date <= a.d + a.days * interval 1 day), 0) as payments,
+      (select count(*) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'payment' and o.due_date <= a.d + a.days * interval 1 day) as payment_lines
+      from win as a),
+      r as (select e.entity_name as entity, w.days as window_days, w.d as as_of, case when w.unconverted = 0 then cast(w.cash as decimal(18,2)) end as cash_usd_equivalent,
+      case when w.unconverted = 0 then cast(w.calls as decimal(18,2)) end as calls, case when w.unconverted = 0 then cast(w.payments as decimal(18,2)) end as approved_and_scheduled_payments,
+      cast(w.payment_lines as integer) as payment_lines, case when w.unconverted = 0 then cast(w.calls + w.payments as decimal(18,2)) end as outflow,
+      cast(b.amount as decimal(18,2)) as buffer, case when w.unconverted = 0 then cast(greatest(w.cash - w.calls - w.payments - b.amount, 0) as decimal(18,2)) end as idle,
+      case when w.unconverted = 0 then cast(greatest(b.amount - (w.cash - w.calls - w.payments), 0) as decimal(18,2)) end as short, cast(w.unconverted as integer) as unconverted
+      from w join legal_entities as e on e.id = w.entity_id left join buf as b on b.entity_id = w.entity_id)
+      select r.*, case when (select count(*) from r as y where y.idle is null) = 0 then (select sum(y.idle) from r as y) end as total_idle,
+      case when (select count(*) from r as y where y.short is null) = 0 then (select sum(y.short) from r as y) end as total_short,
+      coalesce(r.idle = max(r.idle) over (), false) as is_largest_idle, coalesce(r.idle - r.short = min(r.idle - r.short) over (), false) as is_tightest from r
+    measure: idle
+    columns:
+      window_days: The window of the signed rule ladder_window_days.
+      as_of: The entity's latest cash date; the window starts here.
+      cash_usd_equivalent: The administrator's cash of that date in USD, other currencies at the fixing of that date (or the latest before it).
+      calls: The open calls due up to the end of the window, in USD.
+      approved_and_scheduled_payments: The schedule's payments approved or scheduled and due up to the end of the window, in USD; held and expected ones are left out.
+      payment_lines: How many payments make up that amount.
+      outflow: Calls plus payments, the ladder's outflow for the window.
+      buffer: The cash buffer of the signed office rule (USD). Empty while no rule is signed.
+      idle: Cash less the outflow less the buffer, when positive; zero otherwise. Empty while no buffer is signed or a currency has no fixing.
+      short: The buffer less what is left after the outflow, when positive; zero otherwise.
+      unconverted: Lines (cash or outflow) in a currency with no fixing on or before the cash date.
+      total_idle: Idle summed over the entities; empty while any entity's idle is.
+      total_short: Short summed over the entities; empty while any entity's short is.
+      is_largest_idle: True for the entity with the most idle cash.
+      is_tightest: True for the entity with the least left over the buffer (the largest shortfall when one is short).
+    tie_out:
+      label: For every entity, cash less outflow less buffer equals idle less short
+      sql: >-
+        select (select count(*) from {name} where idle is not null), (select count(*) from {name} where idle is not null and cash_usd_equivalent - outflow - buffer = idle - short)
+    needs:   # without the signed window there is no idle figure, only a guess at how far ahead to look
+      - why: The window of idle cash (office rule ladder_window_days) is not signed, so the cash needed ahead cannot be stated.
+        sql: >-
+          select count(*) from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'ladder_window_days' and v.approval_status = 'approved'
+      - why: No payment of the payment schedule is loaded (no cash movement carries a payment stage), so the outflow would leave the payments out.
+        sql: >-
+          select count(*) from cash_movements as m where m.movement_type = 'payment' and m.payment_stage is not null
+
   - id: cash_runway
     label: Months of spending covered
     cards: [73]
@@ -946,9 +1027,127 @@ recipes:
 
   - id: cash_forecast
     label: Twelve month cash forecast
-    status: stub
     cards: [72]
-    names: [cash forecast, 12 month cash forecast]
-    may_read: [position_snapshots, cash_movements, commitments, family_members, vendor_contracts, instruments]
-    formula: 'Month by month for twelve months: opening cash by entity plus expected cash movements (noticed calls and distributions by due date, scheduled payments, allowances from family_members, vendor contract costs), closing cash by entity; every line says whether it is noticed, scheduled or estimated.'
-    sql: null
+    names: [cash forecast, 12 month cash forecast, twelve month cash forecast, cash in cash out closing by month, "cash in, cash out, closing by month"]
+    may_read: [position_snapshots, instruments, portfolios, bank_accounts, cash_movements, market_observations, business_rules, rule_versions, valuation_observations, documents, extracted_fields]
+    never_read: [commitments, transactions]
+    why: The opening is the administrator's cash; the calls are the open noticed calls plus the signed monthly call assumption (the register says what may be called, not when); distributions are the managers' projected payout rates on the latest statement values (as expected_distributions); income is the expected coupons and dividends; expenses are the payment schedule, held payments left out by the signed rule. Every assumption is a signed office rule, never fixed in the recipe.
+    formula: >-
+      Month by month from the month of the latest administrator cash date to the end of the signed forecast_horizon. Opening cash is every entity's latest administrator cash in USD
+      (each other currency at the latest USD fixing on or before that entity's cash date, SGD per 1 USD). Each month adds the expected distributions of its quarter ends (latest
+      statement value times the projected payout rate of the manager's latest outlook, rule forecast_distribution_basis) and the expected coupons and dividends, and takes off the open
+      calls due in it, the signed forecast_call_assumption for every month after the first from_month_offset months, and the payment schedule's payments due in it whose stage is not
+      the one the signed forecast_held_payments leaves out. Every flow is in USD at the latest fixing on or before the latest cash date, rounded to the cent per line. Closing is
+      opening plus the month's flows; the next month opens at it. The floor is the signed forecast_floor; cash_to_raise is the floor less the lowest closing, when positive.
+      expenses_complete is false for a month that ends after the last payment the schedule lists: its expenses are only what the schedule has.
+    grain: By month, with the totals on every row
+    sql: >-
+      create table {name} as with {positions},
+      cashp as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      refd as (select entity_id, max(position_date) as d from cashp group by all),
+      d0 as (select max(d) as d from refd),
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      fxe as (select a.entity_id, f.currency, f.rate from refd as a join fxall as f on f.rate_date <= a.d qualify row_number() over (partition by a.entity_id, f.currency order by f.rate_date desc) = 1),
+      fx as (select f.currency, f.rate from fxall as f, d0 where f.rate_date <= d0.d qualify row_number() over (partition by f.currency order by f.rate_date desc) = 1),
+      cashu as (select c.entity_id, case when c.currency = 'USD' then c.cash else round(c.cash / f.rate, 2) end as usd from cashp as c join refd as a on a.entity_id = c.entity_id and a.d = c.position_date
+      left join fxe as f on f.entity_id = c.entity_id and f.currency = c.currency),
+      rv as (select r.rule_code as code, v.parameters as p from business_rules as r join rule_versions as v on v.business_rule_id = r.id, d0
+      where r.rule_code in ('forecast_call_assumption', 'forecast_floor', 'forecast_horizon', 'forecast_held_payments', 'forecast_distribution_basis') and v.approval_status = 'approved'
+      and v.effective_from <= d0.d and (v.effective_to is null or v.effective_to >= d0.d) qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      ru as (select max(case when code = 'forecast_horizon' then cast(json_extract_string(p, '$.end') as date) end) as hz,
+      max(case when code = 'forecast_call_assumption' then cast(json_extract_string(p, '$.amount') as decimal(18,2)) end) as call_amt,
+      max(case when code = 'forecast_call_assumption' then cast(json_extract_string(p, '$.from_month_offset') as integer) end) as call_from,
+      max(case when code = 'forecast_floor' then cast(json_extract_string(p, '$.amount') as decimal(18,2)) end) as floor_amt,
+      max(case when code = 'forecast_held_payments' then json_extract_string(p, '$.payment_stage') end) as held_stage,
+      max(case when code = 'forecast_distribution_basis' then json_extract_string(p, '$.basis') end) as dist_basis from rv),
+      ms as (select cast(g.m as date) as m, row_number() over (order by g.m) as idx from d0, ru, unnest(generate_series(date_trunc('month', d0.d), date_trunc('month', ru.hz), interval 1 month)) as g(m)),
+      mv as (select m.movement_type, m.currency, m.due_date, abs(m.amount) as amount from cash_movements as m, d0, ru
+      where m.due_date > d0.d and m.due_date <= ru.hz and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
+      and ((m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected'))
+      or (m.movement_type = 'payment' and m.confirmation_status = 'expected' and m.payment_stage is not null and m.payment_stage is distinct from ru.held_stage)
+      or (m.movement_type in ('coupon', 'dividend') and m.confirmation_status = 'expected'))),
+      vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+      lv as (select instrument_id, value_amount, currency from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc,
+      v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+      od as (select d.id, d.instrument_id from (select d.*, row_number() over (partition by d.instrument_id order by d.received_at desc, d.recorded_at desc) as rn from documents as d
+      where d.document_type = 'manager_distribution_outlook' and d.instrument_id is not null and not exists (select 1 from documents as z where z.supersedes_document_id = d.id)) as d where d.rn = 1),
+      dq as (select l.currency, cast(f.value_text as date) as due_date, round(l.value_amount * f.value_numeric, 2) as amount from od as o
+      join extracted_fields as f on f.document_id = o.id and f.field_name = 'projected_payout_rate' join lv as l on l.instrument_id = o.instrument_id, d0, ru
+      where ru.dist_basis = 'latest_value_times_payout_rate' and cast(f.value_text as date) > d0.d and cast(f.value_text as date) <= ru.hz),
+      fl as (select case when movement_type in ('coupon', 'dividend') then 'income' when movement_type = 'call' then 'calls' else 'expenses' end as kind, currency, due_date, amount from mv
+      union all select 'distributions', currency, due_date, amount from dq),
+      flu as (select l.kind, cast(date_trunc('month', l.due_date) as date) as m, case when l.currency = 'USD' then l.amount else round(l.amount / f.rate, 2) end as usd
+      from fl as l left join fx as f on f.currency = l.currency),
+      bad as (select (select count(*) from cashu where usd is null) + (select count(*) from flu where usd is null) as n),
+      mm as (select s.m, s.idx, coalesce(sum(u.usd) filter (where u.kind = 'distributions'), 0) as distributions, coalesce(sum(u.usd) filter (where u.kind = 'income'), 0) as income,
+      coalesce(sum(u.usd) filter (where u.kind = 'calls'), 0) as noticed_calls, case when s.idx > ru.call_from then ru.call_amt else 0 end as assumed_calls,
+      coalesce(sum(u.usd) filter (where u.kind = 'expenses'), 0) as expenses, count(u.kind) filter (where u.kind = 'expenses') as payment_lines
+      from ms as s cross join ru left join flu as u on u.m = s.m group by s.m, s.idx, ru.call_from, ru.call_amt),
+      run as (select mm.*, mm.noticed_calls + mm.assumed_calls as calls, (select sum(usd) from cashu) as cash0,
+      (select sum(usd) from cashu) + sum(mm.distributions + mm.income - mm.noticed_calls - mm.assumed_calls - mm.expenses) over (order by mm.m rows unbounded preceding) as closing from mm),
+      sch as (select max(m.due_date) as last_due from cash_movements as m where m.movement_type = 'payment' and m.payment_stage is not null),
+      r as (select strftime(run.m, '%Y-%m') as month, cast(run.idx as integer) as month_index, d0.d as as_of, ru.hz as horizon,
+      case when bad.n = 0 then cast(run.closing - (run.distributions + run.income - run.calls - run.expenses) as decimal(18,2)) end as opening,
+      case when bad.n = 0 then cast(run.distributions as decimal(18,2)) end as distributions, case when bad.n = 0 then cast(run.income as decimal(18,2)) end as income,
+      case when bad.n = 0 then cast(run.noticed_calls as decimal(18,2)) end as noticed_calls, cast(run.assumed_calls as decimal(18,2)) as assumed_calls,
+      case when bad.n = 0 then cast(run.calls as decimal(18,2)) end as calls, case when bad.n = 0 then cast(run.expenses as decimal(18,2)) end as expenses,
+      cast(run.payment_lines as integer) as payment_lines, case when bad.n = 0 then cast(run.closing as decimal(18,2)) end as closing,
+      case when bad.n = 0 then cast(run.cash0 as decimal(18,2)) end as opening_cash_usd_eq, ru.call_amt as monthly_call_assumption, ru.floor_amt as floor,
+      last_day(run.m) <= sch.last_due as expenses_complete, sch.last_due as schedule_ends, cast(bad.n as integer) as unconverted
+      from run, d0, ru, bad, sch)
+      select r.*, case when r.closing is not null then r.closing < r.floor end as below_floor,
+      first_value(r.month) over (order by r.closing, r.month rows between unbounded preceding and unbounded following) as lowest_month, min(r.closing) over () as lowest_closing,
+      case when min(r.closing) over () is not null then greatest(r.floor - min(r.closing) over (), 0) end as cash_to_raise,
+      last_value(r.closing) over (order by r.month rows between unbounded preceding and unbounded following) as closing_end,
+      coalesce(r.closing = min(r.closing) over (), false) as is_lowest,
+      coalesce(r.month = min(r.month) filter (where not r.expenses_complete) over (), false) as is_first_incomplete from r
+    measure: closing
+    columns:
+      month: The month, YYYY-MM; the first is the month of the latest cash date.
+      month_index: 1 for the first month.
+      as_of: The latest administrator cash date; flows after it are counted.
+      horizon: The end of the signed forecast_horizon.
+      opening: The cash at the start of the month (the opening cash, then the closing of the month before).
+      distributions: The expected distributions of the quarter ends in the month, in USD.
+      income: The expected coupons and dividends paid in the month, in USD.
+      noticed_calls: The open calls due in the month, in USD.
+      assumed_calls: The signed monthly call assumption, from the month after the first from_month_offset months; zero before.
+      calls: Noticed plus assumed calls.
+      expenses: The payment schedule's payments due in the month, in USD; the stage the signed rule leaves out (held) is left out.
+      payment_lines: How many payments make up the expenses.
+      closing: Opening plus distributions plus income less calls less expenses.
+      opening_cash_usd_eq: Every entity's latest administrator cash in USD.
+      monthly_call_assumption: The signed forecast_call_assumption (USD a month).
+      floor: The signed forecast_floor (USD).
+      expenses_complete: False when the month ends after the last payment the schedule lists; its expenses are then only the ones listed.
+      schedule_ends: The due date of the last payment in the schedule.
+      unconverted: Cash or flow lines in a currency with no fixing; the figures are empty while any is.
+      below_floor: True when the month closes under the floor.
+      lowest_month: The month with the lowest closing.
+      lowest_closing: The lowest closing.
+      cash_to_raise: The floor less the lowest closing, when positive; zero otherwise.
+      closing_end: The closing of the last month.
+      is_lowest: True for the month with the lowest closing.
+      is_first_incomplete: True for the first month whose expenses the schedule does not cover to its end.
+    tie_out:
+      label: Every payment of the schedule inside the horizon and not held is in one month's expenses
+      sql: >-
+        select (select coalesce(sum(payment_lines), 0) from {name}), (select count(*) from cash_movements as m, (select max(as_of) as d, max(horizon) as hz from {name}) as t
+        where m.movement_type = 'payment' and m.confirmation_status = 'expected' and m.payment_stage is not null and m.due_date > t.d
+        and m.payment_stage is distinct from (select json_extract_string(v.parameters, '$.payment_stage') from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+        where r.rule_code = 'forecast_held_payments' and v.approval_status = 'approved' order by v.version_number desc limit 1) and m.due_date <= t.hz
+        and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
+    needs:   # each assumption of the forecast is a signed office rule; without one the forecast would rest on a number nobody signed
+      - why: The forecast's horizon, call assumption, floor, held payments or distribution basis (office rules forecast_horizon, forecast_call_assumption, forecast_floor, forecast_held_payments, forecast_distribution_basis) is not signed.
+        sql: >-
+          select case when count(distinct r.rule_code) = 5 then 1 else 0 end from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+          where r.rule_code in ('forecast_call_assumption', 'forecast_floor', 'forecast_horizon', 'forecast_held_payments', 'forecast_distribution_basis') and v.approval_status = 'approved'
+      - why: No payment of the payment schedule is loaded (no cash movement carries a payment stage), so the expenses would be left out.
+        sql: >-
+          select count(*) from cash_movements as m where m.movement_type = 'payment' and m.payment_stage is not null
+      - why: No manager distribution outlook is loaded, so there is no payout rate for the expected distributions.
+        sql: >-
+          select count(*) from documents as d join extracted_fields as f on f.document_id = d.id where d.document_type = 'manager_distribution_outlook' and f.field_name = 'projected_payout_rate'

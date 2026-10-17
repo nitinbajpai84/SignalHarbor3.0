@@ -362,8 +362,8 @@ def test_every_recipe_of_the_cash_cards_is_built_and_reads_only_the_tables_it_na
         assert "{" not in sql and sql.startswith(f"create table t_{rid} as "), rid
 
 
-def test_the_stubs_of_the_cash_domain_that_belong_to_cards_after_the_top_50_stay_stubs():
-    assert "cash_forecast" in {s["id"] for s in R.stubs()}  # liquidity_ladder (card 54) is built by W1b (test_w1b_cash.py)
+def test_the_cash_recipes_of_cards_after_the_top_50_are_built_by_w1b():
+    assert {"liquidity_ladder", "idle_cash", "cash_forecast", "cash_runway"} <= {r["id"] for r in R.recipes()}  # cards 54, 70, 72, 73 (test_w1b_cash.py)
 
 
 # ---- card 2 and 36: called to date and unfunded ---------------------------------------------------------------------------------------------

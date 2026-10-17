@@ -1,0 +1,22 @@
+# SUGGESTION. uc-072 row 1: the month the 12 month forecast is lowest, against the signed floor, from the card's recipe (cash_forecast). Every assumption is a signed office rule (forecast_*). The CFO presents it to the Principal. The office edits or switches it off.
+suggestion: true
+id: uc-072-cashfc-outlook
+title: The lowest month of the 12 month cash forecast
+pain_points: [INT-LIQ, PP-01]
+row: normal
+trigger: {on: figure_changed, figure: cash_forecast}
+inputs:
+- kind: figure
+  id: cash_forecast
+  recipe: cash_forecast
+  as: fc
+  by: {is_lowest: true}
+condition: fc.is_lowest
+subject: 'forecast low {fc.lowest_month} {fc.lowest_closing:,.0f}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [See the forecast]
+message: 'From USD {fc.opening_cash_usd_eq:,.2f} of cash, with calls of {fc.monthly_call_assumption:,.2f} a month assumed, the forecast is lowest in {fc.lowest_month} at {fc.lowest_closing:,.2f} and closes {fc.closing_end:,.2f} at {fc.horizon}. Against the {fc.floor:,.0f} floor, cash to raise: {fc.cash_to_raise:,.2f}.'
+evidence: [fc]
