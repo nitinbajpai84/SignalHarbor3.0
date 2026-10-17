@@ -182,6 +182,15 @@ def has_column(kpi_name: str, cols: list[str]) -> bool:
     return bool(want) and len(want & _tokens(" ".join(cols))) / len(want) >= .5
 
 
+def holds(t: dict, figure: str) -> bool:
+    """A designed table has a column for the figure. A table built from the figure's recipe (or from the design the office kept for it) holds it by what
+    its columns mean, not by their names: "Time-weighted return net of fees" is portfolio_return_pct and benchmark_return_pct, "Single-name breaches and
+    cost to cure" is concentration_pct, limit_pct and cost_to_cure (live r2, uc4 and uc5: the recipe's table was dropped for "no column")."""
+    from sh_platform.v1 import v3_recipes as R
+    cols = [e.alias_or_name for e in projections(t["sql"])]
+    return not cols or str(t.get("purpose") or "").startswith((R.MARK, R.SAVED)) or has_column(figure, cols)
+
+
 def design(x, todo: list[dict], filled: set[str]) -> tuple[list[dict], dict[str, str]]:
     """Span's design step for these figures (skill model.design-ready-table): the rules first, on the tables the load filled; what they cannot place goes
     to the model once. -> (new gold tables as the plan check passed them, {figure: why none}). Nothing is written yet."""
@@ -216,8 +225,8 @@ def design(x, todo: list[dict], filled: set[str]) -> tuple[list[dict], dict[str,
             if m and m.group(1) in names:
                 why[m.group(1)] = m.group(2)[:300]
     for name, t in list(new.items()):  # a column of NULLs is not a figure; a table with no column for a figure does not hold it: the figures are named, the table is not kept
-        empty, cols = {_slug(n) for n in null_columns(t["sql"])}, [e.alias_or_name for e in projections(t["sql"])]
-        held = [n for n in t.get("kpis") or [] if _slug(n) not in empty and (not cols or has_column(n, cols))]
+        empty = {_slug(n) for n in null_columns(t["sql"])}
+        held = [n for n in t.get("kpis") or [] if _slug(n) not in empty and holds(t, n)]
         for n in t.get("kpis") or []:
             if n not in held:
                 why[n] = ("Span could not work it out from the loaded data: the only design it found was an empty or fixed column." if _slug(n) in empty

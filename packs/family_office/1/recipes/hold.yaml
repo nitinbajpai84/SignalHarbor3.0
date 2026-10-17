@@ -753,8 +753,8 @@ recipes:
       line as (select h.holding_name as company, h.sector, split_part(s.external_record_id, ':', 1) as fund_key, i.canonical_name as fund, l.valuation_date, h.as_at,
       round(l.value_amount * h.weight_pct / 100, 2) as amount from fh as h join lv as l on l.instrument_id = h.instrument_id join instruments as i on i.id = h.instrument_id
       left join source_records as s on s.id = h.source_record_id where lower(h.holding_name) <> 'other holdings'),
-      lim as (select p.id as portfolio_id from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
-      where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      lim as (select p.id as portfolio_id from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = coalesce(json_extract_string(v.parameters, '$.portfolio'), json_extract_string(v.parameters, '$.portfolio_code'))
+      where r.rule_type in ('policy', 'limit') and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
       book as (select l.instrument_id, l.position_date, l.source_market_value as v from positions as l join lim as m on m.portfolio_id = l.portfolio_id
       where l.position_date = (select max(z.position_date) from positions as z where z.portfolio_id = l.portfolio_id)),
       tot as (select (select sum(v) from book) as liquid_book, (select max(position_date) from book) as book_date,

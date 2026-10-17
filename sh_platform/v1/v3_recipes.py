@@ -100,8 +100,11 @@ def match(kpi: dict, strict: bool = True) -> dict | None:
         # the definition leads with a recipe's phrase ("Cash balance at month start minus ..." leads with cash_by_entity's "cash balance"): that is the quantity it
         # states first. A phrase the definition only mentions ("Opening cash + ... - known obligations") is a term of another figure, so it is none; so is a
         # share or a ratio of the phrase ("Cash balance expressed as a percentage"), which is its result, not the recipe's quantity
-        dfn = _words(kpi["definition"])
-        named_in_definition = [r for r in recipes() if any(" " in n.strip() and dfn.startswith(_words(n)) for n in r.get("names") or [])]
+        # a recipe with word groups is bound only when the figure has a word of each: "months of cash available to meet known calls and costs" leads
+        # with cash_runway's phrase, but runway is months of spending, and that figure never says spending (uc-023 r1)
+        dfn, full = _words(kpi["definition"]), set(_words(f"{name} {kpi['definition']}").split())
+        named_in_definition = [r for r in recipes() if any(" " in n.strip() and dfn.startswith(_words(n)) for n in r.get("names") or [])
+                               and all(full & set(g) for g in r.get("words_all") or [])]
         best = named_in_definition[0] if len(named_in_definition) == 1 else None
     if best is None and kpi.get("definition"):
         full = set(_words(f"{name} {kpi['definition']}").split())
