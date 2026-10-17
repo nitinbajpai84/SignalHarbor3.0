@@ -1,0 +1,300 @@
+roles:
+- id: cio
+  title: Chief Investment Officer
+  person: Raj Patel
+  builds:
+  - id: uc1-why-nav-moved
+    title: Why did the NAV move since the issued report?
+    say: Every month I want to know why our number moved between the report we issued
+      and what we know now. Fund A sent an amended September statement, so show me
+      what changed and by how much, and who needs to look at it. I read it, Mei checks
+      it.
+    files:
+    - office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf
+    - office6m:*/manager_statements/northgate_A_2026-09-30_*.pdf
+    - office6m:*/emails/*_stmt_A_2026-09-30_amended.eml
+    - office6m:*/administrator_nav/administrator_export_2026-09.xlsx
+    skills:
+    - intent.restate-ask
+    - data.recognise-file
+    - data.read-pdf-fields
+    - check.against-source
+    - check.explain-difference
+    - consume.answer-question
+    dashboard: 'Consume: issued versus known now, NAV bridge by portfolio'
+    check:
+      ask: Why did Fund A move since the issued September report?
+      expect:
+      - 10,180,000
+      - 180,000
+  - id: uc4-vs-benchmark
+    title: How did the portfolio do against its benchmark?
+    say: I need to see how the Evergreen Liquid portfolio did last month against our
+      blended benchmark, in one line I can put in front of the committee. The benchmark
+      definition is in the workbook, the index levels are in the market data.
+    files:
+    - office6m:reference/EG-OFFICE-BLEND_Benchmark_Specification_2026-10.xlsx
+    - office6m:*/index_levels/index_levels_2026-09.csv
+    - office6m:*/index_levels/index_levels_2026-10.csv
+    - office6m:*/administrator_nav/administrator_export_2026-09.xlsx
+    skills:
+    - intent.define-figure
+    - data.recognise-file
+    - build.write-formula-table
+    - check.adds-up
+    - consume.attribution
+    - consume.answer-question
+    dashboard: 'Consume: portfolio against benchmark, by month'
+    check:
+      ask: How did the liquid portfolio do against the benchmark in September 2026?
+      expect:
+      - '4.1667'
+      - '2.7072'
+- id: cfo
+  title: Head of Finance
+  person: Daniel Foo
+  builds:
+  - id: uc6-liquidity
+    title: Can each entity meet its capital calls?
+    say: 'I want to know every morning whether each entity can meet its capital calls
+      from cash: cash by entity, calls due in 30 and 60 days, and uncalled commitments.
+      Mei and Raj read it; I decide. Monthly refresh.'
+    files:
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    skills:
+    - intent.restate-ask
+    - data.recognise-file
+    - data.match-identity
+    - check.against-source
+    - action.detect-exception
+    - consume.answer-question
+    dashboard: 'Consume: cash by entity and calls due'
+    check:
+      ask: What is our cash by entity today?
+      expect:
+      - 1,230,000
+      - 1,600,000
+      - 213,895.52
+      - 2,300,363.01
+  - id: uc6-uncalled
+    title: How much of our commitments is still uncalled?
+    say: Show me, fund by fund, what we committed, what has been called and what is
+      still to come, so I can plan the cash for the year.
+    files:
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    skills:
+    - data.recognise-file
+    - check.adds-up
+    - consume.understand-words
+    - consume.answer-question
+    dashboard: 'Consume: commitments, called and uncalled by fund'
+    check:
+      ask: How much is uncalled across all commitments?
+      expect:
+      - 14,600,000
+      - 15,850,000
+      - 3,750,000
+      - 800,000
+- id: head_of_data
+  title: Head of Data
+  person: Anita Rao
+  builds:
+  - id: uc10-pipeline
+    title: A monthly pipeline and insight from the administrator and trading files
+    say: I want a monthly pipeline that takes the administrator's positions and the
+      trading export, cleans them, and gives me net worth by portfolio on a board
+      that shows where every number came from. The administrator file changed a column
+      name once, so it has to cope with that.
+    files:
+    - office6m:*/administrator_nav/administrator_export_2026-09.xlsx
+    - office6m:*/custodian_positions/positions_20260930.csv
+    - office6m:*/trading_export/trading_export_2026100*.csv
+    skills:
+    - data.profile-file
+    - model.find-reusable
+    - model.design-ready-table
+    - map.map-file
+    - build.write-ready-sql
+    - run.on-copy
+    - check.adds-up
+    - consume.build-board
+    dashboard: 'Consume: net worth by portfolio, where is this from'
+    check:
+      ask: What was the Evergreen Liquid portfolio worth at 30 September 2026?
+      expect:
+      - 41,200,000
+- id: principal
+  title: Principal
+  person: Mei Chen
+  builds:
+  - id: morning-networth-note
+    title: A morning note on what we are worth
+    say: 'Each morning I would like a short note: what we are worth, in dollars and
+      in Singapore dollars, what changed since last time, and anything that needs
+      me. Plain words, no jargon, one page.'
+    files:
+    - office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf
+    - office6m:*/fx_rates/fx_usdsgd_20260930.csv
+    skills:
+    - intent.restate-ask
+    - data.recognise-file
+    - build.write-formula-table
+    - consume.write-morning-note
+    - consume.explain-number
+    dashboard: 'Consume: the morning note, net worth in USD and SGD'
+    check:
+      ask: What are we worth in the latest report?
+      expect:
+      - 57,600,000
+- id: investment_analyst
+  title: Investment Analyst
+  person: Sofia Reyes
+  builds:
+  - id: uc7-manager-diligence
+    title: What changed at Kestrel Ridge since we last met?
+    say: 'Before I see Kestrel Ridge again I want one page of what changed since our
+      last meeting on 12 June: statements, restatements, team changes in their newsletter.
+      Newest first, each item with where it came from. No opinions, I''ll bring those.'
+    files:
+    - office6m:reference/kestrel_ridge_q3_2026_newsletter.pdf
+    - office6m:*/meeting_notes/04_kestrel_ridge_onsite_2026-06-12.md
+    - office6m:*/manager_statements/kestrel_H1_*.pdf
+    - office6m:reference/kestrel_ridge_ddq_2026.pdf
+    skills:
+    - intent.read-company-doc
+    - data.read-pdf-fields
+    - data.match-identity
+    - check.against-source
+    - consume.answer-question
+    dashboard: 'Consume: manager timeline, what changed since the last meeting'
+    check:
+      ask: What changed at Kestrel Ridge since the last meeting?
+      expect:
+      - 7,012,500
+- id: ops_lead
+  title: Operations Lead
+  person: Grace Ong
+  builds:
+  - id: uc2-recon-break-desk
+    title: Daily cash reconciliation and break desk
+    say: 'Every morning I check cash for each entity: administrator against the bank
+      and our trading desk. Anything over 5,000 I want as a break with the likely
+      cause, and the ones that are just timing marked as timing. Entity B was off
+      on the 8th, start there.'
+    files:
+    - office6m:*/bank_statements/*_2026-10_mtd.xlsx
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/trading_export/cash_movements_2026-10_mtd.csv
+    skills:
+    - data.recognise-file
+    - data.match-identity
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    - action.route-owner
+    dashboard: 'Consume: cash differences by entity, open breaks'
+    check:
+      ask: Which entity has a cash break on 8 October and by how much?
+      expect:
+      - 12,400
+- id: fund_accountant
+  title: Fund Accountant
+  person: Helen Foo
+  builds:
+  - id: uc3-statements-inbox
+    title: 'Manager statements: expected against received, and late'
+    say: For every fund I want to see the statement we expect each month against what
+      has arrived, who is late and by how many days, and any that never came. For
+      the missing one, draft me the chase email, I will send it myself.
+    files:
+    - office6m:*/manager_statements/*_final.pdf
+    - office6m:*/emails/*_stmt_*.eml
+    - office6m:received_log_all.csv
+    skills:
+    - data.recognise-file
+    - data.read-pdf-fields
+    - data.match-identity
+    - action.detect-exception
+    - action.draft-message
+    - consume.answer-question
+    dashboard: 'Consume: statements expected against received, late and missing'
+    check:
+      ask: Which statement is missing and how overdue is it?
+      expect:
+      - '63'
+- id: risk_officer
+  title: Risk and Compliance Officer
+  person: Tom Hale
+  builds:
+  - id: uc5-limits
+    title: Allocation and limit monitoring
+    say: 'I want to test the liquid book against our signed limits every month: no
+      single name over 5 percent, listed equity between 60 and 90. Tell me what is
+      a real breach and what is just a stale or missing value, and anything that has
+      no asset class.'
+    files:
+    - office6m:*/administrator_nav/administrator_export_2026-09.xlsx
+    - office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf
+    - office6m:reference/EG_security_master_20261008.xlsx
+    skills:
+    - intent.read-company-doc
+    - data.recognise-file
+    - build.write-formula-table
+    - action.detect-exception
+    - action.size-impact
+    - check.explain-difference
+    dashboard: 'Consume: holdings against limits, breaches open'
+    check:
+      ask: Which holding is over its single-name limit?
+      expect:
+      - '5.75'
+- id: hr_admin
+  title: Office and HR Manager
+  person: Priya Nair
+  builds:
+  - id: uc9-sop
+    title: Process map and SOP for the month-end report
+    say: 'We do the month-end investment report from memory and from Mei''s email.
+      I want the steps written down properly: who does what, in which system, what
+      is checked, what happens when it goes wrong, and a procedure document I can
+      hand a new joiner.'
+    files:
+    - office6m:reference/month_end_process_narrative.md
+    - office6m:reference/handover_email_mei_to_raj.txt
+    skills:
+    - intent.read-company-doc
+    - intent.draw-process-lanes
+    - intent.draw-process-steps
+    - intent.map-decision-path
+    - intent.write-sop
+    dashboard: 'Consume: the process map and the SOP, steps flagged for automation'
+    check:
+      ask: What are the steps of the month-end report process and who does each one?
+      expect: []
+- id: ops_clerk
+  title: Operations Clerk
+  person: Sam Lee
+  builds:
+  - id: uc8-trades-vs-admin
+    title: Trades and FX forwards against the administrator and the confirmations
+    say: Each day I match what our desk traded against what the administrator booked,
+      and the FX forward confirmations against our own record. Show me what matches
+      and what does not, by how much, and which ones I should send to Grace.
+    files:
+    - office6m:*/trading_export/trading_export_2026100*.csv
+    - office6m:*/administrator_trades/administrator_trades_2026-10.csv
+    - office6m:*/fx_confirmations/FXF-2026-002_confirmation.pdf
+    skills:
+    - data.recognise-file
+    - data.read-pdf-fields
+    - check.against-source
+    - action.detect-exception
+    - check.explain-difference
+    - action.route-owner
+    dashboard: 'Consume: trades and confirmations matched, breaks open'
+    check:
+      ask: How much does the FX forward confirmation differ from our record?
+      expect:
+      - 8,100

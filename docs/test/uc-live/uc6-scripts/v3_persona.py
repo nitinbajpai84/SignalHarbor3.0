@@ -69,11 +69,15 @@ def all_roles() -> dict:
 
 
 def load_uc(uc: str) -> tuple[dict, dict]:
-    """The role and build whose build id is `uc` (a top-50 card id), from any builds file."""
+    """The role and build whose build id is `uc` (a top-50 card id). The builds folder wins over role_builds.yaml, so a card
+    rebuilt for the six-month office (builds/legacy-office6m.yaml) runs on that world."""
+    found = None
     for r in all_roles().values():
         for i, b in enumerate(r["builds"], 1):
             if b["id"] == uc:
-                return r, b
+                found = (r, b)  # later files (the builds folder) override role_builds.yaml
+    if found:
+        return found
     raise SystemExit(f"unknown use case {uc}")
 
 
