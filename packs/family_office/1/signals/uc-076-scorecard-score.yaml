@@ -1,0 +1,15 @@
+# SUGGESTION. Card 76 row 1: at quarter end each manager's score (return, fee drag, timeliness, watch flags, weighted by the signed scorecard rule) goes to the CIO. Read only, nothing to sign.
+suggestion: true
+id: uc-076-scorecard-score
+title: A manager's scorecard
+pain_points: [INT-BENCH, PP-05, INT-PAY]
+trigger: {on: figure_changed, figure: manager_score}
+inputs:
+  - {kind: doc, fields: [manager, currency, return_pct, on_time_share, watch_flags, score, verdict]}
+subject: "{doc.manager}"
+condition: doc.score >= 0
+severity: info
+route_to: cio
+action: {verb: see, options: [Open the scorecard]}
+message: "{doc.manager}: score {doc.score} ({doc.verdict}); return {doc.return_pct} percent since the first statement, on time {doc.on_time_share}, {doc.watch_flags} watch flags."
+evidence: [doc.score, doc.return_pct, doc.on_time_share, doc.watch_flags]

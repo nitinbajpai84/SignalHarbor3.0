@@ -1,7 +1,7 @@
 """W1b invest: the recipe, signals and persona build of the Invest cards 51 to 100, proved on the six-month Evergreen Office loaded by the real pack readers.
 
-Cards 80 (vintage_split) and 71 (expected_distributions) are built. Cards 53, 76, 77, 78 and 79 are not: each test below states what they wait for (a reader that does not exist, or a rule nobody has signed),
-so the day the reader or the rule arrives the test fails and says the card can be built. Nothing here is stubbed: the office files go through the real loader
+All seven are built: 80 (vintage_split), 71 (expected_distributions), 53 (watch_flags), 76 (manager_score), 77 (deal_stage), 78 (redemption_dates) and
+79 (rebalance_trades); the last five on the readers of manager news, the deal pipeline, redemption terms and the target allocation. Nothing here is stubbed: the office files go through the real loader
 (sh_platform/v1/v3_pack_readers.py), the recipe is rendered and tied out by sh_platform/v1/v3_recipes.py, the signals are read by the engine's own check/resolve/calc,
 and every expected number is read from tests/v1/fixtures/office6m/answer_keys.yaml. Synthetic data only. See docs/v3/w1/build51-invest.md.
 """
@@ -28,8 +28,7 @@ PACK = REPO / "packs" / "family_office" / "1"
 ENV_SCRIPT = REPO / "docs" / "test" / "uc-live" / "uc6-scripts" / "v3_team_env.py"
 KEYS = yaml.safe_load((OFFICE / "answer_keys.yaml").read_text(encoding="utf-8"))["keys"]
 TODAY = "2026-10-13"
-BUILT = {"uc-080-vintage": 80, "uc-071-expdist": 71}
-NOT_BUILT = {"uc-053-watchlist": 53, "uc-076-scorecard": 76, "uc-077-deals": 77, "uc-078-redemption": 78, "uc-079-rebalance": 79}
+BUILT = {"uc-080-vintage": 80, "uc-071-expdist": 71, "uc-053-watchlist": 53, "uc-076-scorecard": 76, "uc-077-deals": 77, "uc-078-redemption": 78, "uc-079-rebalance": 79}
 RECIPE = "vintage_split"
 SIGNALS = {"uc-080-vintage-split": ("info", False), "uc-080-vintage-bunched": ("problem", True)}  # id -> (severity, is an exception)
 SIGNALS71 = {"uc-071-expdist-fund": ("info", False), "uc-071-expdist-stale-value": ("needs", True)}
@@ -102,7 +101,7 @@ def test_the_recipe_is_built_reads_only_what_it_may_and_the_other_cards_stay_stu
     assert not R.refusal(r, R.render(r, "x"))
     assert r["measure"] in r["columns"]
     stubs = {x["id"] for x in R.stubs()}
-    assert {"watch_flags", "manager_score"} <= stubs and "expected_distributions" not in stubs  # cards 53, 76 wait (see the tests of the unbuilt cards below)
+    assert not {"watch_flags", "manager_score", "expected_distributions"} & stubs  # every Invest card 51 to 100 is built
 
 
 def test_card80_commitments_by_vintage_year_match_the_key(office):
@@ -382,63 +381,204 @@ def test_card71_the_build_expect_numbers_come_out_of_the_recipe(office):
     assert set(expect) <= shown, set(expect) - shown
 
 
-# ---- the cards that are not built: what they wait for ---------------------------------------------------------------------------------------------
-# Each test passes while the thing is missing and fails the day it exists, so the card is then built instead of forgotten.
+# ---- cards 53, 76, 77, 78, 79: built on the last readers (manager news, deal pipeline, redemption terms, target allocation) -------------------------
 
-def not_read(office, kind: str) -> bool:
-    return "no reader for this kind" in office.report.get(kind, {}).get("not_loaded", [])
-
-
-def test_the_not_built_cards_have_a_key_and_still_no_recipe_or_build():
-    stubs = {x["id"] for x in R.stubs()}
-    assert {"watch_flags", "manager_score"} <= stubs
-    d = yaml.safe_load((PACK / "builds" / "invest-51.yaml").read_text(encoding="utf-8"))
-    ids = {b["id"] for r in d["roles"] for b in r["builds"]}
-    for cid in NOT_BUILT:
-        assert cid in KEYS and cid not in ids
-        assert not list((PACK / "signals").glob(f"{cid}-*.yaml")), cid  # a signal on a figure nobody builds would watch nothing
+NEW = {"watch_flags": 53, "manager_score": 76, "deal_stage": 77, "redemption_dates": 78, "rebalance_trades": 79}
+NEW_SIGNALS = {  # id -> (recipe, severity, route, has a hold)
+    "uc-053-watchlist-flagged": ("watch_flags", "needs", "investment_analyst", False), "uc-053-watchlist-missing": ("watch_flags", "problem", "investment_analyst", True),
+    "uc-076-scorecard-score": ("manager_score", "info", "cio", False), "uc-076-scorecard-review": ("manager_score", "problem", "cio", False),
+    "uc-077-deals-stage": ("deal_stage", "info", "investment_analyst", False), "uc-077-deals-stuck": ("deal_stage", "problem", "cio", True),
+    "uc-078-redemption-notice": ("redemption_dates", "needs", "ops_lead", False), "uc-078-redemption-locked": ("redemption_dates", "problem", "cio", False),
+    "uc-079-rebalance-proposal": ("rebalance_trades", "needs", "cio", False), "uc-079-rebalance-unsigned": ("rebalance_trades", "needs", "cio", True),
+}
 
 
-def test_cards_77_78_79_wait_for_readers_of_files_the_loader_does_not_know(office):
-    for kind in ("deal_pipeline", "fund_documents", "target_allocation", "manager_news"):
-        assert not_read(office, kind) and office.report[kind]["rows"] == 0, kind
-    assert office.one("select count(*) from documents where document_type in ('redemption_terms', 'interim_targets')") == 0
-    assert office.one("select count(*) from deal_pipeline") == 1  # the Harborlight teaser only; the five-deal csv and two other teasers are unread (key: 5 deals)
-    assert len(key("uc-077-deals")["deals"]) == 5
+def by(rows: list[dict], col: str) -> dict:
+    return {r[col]: r for r in rows}
 
 
-def test_cards_76_and_79_also_wait_for_a_signed_rule(office):
-    codes = {r["rule_code"] for r in office.rows("select r.rule_code from business_rules as r join rule_versions as v on v.business_rule_id = r.id where v.approval_status = 'approved'")}
-    assert not [c for c in codes if re.search(r"score|weight|target|rebalanc|stuck|stage", c)], codes  # scorecard weights and bands, allocation targets, the 60-day stuck limit: none is signed
-    proposed = key("uc-079-rebalance")["targets_status"]
-    assert "not signed" in proposed
+def test_the_five_recipes_are_built_and_read_only_what_they_may():
+    for rid, card in NEW.items():
+        r = R.recipe(rid)
+        assert r and r.get("status") != "stub" and r["cards"] == [card], rid
+        assert r.get("may_read") and r.get("never_read") and r.get("formula") and r.get("grain") and r["sql"] and r.get("measure") and r.get("columns") and r.get("tie_out") and r.get("needs"), rid
+        read = R.tables_read(R.render(r, "x"))
+        assert read <= set(r["may_read"]) and not read & set(r["never_read"]), (rid, read)
+        assert r["measure"] in r["columns"], rid
 
 
-STATEMENT_FLAGS = """
-with asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
-due as (select e.* from expected_statements as e where not exists (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
-st as (select i.manager_name as m, o.evidence_document_id as doc, o.valuation_type as t, cast(o.received_at as date) as r, d.due_date from valuation_observations as o
-  join instruments as i on i.id = o.instrument_id left join due as d on d.instrument_id = o.instrument_id and d.period_end = o.valuation_date where cast(o.received_at as date) >= (select d from lo)),
-mi as (select i.manager_name as m from due as e join instruments as i on i.id = e.instrument_id where i.manager_name is not null and e.due_date < (select d from asat)
-  and not exists (select 1 from valuation_observations as o where o.instrument_id = e.instrument_id and o.valuation_date = e.period_end)),
-pc as (select c.value_text as m, count(distinct d.id) as n from documents as d join extracted_fields as c on c.document_id = d.id and c.field_name = 'counterparty'
-  join extracted_fields as t on t.document_id = d.id and t.field_name = 'team_change' where coalesce(d.document_date, cast(d.received_at as date)) >= (select d from lo) group by 1)
-select g.m as manager, (select count(distinct doc) from st where st.m = g.m and st.t <> 'manager_amended' and st.r > st.due_date) as late,
-  (select count(distinct doc) from st where st.m = g.m and st.t = 'manager_amended') as amended, (select count(*) from mi where mi.m = g.m) as missing,
-  coalesce((select n from pc where pc.m = g.m), 0) as personnel_changes from (select distinct manager_name as m from instruments where manager_name is not null) as g order by 1
-"""
+def test_the_manager_news_mails_are_read_with_their_manager_and_team_change(office):
+    assert office.report["manager_news"]["files"] == 2 and "no reader for this kind" not in office.report["manager_news"]["not_loaded"]
+    got = office.rows("select c.value_text as manager, t.value_text as change, d.document_date from documents as d join extracted_fields as c on c.document_id = d.id and c.field_name = 'counterparty' "
+                      "join extracted_fields as t on t.document_id = d.id and t.field_name = 'team_change' where d.document_type = 'manager_news' order by d.document_date")
+    assert [(g["manager"], str(g["document_date"])) for g in got] == [("Saltmarsh Real Assets", "2026-08-18"), ("Northgate Partners", "2026-09-09")]
+    assert "resigns" in got[0]["change"] and "key person" in got[1]["change"]
 
 
-def test_card53_late_amended_and_missing_statements_reproduce_the_key_but_personnel_changes_do_not(office):
-    """The draft of watch_flags: three of its four counts equal the key for all six managers. The fourth needs the manager_news mails, which no reader loads
-    (the key counts Northgate and Saltmarsh personnel mails and leaves the Kestrel newsletter out), so the card stays unbuilt and the recipe a stub."""
-    k = key("uc-053-watchlist")
-    assert k["window_start"] == "2026-07-15"
-    got = {r["manager"]: r for r in office.rows(STATEMENT_FLAGS)}
-    assert set(got) == set(k["by_manager"])
+def test_card53_watch_flags_match_the_key_and_the_newsletter_is_not_a_mail(office):
+    k, rows = key("uc-053-watchlist"), office.build("watch_flags")
+    got = by(rows, "manager")
+    assert set(got) == set(k["by_manager"]) and {str(r["window_start"]) for r in rows} == {k["window_start"]}
     for m, want in k["by_manager"].items():
-        assert (got[m]["late"], got[m]["amended"], got[m]["missing"]) == (want["late"], want["amended"], want["missing"]), m
-    mails = {m: got[m]["personnel_changes"] for m in got}
-    assert mails["Northgate Partners"] == 0 and mails["Saltmarsh Real Assets"] == 0  # the key has 1 and 1: their mails are in manager_news, unread
-    assert mails["Kestrel Ridge Advisors"] == 1 and k["by_manager"]["Kestrel Ridge Advisors"]["personnel_changes"] == 0  # the newsletter's team change: in the files, not in the key
-    assert not_read(office, "manager_news")
+        assert {c: got[m][c] for c in want} == want, m
+    assert sorted(m for m, r in got.items() if r["on_watchlist"]) == sorted(k["on_watchlist"])
+    assert got["Kestrel Ridge Advisors"]["personnel_changes"] == 0  # the Q3 newsletter's team change is a newsletter, not a mail: the key's method counts mails
+    assert office.one("select count(*) from documents d join extracted_fields f on f.document_id = d.id and f.field_name = 'team_change' where d.document_type = 'newsletter'") == 1
+    assert got["Cedarpoint Ventures"]["missing_detail"] == "Cedarpoint Opportunities II 2026-06-30"
+
+
+def test_card53_a_mail_before_the_window_is_not_counted(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update documents set document_date = date '2026-07-01' where document_type = 'manager_news' and title like 'Saltmarsh%'")
+        assert by(office.build("watch_flags"), "manager")["Saltmarsh Real Assets"]["personnel_changes"] == 0
+    finally:
+        con.execute("rollback")
+    assert by(office.build("watch_flags"), "manager")["Saltmarsh Real Assets"]["personnel_changes"] == 1
+
+
+def test_card76_scores_match_the_key_with_the_signed_weights(office):
+    k, got = key("uc-076-scorecard"), by(office.build("manager_score"), "manager")
+    for m, want in k["by_manager"].items():
+        g = got[m]
+        assert (f2(g["return_pct"]), g["fee_drag_pct"] and f2(g["fee_drag_pct"]), round(float(g["on_time_share"]), 3)) == \
+               (want["return_pct_since_1_apr"], want["fee_drag_pct"], want["on_time_share"]), m
+        assert (g["watch_flags"], f2(g["score"]), g["verdict"]) == (want["watch_flags"], want["score"], want["verdict"]), m
+    w = got["Bluewater Capital"]
+    assert {"returns": w["weight_returns"], "fees": w["weight_fees"], "timeliness": w["weight_timeliness"], "watch": w["weight_watch"]} == k["weights"]
+    assert got["Meridian Index Managers"]["verdict"] == "keep"  # scored like the others; the key leaves the index manager out
+
+
+def test_card76_with_no_signed_weights_there_is_no_score(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update rule_versions set approval_status = 'proposed' where business_rule_id in (select id from business_rules where rule_code = 'manager_score_weights')")
+        rows = office.build("manager_score")
+        assert all(r["score"] is None and r["verdict"] is None for r in rows)
+        assert "weights are not signed" in R.needs(con, R.recipe("manager_score"))
+    finally:
+        con.execute("rollback")
+    assert R.needs(con, R.recipe("manager_score")) is None
+
+
+def test_card77_deals_match_the_key(office):
+    k, rows = key("uc-077-deals"), office.build("deal_stage")
+    got = by(rows, "deal_name")
+    assert set(got) == {d["deal"] for d in k["deals"]}  # the teaser's 'Harborlight Ventures Iv' row is superseded by the pipeline's
+    for d in k["deals"]:
+        g = got[d["deal"]]
+        assert (g["stage"], g["days_in_stage"], f2(g["ticket"]), bool(g["stuck"])) == (d["stage"], d["days_in_stage"], d["ticket"], d["stuck"]), d["deal"]
+    assert {r["stage"]: r["deals_in_stage"] for r in rows} == k["by_stage"]
+    assert sorted(n for n, g in got.items() if g["stuck"]) == sorted(k["stuck_over_60_days"])
+    assert {f2(r["total_ticket"]) for r in rows} == {k["total_ticket"]} and {r["stage_limit_days"] for r in rows} == {60}
+
+
+def test_card77_with_no_signed_stage_limit_nothing_is_called_stuck(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("delete from rule_versions where business_rule_id in (select id from business_rules where rule_code = 'deal_stage_limit_days')")
+        rows = office.build("deal_stage")
+        assert all(r["stuck"] is None and r["stage_limit_days"] is None for r in rows) and len(rows) == 5
+    finally:
+        con.execute("rollback")
+
+
+def test_card78_redemption_dates_match_the_key(office):
+    k, got = key("uc-078-redemption")["by_fund"], by(office.build("redemption_dates"), "fund")
+    assert set(got) == set(k)
+    for fund, want in k.items():
+        g = got[fund]
+        assert {c: (str(g[c]) if "date" in c or c == "send_notice_by" else f2(g[c]) if c != "days_to_send" else g[c]) for c in want} == want, fund
+    assert got["Kestrel Ridge Equity Long/Short Fund"]["locked_up"] == 1 and got["Kestrel Ridge Macro Fund"]["locked_up"] == 0
+
+
+def test_card78_a_later_lockup_moves_the_dealing_date(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update extracted_fields set value_text = '2027-01-15' where field_name = 'lockup_end_date' and document_id in (select id from documents where title = 'kestrel_H1_redemption_terms')")
+        g = by(office.build("redemption_dates"), "fund")["Kestrel Ridge Macro Fund"]
+        assert (str(g["dealing_date"]), str(g["send_notice_by"])) == ("2027-01-29", "2026-12-15")  # first month-end business day after the lock-up; 45 days back
+    finally:
+        con.execute("rollback")
+
+
+def test_card79_rebalance_matches_the_key_and_says_the_targets_are_proposed(office):
+    k, rows = key("uc-079-rebalance"), office.build("rebalance_trades")
+    got = by(rows, "asset_class")
+    assert set(got) == set(k["by_class"]) and {f2(r["book"]) for r in rows} == {k["book"]}
+    for c, want in k["by_class"].items():
+        assert {x: f2(got[c][x]) for x in want} == want, c
+    assert f2(sum(r["trade"] for r in rows)) == k["net_trade"]
+    assert {r["targets_status"] for r in rows} == {"proposed, not signed: a suggestion only"} and "not signed" in k["targets_status"]
+    assert got["convertible"]["class_from_type"] == 1  # the convertible note has no asset class on record: counted under its instrument type
+
+
+def test_card79_a_signed_target_is_shown_as_signed(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update rule_versions set approval_status = 'approved' where business_rule_id in (select id from business_rules where rule_code = 'allocation_bond')")
+        got = by(office.build("rebalance_trades"), "asset_class")
+        assert got["bond"]["targets_status"] == "signed" and got["listed_equity"]["targets_status"].startswith("proposed")
+    finally:
+        con.execute("rollback")
+
+
+def test_cards_34_and_41_screen_harborlight_among_the_five_deals(office):
+    """The pipeline holds five deals: the mandate fit and the commitment tests give one row per deal; the Harborlight row equals the keys of 34 and 41."""
+    k34, k41 = key("uc-034-prospect"), key("uc-041-commitappr")
+    fit, chk = office.build("mandate_fit"), office.build("commit_check")
+    assert len(fit) == len(chk) == 5
+    h = by(fit, "deal_name")["Harborlight Ventures IV"]
+    assert (f2(h["ticket"]), f2(h["uncalled_before"]), f2(h["uncalled_after"]), round(float(h["ticket_pct_of_uncalled"]), 1)) == \
+           (k34["minimum_ticket"], k34["uncalled_before"], k34["uncalled_after"], k34["ticket_pct_of_current_uncalled"])
+    c = by(chk, "deal_name")["Harborlight Ventures IV"]
+    assert (f2(c["new_commitment"]), f2(c["uncalled_after"]), f2(c["cash_usd"]), f2(c["cash_cover_pct"])) == \
+           (k41["new_commitment"], k41["uncalled_after"], k41["cash_usd_equivalent"], k41["cash_cover_of_uncalled_after_pct"])
+
+
+def test_the_new_signals_are_read_by_the_engine_and_fire_on_the_right_rows(office):
+    roles = role_ids()
+    sigs = {**signals("uc-053"), **signals("uc-076"), **signals("uc-077"), **signals("uc-078"), **signals("uc-079")}
+    assert set(sigs) == set(NEW_SIGNALS)
+    rows = {rid: office.build(rid) for rid in NEW}
+    for sid, (rid, sev, route, hold) in NEW_SIGNALS.items():
+        s = sigs[sid]
+        assert s["_file"] == f"{sid}.yaml" and s["suggestion"] is True and S.check(s, {r: r for r in roles}) is None, sid
+        assert s["trigger"] == {"on": "figure_changed", "figure": rid} and s["severity"] == sev and s["route_to"] == route and bool(s.get("hold")) == hold, sid
+        assert not re.search(r"\b(Sam|Helen|Raj|Mei|Daniel|Grace|Sofia|Tom)\b", yaml.safe_dump(s)), sid
+        fields = {f for i in s["inputs"] if i["kind"] == "doc" for f in i["fields"]}
+        assert fields <= set(rows[rid][0]) and set(re.findall(r"doc\.(\w+)", " ".join([s["condition"], s["message"], s["subject"]]))) <= fields, sid
+    def fired(sid, col):
+        return sorted(str(r[col]) for r in rows[NEW_SIGNALS[sid][0]] if run_signal(sigs[sid], r) is True)
+    assert fired("uc-053-watchlist-flagged", "manager") == ["Cedarpoint Ventures", "Kestrel Ridge Advisors", "Northgate Partners", "Saltmarsh Real Assets"]
+    assert fired("uc-053-watchlist-missing", "manager") == ["Cedarpoint Ventures"]
+    assert fired("uc-076-scorecard-review", "manager") == ["Cedarpoint Ventures", "Kestrel Ridge Advisors", "Saltmarsh Real Assets"]
+    assert len(fired("uc-076-scorecard-score", "manager")) == 6
+    assert fired("uc-077-deals-stuck", "deal_name") == ["Ashgrove Growth Equity V", "Marlow Infrastructure Partners III"] and len(fired("uc-077-deals-stage", "deal_name")) == 5
+    assert fired("uc-078-redemption-locked", "fund") == ["Kestrel Ridge Equity Long/Short Fund"] and len(fired("uc-078-redemption-notice", "fund")) == 2
+    assert fired("uc-079-rebalance-unsigned", "asset_class") == ["bond", "convertible", "listed_equity"] == fired("uc-079-rebalance-proposal", "asset_class")
+
+
+def shown(rows: list[dict]) -> set:
+    out = set()
+    for r in rows:
+        for v in r.values():
+            if isinstance(v, (int, float, Decimal)) and not isinstance(v, bool):
+                out |= {f"{float(v):,.0f}", str(round(float(v), 3)).rstrip("0").rstrip("."), f"{float(v):g}"}
+            elif v is not None:
+                out.add(str(v))
+    return out
+
+
+def test_the_new_builds_expect_numbers_come_out_of_the_recipes(office):
+    d = yaml.safe_load((PACK / "builds" / "invest-51.yaml").read_text(encoding="utf-8"))
+    builds = {b["id"]: b for r in d["roles"] for b in r["builds"]}
+    for cid, rid in {"uc-053-watchlist": "watch_flags", "uc-076-scorecard": "manager_score", "uc-077-deals": "deal_stage", "uc-078-redemption": "redemption_dates",
+                     "uc-079-rebalance": "rebalance_trades"}.items():
+        expect = builds[cid]["check"]["expect"]
+        assert set(expect) <= shown(office.build(rid)), (cid, set(expect) - shown(office.build(rid)))

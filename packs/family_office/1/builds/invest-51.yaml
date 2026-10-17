@@ -1,4 +1,4 @@
-# Persona builds of the Invest domain, cards 51 to 100 (cards 80 and 71 are built; 53, 76, 77, 78 and 79 wait for readers or signed rules, see docs/v3/w1/build51-invest.md). Merged with role_builds.yaml by role id.
+# Persona builds of the Invest domain, cards 51 to 100 (all seven are built: 53, 71, 76, 77, 78, 79, 80; see docs/v3/w1/build51-invest.md). Merged with role_builds.yaml by role id.
 # files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
 template: family_office@1
 roles:
@@ -20,3 +20,42 @@ roles:
         skills: ["data.read-pdf-fields", "build.write-formula-table", "check.adds-up", "consume.answer-question", "consume.explain-number"]
         dashboard: "Consume: expected distributions by fund and quarter end, quarter totals and the year total, funds on an old statement marked"
         check: {ask: "How much money should we expect back from the funds over the next year?", expect: ["628,215", "464,215", "787,115", "781,265", "2,660,810", "1,068,900", "10,180,000"]}
+      - id: uc-053-watchlist
+        title: "Managers to put on the watch list"
+        say: "At each month end, once the statements are logged, I need to know which managers gave us trouble in the last 90 days: statements that came late, statements they restated, statements still missing, and mails telling us someone left or joined the team. Count each per manager, total them, and list the managers with at least one flag. I propose the watch list; the CIO decides."
+        files: ["office6m:*/manager_news/*.eml", "office6m:*/manager_statements/*.pdf", "office6m:received_log_all.csv"]
+        skills: ["data.read-pdf-fields", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Action: per manager the late, amended, missing statements and personnel-change mails of the last 90 days, the total, and the managers to watch"
+        check: {ask: "Which managers have given us a late, restated or changed statement this quarter?", expect: ["2026-07-15", "Cedarpoint Ventures", "Kestrel Ridge Advisors", "Northgate Partners", "Saltmarsh Real Assets"]}
+      - id: uc-077-deals
+        title: "Deals under review by stage and age"
+        say: "Every Monday I update the CIO on the deals we are looking at. From the deal pipeline, the teasers and the follow-up mails, give me each deal with its stage, how many days it has been in that stage and its ticket, the count per stage, the total of the tickets, and the deals stuck beyond our stage limit. I update the pipeline; the CIO decides what moves forward or is dropped."
+        files: ["office6m:*/deal_pipeline/deal_pipeline_2026-10-13.csv", "office6m:*/deal_pipeline/teaser_DL-*.pdf", "office6m:*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf"]
+        skills: ["data.recognise-file", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Action: deals by stage with days in stage and ticket, the count per stage, total ticket, stuck deals marked"
+        check: {ask: "Which deals should we move forward or drop?", expect: ["13,000,000", "77", "120", "21", "Marlow Infrastructure Partners III", "Ashgrove Growth Equity V"]}
+  - id: cio
+    builds:
+      - id: uc-076-scorecard
+        title: "Manager scorecard: keep, add to or exit"
+        say: "Each quarter I score our managers to decide whom to keep, add to or exit. For each manager give me the return since the first statement of the year, the fees as a share of the gain, the share of statements that came on time and the watchlist flags, and the score with our signed scorecard weights and bands, with the verdict. Nothing to sign; I decide on the watch list and the next meetings."
+        files: ["office6m:*/manager_statements/*.pdf", "office6m:*/notices/*_call*.pdf", "office6m:*/manager_news/*.eml"]
+        skills: ["build.write-formula-table", "check.adds-up", "consume.answer-question", "consume.build-board"]
+        dashboard: "Consume: per manager return, fee drag, on-time share, watch flags, score and verdict, with the signed weights"
+        check: {ask: "Which managers should we keep, add to, or exit?", expect: ["98.3", "86.8", "45.4", "20", "13", "14.71", "-19.1", "0.929"]}
+      - id: uc-079-rebalance
+        title: "Rebalancing proposal toward the interim targets"
+        say: "We are over in listed equity. Take the liquid book of 13 October, the value of each asset class and the interim targets the committee proposed on 8 October, and tell me how much to sell or buy in each class to reach them. Say plainly that the targets are proposed and not signed, so this is a suggestion. I approve; the trading desk executes."
+        files: ["office6m:*/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["build.write-formula-table", "check.adds-up", "action.size-impact", "action.suggest-next-step"]
+        dashboard: "Action: per asset class current value and percent, target percent and value, the trade to buy or sell, the targets marked as proposed"
+        check: {ask: "Which holdings should we sell or buy, and how much?", expect: ["42,273,700", "-5,811,695", "4,817,910", "993,785", "78.75"]}
+  - id: ops_lead
+    builds:
+      - id: uc-078-redemption
+        title: "Redemption notice and cash date for the Kestrel funds"
+        say: "The CIO wants to reduce the Kestrel hedge funds. From their redemption terms and latest statements, tell me for each fund the first dealing date we can still reach given the lock-up, the last day to send the notice, how many days that leaves, the day the cash comes and how much, and what is held back until the audit. I draft the notice; the CIO signs it."
+        files: ["office6m:*/fund_documents/kestrel_H*_redemption_terms.pdf", "office6m:*/manager_statements/kestrel_H*.pdf"]
+        skills: ["data.read-pdf-fields", "build.write-formula-table", "action.draft-message", "action.route-owner"]
+        dashboard: "Action: per fund the dealing date, notice deadline and days left, cash date, cash at payment and holdback"
+        check: {ask: "By when must we send the redemption notice and when do we get the cash?", expect: ["2026-11-30", "2026-10-16", "2026-12-31", "2026-10-30", "6,954,000", "4,921,000", "366,000", "259,000"]}

@@ -9,6 +9,7 @@ Where the rows go (docs/v3/ASSUMPTIONS.md A43, A46):
                      lockup_months, payment_lag_days, holdback_pct (a percent: 5), subscribed_on (ISO)
   market_data     -> market_observations, observation_type price_second_source, series_key the ticker, one per security and day; the price tolerance is not here
   target_allocation -> PROPOSED rules allocation_<asset_class> with {"portfolio", "asset_class", "target_pct", "value"}; a document with the fields
+  manager_news    -> one document manager_news per mail with fields counterparty (the manager), subject, sent, body and team_change (A43; card 53)
 Synthetic data only."""
 from __future__ import annotations
 
@@ -31,6 +32,7 @@ KINDS = {
     "fund_documents": ("fund redemption terms", "data.read-redemption-terms", "documents and fields"),
     "market_data": ("second-source prices", "data.read-second-source-prices", "market observations"),
     "target_allocation": ("target allocation", "data.read-target-allocation", "allocation rules (proposed)"),
+    "manager_news": ("manager news mails", "data.read-manager-news", "documents and fields"),
 }
 SPEC = {
     "fund_holdings": (("instrument_id", "holding_name"), ("sector", "weight_pct", "as_at")),
@@ -263,13 +265,33 @@ def inv_target_allocation(self) -> None:
         self.note("target_allocation", files=1, rows=n)
 
 
+# ---------------------------------------------------------------------------------------------------------------- manager news
+def inv_manager_news(self) -> None:
+    """A mail from a manager to its investors (manager_news/*.eml): who it is from and the team change it announces. The manager is the part of the
+    subject before ':' ("Saltmarsh Real Assets: Head of Infrastructure resigns"), else the last line of the mail; the change is the subject after it."""
+    for p in self.files("manager_news", "*.eml"):
+        msg = email.message_from_bytes(p.read_bytes(), policy=email_policy.default)
+        body = msg.get_body(preferencelist=("plain",))
+        text, sent, subject = (body.get_content().strip() if body else ""), P.parsedate(msg["Date"]), str(msg["Subject"] or "").strip()
+        who, _, change = subject.partition(":")
+        lines = [x.strip() for x in text.splitlines() if x.strip()]
+        manager = who.strip() if change else (lines[-1] if lines else None)
+        if not manager:
+            self.note("manager_news", why=f"{p.name}: the manager is not readable")
+            continue
+        fields = [("counterparty", manager), ("subject", subject), ("from", str(msg["From"])), ("sent", sent.isoformat()), ("body", text),
+                  ("team_change", (change or subject).strip())]
+        self.doc(p, "manager_news", subject or p.stem, kind="manager", received=sent.date(), date_=sent.date(), fields=fields)
+        self.note("manager_news", files=1, rows=1)
+
+
 def install(module) -> None:
     """Register the five kinds and the step `invest`. Called at the end of v3_pack_readers, after v3_pack_readers_family."""
     global P
     P = module
     C.SPEC.update(SPEC)
     C.SUPERSEDES.update(SUPERSEDES)
-    fns = (inv_fund_holdings, inv_deal_pipeline, inv_fund_documents, inv_market_data, inv_target_allocation)
+    fns = (inv_fund_holdings, inv_deal_pipeline, inv_fund_documents, inv_market_data, inv_target_allocation, inv_manager_news)
     for fn in fns:
         setattr(module.Office, fn.__name__, fn)
 

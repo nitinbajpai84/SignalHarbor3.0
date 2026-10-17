@@ -1,0 +1,15 @@
+# SUGGESTION. Card 77 row 1: every Monday each deal under review is shown with its stage, the days in it and its ticket. The Investment Analyst updates; the CIO decides.
+suggestion: true
+id: uc-077-deals-stage
+title: A deal in the pipeline
+pain_points: [INT-OPS]
+trigger: {on: figure_changed, figure: deal_stage}
+inputs:
+  - {kind: doc, fields: [deal_name, stage, stage_on, days_in_stage, currency, ticket]}
+subject: "{doc.deal_name}"
+condition: doc.ticket > 0
+severity: info
+route_to: investment_analyst
+action: {verb: see, options: [Update the stage]}
+message: "{doc.deal_name}: {doc.stage} since {doc.stage_on} ({doc.days_in_stage} days), ticket {doc.currency} {doc.ticket:,.0f}."
+evidence: [doc.stage, doc.days_in_stage, doc.ticket]

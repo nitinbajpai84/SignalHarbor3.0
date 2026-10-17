@@ -1,0 +1,15 @@
+# SUGGESTION. Card 53 row 1: at month end the statements are logged; each manager with a late, amended or missing statement or a personnel-change mail in the 90 day window goes to the Investment Analyst, who proposes the watch list. The CIO decides.
+suggestion: true
+id: uc-053-watchlist-flagged
+title: A manager has flags in the window
+pain_points: [PP-05, INT-TRUST, INT-BENCH]
+trigger: {on: figure_changed, figure: watch_flags}
+inputs:
+  - {kind: doc, fields: [manager, late, amended, missing, personnel_changes, total, on_watchlist, window_start]}
+subject: "{doc.manager}"
+condition: doc.on_watchlist == 1
+severity: needs
+route_to: investment_analyst
+action: {verb: approve, options: [Propose for the watch list, Leave off]}
+message: "{doc.manager}: {doc.total} flags since {doc.window_start} ({doc.late} late, {doc.amended} amended, {doc.missing} missing statements, {doc.personnel_changes} personnel changes). Propose it for the watch list? The CIO decides."
+evidence: [doc.late, doc.amended, doc.missing, doc.personnel_changes]

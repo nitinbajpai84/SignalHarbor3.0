@@ -455,7 +455,8 @@ recipes:
       A commitment is approved only when it fits the signed budget, the signed class limit and the cash the office will need for its calls; each test is
       shown, none is guessed.
     formula: >-
-      For the latest deal in the pipeline that nothing supersedes and is not declined (its ticket is target_commitment): uncalled_after = the unfunded of
+      For each deal in the pipeline that nothing supersedes and is not declined (its ticket is target_commitment), each on its own (the tickets
+      are not added: the committee approves one deal at a time): uncalled_after = the unfunded of
       all commitments, in every currency, plus the ticket, all in USD (converted at the latest fx_fixing, units per USD, on or before the register date);
       cash_usd = the cash instruments' latest position snapshots, other currencies converted at the latest fixing on or before the cash date; need_24m =
       uncalled_after, on the stated basis that all uncalled commitments may be called within 24 months (assumption of the answer key; no signed pacing rule
@@ -488,7 +489,7 @@ recipes:
       reg))) as gap from cu as c join instruments as i on i.id = c.instrument_id), tot as (select sum(unf_usd) as uncalled, sum(cmt_usd) as committed,
       count(*) filter (where gap) as gaps from cu2), cls as (select asset_class, sum(cmt_usd) as committed, count(*) filter (where gap) as gaps from cu2
       group by asset_class), dl as (select x.* from deal_pipeline as x where not exists (select 1 from deal_pipeline as y where y.supersedes_deal_id = x.id)
-      and x.stage not in ('declined', 'passed')), tp as (select * from dl order by stage_on desc, received_at desc, id limit 1), cd as (select max(p.position_date) as d from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office')), lc as (select p.* from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office') and p.position_date = (select max(q.position_date) from positions as q where q.instrument_id = p.instrument_id)), cash as (select sum(case when p.currency = 'USD' then p.source_market_value else
+      and x.stage not in ('declined', 'passed')), cd as (select max(p.position_date) as d from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office')), lc as (select p.* from positions as p join instruments as i on i.id = p.instrument_id and i.instrument_type = 'cash' where exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id and ba.holder_kind = 'office') and p.position_date = (select max(q.position_date) from positions as q where q.instrument_id = p.instrument_id)), cash as (select sum(case when p.currency = 'USD' then p.source_market_value else
       (p.source_market_value) / (select f.rate from fxo as f where f.currency = p.currency and f.d <= (select d from cd) order by f.d desc limit 1) end) as
       cash_usd, count(*) filter (where (p.currency <> 'USD' and not exists (select 1 from fxo as f where f.currency = p.currency and f.d <= (select d from
       cd)))) as unconverted, min(p.position_date) as oldest from lc as p), x as (select l.deal_name, l.asset_class, l.currency, l.target_commitment as
@@ -496,7 +497,7 @@ recipes:
       and f.d <= (select d from reg) order by f.d desc limit 1) end as ticket_usd, cast((l.currency <> 'USD' and not exists (select 1 from fxo as f where
       f.currency = l.currency and f.d <= (select d from reg))) as integer) as tgap, t.uncalled, t.committed, t.gaps, (select r.max_pct from rl as r where
       r.rule_code = 'allocation_private_markets') as pm_pct, (select r.max_pct from rl as r where r.rule_code = 'allocation_' || l.asset_class) as
-      class_pct, w.net_worth, w.gaps as nwgaps, coalesce(k.committed, 0) as class_committed, coalesce(k.gaps, 0) as kgaps from tp as l cross join tot as t
+      class_pct, w.net_worth, w.gaps as nwgaps, coalesce(k.committed, 0) as class_committed, coalesce(k.gaps, 0) as kgaps from dl as l cross join tot as t
       cross join nw as w left join cls as k on k.asset_class = l.asset_class), y as (select x.*, cast(case when pm_pct is not null and nwgaps = 0 and gaps =
       0 and tgap = 0 then net_worth * pm_pct / 100 - committed - ticket_usd end as decimal(18,2)) as budget_room_after, cast(case when class_pct is not null
       and nwgaps = 0 and gaps = 0 and kgaps = 0 and tgap = 0 then net_worth * class_pct / 100 - class_committed - ticket_usd end as decimal(18,2)) as
@@ -578,12 +579,65 @@ recipes:
 
   - id: watch_flags
     label: Manager watchlist flags
-    status: stub
     cards: [53]
-    names: [watch flags, manager watchlist, watchlist]
-    may_read: [expected_statements, documents, valuation_observations, instruments]
-    formula: A manager is flagged when a statement is late against expected_statements, a valuation is restated (a later row supersedes it) or its terms document changed; each flag names the evidence.
-    sql: null
+    names: [watch flags, manager watchlist, watchlist, managers to watch, late restated or changed statements]
+    may_read: [expected_statements, documents, extracted_fields, valuation_observations, instruments]
+    never_read: [cash_movements, transactions, position_snapshots]
+    why: >-
+      A manager goes on the watchlist for what it sent, or failed to send, in the window: late statements, restated statements, statements still
+      missing, and mails announcing a change in its team. Each count names its evidence; values and money are not part of it.
+    formula: >-
+      Per manager (instruments.manager_name), over the 90 days to the as-at date (the latest day a document was received; the window of the card's
+      formula): late = statements received in the window after their due date (expected_statements, the statement's own period), not counting
+      amended ones; amended = amended statements received in the window; missing = expected statements due before the as-at date with no value
+      received for the period; personnel_changes = manager_news mails (document manager_news with a team_change field, counterparty the manager)
+      dated in the window. A newsletter is not a mail and is not counted (the card's method counts mails). total = the four added up;
+      on_watchlist = 1 when the total is above 0.
+    grain: By manager
+    sql: >-
+      create table {name} as with asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
+      due as (select e.* from expected_statements as e where not exists (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
+      st as (select i.manager_name as m, o.evidence_document_id as doc, o.valuation_type as t, cast(o.received_at as date) as r, d.due_date from valuation_observations as o
+      join instruments as i on i.id = o.instrument_id left join due as d on d.instrument_id = o.instrument_id and d.period_end = o.valuation_date
+      where cast(o.received_at as date) between (select d from lo) and (select d from asat)),
+      mi as (select i.manager_name as m, i.canonical_name || ' ' || cast(e.period_end as varchar) as what from due as e join instruments as i on i.id = e.instrument_id
+      where i.manager_name is not null and e.due_date < (select d from asat) and not exists (select 1 from valuation_observations as o where o.instrument_id = e.instrument_id
+      and o.valuation_date = e.period_end)),
+      pc as (select c.value_text as m, count(distinct d.id) as n, string_agg(distinct t.value_text, '; ') as what from documents as d join extracted_fields as c on
+      c.document_id = d.id and c.field_name = 'counterparty' join extracted_fields as t on t.document_id = d.id and t.field_name = 'team_change'
+      where d.document_type = 'manager_news' and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)
+      and coalesce(d.document_date, cast(d.received_at as date)) between (select d from lo) and (select d from asat) group by 1),
+      g as (select distinct manager_name as m from instruments where manager_name is not null),
+      x as (select g.m as manager, (select count(distinct doc) from st where st.m = g.m and st.t <> 'manager_amended' and st.r > st.due_date) as late,
+      (select count(distinct doc) from st where st.m = g.m and st.t = 'manager_amended') as amended, (select count(*) from mi where mi.m = g.m) as missing,
+      coalesce((select n from pc where pc.m = g.m), 0) as personnel_changes, (select what from pc where pc.m = g.m) as personnel_detail,
+      (select string_agg(what, '; ') from mi where mi.m = g.m) as missing_detail from g)
+      select manager, cast(late as integer) as late, cast(amended as integer) as amended, cast(missing as integer) as missing, cast(personnel_changes as integer) as personnel_changes,
+      cast(late + amended + missing + personnel_changes as integer) as total, cast(case when late + amended + missing + personnel_changes > 0 then 1 else 0 end as integer) as on_watchlist,
+      missing_detail, personnel_detail, (select d from lo) as window_start, (select d from asat) as as_at from x
+    measure: total
+    columns:
+      late: 'Statements received in the window after their due date (amended ones not counted here).'
+      amended: Amended statements received in the window.
+      missing: Expected statements due before the as-at date that never arrived.
+      personnel_changes: 'Mails from the manager announcing a team change, dated in the window.'
+      total: The four counts added up.
+      on_watchlist: '1 when the manager has at least one flag.'
+      missing_detail: 'The fund and period of each missing statement.'
+      personnel_detail: The team changes the mails announce.
+      window_start: 'The first day of the 90 day window.'
+      as_at: 'The as-at date: the latest day a document was received.'
+    tie_out:
+      label: The personnel changes equal the manager news mails dated in the window
+      sql: >-
+        select (select coalesce(sum(personnel_changes), 0) from {name}), (select count(distinct d.id) from documents as d join extracted_fields as t on t.document_id = d.id
+        and t.field_name = 'team_change' join extracted_fields as c on c.document_id = d.id and c.field_name = 'counterparty' where d.document_type = 'manager_news'
+        and c.value_text in (select manager from {name}) and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)
+        and coalesce(d.document_date, cast(d.received_at as date)) between (select max(window_start) from {name}) and (select max(as_at) from {name}))
+    needs:
+      - why: 'No expected statement is on record, so lateness and missing statements cannot be stated.'
+        sql: >-
+          select count(*) from expected_statements
 
 
   - id: expected_distributions
@@ -649,9 +703,276 @@ recipes:
 
   - id: manager_score
     label: Manager scorecard
-    status: stub
     cards: [76]
-    names: [manager score, manager scorecard, scorecard]
-    may_read: [expected_statements, documents, valuation_observations, cash_movements, nav_snapshots, instruments]
-    formula: A score per manager from statement timeliness, restatements, fees against the terms and return against the benchmark, each part shown; the weights come from a signed rule, never fixed in the recipe.
-    sql: null
+    names: [manager score, manager scorecard, scorecard, which managers to keep add to or exit]
+    may_read: [expected_statements, documents, extracted_fields, valuation_observations, cash_movements, commitments, instruments, business_rules, rule_versions]
+    never_read: [transactions, position_snapshots]
+    why: >-
+      A manager is scored on what its funds earned, what it charged against that gain, whether its statements came on time and its watchlist
+      flags. The weights, caps and bands are the office's signed scorecard rule, never fixed here.
+    formula: >-
+      Per manager and currency, over its funds with statement values: return = (latest value - first value - calls paid + distributions received,
+      confirmed movements after the first value) / first value, in percent; fee drag = the fee parts of the confirmed call notices / (that gain +
+      the fees), 100 when that gross gain is not positive, empty when no fee is on record (a hedge or index fund bills no call); on-time share =
+      statements on time / statements since the first value (each non-amended statement received, an estimate and a final apart, plus each expected
+      statement due and never received, which is not on time; a statement is on time when received by the due date of expected_statements, or when no
+      due date is on record for it yet);
+      watch flags = the total of watch_flags over its 90 day window. score = 100 x (w_returns x min(max(return / return cap, 0), 1) + w_fees x
+      (1 - min(fee drag / fee drag cap, 1)), or the fee part when unknown, + w_timeliness x on-time share + w_watch x max(1 - flags / flag cap, 0)),
+      with weights and caps from the signed rule manager_score_weights; verdict add, keep or review or exit at the bands of manager_score_bands.
+      With no signed rule the score and verdict are empty.
+    grain: By manager and currency
+    sql: >-
+      create table {name} as with asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
+      rl as (select b.rule_code, v.parameters as p from business_rules as b join rule_versions as v on v.business_rule_id = b.id where b.rule_code in ('manager_score_weights', 'manager_score_bands')
+      and v.approval_status = 'approved' and v.effective_from <= (select d from asat) and (v.effective_to is null or v.effective_to > (select d from asat))
+      qualify row_number() over (partition by b.rule_code order by v.effective_from desc, v.version_number desc) = 1),
+      w as (select cast(json_extract_string(p, '$.returns') as double) as wr, cast(json_extract_string(p, '$.fees') as double) as wf, cast(json_extract_string(p, '$.timeliness') as double) as wt,
+      cast(json_extract_string(p, '$.watch') as double) as ww, cast(json_extract_string(p, '$.return_cap_pct') as double) as rc, cast(json_extract_string(p, '$.fee_drag_cap_pct') as double) as fc,
+      cast(json_extract_string(p, '$.watch_flags_cap') as double) as wc, cast(json_extract_string(p, '$.fee_part_when_unknown') as double) as fu from rl where rule_code = 'manager_score_weights'),
+      bd as (select cast(json_extract_string(p, '$.add_min') as double) as add_min, cast(json_extract_string(p, '$.keep_min') as double) as keep_min from rl where rule_code = 'manager_score_bands'),
+      vo as (select v.* from valuation_observations as v where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id) and cast(v.received_at as date) <= (select d from asat)),
+      fv as (select i.id as iid, i.manager_name as m, min(v.valuation_date) as d0, max(v.valuation_date) as d1 from vo as v join instruments as i on i.id = v.instrument_id where i.manager_name is not null group by all),
+      f0 as (select f.*, (select max(v.value_amount) from vo as v where v.instrument_id = f.iid and v.valuation_date = f.d0) as v0, (select max(v.value_amount) from vo as v where v.instrument_id = f.iid
+      and v.valuation_date = f.d1) as v1, (select max(v.currency) from vo as v where v.instrument_id = f.iid and v.valuation_date = f.d1) as ccy from fv as f),
+      cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id)),
+      mf as (select c.instrument_id as iid, sum(-m.amount) filter (where m.movement_type <> 'distribution') as calls, sum(m.amount) filter (where m.movement_type = 'distribution') as dist
+      from cm as c join cash_movements as m on m.commitment_id = c.id join f0 on f0.iid = c.instrument_id where m.confirmation_status = 'confirmed' and (m.movement_type = 'distribution'
+      or m.notice_kind = 'capital_call') and m.effective_date > f0.d0 and m.effective_date <= (select d from asat) and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by 1),
+      fp as (select c.instrument_id as iid, sum(f.value_numeric) as fees from cash_movements as m join cm as c on c.id = m.commitment_id join f0 on f0.iid = c.instrument_id left join cash_movements as z on
+      z.id = m.supersedes_cash_movement_id join documents as nd on nd.source_record_id = coalesce(z.source_record_id, m.source_record_id) and nd.document_type = 'capital_call_notice' and not exists
+      (select 1 from documents as s2 where s2.supersedes_document_id = nd.id) join extracted_fields as f on f.document_id = nd.id and f.field_name = 'management_fee' where m.notice_kind = 'capital_call'
+      and m.movement_type = 'call' and m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id) and m.effective_date > f0.d0
+      and m.effective_date <= (select d from asat) group by 1),
+      ex as (select e.instrument_id, e.period_end, min(e.due_date) as due_date from expected_statements as e where not exists (select 1 from expected_statements as x
+      where x.supersedes_expected_statement_id = e.id) group by all),
+      so as (select o.instrument_id as iid, o.valuation_date, o.valuation_type, min(cast(o.received_at as date)) as rcv from valuation_observations as o join f0 on f0.iid = o.instrument_id
+      where o.valuation_type <> 'manager_amended' and o.valuation_date >= f0.d0 and cast(o.received_at as date) <= (select d from asat) group by all),
+      sc0 as (select s.iid, count(*) as n, count(*) filter (where e.due_date is null or s.rcv <= e.due_date) as on_time from so as s left join ex as e on e.instrument_id = s.iid
+      and e.period_end = s.valuation_date group by 1 union all select e.instrument_id, count(*), 0 from ex as e join f0 on f0.iid = e.instrument_id where e.period_end >= f0.d0
+      and e.due_date < (select d from asat) and not exists (select 1 from valuation_observations as o where o.instrument_id = e.instrument_id and o.valuation_date = e.period_end) group by 1),
+      sc as (select iid, sum(n) as n, sum(on_time) as on_time from sc0 group by 1),
+      st as (select i.manager_name as m, o.evidence_document_id as doc, o.valuation_type as t, cast(o.received_at as date) as r, d.due_date from valuation_observations as o
+      join instruments as i on i.id = o.instrument_id left join ex as d on d.instrument_id = o.instrument_id and d.period_end = o.valuation_date
+      where cast(o.received_at as date) between (select d from lo) and (select d from asat)),
+      mi as (select i.manager_name as m from ex as e join instruments as i on i.id = e.instrument_id where i.manager_name is not null and e.due_date < (select d from asat)
+      and not exists (select 1 from valuation_observations as o where o.instrument_id = e.instrument_id and o.valuation_date = e.period_end)),
+      pc as (select c.value_text as m, count(distinct d.id) as n from documents as d join extracted_fields as c on c.document_id = d.id and c.field_name = 'counterparty'
+      join extracted_fields as t on t.document_id = d.id and t.field_name = 'team_change' where d.document_type = 'manager_news' and not exists (select 1 from documents as s where s.supersedes_document_id = d.id)
+      and coalesce(d.document_date, cast(d.received_at as date)) between (select d from lo) and (select d from asat) group by 1),
+      wf as (select g.m, (select count(distinct doc) from st where st.m = g.m and st.t <> 'manager_amended' and st.r > st.due_date) + (select count(distinct doc) from st where st.m = g.m
+      and st.t = 'manager_amended') + (select count(*) from mi where mi.m = g.m) + coalesce((select n from pc where pc.m = g.m), 0) as flags from (select distinct m from f0) as g),
+      mg as (select f.m as manager, f.ccy as currency, count(*) as funds, min(f.d0) as opening_date, max(f.d1) as latest_date, sum(f.v0) as opening, sum(f.v1) as latest,
+      sum(f.v1 - f.v0 - coalesce(k.calls, 0) + coalesce(k.dist, 0)) as net, sum(coalesce(p.fees, 0)) as fees, sum(coalesce(s.n, 0)) as due_n, sum(coalesce(s.on_time, 0)) as on_time_n
+      from f0 as f left join mf as k on k.iid = f.iid left join fp as p on p.iid = f.iid left join sc as s on s.iid = f.iid group by all),
+      y as (select g.*, 100 * net / nullif(opening, 0) as ret, case when fees = 0 then null when net + fees <= 0 then 100 else 100 * fees / (net + fees) end as drag,
+      on_time_n / nullif(due_n, 0) as share, coalesce(x.flags, 0) as flags from mg as g left join wf as x on x.m = g.manager),
+      z as (select y.*, round(100 * (w.wr * least(greatest(ret / w.rc, 0), 1) + w.wf * case when drag is null then w.fu else 1 - least(drag / w.fc, 1) end + w.wt * share
+      + w.ww * greatest(1 - flags / w.wc, 0)), 1) as score from y left join w on true)
+      select manager, currency, cast(funds as integer) as funds, opening_date, latest_date, cast(opening as decimal(18,2)) as opening_value, cast(latest as decimal(18,2)) as latest_value,
+      cast(net as decimal(18,2)) as net_gain, cast(fees as decimal(18,2)) as fees_paid, cast(round(ret, 2) as decimal(9,2)) as return_pct, cast(round(drag, 2) as decimal(9,2)) as fee_drag_pct,
+      cast(round(share, 3) as decimal(9,3)) as on_time_share, cast(due_n as integer) as statements_due, cast(on_time_n as integer) as statements_on_time, cast(flags as integer) as watch_flags,
+      cast(score as decimal(9,1)) as score, case when score is null or (select count(*) from bd) = 0 then null when score >= (select add_min from bd) then 'add' when score >= (select keep_min from bd)
+      then 'keep' else 'review or exit' end as verdict, (select wr from w) as weight_returns, (select wf from w) as weight_fees, (select wt from w) as weight_timeliness, (select ww from w) as weight_watch from z
+    measure: score
+    columns:
+      opening_date: The date of the first statement value of the manager's funds.
+      opening_value: 'The first statement values of its funds, added up.'
+      latest_value: 'The latest statement values of its funds, added up.'
+      net_gain: 'Latest less first value, less calls paid, plus distributions received.'
+      fees_paid: Fee parts of the confirmed call notices of its funds.
+      return_pct: 'The net gain as a percent of the first value.'
+      fee_drag_pct: 'Fees as a percent of the gross gain; 100 when the gross gain is not positive; empty when no fee is on record.'
+      on_time_share: 'Statements received by their due date, as a share of the statements received or missing since the first value.'
+      watch_flags: 'Late, amended, missing statements and personnel-change mails in the 90 day window (watch_flags).'
+      score: 'The weighted score out of 100 (signed rule manager_score_weights). Empty when no rule is signed.'
+      verdict: 'add, keep or review or exit at the signed bands (manager_score_bands).'
+      weight_returns: The signed weight of the return part.
+    tie_out:
+      label: The latest values equal the latest statement values of every fund with a manager
+      sql: >-
+        select (select coalesce(sum(latest_value), 0) from {name}), (select coalesce(sum(v.value_amount), 0) from valuation_observations as v join instruments as i on i.id = v.instrument_id
+        where i.manager_name is not null and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = v.id) and v.valuation_date = (select max(w.valuation_date)
+        from valuation_observations as w where w.instrument_id = v.instrument_id and not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = w.id)))
+    needs:
+      - why: 'The scorecard weights are not signed (rule manager_score_weights), so no score is given and none is guessed.'
+        sql: >-
+          select count(*) from business_rules as b join rule_versions as v on v.business_rule_id = b.id where b.rule_code = 'manager_score_weights' and v.approval_status = 'approved'
+      - why: 'No statement value of a fund is loaded, so there is nothing to score.'
+        sql: >-
+          select count(*) from valuation_observations
+
+
+  - id: deal_stage
+    label: Deals under review by stage and age
+    cards: [77]
+    names: [deal stage, deals by stage, deal pipeline, pipeline of deals, deals under review, stuck deals, days in stage]
+    may_read: [deal_pipeline, business_rules, rule_versions]
+    never_read: [commitments, cash_movements, transactions, position_snapshots]
+    why: >-
+      A deal's place in the pipeline is its latest stage and the day it entered it; a deal is stuck by the office's signed stage limit, not by a
+      number fixed here.
+    formula: >-
+      One row per deal in the pipeline that nothing supersedes and is not declined or passed: days_in_stage = the as-at date (the latest day the
+      pipeline was received) less the date the deal entered its stage; stuck = 1 when days_in_stage is above the days of the signed rule
+      deal_stage_limit_days, empty when no limit is signed. deals_in_stage counts the deals of its stage; total_ticket adds the tickets of all deals
+      of the currency (currencies are never added).
+    grain: By deal
+    sql: >-
+      create table {name} as with asat as (select max(cast(received_at as date)) as d from deal_pipeline),
+      rl as (select cast(json_extract_string(v.parameters, '$.days') as integer) as days from business_rules as b join rule_versions as v on v.business_rule_id = b.id
+      where b.rule_code = 'deal_stage_limit_days' and v.approval_status = 'approved' and v.effective_from <= (select d from asat) and (v.effective_to is null or v.effective_to > (select d from asat))
+      order by v.effective_from desc, v.version_number desc limit 1),
+      dl as (select x.* from deal_pipeline as x where not exists (select 1 from deal_pipeline as y where y.supersedes_deal_id = x.id) and lower(x.stage) not in ('declined', 'passed')),
+      r as (select l.*, cast(date_diff('day', l.stage_on, (select d from asat)) as integer) as days_in_stage from dl as l)
+      select deal_name, manager_name as manager, asset_class, stage, stage_on, days_in_stage, currency, cast(target_commitment as decimal(18,2)) as ticket,
+      (select days from rl) as stage_limit_days, cast(case when (select days from rl) is null then null when days_in_stage > (select days from rl) then 1 else 0 end as integer) as stuck,
+      cast(count(*) over (partition by stage) as integer) as deals_in_stage, cast(sum(target_commitment) over (partition by currency) as decimal(18,2)) as total_ticket,
+      (select d from asat) as as_at from r
+    measure: ticket
+    columns:
+      stage: The stage the deal is in now.
+      stage_on: The date the deal entered that stage.
+      days_in_stage: 'Days from the date it entered the stage to the as-at date.'
+      ticket: 'The commitment the office would make (the deal''s target commitment).'
+      stage_limit_days: 'The signed stage limit in days (rule deal_stage_limit_days); empty when none is signed.'
+      stuck: '1 when the deal has been in its stage longer than the signed limit, 0 when not, empty when no limit is signed.'
+      deals_in_stage: How many deals are in the same stage.
+      total_ticket: The tickets of all deals of the currency added up.
+      as_at: 'The as-at date: the latest day the pipeline was received.'
+    tie_out:
+      label: The tickets equal the target commitments of the deals nothing supersedes and nobody declined
+      sql: >-
+        select (select coalesce(sum(ticket), 0) from {name}), (select coalesce(sum(x.target_commitment), 0) from deal_pipeline as x where not exists (select 1
+        from deal_pipeline as y where y.supersedes_deal_id = x.id) and lower(x.stage) not in ('declined', 'passed'))
+    needs:
+      - why: 'No deal is in the pipeline, so there is nothing to place by stage.'
+        sql: >-
+          select count(*) from deal_pipeline
+
+
+  - id: redemption_dates
+    label: Redemption notice date and cash date
+    cards: [78]
+    names: [redemption dates, redemption notice, notice date and cash date, redeem from a hedge fund, when to send the redemption notice, notice and lock-up]
+    may_read: [documents, extracted_fields, valuation_observations, instruments]
+    never_read: [cash_movements, transactions, position_snapshots, commitments]
+    why: >-
+      When the office may leave a fund and when the money comes back are set by the fund's own redemption terms (dealing, notice, lock-up, payment
+      lag, holdback), applied to its latest statement value. No date is assumed that the terms do not give.
+    formula: >-
+      For each fund with redemption terms (the latest redemption_terms document of the fund): the dealing dates are the last business day (Monday to
+      Friday; no holiday calendar is on record) of each month, or of each quarter-end month when the dealing is quarterly. The dealing date is the
+      first one on or after the lock-up end whose notice deadline (dealing date less the notice days, moved back to a business day) is not before the
+      as-at date (the latest day a document was received). cash_date = dealing date plus the payment lag days, moved forward to a business day;
+      cash_at_payment = the latest statement value less the holdback percent, held back until the audit the rest. A fund whose dealing day is not
+      the last business day of the period gets no dates (dealing_rule_known = 0).
+    grain: By fund
+    sql: >-
+      create table {name} as with asat as (select max(cast(received_at as date)) as d from documents),
+      rt as (select d.id, d.instrument_id, d.title from documents as d where d.document_type = 'redemption_terms' and d.instrument_id is not null and not exists
+      (select 1 from documents as z where z.supersedes_document_id = d.id) qualify row_number() over (partition by d.instrument_id order by d.received_at desc, d.recorded_at desc) = 1),
+      t as (select r.instrument_id, r.title as source, max(f.value_text) filter (where f.field_name = 'redemption_frequency') as frequency,
+      max(f.value_text) filter (where f.field_name = 'dealing_day') as dealing_day, max(f.value_numeric) filter (where f.field_name = 'notice_days') as notice_days,
+      max(f.value_numeric) filter (where f.field_name = 'payment_lag_days') as lag_days, max(f.value_numeric) filter (where f.field_name = 'holdback_pct') as holdback_pct,
+      max(try_cast(f.value_text as date)) filter (where f.field_name = 'lockup_end_date') as lockup_end from rt as r join extracted_fields as f on f.document_id = r.id group by all),
+      lv as (select v.instrument_id, v.valuation_date, v.value_amount, v.currency, v.valuation_type from valuation_observations as v where not exists (select 1 from valuation_observations as x
+      where x.supersedes_valuation_id = v.id) qualify row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc, v.recorded_at desc) = 1),
+      me as (select t.instrument_id, last_day(cast(date_trunc('month', (select d from asat)) as date) + to_months(cast(g.n as integer))) as m from t cross join range(0, 37) as g(n)
+      where lower(t.dealing_day) like '%last business day%' and (lower(t.frequency) = 'monthly' or (lower(t.frequency) = 'quarterly'
+      and month(last_day(cast(date_trunc('month', (select d from asat)) as date) + to_months(cast(g.n as integer)))) % 3 = 0))),
+      dd as (select instrument_id, m - cast(case dayofweek(m) when 0 then 2 when 6 then 1 else 0 end as integer) as deal from me),
+      nb as (select d.instrument_id, d.deal, d.deal - cast(t.notice_days as integer) as nd, d.deal + cast(t.lag_days as integer) as pd, t.lockup_end from dd as d join t on t.instrument_id = d.instrument_id),
+      nb2 as (select instrument_id, deal, nd - cast(case dayofweek(nd) when 0 then 2 when 6 then 1 else 0 end as integer) as notice_by,
+      pd + cast(case dayofweek(pd) when 6 then 2 when 0 then 1 else 0 end as integer) as cash_date, lockup_end from nb),
+      fst as (select * from nb2 where deal >= coalesce(lockup_end, deal) and notice_by >= (select d from asat) qualify row_number() over (partition by instrument_id order by deal) = 1)
+      select i.canonical_name as fund, l.currency, cast(l.value_amount as decimal(18,2)) as latest_value, l.valuation_date as value_date,
+      case l.valuation_type when 'manager_estimate' then 'estimate' when 'manager_amended' then 'amended' else 'final' end as value_status, t.frequency, t.dealing_day,
+      cast(t.notice_days as integer) as notice_days, t.lockup_end, cast(t.lag_days as integer) as payment_lag_days, cast(t.holdback_pct as decimal(9,2)) as holdback_pct,
+      f.deal as dealing_date, f.notice_by as send_notice_by, cast(date_diff('day', (select d from asat), f.notice_by) as integer) as days_to_send, f.cash_date,
+      cast(round(l.value_amount * (100 - t.holdback_pct) / 100, 2) as decimal(18,2)) as cash_at_payment,
+      cast(l.value_amount - round(l.value_amount * (100 - t.holdback_pct) / 100, 2) as decimal(18,2)) as held_back_until_audit,
+      cast(case when lower(t.dealing_day) like '%last business day%' and lower(t.frequency) in ('monthly', 'quarterly') then 1 else 0 end as integer) as dealing_rule_known,
+      cast(case when t.lockup_end > (select d from asat) then 1 else 0 end as integer) as locked_up, (select d from asat) as as_at, t.source
+      from t join instruments as i on i.id = t.instrument_id left join lv as l on l.instrument_id = t.instrument_id left join fst as f on f.instrument_id = t.instrument_id
+    measure: cash_at_payment
+    columns:
+      latest_value: The fund's latest statement value.
+      value_status: 'estimate, final or amended: the statement the value comes from.'
+      notice_days: 'Calendar days of notice the terms ask for before the dealing date.'
+      lockup_end: 'The end of the lock-up: no dealing date before it.'
+      dealing_date: 'The first dealing date the notice can still reach (on or after the lock-up end).'
+      send_notice_by: 'The last day to send the notice (dealing date less the notice days, back to a business day).'
+      days_to_send: Days from the as-at date to that last day.
+      cash_date: 'The day the cash is paid (dealing date plus the payment lag, forward to a business day).'
+      cash_at_payment: 'The latest value less the holdback.'
+      held_back_until_audit: 'The holdback, paid after the fund''s audit.'
+      dealing_rule_known: '1 when the dealing day is the last business day of the month or quarter, the only rule this figure reads.'
+      locked_up: '1 when the lock-up has not ended at the as-at date.'
+    tie_out:
+      label: The cash at payment and the holdback add up to the latest value
+      sql: >-
+        select (select coalesce(sum(cash_at_payment + held_back_until_audit), 0) from {name}), (select coalesce(sum(latest_value), 0) from {name} where cash_at_payment is not null)
+    needs:
+      - why: 'No redemption terms of a fund are loaded, so no notice or cash date can be given.'
+        sql: >-
+          select count(*) from documents where document_type = 'redemption_terms'
+
+
+  - id: rebalance_trades
+    label: Amounts to trade to reach the target allocation
+    cards: [79]
+    names: [rebalance trades, rebalancing proposal, amounts to trade to reach target, back in range, what to sell or buy, rebalance]
+    may_read: [position_snapshots, portfolios, instruments, business_rules, rule_versions]
+    never_read: [transactions, cash_movements, commitments]
+    why: >-
+      A rebalancing trade is the target share of the book less what the class holds now. The targets are the office's allocation rules; a target
+      that is only proposed is shown as a suggestion and says so, it is never treated as signed.
+    formula: >-
+      For each portfolio with target rules (allocation_<asset_class> with a target_pct: the latest approved version, else the latest proposed one):
+      book = the portfolio's positions at its latest position date, per currency; current = the value of each asset class (an instrument with no class
+      is counted under its instrument type, and class_from_type says so); target = book x target_pct / 100; trade = target - current, positive buy,
+      negative sell. targets_status is 'signed' when the rule is approved, else 'proposed, not signed: a suggestion only'. A class held without a
+      target gets a row with no target and no trade.
+    grain: By portfolio, currency and asset class
+    sql: >-
+      create table {name} as with {positions},
+      tg as (select json_extract_string(v.parameters, '$.portfolio') as portfolio, json_extract_string(v.parameters, '$.asset_class') as asset_class,
+      cast(json_extract_string(v.parameters, '$.target_pct') as decimal(9,4)) as target_pct, lower(v.approval_status) as approval_status from business_rules as b join rule_versions as v
+      on v.business_rule_id = b.id where b.rule_code like 'allocation_%' and json_extract_string(v.parameters, '$.target_pct') is not null and lower(v.approval_status) in ('approved', 'proposed')
+      and v.effective_to is null qualify row_number() over (partition by b.rule_code, json_extract_string(v.parameters, '$.portfolio') order by case lower(v.approval_status) when 'approved' then 0 else 1 end,
+      v.version_number desc) = 1),
+      dt as (select p.portfolio_id, max(p.position_date) as d from positions as p group by 1),
+      held as (select f.portfolio_code as portfolio, p.position_date, p.currency, coalesce(i.asset_class, i.instrument_type) as asset_class, cast(i.asset_class is null as integer) as from_type,
+      p.source_market_value as v from positions as p join dt on dt.portfolio_id = p.portfolio_id and dt.d = p.position_date join portfolios as f on f.id = p.portfolio_id
+      join instruments as i on i.id = p.instrument_id where f.portfolio_code in (select portfolio from tg)),
+      bk as (select portfolio, currency, max(position_date) as position_date, sum(v) as book from held group by all),
+      cls as (select portfolio, currency, asset_class, sum(v) as cur, max(from_type) as from_type from held group by all),
+      x as (select b.portfolio, b.currency, b.position_date, b.book, t.asset_class, coalesce(c.cur, 0) as cur, coalesce(c.from_type, 0) as from_type, t.target_pct, t.approval_status
+      from bk as b join tg as t on t.portfolio = b.portfolio left join cls as c on c.portfolio = b.portfolio and c.currency = b.currency and c.asset_class = t.asset_class
+      union all select b.portfolio, b.currency, b.position_date, b.book, c.asset_class, c.cur, c.from_type, null, null from cls as c join bk as b on b.portfolio = c.portfolio
+      and b.currency = c.currency where not exists (select 1 from tg as t where t.portfolio = c.portfolio and t.asset_class = c.asset_class))
+      select portfolio, currency, position_date, asset_class, cast(cur as decimal(18,2)) as current, cast(round(100 * cur / nullif(book, 0), 2) as decimal(9,2)) as current_pct,
+      cast(target_pct as decimal(9,2)) as target_pct, cast(round(book * target_pct / 100, 2) as decimal(18,2)) as target,
+      cast(round(book * target_pct / 100, 2) - cur as decimal(18,2)) as trade, case when target_pct is null then null when round(book * target_pct / 100, 2) > cur then 'buy'
+      when round(book * target_pct / 100, 2) < cur then 'sell' else 'none' end as side, case approval_status when 'approved' then 'signed' when 'proposed' then 'proposed, not signed: a suggestion only' end as targets_status,
+      cast(from_type as integer) as class_from_type, cast(book as decimal(18,2)) as book from x
+    measure: trade
+    columns:
+      current: The value the class holds at the latest position date.
+      current_pct: The class as a percent of the book.
+      target_pct: 'The target percent of the book (rule allocation_<asset_class>).'
+      target: The book times the target percent.
+      trade: 'Target less current: positive buy, negative sell.'
+      side: 'buy, sell or none.'
+      targets_status: '''signed'' when the target is approved, else a suggestion only (proposed, not signed).'
+      class_from_type: '1 when an instrument of the row has no asset class and is counted under its instrument type.'
+      book: 'The portfolio''s positions at the latest date, in the currency.'
+    tie_out:
+      label: The current values add up to the book of the portfolio
+      sql: >-
+        select (select coalesce(sum(current), 0) from {name}), (select coalesce(sum(b), 0) from (select max(book) as b from {name} group by portfolio, currency))
+    needs:
+      - why: 'No target allocation is on record (signed or proposed), so there is nothing to trade toward and no target is guessed.'
+        sql: >-
+          select count(*) from business_rules as b join rule_versions as v on v.business_rule_id = b.id where b.rule_code like 'allocation_%' and json_extract_string(v.parameters, '$.target_pct') is not null

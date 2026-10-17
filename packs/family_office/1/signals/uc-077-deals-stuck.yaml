@@ -1,0 +1,16 @@
+# SUGGESTION. Card 77, the exception: a deal has been in its stage longer than the signed stage limit (deal_stage_limit_days). It does not move forward until the CIO decides to move it or drop it. With no signed limit stuck is empty and the signal is quiet.
+suggestion: true
+id: uc-077-deals-stuck
+title: A deal is stuck in its stage
+pain_points: [INT-OPS]
+trigger: {on: figure_changed, figure: deal_stage}
+inputs:
+  - {kind: doc, fields: [deal_name, stage, stage_on, days_in_stage, stage_limit_days, stuck]}
+subject: "{doc.deal_name}"
+condition: doc.stuck == 1
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Move it forward, Drop it]}
+hold: {blocks: advance_deal, scope: "{doc.deal_name}", until: the CIO decides to move it forward or drop it}
+message: "{doc.deal_name} has been in {doc.stage} since {doc.stage_on}: {doc.days_in_stage} days, above the {doc.stage_limit_days} day limit. Move it forward or drop it?"
+evidence: [doc.stage_on, doc.days_in_stage, doc.stage_limit_days]

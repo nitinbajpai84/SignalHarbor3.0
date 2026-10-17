@@ -41,6 +41,7 @@ OUT = REPO / "docs" / "v3" / "SCORE50.md"
 OUT100 = REPO / "docs" / "v3" / "SCORE100.md"  # python tools/score50.py --all: all 100 cards
 CLEAN_NOTES = False  # --all: also note each non-info signal firing on a row with no planted mess (notes only, the verdict is not changed)
 TODAY = "2026-10-13"
+HARBORLIGHT = "Harborlight Ventures IV"  # cards 34 and 41 screen this teaser; the pipeline csv (card 77) holds four other deals, one row each
 log = logging.getLogger("score50")
 
 
@@ -452,7 +453,7 @@ CHECKS: dict[str, list] = {
           for kf, col in (("exposure", "exposure"), ("total", "portfolio_total"), ("limit_pct", "limit_pct"), ("cost_to_cure", "cost_to_cure"))],
     ],
     "uc-034-prospect": [
-        *[V(0, kf, "mandate_fit", col) for kf, col in (("minimum_ticket", "ticket"), ("asset_class", "asset_class"), ("policy_limit_for_private_markets", "private_markets_limit_pct"),
+        *[V(0, kf, "mandate_fit", col, deal_name=HARBORLIGHT) for kf, col in (("minimum_ticket", "ticket"), ("asset_class", "asset_class"), ("policy_limit_for_private_markets", "private_markets_limit_pct"),
                                                        ("uncalled_before", "uncalled_before"), ("uncalled_after", "uncalled_after"), ("ticket_pct_of_current_uncalled", "ticket_pct_of_uncalled"))],
     ],
     "uc-035-ddq": [
@@ -483,7 +484,7 @@ CHECKS: dict[str, list] = {
         V(0, "statement_kind", "memo_support", "detail", fund=CV3, figure="latest_value"),
     ],
     "uc-041-commitappr": [
-        *[V(0, kf, "commit_check", col) for kf, col in (("new_commitment", "new_commitment"), ("uncalled_after", "uncalled_after"), ("cash_usd_equivalent", "cash_usd"),
+        *[V(0, kf, "commit_check", col, deal_name=HARBORLIGHT) for kf, col in (("new_commitment", "new_commitment"), ("uncalled_after", "uncalled_after"), ("cash_usd_equivalent", "cash_usd"),
                                                         ("cash_cover_of_uncalled_after_pct", "cash_cover_pct"))],
     ],
     "uc4-vs-benchmark": [
@@ -592,7 +593,7 @@ MESS: dict[str, list[tuple[dict, str]]] = {
     "uc-035-ddq": [({"topic": ["Number of investment professionals", "Assets under management (USD)", "Key person provision", "Management fee", "Chief operating officer"]},
                     "key: answers changed")],
     "uc-037-distrack": [({"fund": "Evergreen Growth I", "pay_date": "2026-07-16"}, "M19 short-paid distribution")],
-    "uc-041-commitappr": [({"deal_name": "Harborlight Ventures Iv"}, "key: no private-markets budget in the policy")],
+    "uc-041-commitappr": [({"budget_status": "not set"}, "key: no private-markets budget in the policy")],  # every deal under review: the policy signs no budget
     "uc-050-feeinv": [({"invoice_no": "FEE-CUST-Q3"}, "M15 invoice above schedule")],
     "uc-038-navroll": [({"fund": "Evergreen Growth I"}, "M19 short-paid distribution (12,500 less, in its latest roll-forward, the quarter to 30 Sep)")],
     "uc-049-feedrag": [({"manager": "Bluewater Capital"}, "M08 fee above terms (Evergreen Credit III call 3)")],
@@ -951,13 +952,8 @@ PATH_CAUSE.update({
 })
 
 BLOCKED.update({
-    "uc-053-watchlist": "recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads",
     "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
                       "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
-    "uc-076-scorecard": "recipe manager_score is a stub; the scorecard weights and bands are not signed",
-    "uc-077-deals": "no reader for deal_pipeline beyond the one teaser; the five-deal csv is unread",
-    "uc-078-redemption": "no reader for fund_documents (redemption_terms)",
-    "uc-079-rebalance": "no reader for target_allocation; the allocation targets are not signed",
     "uc-083-taxcal": "no reader for tax_calendar and tax_notices",
     "uc-084-taxest": "no reader for tax_calendar",
     "uc-085-grants": "no reader for grant_ledger",
@@ -971,6 +967,47 @@ BLOCKED.update({
     "uc-100-famaccess": "family_access_ rules are proposed, not signed (A20)",
 })
 
+
+# ---- Invest cards 53, 76 to 79 (test_w1b_invest.py; docs/v3/w1/build51-invest.md) ---------------------------------------------------------------
+
+_DATE = {"dealing_date": "dealing_date", "send_notice_by": "send_notice_by", "days_to_send": "days_to_send", "cash_date": "cash_date", "latest_value": "latest_value",
+         "cash_at_payment": "cash_at_payment", "held_back_until_audit": "held_back_until_audit"}
+CHECKS.update({
+    "uc-053-watchlist": [  # card 53, watch_flags
+        FIRST(0, "window_start", "watch_flags", "window_start"),
+        D(0, "by_manager", "watch_flags", "manager", {k: k for k in ("late", "amended", "missing", "personnel_changes", "total")}),
+        S(0, "on_watchlist", "watch_flags", "manager", lambda r: r["on_watchlist"]),
+    ],
+    "uc-076-scorecard": [  # card 76, manager_score
+        D(0, "by_manager", "manager_score", "manager", {"return_pct_since_1_apr": "return_pct", "fee_drag_pct": "fee_drag_pct", "on_time_share": "on_time_share",
+                                                        "watch_flags": "watch_flags", "score": "score", "verdict": "verdict"}),
+        *[FIRST(0, f"weights.{k}", "manager_score", f"weight_{c}") for k, c in (("returns", "returns"), ("fees", "fees"), ("timeliness", "timeliness"), ("watch", "watch"))],
+    ],
+    "uc-077-deals": [  # card 77, deal_stage
+        F(0, "by_stage", ["deal_stage"], lambda x: dict(Counter(r["stage"] for r in x["deal_stage"]))),
+        L(0, "deals", "deal_stage", {"deal": "deal_name"}, {"stage": "stage", "days_in_stage": "days_in_stage", "ticket": "ticket", "stuck": "stuck"}),
+        S(0, "stuck_over_60_days", "deal_stage", "deal_name", lambda r: r["stuck"]),
+        FIRST(0, "total_ticket", "deal_stage", "total_ticket"),
+    ],
+    "uc-078-redemption": [  # card 78, redemption_dates
+        D(0, "by_fund", "redemption_dates", "fund", _DATE),
+    ],
+    "uc-079-rebalance": [  # card 79, rebalance_trades
+        FIRST(0, "book", "rebalance_trades", "book"),
+        F(0, "targets_status", ["rebalance_trades"], lambda x: all("not signed" in str(r["targets_status"]) for r in x["rebalance_trades"] if r["target_pct"] is not None),
+          kf=lambda e: "not signed" in e),
+        D(0, "by_class", "rebalance_trades", "asset_class", {k: k for k in ("current", "current_pct", "target_pct", "target", "trade")}),
+        F(0, "net_trade", ["rebalance_trades"], lambda x: tot(x["rebalance_trades"], "trade")),
+    ],
+})
+MESS.update({
+    "uc-053-watchlist": [({"manager": ["Saltmarsh Real Assets", "Northgate Partners"], "personnel_changes": lambda r: r["personnel_changes"] > 0}, "M44 manager personnel change"),
+                         ({"manager": "Cedarpoint Ventures", "missing": lambda r: r["missing"] > 0}, "M02 statement missing (Cedarpoint Opportunities II, 30 Jun)")],
+    "uc-076-scorecard": [({"verdict": "review or exit"}, "key: managers to review or exit (Cedarpoint, Kestrel, Saltmarsh)")],
+    "uc-077-deals": [({"deal_name": ["Marlow Infrastructure Partners III", "Ashgrove Growth Equity V"]}, "M46 deals stuck in a stage")],
+    "uc-078-redemption": [({"fund": "Kestrel Ridge Equity Long/Short Fund", "locked_up": 1}, "key: the long/short fund is locked up to 31 Dec")],
+    "uc-079-rebalance": [({"targets_status": lambda r: "not signed" in str(r["targets_status"] or "")}, "key: targets proposed at the 8 Oct committee, not signed: a suggestion only")],
+})
 
 # ---- loading and running ---------------------------------------------------------------------------------------------------------------------
 

@@ -1,0 +1,16 @@
+# SUGGESTION. Card 53, the exception: a manager owes a statement that never arrived. It cannot come off the watch list until the statement arrives or the CIO decides.
+suggestion: true
+id: uc-053-watchlist-missing
+title: A manager's statement is still missing
+pain_points: [PP-05, INT-TRUST, INT-BENCH]
+trigger: {on: figure_changed, figure: watch_flags}
+inputs:
+  - {kind: doc, fields: [manager, missing, missing_detail]}
+subject: "{doc.manager}"
+condition: doc.missing > 0
+severity: problem
+route_to: investment_analyst
+action: {verb: approve, options: [Chase the manager, Meet early]}
+hold: {blocks: put_manager_off_watchlist, scope: "{doc.manager}", until: the statement arrives or the CIO decides}
+message: "{doc.manager} still owes {doc.missing} statement(s): {doc.missing_detail}. It stays on the watch list until the statement arrives or the CIO decides."
+evidence: [doc.missing, doc.missing_detail]

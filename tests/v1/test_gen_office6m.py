@@ -465,3 +465,5 @@ def test_signed_rules_of_cards_51_to_100_agree_with_the_keys():
     assert sum(1 for k, v in signed.items() if k.startswith("family_access_") and v["level"] != "none") == len(allowed) and all(v["level"] in ("none", "summary", "full") for k, v in signed.items() if k.startswith("family_access_"))
     assert signed["signing_policy"] == {"min_signatories": 2, "required_role": "Head of Finance"} and signed["ladder_window_days"] == {"days": 90} and signed["automation_rework_minutes"]["minutes_per_failure"] == 45
     assert not any(k.startswith("allocation_") for k in signed), "the interim targets of card 79 are proposed, not signed (its key says so)"
+    deals = ex("uc-077-deals")["deals"]  # A55: the stage limit of card 77; stuck exactly when the days in stage are above it
+    assert all(d["stuck"] == (d["days_in_stage"] > signed["deal_stage_limit_days"]["days"]) for d in deals) and signed["deal_stage_limit_days"] == {"days": 60}

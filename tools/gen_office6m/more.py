@@ -572,5 +572,7 @@ def wave2_rules(w):
           ("bank_line_purpose", "match", "A bank line is explained when its reference or payee matches a payment, invoice, capital call notice, payroll, trade, transfer, grant or expense on record; the bank's own fee and interest lines explain themselves; any other line is coded by Operations. Signed by Daniel Foo (Head of Finance)", "policy",
            dict(match_on=["reference", "payee_name"], self_explained_types=["bank_fee", "interest"]), "approved", 1),
           ("automation_rework_minutes", SOP_FAIL_MIN, f"Each failure of a process costs {SOP_FAIL_MIN} minutes of rework when processes are ranked for automation over six months. Signed by Anita Rao (Head of Data)", "policy",
-           dict(minutes_per_failure=SOP_FAIL_MIN, months=6), "approved", 1)]
+           dict(minutes_per_failure=SOP_FAIL_MIN, months=6), "approved", 1),
+          ("deal_stage_limit_days", STAGE_LIMIT_DAYS, f"A deal under review that has been in its stage for more than {STAGE_LIMIT_DAYS} days is stuck and goes to the CIO to move forward or drop. Signed by Raj Patel (Chief Investment Officer)", "policy",
+           dict(days=STAGE_LIMIT_DAYS), "approved", 1)]
     return r
