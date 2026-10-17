@@ -192,3 +192,12 @@ html:has(.v3),body:has(.v3){background:var(--paper);color:var(--ink)}
       linear-gradient(90deg,var(--l-edge),transparent) 0 0/14px 100% no-repeat scroll,linear-gradient(270deg,var(--l-edge),transparent) 100% 0/14px 100% no-repeat scroll}
   .v3 .v3-tabs a{white-space:nowrap;flex:none}
 }
+
+/* Testing or Real use switch in the top bar: an action, so the act colour (2.0's switch was teal) */
+.v3 .v3-mode { display: inline-flex; align-items: center; }
+.v3 .v3-mode .ms-wrap { color: var(--info); }
+.v3 .v3-mode .ms-wrap b { color: var(--act); }
+.v3 .v3-mode .ms-track { background: var(--surface, #fff); border-color: var(--line, currentColor); }
+.v3 .v3-mode .ms-track:focus-visible { outline-color: var(--act); }
+.v3 .v3-mode .ms-track[aria-checked="true"] { background: color-mix(in srgb, var(--act) 25%, transparent); }
+.v3 .v3-mode .ms-track[aria-checked="true"] .ms-knob { background: var(--act); }
