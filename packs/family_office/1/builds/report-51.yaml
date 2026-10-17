@@ -1,4 +1,4 @@
-# Persona builds of the report-and-govern domain for the cards after the top 50 (card 74; card 75 is not built, see docs/v3/w1/build51-report.md).
+# Persona builds of the report-and-govern domain for the cards after the top 50 (cards 74 and 75, see docs/v3/w1/build51-report.md).
 # Merged with role_builds.yaml by role id. files: "office6m:<glob under tests/v1/fixtures/office6m>", the files of the card's answer key.
 # check.expect: numbers copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
 template: family_office@1
@@ -12,3 +12,10 @@ roles:
         skills: ["data.recognise-file", "build.write-formula-table", "consume.write-morning-note", "consume.build-board", "consume.explain-number"]
         dashboard: "Consume: the board page, headline figures with their sources and the state each rests on"
         check: {ask: "What to tell the board of the family?", expect: ["57,600,000", "77,253,120", "3.5148", "5.7563", "6,156,041.41", "270,000", "14,600,000"]}
+      - id: uc-075-yearwalk
+        title: "What to tell the family about the year"
+        say: "At the annual meeting I need to say what happened to our worth between the start of April and the end of September: where we started, what the investments gained (the liquid book and the funds apart), what came in as income, what we spent, and where we closed. Show every part from the files, say what the files cannot give, and do not make a number up to close the gap."
+        files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_*.pdf", "office6m:*/administrator_nav/administrator_export_*.xlsx", "office6m:*/bank_statements/*.xlsx"]
+        skills: ["data.recognise-file", "build.write-formula-table", "consume.write-morning-note", "consume.build-board", "consume.explain-number"]
+        dashboard: "Consume: the year walk, opening, gains, income, spending and closing, with the parts that the files cannot give shown as empty and why"
+        check: {ask: "What to tell the family about the year?", expect: ["540,967", "1,514,870", "-973,903", "1,263,862.76", "114,394,995.51", "5,950,000", "767,500"]}

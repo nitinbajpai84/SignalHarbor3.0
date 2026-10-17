@@ -2,9 +2,9 @@
 
 Domain "Report and govern", cards with no priority: `uc-074-boardpack` (74) and `uc-075-yearwalk` (75). Synthetic Evergreen office only.
 
-Files: `packs/family_office/1/recipes/report.yaml` (recipe `board_summary` added; `networth_walk` stays a stub with a note), `packs/family_office/1/signals/uc-074-boardpack-*.yaml` (3), `packs/family_office/1/builds/report-51.yaml`, `tests/v1/test_w1b_report.py`, this page.
+Files: `packs/family_office/1/recipes/report.yaml` (recipes `board_summary` and `networth_walk` added), `packs/family_office/1/signals/uc-074-boardpack-*.yaml` (3) and `uc-075-yearwalk-*.yaml` (3), `packs/family_office/1/builds/report-51.yaml`, `tests/v1/test_w1b_report.py`, `tests/v1/test_w1_report.py` (two lines), this page.
 
-**Test result:** `pytest tests/v1/test_w1b_report.py` gives 11 passed, 0 failed (about 22 seconds). It loads the office through the real loader (`v3_office6m_loaders`, as `test_w2_loader.py` does), runs the recipe the way `v3_recipes` renders it (A8 tables check and tie-out included) and asserts every number against `answer_keys.yaml`.
+**Test result:** `pytest tests/v1/test_w1b_report.py tests/v1/test_w1_report.py` gives 54 passed, 0 failed (about 43 seconds). With `test_v3_recipes`, `test_v3_roles`, `test_v3_figstore`, `test_v3_regressions`: 53 passed.
 
 ## Built: card 74, family board pack
 
@@ -25,14 +25,34 @@ Honest edges, all from the data and no rule invented:
 - "Since 1 April" is "every month loaded": `performance_from` and `performance_to` show the dates, so the label cannot drift silently. The last complete quarter is read from the data (2026Q3), not typed.
 - The signals' exception is an amendment received after the last issued report, which is the one open item in the key. The estimate signal has no hold: the report total is still stated, with the estimate named beside it.
 
-## Not built: card 75, what happened to our worth this year
+## Built: card 75, what happened to our worth (with two figures the files cannot give)
 
-Reason: the walk's spending leg is the expense ledger (`expense_ledger_2026-04_to_2026-09.xlsx`). The loader has no reader for that kind (it is in `NEW_KINDS`; `test_card_75_...` proves `not_loaded` says "no reader for this kind" and no source batch exists), and the model has no home for it (A23 leaves `office_expenses` for later). The key's spending is the ledger without debt service plus loan interest; it cannot be rebuilt from bank statements without inventing a mapping. The recipe `networth_walk` stays `status: stub`, there are no signals and no build. The other legs (fund values as known, book, bank cash, loan, calls, distributions, income) do load; only spending and so the balancing item `fx_and_other` are missing.
+| Item | State |
+|---|---|
+| Recipe `networth_walk` | ready. One row for the period from the day after the last month end before the first office bank balance (31 March) to the last month end on or before the last balance (30 September) |
+| Signals | `uc-075-yearwalk-headline` (info, principal), `-estimate` (needs, cio), `-incomplete` (problem, cfo, **holds `present_networth_walk`**) |
+| Build | `uc-075-yearwalk` under role `principal`; files are the key's `input_files` with `office6m:`; `check.expect` holds the seven figures below, written as the key has them |
+
+The expense ledger now has a reader (`v3_pack_readers_controls`, table `office_expenses`), which was the reason card 75 was not built before.
+
+**Figures the recipe gives and the key has, to the cent:** investment gains 540,967 (liquid book 1,514,870, funds and hedge funds -973,903), spending 1,263,862.76, closing net worth 114,394,995.51, capital calls paid 5,950,000, distributions received 767,500. These seven are in `check.expect`.
+
+**Figures it cannot give, and why (each is in the data, none is a rule):**
+- **Opening net worth 114,568,027.06 and the balancing item (`fx_and_other`, 94,195.23, 0.082 percent): empty.** The opening cash of the three Singapore dollar account groups needs the USD/SGD fixing of 31 March. The first fixing in any file is 1 April (`fx_rates` starts that day; there is no March investment report). The recipe does not borrow 1 April or any other day: `opening_fixing_missing` says 3 and `opening`, `opening_cash_usd_eq`, `fx_and_other`, `adds_up` are empty. The parts that need no fixing are shown (`opening_funds`, `opening_book`, `opening_loan`). Proved: with the generator's own 31 March fixing put in the warehouse for one test (rolled back), the opening equals the key to the cent and the walk adds up (`test_card_75_with_the_31_march_fixing_loaded...`).
+- **Income 455,624.27 against the key's 455,668.98 (44.71 short).** The July statement of the Tidewater USD account of Entity B never arrived (M02b, expected 6 August). Its 44.71 of interest is in the key and in no file. The recipe counts the gap (`bank_months_missing` = 1) and the signal `-incomplete` says so. With the fixing loaded, the balancing item is then exactly 44.71 above the key's, which is the same gap. Income is therefore not in `check.expect`.
+
+How it is made: net worth at a date is the funds (every instrument with a manager valuation, the latest period on or before the date, amended over final over estimate, as known on the last day loaded; the two index funds are funds here, as the key has them) + the liquid book (positions of instruments that are not funds and not cash) + the office banks' cash (SGD at the latest fixing on or before the balance date) less the loan statement's amount owed. The opening cash is the first balances less the confirmed movements since the month end; the opening loan is the first statement's interest over the facility rate / 12. Gains are as the key's `how` says: the book less the net settled buys and sells, the funds less calls plus distributions. Spending is the ledger without the debt service lines (the loan interest comes from the loan statements instead) plus that interest. A figure that needs a fixing the files do not have is empty, never a partial sum (tested: with every fixing removed, the closing, income, spending and balancing item are empty and the liquid book gain stands).
+
+Honest edges:
+- The tie-out is the closing liquid book against the position snapshots of its date. A tie-out of the bank balances against the movements fails by 3.33 on this office because of the missing July statement (interest 44.71 less a bank fee of 48.04), so it is not used; the missing month is a column instead.
+- Two fund values at 30 September are manager estimates (`closing_estimated_funds` = 2, signal `-estimate`).
+- The key has six months of data, not twelve; the period comes from the first balance on file, not from "this year".
+- The fund list is not typed: "has a manager valuation" is the test, so a fund added later enters the walk by itself.
 
 ## Needs
 
-1. **Card 75:** a reader for `expense_ledger` and a place for its rows (add `office_expenses` under A11, or load them as `cash_movements` of type `payment` with a category), then fill `networth_walk`. The key has six months of data, not twelve.
-2. **A test outside my files fails because of the new recipe:** `tests/v1/test_w1_report.py::test_every_recipe_is_built_reads_only_what_it_may_and_ties_out` asserts the set of ready recipes in `report.yaml` equals the 13 top-50 recipes (`MINE`). `board_summary` is a new ready recipe, so it needs `<=` (or `MINE` plus `board_summary`). Every other check in that test passes for it (A8, tie-out, one line, columns). I did not edit the file.
-3. **`never_read` of `board_summary`** is `deal_pipeline` and `committee_decisions` because it legitimately reads commitments, cash movements and transactions. If a rule wants those three in every report recipe's `never_read`, the board recipe cannot satisfy it.
-4. **Signal inputs:** the three signals read the recipe's own columns, so no extra input is needed from a watcher. Trigger is `figure_changed` on `board_summary`.
-5. **Recipe size:** the board recipe is about 20 KB of SQL because it repeats its siblings. If the recipe format later allows reading another recipe's ready table, replace the copies with reads.
+1. **The USD/SGD fixing of 31 March** (a `fx_rates` file for that day, or a March investment report, which states the WMR rate). With it the opening and the balancing item fill in with no change to the recipe.
+2. **The July statement of the Tidewater USD account of Entity B** (M02b), for the 44.71 of interest. Until it arrives the income is short and the signal `-incomplete` stays on.
+3. **Signal inputs:** the three signals read the recipe's own columns, so no extra input is needed from a watcher. Trigger is `figure_changed` on `networth_walk`.
+4. **Board recipe size (card 74)** is about 20 KB of SQL because it repeats its siblings. If the recipe format later allows reading another recipe's ready table, replace the copies with reads. The `never_read` of `board_summary` is `deal_pipeline` and `committee_decisions`; the walk's is the same.
+5. **Tests outside my files:** `tests/v1/test_w1_report.py::test_every_recipe_is_built_reads_only_what_it_may_and_ties_out` is changed in two lines: it builds and checks the 13 top-50 recipes as before and states that the only other ready recipes are `board_summary` and `networth_walk` (proved in `test_w1b_report.py`, which loads the real office).

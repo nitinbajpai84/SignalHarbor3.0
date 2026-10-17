@@ -1,0 +1,16 @@
+# SUGGESTION. Card 75 row 3. EXCEPTION. A figure of the walk cannot be worked out from the files (a fixing is not on file) or a bank statement is missing: the walk is not presented until it is dealt with.
+suggestion: true
+id: uc-075-yearwalk-incomplete
+title: The net worth walk is incomplete
+pain_points: [PP-07, INT-OPS]
+trigger: {on: figure_changed, figure: networth_walk}
+inputs:
+  - {kind: doc, fields: [period_from, period_to, opening_date, opening_fixing_missing, bank_months_missing]}
+subject: "net worth walk, {doc.period_from} to {doc.period_to}, incomplete"
+condition: "doc.opening_fixing_missing > 0 or doc.bank_months_missing > 0"
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Load the missing fixing or statement, Present the walk with the gap named]}
+hold: {blocks: present_networth_walk, scope: "{doc.period_from} to {doc.period_to}", until: the missing fixing and bank statements are loaded or the walk names what is missing}
+message: "The walk from {doc.period_from} to {doc.period_to} is incomplete: {doc.opening_fixing_missing:,.0f} Singapore dollar account(s) have no USD/SGD fixing on or before {doc.opening_date}, so the opening net worth and the balancing item are empty, and {doc.bank_months_missing:,.0f} account month(s) have no bank statement on file, so their movements are not in the walk. It is held."
+evidence: [doc.period_from, doc.period_to, doc.opening_date, doc.opening_fixing_missing, doc.bank_months_missing]

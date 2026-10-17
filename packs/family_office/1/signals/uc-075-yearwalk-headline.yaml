@@ -1,0 +1,15 @@
+# SUGGESTION. Card 75 row 1. What happened to our worth in the period: the parts, each from the model, and where we closed.
+suggestion: true
+id: uc-075-yearwalk-headline
+title: What happened to our worth
+pain_points: [PP-07, INT-OPS]
+trigger: {on: figure_changed, figure: networth_walk}
+inputs:
+  - {kind: doc, fields: [period_from, period_to, investment_gains, liquid_book_gain, private_and_hedge_fund_gain, income, spending, capital_calls_paid, distributions_received, closing]}
+subject: "net worth walk, {doc.period_from} to {doc.period_to}"
+condition: "doc.closing > 0"
+severity: info
+route_to: principal
+action: {verb: see}
+message: "From {doc.period_from} to {doc.period_to} the investments gained USD {doc.investment_gains:,.0f} (liquid book {doc.liquid_book_gain:,.0f}, funds {doc.private_and_hedge_fund_gain:,.0f} after USD {doc.capital_calls_paid:,.0f} of calls paid and {doc.distributions_received:,.0f} of distributions). Income was USD {doc.income:,.2f} and spending USD {doc.spending:,.2f}. We closed at USD {doc.closing:,.2f}."
+evidence: [doc.period_from, doc.period_to, doc.investment_gains, doc.liquid_book_gain, doc.private_and_hedge_fund_gain, doc.income, doc.spending, doc.capital_calls_paid, doc.distributions_received, doc.closing]

@@ -1,8 +1,9 @@
 """W1b report (cards 51 to 100 of the Report and govern domain: 74 and 75), proved on the real pack readers.
 
-Result: card 74 (the board pack) is built: recipe `board_summary`, three signals, one build. Card 75 (the net worth walk) is not built: its spending leg is the
-expense ledger, which the loader has no reader for. The office files are loaded through the real loader (tests/v1/test_w2_loader.py); every expected number comes
-from tests/v1/fixtures/office6m/answer_keys.yaml, never typed here. Synthetic data only."""
+Result: card 74 (the board pack) is built: recipe `board_summary`, three signals, one build. Card 75 (the net worth walk) is built: recipe `networth_walk`, three
+signals, one build; it gives every figure the files carry and leaves empty the two the files cannot give (the opening net worth and the balancing item need the
+31 March USD/SGD fixing, which is in no file), and its income is short by one bank statement that never arrived (M02b). The office files are loaded through the
+real loader (tests/v1/test_w2_loader.py); every expected number comes from tests/v1/fixtures/office6m/answer_keys.yaml, never typed here. Synthetic data only."""
 from __future__ import annotations
 
 import glob
@@ -23,18 +24,17 @@ key, f2, OFFICE = W2.key, W2.f2, W2.OFFICE
 office = W2.office  # the module fixture: the office files loaded through the real readers
 
 PACK = Path(__file__).resolve().parents[2] / "packs" / "family_office" / "1"
-CARDS = ["uc-074-boardpack"]
+CARDS = ["uc-074-boardpack", "uc-075-yearwalk"]
 SIBLINGS = ["report_total_fx", "time_weighted_return", "cash_by_bank", "cash_after_calls", "called_to_date", "amendments_open"]
 
 
 # ---- the recipe ------------------------------------------------------------------------------------------------------------------------------
 
-def test_the_report_cards_after_the_top_50_are_74_and_75_and_only_74_is_built():
+def test_the_report_cards_after_the_top_50_are_74_and_75_and_both_are_built():
     cards = [c["id"] for c in yaml.safe_load((PACK / "use_cases_100.yaml").read_text(encoding="utf-8"))["use_cases"] if c["domain"] == "Report and govern" and not c.get("priority")]
     assert sorted(cards) == ["uc-074-boardpack", "uc-075-yearwalk"]
     assert R.recipe("board_summary") is not None and R.recipe("board_summary")["cards"] == [74]
-    walk = next(r for r in R.stubs() if r["id"] == "networth_walk")
-    assert R.recipe("networth_walk") is None and walk["status"] == "stub" and not walk.get("sql") and 75 in walk["cards"]
+    assert R.recipe("networth_walk") is not None and R.recipe("networth_walk")["cards"] == [75] and not any(r["id"] == "networth_walk" for r in R.stubs())
 
 
 def test_card_74_the_headline_figures_are_the_key(office):
@@ -162,20 +162,108 @@ def test_card_74_has_one_build_with_the_keys_files_and_numbers():
     k = key("uc-074-boardpack")
     want = {f"{k['net_worth_usd']:,}", f"{k['net_worth_sgd']:,}", str(k["liquid_book_q3_return_pct"]), str(k["benchmark_since_1_apr_pct"]), f"{k['cash_usd_eq']:,.2f}", f"{k['call_7_shortfall_usd']:,}", f"{k['uncalled_commitments']:,}"}
     assert set(b["check"]["expect"]) == want
-
-
-# ---- card 75 is not built, and why ------------------------------------------------------------------------------------------------------------
-
-def test_card_75_the_loader_has_no_reader_for_the_expense_ledger_so_the_walk_is_not_built(office):
-    assert "no reader for this kind" in office.report["expense_ledger"]["not_loaded"], office.report.get("expense_ledger")
-    assert office.one("select count(*) from source_batches where coalesce(storage_uri, '') like '%/expense_ledger/%'") == 0
-    assert not signals("uc-075-yearwalk")
-    mine = yaml.safe_load((PACK / "builds" / "report-51.yaml").read_text(encoding="utf-8"))["roles"]
-    assert "uc-075-yearwalk" not in {b["id"] for r in mine for b in r["builds"]}
-
-
-def test_card_75_the_legs_the_plane_does_give_are_there(office):
-    """The walk's closing net worth leg (fund values, book, bank cash, loan) loads; only the spending leg has no source. The key's own spending is not reproducible here."""
+    role, b = builds["uc-075-yearwalk"]
+    assert role == owners["uc-075-yearwalk"] == "principal" and b["say"].strip() and b["check"]["ask"].endswith("?") and b["skills"] and b["dashboard"]
+    assert b["files"] == ["office6m:" + f for f in keys["uc-075-yearwalk"]["input_files"]]
+    assert all(glob.glob(str(OFFICE / f[len("office6m:"):])) for f in b["files"])
     k = key("uc-075-yearwalk")
-    assert k["adds_up"] is True and k["spending"] == 1263862.76  # the key, for the doc
-    assert office.report["loan_statements"]["rows"] > 0 and office.report["bank_statements"]["rows"] > 0
+    assert set(b["check"]["expect"]) == {f"{k[n]:,}" for n in WALK}  # only what the files carry; the opening, the income and the balancing item are not promised
+
+
+# ---- card 75, what happened to our worth ------------------------------------------------------------------------------------------------------
+
+WALK = ["investment_gains", "liquid_book_gain", "private_and_hedge_fund_gain", "spending", "closing", "capital_calls_paid", "distributions_received"]
+
+
+def test_card_75_every_figure_the_files_carry_is_the_key(office):
+    k, rows = key("uc-075-yearwalk"), office.run("networth_walk")  # run() also checks the A8 tables and the tie-out
+    assert len(rows) == 1
+    r = rows[0]
+    assert (str(r["period_from"]), str(r["period_to"]), str(r["opening_date"])) == (k["period"][0], k["period"][1], "2026-03-31")
+    for name in WALK:
+        assert f2(r[name]) == k[name], name
+    assert (r["closing_funds"], r["closing_book"], r["closing_loan"]) == (68760000, 41200000, 2800000) and f2(r["closing_cash_usd_eq"]) == 7234995.51
+    assert r["closing_fixing_missing"] == 0 and r["flows_fixing_missing"] == 0 and r["other_currency_lines"] == 0 and r["closing_estimated_funds"] == 2
+
+
+def test_card_75_the_opening_and_the_balancing_item_are_empty_because_the_31_march_fixing_is_in_no_file(office):
+    r = office.run("networth_walk")[0]
+    assert office.one("select count(*) from market_observations where observation_type = 'fx' and cast(observed_at as date) <= date '2026-03-31'") == 0
+    assert r["opening"] is None and r["fx_and_other"] is None and r["fx_and_other_pct_of_closing"] is None and r["adds_up"] is False
+    assert r["opening_fixing_missing"] == 3 and r["opening_cash_usd_eq"] is None  # the three SGD groups; nothing is estimated from the 1 April fixing
+    assert (f2(r["opening_funds"]), f2(r["opening_book"]), f2(r["opening_loan"])) == (64551403.0, 39672360.0, 3000000.0)  # the parts that need no fixing are there
+
+
+def test_card_75_with_the_31_march_fixing_loaded_the_opening_is_the_key_and_the_walk_adds_up(office):
+    """The generator's own fixing of 31 March goes into the warehouse for this test only (rolled back): the opening net worth is then the key's to the cent."""
+    from tools.gen_office6m.world import World, d as gd
+    fix = World().fx[gd("2026-03-31")]
+    k, con = key("uc-075-yearwalk"), office.con
+    con.execute("begin")
+    try:
+        con.execute("insert into market_observations select uuid(), organization_id, source_record_id, instrument_id, series_key, observation_type, timestamp '2026-03-31 16:00:00+00', received_at, recorded_at, ?, base_currency, quote_currency, quality_status, null "
+                    "from market_observations where observation_type = 'fx' and series_key = 'FX:USDSGD:WMR4PM' and cast(observed_at as date) = date '2026-04-01'", [str(fix)])
+        r = office.run("networth_walk")[0]
+    finally:
+        con.execute("rollback")
+    assert f2(r["opening"]) == k["opening"] and r["opening_fixing_missing"] == 0 and r["adds_up"] is True
+    assert f2(r["opening"]) + f2(r["investment_gains"]) + f2(r["income"]) - f2(r["spending"]) + f2(r["fx_and_other"]) == pytest.approx(f2(r["closing"]), abs=0.01)
+    # the only gap left is the bank statement that never arrived: the key's income is 44.71 larger and its balancing item 44.71 smaller
+    assert round(f2(r["income"]) + 44.71, 2) == k["income"] and f2(r["fx_and_other"]) - 44.71 == pytest.approx(k["fx_and_other"], abs=0.01)
+
+
+def test_card_75_the_income_is_short_by_the_statement_that_never_arrived(office):
+    """M02b: the July statement of TCB-B-USD (expected 6 August) is not in the files. The key's income includes its 44.71 interest. The recipe counts the missing month."""
+    r, k = office.run("networth_walk")[0], key("uc-075-yearwalk")
+    assert r["bank_months_missing"] == 1
+    assert office.one("select count(*) from source_batches where coalesce(storage_uri, '') like '%TCB_B_USD_2026-07%'") == 0
+    assert round(k["income"] - f2(r["income"]), 2) == 44.71
+
+
+def test_card_75_the_expense_ledger_is_read_and_the_loan_interest_comes_from_the_loan_statements(office):
+    r = office.run("networth_walk")[0]
+    ledger = office.one("select sum(case when currency = 'USD' then amount else round(amount / (select f.value from market_observations as f where f.observation_type = 'fx' and cast(f.observed_at as date) = e.spent_on), 2) end) "
+                        "from office_expenses as e where category <> 'Debt service'")
+    interest = office.one("select sum(abs(value_numeric)) from extracted_fields where field_name = 'interest_charged_as_shown'")
+    assert f2(r["spending"]) == round(float(ledger) + float(interest), 2) == key("uc-075-yearwalk")["spending"]
+    assert office.report["expense_ledger"]["rows"] == 151 and not office.report["expense_ledger"]["not_loaded"]
+
+
+def test_card_75_a_figure_without_its_fixing_is_empty_never_partial(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("delete from market_observations where observation_type = 'fx'")
+        r = office.run("networth_walk")[0]
+        assert r["closing"] is None and r["closing_cash_usd_eq"] is None and r["closing_fixing_missing"] == 3 and r["adds_up"] is False
+        assert r["income"] is None and r["spending"] is None and r["flows_fixing_missing"] > 0 and r["fx_and_other"] is None
+        assert f2(r["liquid_book_gain"]) == key("uc-075-yearwalk")["liquid_book_gain"]  # the parts that need no fixing stand
+    finally:
+        con.execute("rollback")
+    assert f2(office.run("networth_walk")[0]["closing"]) == key("uc-075-yearwalk")["closing"]
+
+
+def test_card_75_has_three_signals_one_exception_with_a_hold_and_roles_that_exist():
+    role_ids = {r["id"] for r in yaml.safe_load((PACK / "role_builds.yaml").read_text(encoding="utf-8"))["roles"]}
+    sg = signals("uc-075-yearwalk")
+    assert len(sg) == 3
+    for sid, s in sg.items():
+        assert SG.check(s, {r: r for r in role_ids}) is None, (sid, SG.check(s, {r: r for r in role_ids}))
+        assert s["id"].startswith("uc-075-yearwalk-") and s.get("suggestion") is True and s["route_to"] in role_ids and s["trigger"]["figure"] == "networth_walk"
+        declared = set(next(i["fields"] for i in s["inputs"] if i["kind"] == "doc"))
+        used = set(re.findall(r"doc\.([A-Za-z_]\w*)", " ".join([s["condition"], s["message"], s["subject"], str((s.get("hold") or {}).get("scope", ""))])))
+        assert used == declared, (sid, used ^ declared)
+    exc = [s for s in sg.values() if s["severity"] == "problem"]
+    assert len(exc) == 1 and exc[0]["hold"]["blocks"] == "present_networth_walk" and exc[0]["hold"]["until"]
+    assert all(not s.get("hold") for s in sg.values() if s is not exc[0])
+
+
+def test_card_75_signals_fire_on_the_office_data_and_stay_quiet_when_they_should(office):
+    sg, row = signals("uc-075-yearwalk"), office.run("networth_walk")[0]
+    head = fire(sg["uc-075-yearwalk-headline"], row)
+    assert "From 2026-04-01 to 2026-09-30" in head and "USD 540,967" in head and "liquid book 1,514,870" in head and "funds -973,903" in head and "USD 114,394,995.51" in head
+    assert "2 fund value(s)" in fire(sg["uc-075-yearwalk-estimate"], row) and fire(sg["uc-075-yearwalk-estimate"], {**row, "closing_estimated_funds": 0}) is False
+    held = fire(sg["uc-075-yearwalk-incomplete"], row)
+    assert "3 Singapore dollar account(s) have no USD/SGD fixing on or before 2026-03-31" in held and "1 account month(s) have no bank statement" in held and "It is held." in held
+    assert fire(sg["uc-075-yearwalk-incomplete"], {**row, "opening_fixing_missing": 0, "bank_months_missing": 0}) is False
+    assert fire(sg["uc-075-yearwalk-headline"], {**row, "closing": None}) is None  # a figure that is not there is skipped, never guessed
