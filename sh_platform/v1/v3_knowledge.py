@@ -10,8 +10,10 @@ from sh_platform.v1 import i5_graph, wh
 from sh_platform.v1 import v3_harbor as H
 
 log = logging.getLogger(__name__)
-KINDS = [("person", "People"), ("entity", "Entities"), ("fund", "Funds"), ("source", "Sources"), ("file", "Files"),
-         ("figure", "Figures"), ("usecase", "Use cases"), ("decision", "Decisions")]
+KINDS = [("person", "People"), ("entity", "Entities"), ("fund", "Funds"), ("source", "Sources"), ("file", "Files"), ("document", "Documents"),
+         ("recipe", "Recipes"), ("figure", "Figures"), ("signal", "Signals"), ("rule", "Rules"), ("usecase", "Use cases"), ("decision", "Decisions")]
+# The end of an edge that is upstream (what the other end rests on); every edge carries `up`, the id of that end, for the Atlas and the lineage flow.
+UP_IS_TO = {"uses", "decides", "reads>usecase", "waits on", "commits to", "built from", "checked by", "watches", "signed by", "asked by", "answers with", "about", "reads>source"}
 STAGE = {"drafting": "Being drafted", "decision1": "Waiting for the brief to be confirmed", "working": "Being built", "decision2": "Waiting for the files to be confirmed",
          "decision3": "Waiting to go live", "live": "Live", "question": "Waiting for an answer"}
 
@@ -39,9 +41,18 @@ class _G:
         if text and not any(f["text"] == text for f in n["facts"]):
             n["facts"].append({"text": text, "source": source, "at": (at or "")[:10]})
 
-    def edge(self, a, b, label) -> None:
+    def slug(self, s) -> str:
+        return _slug(s)
+
+    def person(self, name) -> str | None:
+        return _person(self, name)
+
+    def edge(self, a, b, label, why="") -> None:
         if a in self.nodes and b in self.nodes and a != b:
-            self.edges[(a, b, label)] = {"from": a, "to": b, "label": label}
+            key = f"{label}>{self.nodes[b]['kind']}" if label == "reads" else label
+            e = self.edges.setdefault((a, b, label), {"from": a, "to": b, "label": label, "up": b if key in UP_IS_TO else a})
+            if why:
+                e["why"] = _t(why, 200)
 
 
 def _warehouse(g: _G, plane) -> None:
@@ -165,16 +176,26 @@ def _brief(g, th, sow, uc, bsrc, at, processes, signer) -> None:
         processes.append({"title": th["title"], "lanes": lanes, "steps": out})
 
 
+FILES_PER_SOURCE = 6  # the newest few files of a source are drawn; the rest are counted on the source
+
+
 def _files(g: _G, plane) -> None:
+    by: dict[str, list[dict]] = {}
     for f in H.read_files(plane):
-        if f.get("status") not in ("recognised", "loaded"):
-            continue
-        n = g.node("file", _slug(f["name"]), f["name"], f.get("arrived_at", ""))
-        g.fact(n, f"Arrived and read as {f.get('source') or 'a source'}", "Files", f.get("arrived_at", ""))
-        if f.get("source") and f["source"] != "benchmark":
-            s = g.node("source", _slug(f["source"]), f["source"], f.get("arrived_at", ""))
-            g.fact(s, "Recognised from a file that arrived", "Files", f.get("arrived_at", ""))
-            g.edge(n["id"], s["id"], "feeds")
+        if f.get("status") in ("recognised", "loaded"):
+            by.setdefault(f.get("source") or "", []).append(f)
+    for src, fs in by.items():
+        fs.sort(key=lambda f: f.get("arrived_at", ""), reverse=True)
+        for f in fs[:FILES_PER_SOURCE]:
+            n = g.node("file", _slug(f["name"]), f["name"], f.get("arrived_at", ""))
+            g.fact(n, f"Arrived and read as {f.get('source') or 'a source'}", "Files", f.get("arrived_at", ""))
+            if src and src != "benchmark":
+                s = g.node("source", _slug(src), src, f.get("arrived_at", ""))
+                g.fact(s, "Recognised from a file that arrived", "Files", f.get("arrived_at", ""))
+                g.edge(n["id"], s["id"], "feeds", f"{f['name']} was read as {src}")
+        if src and src != "benchmark" and fs:
+            s = g.node("source", _slug(src), src, fs[-1].get("arrived_at", ""))
+            g.fact(s, f"{len(fs)} file{'s' * (len(fs) != 1)} read so far, the newest {fs[0].get('arrived_at', '')[:10]}", "Files", fs[0].get("arrived_at", ""))
 
 
 def build(plane, accounts: list[dict], today: date | None = None) -> dict:
@@ -184,6 +205,11 @@ def build(plane, accounts: list[dict], today: date | None = None) -> dict:
     _warehouse(g, plane)
     _threads(g, plane, processes)
     _files(g, plane)
+    try:
+        from sh_platform.v1 import v3_knowledge_office as OFFICE
+        OFFICE.add(g, plane, accounts)
+    except Exception:  # noqa: BLE001 - the office's other records are optional; the older map still stands
+        log.warning("knowledge: office records not read", exc_info=True)
     ym = today.isoformat()[:7]
     things = [{"name": label, "count": sum(n["kind"] == k for n in g.nodes.values()),
                "new": any(n["kind"] == k and n["since"].startswith(ym) for n in g.nodes.values())} for k, label in KINDS]

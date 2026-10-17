@@ -18,7 +18,7 @@ export function Side({ node, nodes, edges, onSelect }: { node: KNode | null; nod
   );
 }
 
-const TAG: Record<string, string> = { Live: "done", "Being built": "harbor", Waiting: "needs" };
+const TAG: Record<string, string> = { Live: "done", "Being built": "harbor", Waiting: "needs", Suggested: "info" };
 function Tag({ n }: { n: KNode }) {
   const t = look(n).tag;
   return t ? <span className={`v3-pill ${TAG[t]} kg-tag`}>{t}</span> : null;
