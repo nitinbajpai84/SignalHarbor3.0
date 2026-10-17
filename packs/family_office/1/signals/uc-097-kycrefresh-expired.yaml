@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-097-kycrefresh, the exception: a KYC document has expired. No hold: the card signs nothing.
+suggestion: true
+id: uc-097-kycrefresh-expired
+title: A KYC document has expired
+pain_points: [INT-GOV, PP-08]
+trigger: {on: figure_changed, figure: kyc_expiry}
+inputs:
+  - {kind: doc, fields: [entity, counterparty, document, expires_on, days_left, expired, expiring_90]}
+subject: "{doc.entity} {doc.document} expired"
+condition: doc.expired == 1
+severity: problem
+route_to: risk_officer
+action: {verb: record, options: [Ask the owner to supply a new one]}
+message: "{doc.document} of {doc.entity} for {doc.counterparty} expired on {doc.expires_on}. Ask the owner to supply a new one before the account is frozen."
+evidence: [doc.document, doc.expires_on]

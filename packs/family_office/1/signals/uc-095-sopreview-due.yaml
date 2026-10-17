@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-095-sopreview, the exception: a procedure not reviewed in more than 365 days. No hold: the card signs nothing.
+suggestion: true
+id: uc-095-sopreview-due
+title: A procedure is overdue for review
+pain_points: [INT-OPS, INT-DATAGOV]
+trigger: {on: figure_changed, figure: sop_age}
+inputs:
+  - {kind: doc, fields: [sop, owner, last_reviewed, age_days, due]}
+subject: "{doc.sop} review"
+condition: doc.due == 1
+severity: needs
+route_to: hr_admin
+action: {verb: record, options: [Assign the review to the owner]}
+message: "{doc.sop} was last reviewed on {doc.last_reviewed}, {doc.age_days:,.0f} days ago. Assign the review to its owner, {doc.owner}."
+evidence: [doc.sop, doc.last_reviewed, doc.age_days]

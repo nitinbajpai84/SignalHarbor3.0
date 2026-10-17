@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-098-wordlist: a proposed word is not on the office word list -> the Head of Data accepts or rejects it.
+suggestion: true
+id: uc-098-wordlist-to-add
+title: A word is proposed that is not on the list
+pain_points: [INT-DATAGOV]
+trigger: {on: figure_changed, figure: terms_proposed}
+inputs:
+  - {kind: doc, fields: [term, times_proposed, to_add, list_size]}
+subject: "{doc.term} proposed"
+condition: doc.to_add == 1
+severity: needs
+route_to: head_of_data
+action: {verb: approve, options: [Accept or reject the word]}
+message: "'{doc.term}' was proposed {doc.times_proposed:,.0f} times and is not on the office word list of {doc.list_size:,.0f} terms. Accept or reject it."
+evidence: [doc.term, doc.times_proposed]

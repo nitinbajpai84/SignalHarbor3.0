@@ -1,4 +1,85 @@
-# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md). None yet: all 20 cards of this domain wait for a reader or a table
-# that is outside the files of this builder (see Needs there). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md): the nine cards built on the real pack readers. The other eleven wait for a
+# reader or for a rule that is proposed and not signed (see Needs there). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
+# uc-082 also lists the 13 Oct fixing file: the key puts SGD into USD at 1.3400, which is that day's fixing.
 template: family_office@1
-roles: []
+roles:
+  - id: hr_admin
+    builds:
+      - id: uc-052-insurance
+        title: "Insurance policies and renewals"
+        say: "Our policies renew once a year and the broker's schedule is the list. Show me which policies renew in the next 60 days, what each insures and costs, and whether the insurer's renewal notice has come, so I can draft the renewal request for the Principal."
+        files: ["office6m:*/insurance_schedule/insurance_schedule_2026-10-01.pdf", "office6m:*/insurance/*_renewal.pdf"]
+        skills: ["data.read-pdf-fields", "action.detect-exception", "action.draft-message"]
+        dashboard: "Policies by renewal date with sum insured, premium and the notice received"
+        check: {ask: "Which policies expire in the next 60 days and what is each worth?", expect: ["POL-LIAB-03", "POL-CYB-04", "10,000,000", "1,000,000", "2026-11-01", "2026-12-01"]}
+
+      - id: uc-081-payroll
+        title: "Household and office payroll"
+        say: "Before the pay file goes I compare the draft run with last month: net pay, the employer's CPF, the total and the change. Any line not on the staff register or with a changed gross stops the file until the CFO has seen it. Check that last month's net actually left the bank."
+        files: ["office6m:*/payroll_drafts/payroll_run_2026-10_draft.xlsx", "office6m:*/payroll/payroll_2026-09.xlsx", "office6m:*/bank_statements/HB_HOLD_SGD_2026-09.xlsx"]
+        skills: ["data.recognise-file", "check.against-source", "action.detect-exception", "action.route-owner"]
+        dashboard: "Draft run against last month, flagged lines and the release decision"
+        check: {ask: "Whether to release the pay file", expect: ["100,224", "21,297.6", "121,521.6", "113,199", "93,360", "7.35", "Jun Tan"]}
+
+      - id: uc-082-covergap
+        title: "Insurance cover against what we own"
+        say: "Once a year I check that our homes, art and other assets are insured for what they are worth. Put the latest appraisal of each asset beside the sum insured of the policies that name it, both in USD, and show me the gap, so I can take it to the Principal."
+        files: ["office6m:*/insurance_schedule/insurance_schedule_2026-10-01.pdf", "office6m:*/property_valuations/valuation_RA-*.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv"]
+        skills: ["data.read-pdf-fields", "check.against-source", "consume.answer-question"]
+        dashboard: "Assets with appraisal, sum insured and the gap in USD"
+        check: {ask: "Whether to raise or lower cover", expect: ["-9,647,014.92", "-820,895.52", "-4,776,119.4", "Hillcrest House", "Fine art collection"]}
+
+      - id: uc-091-jml
+        title: "Joiner, mover, leaver access"
+        say: "When someone joins or leaves, HR mails Anita what to give and what to take away. Check the access register against that mail: which grants have no approver, what the leaver still holds and what the joiner has that nobody asked for."
+        files: ["office6m:*/access_register/access_register_2026-10-13.csv", "office6m:*/access_register/2026-10-02_joiner_leaver.eml"]
+        skills: ["intent.set-access", "action.route-owner", "action.close-with-reason"]
+        dashboard: "Grants without an approver, the leaver's access to remove and the joiner's extra access"
+        check: {ask: "Which access to give or remove", expect: ["Sam Lee", "Wei Tan", "J. Ng", "Harbour Bank portal", "Shared drive"]}
+
+      - id: uc-092-accessrev
+        title: "Quarterly access review"
+        say: "Every quarter the Principal attests who can see what. List every grant on the register and the ones nobody has used in more than 90 days, so the Head of Data can remove them."
+        files: ["office6m:*/access_register/access_register_2026-10-13.csv"]
+        skills: ["intent.set-access", "action.detect-exception", "action.route-owner"]
+        dashboard: "Grants by person with the days since last use"
+        check: {ask: "Which access to remove", expect: ["Anita Rao", "Custody portal", "168", "146", "132"]}
+
+      - id: uc-095-sopreview
+        title: "SOPs not reviewed in a year"
+        say: "Each quarter I check our written procedures. Show me each one with its owner and when it was last reviewed, and which are more than a year old, so I can assign the reviews."
+        files: ["office6m:*/sops/sop_*.md"]
+        skills: ["action.detect-exception", "action.route-owner"]
+        dashboard: "Procedures by days since the last review"
+        check: {ask: "Which procedures to review", expect: ["Open or change a bank account", "Vendor payment run", "Payroll release", "681", "480", "378"]}
+
+  - id: ops_lead
+    builds:
+      - id: uc-093-onbmgr
+        title: "Onboard a new manager"
+        say: "We just committed to a new fund. Before the first call I need every item of the onboarding checklist in place: contacts, KYC pack, subscription document, bank details confirmed by call-back and the statement schedule. Tell me what is missing."
+        files: ["office6m:*/onboarding/*"]
+        skills: ["action.detect-exception", "action.route-owner"]
+        dashboard: "Checklist items of the new manager, complete and missing"
+        check: {ask: "Whether every document and feed is in place before the first call", expect: ["Bank details confirmed by call-back", "Statement schedule"]}
+
+  - id: risk_officer
+    builds:
+      - id: uc-097-kycrefresh
+        title: "Know-your-client documents expiring"
+        say: "Banks and managers freeze an account when a KYC document lapses. Show me every KYC document with its expiry, the ones that expire in the next 90 days and the ones already expired, so I can ask the owner for a new one."
+        files: ["office6m:*/kyc_register/kyc_register_2026-10-13.csv", "office6m:*/kyc_register/kyc_pack_Evergreen_Holdings_2026.pdf"]
+        skills: ["action.detect-exception", "action.draft-message"]
+        dashboard: "KYC documents by days to expiry"
+        check: {ask: "Which documents to refresh before the bank or manager freezes the account", expect: ["2026-11-14", "2026-12-02", "2027-01-05", "2026-09-12", "-31", "Daniel Foo"]}
+
+  - id: head_of_data
+    builds:
+      - id: uc-098-wordlist
+        title: "Keep the office words in step with the model"
+        say: "The team keeps using words that are not on our word list. Show me every word proposed in mails and meeting notes, which are already on the list as a term or an alias, and which I should add."
+        files: ["office6m:*/glossary/*"]
+        skills: ["consume.understand-words", "knowledge.learn-word"]
+        dashboard: "Words proposed, already on the list and to add"
+        check: {ask: "Whether to add a word to the language list", expect: ["side letter", "stub period", "capital account", "dry powder"]}

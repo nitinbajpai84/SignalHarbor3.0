@@ -147,3 +147,305 @@ recipes:
         select (select coalesce(sum(billed), 0) from {name}), (select coalesce(sum(a.value_numeric), 0) from extracted_fields as a join documents as d on d.id = a.document_id
         where a.field_name = 'amount_due' and d.document_type = 'invoice' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
         and exists (select 1 from extracted_fields as b where b.document_id = d.id and b.field_name = 'fee_base'))
+
+  # ---- cards 51 to 100 of the office domain (docs/v3/w1/build51-office.md). Each window in days is the one the card's own figure states (as card 30's 90 days);
+  # no recipe below reads a rule that is only proposed. The as-at date is the latest day a file of the kind arrived, so the same data gives the same number.
+
+  - id: renewals_due
+    label: Insurance policies expiring
+    cards: [52]
+    names: [insurance renewals, policies expiring, insurance policies due, policy renewals]
+    may_read: [vendor_contracts, documents, extracted_fields]
+    never_read: [cash_movements, real_assets]
+    why: A policy, its sum insured, premium and renewal date come from the broker's schedule of policies (vendor contracts of kind insurance); a premium paid is not the policy. The renewal notices only say whether the insurer has written.
+    formula: 'One row per insurance policy on record (vendor_contracts of contract_kind insurance, not superseded, not ended or lapsed): days_left = next renewal date less the as-at date (the latest day a document was received); due_in_60_days = 1 when days_left is 0 to 60, the window of card 52. renewal_notice_received = 1 when a renewal notice (document insurance_renewal, field policy) names the policy.'
+    grain: By policy
+    sql: >-
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      c as (select v.* from vendor_contracts as v where v.contract_kind = 'insurance' and not exists
+      (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(coalesce(v.status, 'active')) not in ('ended', 'terminated', 'lapsed')),
+      n as (select distinct upper(trim(f.value_text)) as policy from documents as d join extracted_fields as f on f.document_id = d.id
+      where d.document_type = 'insurance_renewal' and f.field_name = 'policy' and f.review_status is distinct from 'Rejected'
+      and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
+      r as (select c.*, cast(date_diff('day', (select d from asat), c.next_renewal_date) as integer) as days_left from c)
+      select r.contract_ref as policy, r.service as policy_name, r.vendor_name as broker, r.covered_asset_ref, r.currency,
+      cast(r.sum_insured as decimal(18,2)) as sum_insured, cast(r.annual_cost as decimal(18,2)) as premium, r.next_renewal_date, r.days_left,
+      cast(case when n.policy is null then 0 else 1 end as integer) as renewal_notice_received,
+      cast(case when r.days_left between 0 and 60 then 1 else 0 end as integer) as due_in_60_days, cast(1 as integer) as policies
+      from r left join n on n.policy = upper(trim(r.contract_ref))
+    measure: due_in_60_days
+    columns:
+      sum_insured: The policy's sum insured in its own currency, from the schedule.
+      premium: The annual premium in the policy's currency, from the schedule.
+      days_left: Days from the as-at date to the next renewal date; negative when it has passed.
+      renewal_notice_received: 1 when the insurer's renewal notice for the policy is on file.
+      due_in_60_days: 1 when the policy renews in the next 60 days (card 52's window).
+      policies: 1 for each policy.
+    tie_out:
+      label: Policies equal the insurance contracts on record, not replaced and not ended
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from vendor_contracts as v where v.contract_kind = 'insurance'
+        and not exists (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(coalesce(v.status, 'active')) not in ('ended', 'terminated', 'lapsed'))
+
+  - id: cover_gap
+    label: Insurance cover less asset value
+    cards: [82]
+    names: [cover gap, insurance cover gap, insured against appraised, under insured assets, insured value less asset value]
+    may_read: [real_assets, vendor_contracts, market_observations]
+    never_read: [cash_movements, documents]
+    why: What an asset is worth is its latest appraisal; what it is insured for is the sum insured of the policies that name it on the broker's schedule. A premium or a purchase price is neither.
+    formula: 'One row per real asset (its latest appraisal: real_assets not superseded). insured = the sum insured of the insurance policies on record whose covered_asset_ref is the asset. Both are put in USD at the latest FX observation of USD to the currency (market_observations, type fx; USD is 1), each rounded to the cent; gap_usd = insured_usd less appraised_usd. status: no policy when no policy names the asset, under-insured when the gap is below zero, else covered. With no rate for a currency the USD amounts are empty.'
+    grain: By asset
+    sql: >-
+      create table {name} as with a as (select r.* from real_assets as r where not exists (select 1 from real_assets as x where x.supersedes_real_asset_id = r.id)),
+      fx as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)
+      qualify row_number() over (partition by o.quote_currency order by o.observed_at desc) = 1),
+      rate as (select currency, rate, rate_date from fx union all select 'USD', 1, null),
+      p as (select v.covered_asset_ref, sum(round(v.sum_insured / q.rate, 2)) as insured_usd, string_agg(v.contract_ref, ', ' order by v.contract_ref) as policy_refs
+      from vendor_contracts as v left join rate as q on q.currency = v.currency where v.contract_kind = 'insurance' and v.covered_asset_ref is not null
+      and not exists (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(coalesce(v.status, 'active')) not in ('ended', 'terminated', 'lapsed') group by 1),
+      g as (select a.asset_ref, a.asset_name as asset, a.asset_type, a.currency, a.appraised_value, a.appraised_on, q.rate, q.rate_date, p.policy_refs,
+      cast(round(a.appraised_value / q.rate, 2) as decimal(18,2)) as appraised_usd,
+      cast(case when p.covered_asset_ref is null then 0 else p.insured_usd end as decimal(18,2)) as insured_usd from a left join rate as q on q.currency = a.currency
+      left join p on p.covered_asset_ref = a.asset_ref)
+      select asset_ref, asset, asset_type, currency, cast(appraised_value as decimal(18,2)) as appraised_value, appraised_on, rate, rate_date, policy_refs, appraised_usd, insured_usd,
+      cast(insured_usd - appraised_usd as decimal(18,2)) as gap_usd,
+      case when policy_refs is null then 'no policy' when insured_usd < appraised_usd then 'under-insured' else 'covered' end as status,
+      cast(case when policy_refs is null then 1 else 0 end as integer) as no_policy,
+      cast(case when policy_refs is not null and insured_usd < appraised_usd then 1 else 0 end as integer) as under_insured
+      from g
+    measure: gap_usd
+    columns:
+      appraised_value: The latest appraisal in the asset's own currency.
+      rate: Units of the asset's currency per USD (1 for USD).
+      appraised_usd: The appraisal in USD, to the cent.
+      insured_usd: The sum insured of the policies naming the asset, in USD; 0 when none does.
+      gap_usd: Insured less appraised, in USD; negative means under-insured.
+      status: no policy, under-insured or covered.
+      no_policy: 1 when no policy names the asset.
+      under_insured: 1 when policies name the asset but insure less than its value.
+    tie_out:
+      label: Assets equal the real assets on record whose appraisal is not replaced
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from real_assets as r where not exists (select 1 from real_assets as x where x.supersedes_real_asset_id = r.id))
+
+  - id: payroll_total
+    label: Payroll total against last month
+    cards: [81]
+    names: [payroll total, pay run total, payroll against last month, pay file]
+    may_read: [staff_payroll, cash_movements]
+    never_read: [office_expenses, documents]
+    why: The pay file is the latest payroll run (the draft) set against the run before it; the bank shows whether last month's net pay left. Neither the expense ledger nor a budget is the payroll.
+    formula: 'One row per person of the latest pay period (staff_payroll, not superseded). total_cost = net pay plus the employer contribution. previous_gross is the same person on the run before; gross_change_pct is the change of gross pay in percent. flag: not in the staff register when the person is not on the previous run, gross changed when the gross differs from it. Run totals are by currency: run_net, run_employer, run_total_cost, the same for the previous run, change_pct = run_total_cost against previous_total_cost in percent. previous_net_paid_per_bank = the payment lines of the previous pay date and currency whose amount is the previous run net. release = 1 only when no line of the run has a flag.'
+    grain: By person of the latest pay period
+    sql: >-
+      create table {name} as with p as (select s.* from staff_payroll as s where not exists (select 1 from staff_payroll as x where x.supersedes_staff_payroll_id = s.id)),
+      cur as (select max(pay_period) as period from p), prv as (select max(pay_period) as period from p where pay_period < (select period from cur)),
+      c as (select * from p where pay_period = (select period from cur)), q as (select * from p where pay_period = (select period from prv)),
+      qt as (select currency, sum(net_pay) as net, sum(net_pay + employer_contribution) as total_cost, max(pay_date) as pay_date from q group by 1),
+      bank as (select qt.currency, coalesce(sum(0 - m.amount), 0) as paid from qt left join cash_movements as m on m.currency = qt.currency and m.effective_date = qt.pay_date
+      and m.movement_type = 'payment' and 0 - m.amount = qt.net and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) group by 1),
+      l as (select c.*, q.gross_pay as previous_gross, case when q.id is null then 'not in the staff register' when c.gross_pay <> q.gross_pay then 'gross changed' end as flag
+      from c left join q on lower(trim(q.employee_name)) = lower(trim(c.employee_name)) and q.currency = c.currency)
+      select l.pay_period, l.pay_date, l.run_status, l.employee_name, l.title, l.employment_kind, l.currency, cast(l.gross_pay as decimal(18,2)) as gross_pay,
+      cast(l.net_pay as decimal(18,2)) as net_pay, cast(l.employer_contribution as decimal(18,2)) as employer_contribution,
+      cast(l.net_pay + l.employer_contribution as decimal(18,2)) as total_cost, cast(l.previous_gross as decimal(18,2)) as previous_gross,
+      cast(round((l.gross_pay / nullif(l.previous_gross, 0) - 1) * 100, 2) as decimal(9,2)) as gross_change_pct, l.flag,
+      cast(case when l.flag is null then 0 else 1 end as integer) as flagged,
+      cast(sum(l.net_pay) over (partition by l.currency) as decimal(18,2)) as run_net,
+      cast(sum(l.employer_contribution) over (partition by l.currency) as decimal(18,2)) as run_employer,
+      cast(sum(l.net_pay + l.employer_contribution) over (partition by l.currency) as decimal(18,2)) as run_total_cost,
+      cast(qt.net as decimal(18,2)) as previous_net, cast(qt.total_cost as decimal(18,2)) as previous_total_cost, cast(b.paid as decimal(18,2)) as previous_net_paid_per_bank,
+      cast(round((sum(l.net_pay + l.employer_contribution) over (partition by l.currency) / nullif(qt.total_cost, 0) - 1) * 100, 2) as decimal(9,2)) as change_pct,
+      cast(case when count(l.flag) over () = 0 then 1 else 0 end as integer) as release
+      from l left join qt on qt.currency = l.currency left join bank as b on b.currency = l.currency
+    measure: total_cost
+    columns:
+      total_cost: Net pay plus the employer contribution of the person.
+      previous_gross: The person's gross on the previous run; empty when not on it.
+      gross_change_pct: Gross against the previous run, in percent.
+      flag: not in the staff register, gross changed, or empty.
+      flagged: 1 when the line has a flag.
+      run_net: Net pay of the whole run in this currency.
+      run_total_cost: Net pay plus employer contributions of the whole run in this currency.
+      previous_total_cost: The same for the previous run.
+      previous_net_paid_per_bank: The bank's payment lines on the previous pay date that equal the previous run's net; 0 when none was found.
+      change_pct: The run's total cost against the previous run's, in percent.
+      release: 1 when no line of the run has a flag; the pay file is not released while one is open.
+    tie_out:
+      label: Net pay equals the net pay of every person on the latest run on record
+      sql: >-
+        select (select coalesce(sum(net_pay), 0) from {name}), (select coalesce(sum(s.net_pay), 0) from staff_payroll as s where not exists
+        (select 1 from staff_payroll as x where x.supersedes_staff_payroll_id = s.id) and s.pay_period = (select max(pay_period) from staff_payroll))
+
+  - id: access_review
+    label: System access to give or remove
+    cards: [91, 92]
+    names: [access review, access open, stale access, access given but not approved, joiner leaver access, access not used in 90 days]
+    may_read: [system_access_grants, documents, extracted_fields]
+    never_read: [users, access_group_memberships]
+    why: Who can use which system comes from the access register; who joins and who leaves comes from HR's joiner and leaver mail. A user record does not say what the person may use.
+    formula: 'One row per access grant held (system_access_grants, not superseded, not revoked). days_unused = the as-at date (the latest day the register was received) less the last use. no_approver = 1 when no approver is recorded. leaver = 1 when the person is named as a leaver in a mail (field leaver); every grant a leaver still holds is to be removed. joiner_not_requested = 1 for a grant of a person named as a joiner whose system is not among the systems the mail asked for (fields joiner_access). unused_90 = 1 when the grant was last used more than 90 days ago (the window of card 92) and the person is not a leaver.'
+    grain: By access grant
+    sql: >-
+      create table {name} as with g as (select a.* from system_access_grants as a where not exists (select 1 from system_access_grants as x where x.supersedes_system_access_grant_id = a.id)
+      and a.revoked_on is null and lower(coalesce(a.status, 'active')) not in ('revoked', 'removed')),
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from system_access_grants),
+      fld as (select f.document_id, f.field_name, lower(trim(f.value_text)) as v from extracted_fields as f join documents as d on d.id = f.document_id
+      where f.field_name in ('leaver', 'joiner', 'joiner_access') and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
+      lv as (select distinct v as person from fld where field_name = 'leaver'),
+      jn as (select j.v as person, a.v as system from fld as j left join fld as a on a.document_id = j.document_id and a.field_name = 'joiner_access' where j.field_name = 'joiner'),
+      r as (select g.*, cast(date_diff('day', g.last_used_on, (select d from asat)) as integer) as days_unused,
+      exists (select 1 from lv where lv.person = lower(trim(g.person_name))) as is_leaver,
+      exists (select 1 from jn where jn.person = lower(trim(g.person_name))) and not exists (select 1 from jn where jn.person = lower(trim(g.person_name)) and jn.system = lower(trim(g.system_name))) as not_requested
+      from g)
+      select r.person_name as person, r.system_name as system, r.access_level as permission, r.granted_on, r.approved_by_name as approver, r.last_used_on, r.days_unused,
+      cast(case when r.approved_by_name is null then 1 else 0 end as integer) as no_approver, cast(r.is_leaver as integer) as leaver,
+      cast(r.not_requested as integer) as joiner_not_requested,
+      cast(case when r.days_unused > 90 and not r.is_leaver then 1 else 0 end as integer) as unused_90, cast(1 as integer) as grants
+      from r
+    measure: grants
+    columns:
+      days_unused: Days from the last use to the as-at date; empty when the register shows no use.
+      no_approver: 1 when the register records no approver for the grant.
+      leaver: 1 when the person is named as a leaver; the grant is to be removed.
+      joiner_not_requested: 1 when a joiner holds a system the joiner mail did not ask for.
+      unused_90: 1 when the grant was last used more than 90 days ago (leavers are left to the joiner and leaver check).
+      grants: 1 for each grant held.
+    tie_out:
+      label: Grants equal the grants on the register, not replaced and not revoked
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from system_access_grants as a where not exists (select 1 from system_access_grants as x where x.supersedes_system_access_grant_id = a.id)
+        and a.revoked_on is null and lower(coalesce(a.status, 'active')) not in ('revoked', 'removed'))
+
+  - id: onboarding_items
+    label: Manager onboarding items complete and outstanding
+    cards: [93]
+    names: [onboarding items, onboarding checklist, manager onboarding, items outstanding before the first call, items complete and outstanding]
+    may_read: [documents, extracted_fields]
+    never_read: [commitments, cash_movements]
+    why: What is in place for a new manager is the onboarding checklist the office keeps; a commitment on record does not say the bank details were called back.
+    formula: 'One row per item of the latest onboarding checklist of each manager (document onboarding_checklist, not superseded; fields checklist_item, checklist_status, checklist_note by line, manager). complete = 1 when the status is complete. items and complete_items count the checklist; ready = 1 only when every item is complete.'
+    grain: By manager and checklist item
+    sql: >-
+      create table {name} as with fld as (select f.document_id, f.field_name, f.value_text, f.line_number from extracted_fields as f where f.review_status is distinct from 'Rejected'),
+      d0 as (select d.id, d.document_date, d.received_at, coalesce((select max(f.value_text) from fld as f where f.document_id = d.id and f.field_name = 'manager'), d.title) as manager
+      from documents as d where d.document_type = 'onboarding_checklist' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
+      dm as (select * from d0 qualify row_number() over (partition by lower(manager) order by document_date desc nulls last, received_at desc, id desc) = 1),
+      it as (select f.document_id, f.line_number, max(case when f.field_name = 'checklist_item' then f.value_text end) as item,
+      max(case when f.field_name = 'checklist_status' then lower(trim(f.value_text)) end) as status, max(case when f.field_name = 'checklist_note' then f.value_text end) as note
+      from fld as f where f.field_name in ('checklist_item', 'checklist_status', 'checklist_note') group by 1, 2)
+      select dm.manager, dm.document_date as checklist_date, it.line_number as item_no, it.item, it.status, it.note,
+      cast(case when it.status = 'complete' then 1 else 0 end as integer) as complete,
+      cast(count(*) over (partition by dm.id) as integer) as items,
+      cast(sum(case when it.status = 'complete' then 1 else 0 end) over (partition by dm.id) as integer) as complete_items,
+      cast(case when min(case when it.status = 'complete' then 1 else 0 end) over (partition by dm.id) = 1 then 1 else 0 end as integer) as ready
+      from dm join it on it.document_id = dm.id where it.item is not null
+    measure: complete
+    columns:
+      status: The checklist's status of the item (complete, missing ...).
+      complete: 1 when the item is complete.
+      items: Items on the manager's checklist.
+      complete_items: Items complete.
+      ready: 1 only when every item is complete.
+    tie_out:
+      label: Items equal the checklist lines read from the checklists on record
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where d.document_type = 'onboarding_checklist'
+        and f.field_name = 'checklist_item' and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+
+  - id: sop_age
+    label: SOPs by last review
+    cards: [95]
+    names: [sop age, sops by last review, procedures not reviewed, sop review due]
+    may_read: [documents, extracted_fields]
+    never_read: [cash_movements]
+    why: When a procedure was last reviewed is written in the procedure itself; the date the file was received is not a review.
+    formula: 'One row per procedure (document sop, not superseded; the latest of each title): last_reviewed = its field last_reviewed_on; age_days = the as-at date (the latest day a document was received) less it; due = 1 above 365 days, the limit of card 95.'
+    grain: By procedure
+    sql: >-
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      s as (select d.* from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
+      qualify row_number() over (partition by lower(d.title) order by d.document_date desc nulls last, d.received_at desc, d.id desc) = 1),
+      f as (select f.document_id, max(case when f.field_name = 'owner' then f.value_text end) as owner,
+      max(case when f.field_name = 'last_reviewed_on' then try_cast(f.value_text as date) end) as last_reviewed
+      from extracted_fields as f where f.review_status is distinct from 'Rejected' and f.field_name in ('owner', 'last_reviewed_on') group by 1)
+      select s.title as sop, f.owner, f.last_reviewed, cast(date_diff('day', f.last_reviewed, (select d from asat)) as integer) as age_days,
+      cast(case when date_diff('day', f.last_reviewed, (select d from asat)) > 365 then 1 else 0 end as integer) as due, cast(1 as integer) as sops
+      from s left join f on f.document_id = s.id
+    measure: due
+    columns:
+      last_reviewed: The last review date written in the procedure.
+      age_days: Days from the last review to the as-at date; empty when the procedure states no review date.
+      due: 1 when the last review is more than 365 days old.
+      sops: 1 for each procedure.
+    tie_out:
+      label: Procedures equal the distinct SOP titles on record
+      sql: >-
+        select (select count(*) from {name}), (select count(distinct lower(d.title)) from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+
+  - id: kyc_expiry
+    label: KYC documents expiring
+    cards: [97]
+    names: [kyc expiry, kyc documents expiring, know your client documents expiring, kyc refresh, documents expiring in 90 days]
+    may_read: [kyc_records, legal_entities]
+    never_read: [documents, extracted_fields]
+    why: Each KYC document and its expiry is a KYC record (from the register and the KYC packs); the pack file itself is evidence, not the record.
+    formula: 'One row per KYC record with an expiry date (kyc_records, not superseded). days_left = expiry less the as-at date (the latest day a KYC record was received). status: expired below 0, expiring from 0 to 90 days (the window of card 97), else valid. The counterparty is the part of the document kind after "for"; a person''s document is named with the person.'
+    grain: By KYC document
+    sql: >-
+      create table {name} as with k as (select r.* from kyc_records as r where r.expires_on is not null and not exists (select 1 from kyc_records as x where x.supersedes_kyc_record_id = r.id)),
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from kyc_records),
+      r as (select k.*, cast(date_diff('day', (select d from asat), k.expires_on) as integer) as days_left,
+      trim(regexp_replace(k.document_kind, ' for .*$', '')) as doc_name, nullif(trim(regexp_extract(k.document_kind, ' for (.*)$', 1)), '') as counterparty from k)
+      select e.entity_name as entity, r.counterparty, case when r.subject_kind = 'person' then r.doc_name || ', ' || r.subject_name else r.doc_name end as document,
+      r.subject_kind, r.subject_name, r.issued_on, r.expires_on, r.days_left,
+      case when r.days_left < 0 then 'expired' when r.days_left <= 90 then 'expiring' else 'valid' end as status,
+      cast(case when r.days_left < 0 then 1 else 0 end as integer) as expired, cast(case when r.days_left between 0 and 90 then 1 else 0 end as integer) as expiring_90,
+      cast(1 as integer) as documents
+      from r left join legal_entities as e on e.id = r.legal_entity_id
+    measure: documents
+    columns:
+      days_left: Days from the as-at date to the expiry; negative when it has passed.
+      status: expired, expiring (within 90 days) or valid.
+      expired: 1 when the document has expired.
+      expiring_90: 1 when it expires in the next 90 days.
+      documents: 1 for each KYC document with an expiry.
+    tie_out:
+      label: Documents equal the KYC records on file with an expiry date, not replaced
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from kyc_records as r where r.expires_on is not null and not exists (select 1 from kyc_records as x where x.supersedes_kyc_record_id = r.id))
+
+  - id: terms_proposed
+    label: Words proposed for the office word list
+    cards: [98]
+    names: [terms proposed, word list proposals, words to add, new words proposed]
+    may_read: [documents, extracted_fields]
+    never_read: [sheet_mapping_columns]
+    why: A word is proposed in a mail or a meeting note and checked against the office word list the office keeps (its terms and aliases); the pack's own glossary is a suggestion, not the office's list.
+    formula: 'One row per distinct term proposed (field proposed_term of any document not superseded, compared in lower case): times_proposed counts the proposals; in_list = 1 when the term is a term or an alias of the latest office word list (document glossary); to_add = 1 when it is not. list_size = the terms of that list; proposals_made = all proposals.'
+    grain: By term proposed
+    sql: >-
+      create table {name} as with dd as (select d.* from documents as d where not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
+      fld as (select f.document_id, f.field_name, lower(trim(f.value_text)) as v from extracted_fields as f join dd on dd.id = f.document_id where f.review_status is distinct from 'Rejected'),
+      gl as (select id from dd where document_type = 'glossary' qualify row_number() over (order by received_at desc, id desc) = 1),
+      lst as (select distinct v from fld where document_id in (select id from gl) and field_name in ('term', 'alias')),
+      pr as (select v as term, count(*) as times_proposed from fld where field_name = 'proposed_term' and v <> '' group by 1)
+      select pr.term, cast(pr.times_proposed as integer) as times_proposed,
+      cast(case when pr.term in (select v from lst) then 1 else 0 end as integer) as in_list, cast(case when pr.term in (select v from lst) then 0 else 1 end as integer) as to_add,
+      cast((select count(*) from fld where document_id in (select id from gl) and field_name = 'term') as integer) as list_size,
+      cast(sum(pr.times_proposed) over () as integer) as proposals_made
+      from pr
+    measure: to_add
+    columns:
+      times_proposed: How many times the term was proposed (mails and notes).
+      in_list: 1 when the term is already a term or an alias of the office word list.
+      to_add: 1 when it is not on the list.
+      list_size: The number of terms on the latest office word list.
+      proposals_made: Every proposal, all terms.
+    tie_out:
+      label: Proposals equal the proposed_term fields on record
+      sql: >-
+        select (select coalesce(sum(times_proposed), 0) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where f.field_name = 'proposed_term'
+        and trim(coalesce(f.value_text, '')) <> '' and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))

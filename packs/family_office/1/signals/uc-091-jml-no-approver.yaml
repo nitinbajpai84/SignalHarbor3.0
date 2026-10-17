@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-091-jml, the exception: a grant with no approver on the register. No hold: the Head of Data records the approver or removes it.
+suggestion: true
+id: uc-091-jml-no-approver
+title: Access given with no approver
+pain_points: [INT-GOV, INT-DATAGOV]
+trigger: {on: figure_changed, figure: access_review}
+inputs:
+  - {kind: doc, fields: [person, system, permission, no_approver, leaver, joiner_not_requested, unused_90]}
+subject: "{doc.person} {doc.system} no approver"
+condition: doc.no_approver == 1
+severity: problem
+route_to: head_of_data
+action: {verb: record, options: [Record the approver or remove the access]}
+message: "{doc.person} has {doc.system} ({doc.permission}) and no approver is recorded. Record who approved it or remove it."
+evidence: [doc.person, doc.system, doc.permission]

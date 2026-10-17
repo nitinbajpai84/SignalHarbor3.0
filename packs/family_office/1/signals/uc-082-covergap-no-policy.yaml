@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-082-covergap, the exception: an asset no policy names. No hold: HR takes the gap to the Principal.
+suggestion: true
+id: uc-082-covergap-no-policy
+title: An asset has no insurance policy
+pain_points: [INT-RISK, PP-08]
+trigger: {on: figure_changed, figure: cover_gap}
+inputs:
+  - {kind: doc, fields: [asset, appraised_usd, insured_usd, gap_usd, status, no_policy, under_insured]}
+subject: "{doc.asset} uninsured"
+condition: doc.no_policy == 1
+severity: problem
+route_to: hr_admin
+action: {verb: record, options: [Take the gap to the Principal]}
+message: "{doc.asset} is appraised at USD {doc.appraised_usd:,.2f} and no policy on the schedule names it. Take the gap to the Principal."
+evidence: [doc.asset, doc.appraised_usd, doc.gap_usd]

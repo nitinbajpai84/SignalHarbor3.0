@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-081-payroll, the exception: a line of the draft run is not on the staff register or its gross changed -> the CFO decides; the pay file is held.
+suggestion: true
+id: uc-081-payroll-flag
+title: A payroll line is flagged
+pain_points: [INT-PAY, INT-GOV]
+trigger: {on: figure_changed, figure: payroll_total}
+inputs:
+  - {kind: doc, fields: [pay_period, employee_name, flag, flagged, currency, gross_pay, net_pay, run_total_cost, change_pct]}
+subject: "{doc.employee_name} {doc.pay_period} payroll"
+condition: doc.flagged == 1
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Explain the line, then approve or remove it]}
+hold: {blocks: prepare_payment, scope: "pay file {doc.pay_period}", until: every flagged line is explained and the CFO approves the run}
+message: "{doc.employee_name} on the payroll of {doc.pay_period}: {doc.flag} (gross {doc.currency} {doc.gross_pay:,.2f}). The run costs {doc.currency} {doc.run_total_cost:,.2f}, {doc.change_pct:,.2f} percent against last month. The pay file is held until the line is explained."
+evidence: [doc.employee_name, doc.flag, doc.gross_pay, doc.run_total_cost]
