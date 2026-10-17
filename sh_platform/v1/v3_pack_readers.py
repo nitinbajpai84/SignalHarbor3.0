@@ -880,6 +880,11 @@ class Office:
                 cust[r["reference"]] = dict(r=r, p=p, i=i, recv=recv, td=td, sd=sd)
             self.note("custodian_transactions", files=1)
         used, oms = set(), {}
+        # intake reads files in batches: the desk's trade or its settlement may be on record from an earlier one (r3b uc-058, uc8: the October desk
+        # export and the custodian's lines read apart left every trade twice, once executed and once settled, and 23 trades "unsettled")
+        prior = {r[0]: (str(r[1]), r[2]) for r in self.con.execute(
+            "select t.external_trade_id, t.id, t.status from transactions as t where t.transaction_type in ('buy', 'sell') and t.external_trade_id is not null "
+            "and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)").fetchall()} if self.incremental else {}
         for p in self.files("trading_export", "trading_export_*.csv"):
             recv = self.arrival(p)
             for i, r in enumerate(csv_rows(p), 2):
@@ -906,6 +911,9 @@ class Office:
                         if (qty, amount) != (Decimal(r["quantity"]), Decimal(r["amount"])):
                             self.note("trading_export", flag=f"{tid}: the custodian settled {qty} for {amount}, the desk booked {r['quantity']} for {r['amount']}")
                     delta, cash = (-qty if sell else qty), (amount if sell else -amount)
+                if itype not in {"fx_spot", "fx_forward"} and not c and tid in prior:  # on record already (settled by the custodian, or this very trade): not written twice
+                    oms[tid] = 1
+                    continue
                 dup = ref.endswith("-R") and ref[:-2] in oms
                 if dup:
                     ttype, status = "duplicate", "rejected"
@@ -924,10 +932,13 @@ class Office:
             typ, amount, iid = r["type"], Decimal(r["amount"]), self.inst[r["security_id"]]
             sign = -1 if typ == "sell" else 1
             buysell = typ in {"buy", "sell"}
+            was = prior.get(re.sub(r"^CT-", "", ref)) if buysell else None
+            if was and was[1] == "settled":
+                continue  # settled on record already
             self.add("transactions", source_record_id=self.record("custodian", c["p"], c["recv"], rtype="trade" if buysell else "income", external=ref, row=c["i"]), portfolio_id=self.port["EG-LIQUID"],
                      instrument_id=iid, external_trade_id=ref if not buysell else re.sub(r"^CT-", "", ref), transaction_type=typ, trade_date=c["td"], effective_date=c["td"], settlement_date=c["sd"],
                      quantity_delta=sign * Decimal(r["quantity"]) if buysell else None, cash_amount=-sign * amount if buysell else (amount if typ != "fee" else -abs(amount)), currency=r["currency"],
-                     recorded_at=stamp(c["recv"]), status="settled")
+                     recorded_at=stamp(c["recv"]), status="settled", **({"supersedes_transaction_id": was[0]} if was else {}))  # the desk's executed row of an earlier batch is settled by this one
             n += 1
         self.note("trading_export", rows=n)
         self.note("custodian_transactions", rows=len(cust))
@@ -1656,7 +1667,7 @@ def folder_month(name: str, kind: str, clock: date) -> str:
     y, mo = int(m[1]), int(m[2])
     if kind in OWN_MONTH or "mtd" in name.lower():
         return f"{y}-{mo:02d}"
-    return f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}"
+    return min(f"{y + (mo == 12)}-{1 if mo == 12 else mo + 1:02d}", f"{clock:%Y-%m}")  # a file in hand has arrived by now: the administrator's October trades, dropped on 13 Oct, are read (r3b uc8)
 
 
 def stage(root: Path, items: list[tuple[str, bytes, str, str]], clock: date) -> None:
@@ -1807,6 +1818,17 @@ def load_plane(plane, root, today: str = TODAY) -> dict:
 # ---- hooks of v3_harbor: intake tries these readers first ----------------------------------------------------------------------------------
 
 _KIND_CACHE: dict[tuple, tuple[str, str] | None] = {}
+# what a reader takes from the file's name: a notice its fund and call, a bank statement and the administrator's trades their month
+NAMED_BY = {"notices": re.compile(r"_[A-Z]\d?_(?:call\d+|distribution)"), "bank_statements": re.compile(r"_\d{4}-\d{2}"), "administrator_trades": re.compile(r"\d{4}-\d{2}")}
+
+
+def placed(name: str, kind: tuple[str, str] | None) -> tuple[str, str] | None:
+    """A file the office knows by its content whose name does not say what its reader takes from a name (scan_0412.pdf, a copy of a distribution
+    notice; account_extract.xlsx, a bank statement) is an unsorted inbox file: the inbox reader says what it is and whether it is a copy (r3: the
+    notices and bank readers failed on it with a TypeError, 5,000 times in one night)."""
+    if kind and (rx := NAMED_BY.get(kind[0])) and not rx.search(kind[1]):
+        return "inbox", name
+    return kind
 
 
 def recognise(plane, name: str) -> tuple[str, str] | None:
@@ -1816,7 +1838,7 @@ def recognise(plane, name: str) -> tuple[str, str] | None:
         st = p.stat()
         key = (str(p), st.st_size, st.st_mtime_ns)
         if key not in _KIND_CACHE:
-            _KIND_CACHE[key] = kind_of(name, p.read_bytes())
+            _KIND_CACHE[key] = placed(name, kind_of(name, p.read_bytes()))
         return _KIND_CACHE[key]
     except Exception:  # noqa: BLE001 - a file that cannot be opened here takes the generic path, which names the problem
         log.warning("could not recognise %s", name, exc_info=True)

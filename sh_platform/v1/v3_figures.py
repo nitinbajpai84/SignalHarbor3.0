@@ -22,7 +22,7 @@ DESIGN, ADDS_UP, ANSWER = "model.design-ready-table", "check.adds-up", "consume.
 LOADED = ("loaded", "already_loaded")
 META = {"id", "organization_id"}
 MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"], 1)}
-GENERIC = {"the", "and", "for", "portfolio", "fund", "entity", "account", "file", "total", "what", "was", "were", "how", "much", "our", "are", "worth"}
+GENERIC = {"the", "and", "for", "portfolio", "fund", "entity", "account", "file", "total", "what", "was", "were", "how", "much", "our", "are", "worth", "family"}  # every entity of a family office is the family's: "each family member" names none (r3b uc-100)
 CCY_COL = re.compile(r"^(?:currency|ccy)(?:_code)?$", re.I)  # a currency code is a unit of the figure, never a member to filter by or a name to print
 UNIT_WORDS = {"total", "number", "value", "amount", "rate", "net", "gross", "average", "change", "count", "each", "per"}
 LIMIT = 6  # figures designed in one step
@@ -176,6 +176,22 @@ def null_columns(sql: str) -> set[str]:
     return out
 
 
+def avg_numbers(sql: str) -> str:
+    """Every avg in a designed select reads its argument as a number. The warehouse has no avg of yes/no values: "avg(signatory_compliance) * 100" over
+    a boolean column stopped the run on the copy (r3b uc-094, 'avg(BOOLEAN)'); a number's avg is the same either way. The text is unchanged when no
+    avg needs it or it cannot be read."""
+    import sqlglot
+    from sqlglot import exp
+    try:
+        q = sqlglot.parse_one(sql, read="duckdb")
+        bare = [a for a in q.find_all(exp.Avg) if not isinstance(a.this, exp.Cast)]
+        for a in bare:
+            a.this.replace(exp.cast(a.this.copy(), "double"))
+        return q.sql(dialect="duckdb") if bare else sql
+    except Exception:  # noqa: BLE001 - the plan check reads it and says what is wrong
+        return sql
+
+
 def has_column(kpi_name: str, cols: list[str]) -> bool:
     """A column of the table is named for the figure (most of its distinctive words are in the column names)."""
     want = {w for w in _tokens(kpi_name) if w not in UNIT_WORDS} or _tokens(kpi_name)
@@ -219,7 +235,7 @@ def design(x, todo: list[dict], filled: set[str]) -> tuple[list[dict], dict[str,
             got = D.design(plane, viewer, pid, {**sow, "kpis": left}, base, grain, get_model(x.app.state, plane) if model else None)
         for t in got["tables"]:
             if t.get("layer") == "gold" and t["name"] not in before:
-                new[t["name"]] = {**t, **({"by_model": True} if model else {})}
+                new[t["name"]] = {**t, "sql": avg_numbers(t["sql"]), **({"by_model": True} if model else {})}
         for n in got.get("notes") or []:
             m = re.search(r"Define the KPI '([^']+)': (.*)", n)
             if m and m.group(1) in names:
@@ -921,7 +937,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return hit
     k = RC.kpi_by_recipe(text, kpis) or kpi_for(text, kpis)  # the question's words name a recipe: the brief's figure built from it, whatever North called it
     if k is None:
-        return recipe_rows(plane, text, pid, th, kpis, floor=2)  # w6: no figure named ("which payments to release"): the recipes the question reads as
+        return recipe_rows(plane, text, pid, th, kpis, floor=2) or recipe_rows(plane, text, pid, th, kpis, floor=1)  # w6: no figure named ("which payments to release"): the recipes the question reads as; r3b uc-073: a bound table with rows is never left to the rules-only reply
     from sh_platform.v1 import v3_recipes as R
     k = _breach_figure(text, kpis, k) or k  # r3 uc5: "which holding is over its limit" is the breach table, not the concentration figure that shares its words
     if h := R.held(th, k["name"]):  # Decision 3 held it (a failed tie-out, a missing input): never stated as fact
@@ -963,7 +979,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         if got:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
             return {**got, "source": src, "used": [], "trace": trace, "kpi": k["name"]}
-    return recipe_rows(plane, text, pid, th, kpis, floor=2)
+    return recipe_rows(plane, text, pid, th, kpis, floor=2) or recipe_rows(plane, text, pid, th, kpis, floor=1)
 
 
 def _breach_figure(text: str, kpis: list[dict], k: dict) -> dict | None:
@@ -1008,7 +1024,7 @@ SAID_FIGS = 2  # the sentence speaks for the two figures the question fits best;
 FLAGS = {"first_row", "is_total", "is_latest", "latest", "is_named", "is_opening"}  # helper columns of a recipe: they pick a row, a person never reads them
 
 
-def _said(v, names: dict, iso: bool = False, money: bool | None = None) -> str | None:
+def _said(v, names: dict, iso: bool = False, money: bool | None = None, col: str = "") -> str | None:
     """A cell as a person says it: a whole amount without ".00", other amounts to the cent, rates to their own decimals (up to four), a date as
     "23 Oct 2026" (ISO in the figures behind the sentence, `iso`). `money`: the column is an amount (None: an amount is a number with two decimals)."""
     if v is None or v == "":
@@ -1020,6 +1036,8 @@ def _said(v, names: dict, iso: bool = False, money: bool | None = None) -> str |
     if isinstance(v, date):
         return v.isoformat()[:10] if iso else f"{v.day} {v:%b %Y}"
     if (n := _num(v)) is not None:
+        if re.search(r"(?:^|_)year$", col) and n == n.to_integral_value():  # a year is said as a year, never "2,021" (r3b uc-080)
+            return str(int(n))
         return _money(n) if (n.as_tuple().exponent == -2 if money is None else money) else _fmt(n, False)
     return names.get(str(v), str(v))
 
@@ -1058,7 +1076,7 @@ def _fill(tpl: str, x: dict, pool: list[dict], names: dict, money: set | None = 
             nums = [n for y in pool if (n := _num(y.get(col))) is not None]
             got = _said(sum(nums, Decimal(0)) if how == "sum" else (max if how == "max" else min)(nums), names, money=cash) if nums else None
         else:
-            got = _said(x.get(col), names, money=cash)
+            got = _said(x.get(col), names, money=cash, col=col)
         gone = gone or got is None
         return got or ""
 
@@ -1108,19 +1126,20 @@ def _plain_sentence(name: str, r: dict, rows: list[dict], who, names: dict, mone
     if not vals:
         return None
     label = str(m).replace("_", " ")
-    if len(rows) == 1:
-        w = who(rows[0])
+    if len(rows) == 1 or (len(vals) == len(rows) and len(set(vals)) == 1):  # r3b uc-073: one figure repeated on every row is said once, never added up
+        w = who(rows[0]) if len(rows) == 1 else ""
         return f"{name}{' for ' + w if w else ''}: {label} {_said(rows[0][m], names, money=m in money)}."
     ccy = {x.get("currency") for x in rows}
     if len(vals) == len(rows) and len(ccy) == 1 and m in money:
         unit = next(iter(ccy))
         return f"{name}: {label} {_said(sum(vals, Decimal(0)), names, money=True)}{' ' + str(unit) if unit else ''} in total over {len(rows)} rows."
-    w = who(rows[0])
-    return f"{name}{' for ' + w if w else ''}: {label} {_said(rows[0][m], names, money=m in money)}, one of {len(rows)} rows."
+    said = [f"{w + ' ' if (w := who(x)) else ''}{_said(x[m], names, money=m in money)}" for x in rows if _num(x.get(m)) is not None]
+    return f"{name}, {label}: {'; '.join(said)}."  # r3b: a set is said row by row, never "one of N rows"
 
 
-STATE_COL = re.compile(r"status|state|kind|reason")  # a state of a row ("inside limit") is never the entity a question names
+STATE_COL = re.compile(r"status|state|kind|reason|bucket")  # a state of a row ("inside limit") is never the entity a question names
 RATE_COL = re.compile(r"rate|pct|percent|fixing|ratio|share|price")
+ASKS_ALL = re.compile(r"\b(?:which|each|every|all)\b", re.I)  # "which filings ... are due": the rows of the set, never only those whose words the question shares (r3b uc-083)
 SET_Q = re.compile(r"\b(?:each|every|all|which|across|whether|per)\b", re.I)  # a question about a set of rows, not one latest figure
 
 
@@ -1161,6 +1180,8 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
         texts = [c for c, ty in cols.items() if ty.startswith(("varchar", "text", "char")) and c not in META and not c.endswith("_id") and not c.startswith("run")]
         _, rows, _ = CD.run_sql(plane, f'select * from "{t["name"]}"')
+        if str(cols.get("id")).startswith("varchar") and rows and not any(re.fullmatch(r"[0-9a-f-]{36}", str(x.get("id") or "")) for x in rows):
+            texts = ["id", *texts]  # a recipe's own id that is a code ("TX-01") names its row; a uuid does not (r3b uc-083)
         period = [c for c in texts if rows and sum(bool(re.fullmatch(r"\d{4}-\d{2}", str(x.get(c) or ""))) for x in rows) * 2 >= len(rows)]
         if period and (asked := parse_when(text)) and asked[1]:  # a table kept by month, and the question names one: that month's rows, not its steps' titles (r1 uc-029)
             for c in period:
@@ -1168,7 +1189,7 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
                 rows = hit or rows
         else:
             named = False
-            for c in ([] if every else [c for c in texts if not STATE_COL.search(c)]):  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds); a question about every row names none
+            for c in ([] if every or ASKS_ALL.search(text) else [c for c in texts if not STATE_COL.search(c)]):  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds); a question about every row names none
                 hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
                 rows, named = hit or rows, named or bool(hit)
             if wide and not named:
@@ -1183,13 +1204,14 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         rows = said_by + [x for x in rows if not any(x is y for y in said_by)]  # the rows the answer names come first (a cap never drops them)
         for x in rows[:ROW_CAP]:
             vals = [f"{c.replace('_', ' ')} {v}" for c in cols if c not in texts and c not in META and c not in FLAGS and not c.endswith("_id")
-                    and not c.startswith("run") and (v := _said(x.get(c), names, iso=True, money=c in money)) is not None]
+                    and not c.startswith("run") and (v := _said(x.get(c), names, iso=True, money=c in money, col=c)) is not None]
             lines.append({"label": f"{k['name']} · {who(x)}" if who(x) else k["name"], "value": "; ".join(vals)})
             first = first or k["name"]
         body = [x for x in rows if not x.get("is_total")]  # a recipe's own total row is never added in again
         ccy = next((c for c in texts if CCY_COL.match(c)), None)
-        if len(body) > 1 and money and len({x.get(ccy) for x in body} if ccy else {None}) == 1:  # "the total across all funds": one currency only
-            tot = [f"{c.replace('_', ' ')} {_said(sum((_num(x.get(c)) or Decimal(0) for x in body), Decimal(0)), names, money=True)}" for c in money]
+        parts = [c for c in money if len({x.get(c) for x in body}) > 1]  # a figure repeated on every row (the recipe's own total) is not a part to add (r3b uc-055)
+        if len(body) > 1 and parts and len({x.get(ccy) for x in body} if ccy else {None}) == 1:  # "the total across all funds": one currency only
+            tot = [f"{c.replace('_', ' ')} {_said(sum((_num(x.get(c)) or Decimal(0) for x in body), Decimal(0)), names, money=True)}" for c in parts]
             lines.append({"label": f"{k['name']} · total of {len(body)} rows", "value": "; ".join(tot)})
         if len(said) < (SAID_WIDE if wide else SAID_FIGS) and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
             said.append(((min(r.get("cards") or [999]), order.get(r["id"], 0)), s))  # the story's order: the notice before its payment, the short before the FX
@@ -1308,7 +1330,8 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
             named = True
     if not rows:
         return None
-    if when:
+    register = bool(when and not asked and len(rows) > 1 and len({str(r[when])[:10] for r in rows}) == len(rows) and any(len({str(r.get(c)) for r in rows}) == len(rows) for c in texts))
+    if when and not register:  # r3b uc-065, uc-066: a register (each member once, at its own date) is not cut to its latest date
         top = _as_at(rows, when, next((c for c in texts if "entity" in c), None))
         got = date.fromisoformat(top)
         if asked and asked[0] and (got.year, got.month) != (asked[0], asked[1]):
@@ -1337,7 +1360,7 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
         num = _fmt(v, money) + (f" {unit}" if unit else "")
         return {"answer": f"{k['name']}{' for ' + who if who else ''}{' ' + part if part else ''}{(' on ' if on_day else ' in ') + period if got else ''}: {num}.",
                 "figure": {"label": label + (f" · {who}" if who else ""), "value": num, "change": ""}, "rows": []}
-    parts = [(" · ".join(dict.fromkeys(names.get(str(r[c]), str(r[c])) for c in split)), v) for r, v in vals][:12]
+    parts = [(" · ".join(dict.fromkeys(names.get(str(r[c]), str(r[c])) for c in split)), v) for r, v in vals]  # every member of the set, never cut (r3b)
     total = sum((v for _, v in vals), Decimal(0))
     add = money and len(ccys) <= 1 and not re.search(r"percent|ratio|rate|return|share", k["name"].lower())
     say = "; ".join(f"{a} {_fmt(v, money)}" for a, v in parts)

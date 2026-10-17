@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from sh_platform.v1 import v3_pdf as V  # PDFs go down the document path
 
 LOCK = threading.RLock()
+SCANNING = threading.Lock()  # one scan at a time; it judges files outside LOCK
 SYNC = False  # tests run chains inline
 log = logging.getLogger(__name__)
 PEOPLE = {"mei": "mei.chen", "daniel": "daniel.foo", "anita": "anita.rao", "leo": "leo.park", "grace": "grace.ong"}
@@ -1110,23 +1111,31 @@ def recognise(plane, name: str, threads: list[dict]):
 
 
 def scan(app, plane) -> list[dict]:
-    """Register what sits in the drop folder and re-judge what is waiting. Called on every read and every 30 s."""
-    with LOCK:
-        d = plane.path("dropbox")
-        d.mkdir(parents=True, exist_ok=True)
-        fs, ths = read_files(plane), all_threads(plane)
-        by = {f["name"]: f for f in fs}
-        for p in sorted(d.iterdir()):
-            if p.is_file() and p.name not in by:
-                by[p.name] = {"name": p.name, "arrived_at": datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "status": "waiting", "source": "", "thread": None}
-        new = []
-        for f in by.values():
-            if f["status"] in ("waiting", "question"):
-                f["status"], f["source"], f["thread"] = recognise(plane, f["name"], ths)
-                if f["status"] == "recognised":
-                    new.append(f)
-        fs = sorted(by.values(), key=lambda f: f["arrived_at"], reverse=True)
-        _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
+    """Register what sits in the drop folder and re-judge what is waiting. Called on every read and every 30 s. The judging runs outside LOCK: a file's
+    judge takes two model calls (about 20 s), and with LOCK held every save waited on it (r3 uc-043: Decision 1's confirm timed out after 300 s)."""
+    if not SCANNING.acquire(blocking=False):  # a scan is running: this read sees the list as it stands
+        return read_files(plane)
+    try:
+        with LOCK:
+            d = plane.path("dropbox")
+            d.mkdir(parents=True, exist_ok=True)
+            fs, ths = read_files(plane), all_threads(plane)
+            by = {f["name"]: f for f in fs}
+            for p in sorted(d.iterdir()):
+                if p.is_file() and p.name not in by:
+                    by[p.name] = {"name": p.name, "arrived_at": datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "status": "waiting", "source": "", "thread": None}
+            _fp(plane).write_text(json.dumps(sorted(by.values(), key=lambda f: f["arrived_at"], reverse=True)), encoding="utf-8")
+        got = {n: recognise(plane, n, ths) for n, f in by.items() if f["status"] in ("waiting", "question")}
+        with LOCK:  # what changed meanwhile (a load, a status set) stands; only a file still waiting takes the new judgement
+            fs, new = read_files(plane), []
+            for f in fs:
+                if f["name"] in got and f["status"] in ("waiting", "question"):
+                    f["status"], f["source"], f["thread"] = got[f["name"]]
+                    if f["status"] == "recognised":
+                        new.append(f)
+            _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
+    finally:
+        SCANNING.release()
     for f in new:  # monthly: a file runs every live thread it serves (its reader first, the others on what it loaded); only exceptions come back
         if f["source"] == "benchmark":
             continue
