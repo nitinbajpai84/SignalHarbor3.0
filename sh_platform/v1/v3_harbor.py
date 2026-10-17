@@ -180,6 +180,8 @@ def _skill(x, sid: str, text: str):
 def _call(x, fn, action: str):
     """fn(x), as the catalogue skills it stands for (a step with no skill, such as a test's stub, just runs)."""
     ids = SKILLS_OF.get(getattr(fn, "__name__", ""), ())
+    from sh_platform.v1 import v3_judge as J
+    J.THREAD.set(x.th["id"])  # the judge counts its spend and files its questions against this build
     with ExitStack() as st:
         recs = [st.enter_context(_skill(x, i, action)) for i in ids]
         out = fn(x)
@@ -293,14 +295,9 @@ def a_pack(x):
     x.api("leo", "POST", A + "/pack/generate")
     pk = x.api("leo", "GET", A + "/pack")
     x.th["tables"] = [{"layer": t.get("layer", ""), "name": t.get("name", ""), "rows": t.get("rows") or 0, "state": "reused" if t.get("existing") else "new"} for t in pk["pack"].get("tables") or []]
-    for m in pk["pack"].get("mapping") or []:
-        if m.get("needs_person") and not m.get("resolved"):
-            x.api("leo", "PUT", A + "/pack/edit", {"section": "mapping", "key": m["id"], "changes": {"resolve": "Mapped at intake from the uploaded file and approved by the head of data."}, "note": "Harbor settles this row."})
-    from sh_platform.v1 import v3_figures as F
+    from sh_platform.v1 import v3_figures as F, v3_rows as R
     F.cover(x, "draft")  # a figure of the brief with no ready table gets one designed before the pack is submitted
-    x.api("leo", "POST", A + "/pack/submit", {})
-    vs = x.api("leo", "GET", A + "/pack").get("versions") or [{"version": 1}]
-    x.api("anita", "POST", A + "/pack/approve", {"version": vs[-1]["version"], "note": "Approved by the head of data."})
+    R.send(x)  # r9: the open rows AFTER the design: the judge settles clear ones, unclear tables wait for one Decision 2 question; then submit and approve
     return "design pack approved"
 
 
@@ -350,6 +347,10 @@ def d2(x) -> dict:
     from sh_platform.v1 import v3_docs as D
     files += V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
     qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
+    from sh_platform.v1 import v3_judge as J
+    qs += J.pending(x.plane, th["id"])  # a small judgement two models could not agree on: both opinions as options
+    from sh_platform.v1 import v3_rows as R
+    qs += R.questions(x)  # r9: the columns two models could not agree are clear, in one question to the person who raised the brief
     from sh_platform.v1 import v3_figures as F
     qs += F.account_questions(x)  # "Which entity owns account X?": an account number no portfolio has holds back the whole bank statement
     csvs = [f["name"] for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
@@ -372,6 +373,12 @@ def b_answers(x):
         elif kind == "doc":
             from sh_platform.v1 import v3_docs as D
             D.answer(x, key, val)
+        elif kind == "judge":
+            from sh_platform.v1 import v3_judge as J
+            J.answer(x.plane, key, val)
+        elif kind == "rows":
+            from sh_platform.v1 import v3_rows as R
+            R.answer(x, val)
         elif kind == "pdf":
             V.answer(x, key, val)
         elif kind == "acct" and val:
@@ -900,6 +907,7 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
     if n == 1 and answer == "confirm" and th.get("iid"):
         _no_earlier_figures(app, plane, th["iid"])
         _R.confirm(plane, th, _who(app, account_id))  # the bindings become the person's
+        _FS.confirm(plane, th, _who(app, account_id), (answers or {}).get("reuse"))  # each figure becomes a figure version, or links to the one the person reuses
     if n == 1 and (th.get("decision") or {}).get("brief"):
         th["brief"] = th["decision"]["brief"]  # the confirmed brief stays on screen (the Build graph) after Decision 1 closes
     th["decision"], th["stage"] = None, "working"
@@ -959,6 +967,15 @@ def recognise(plane, name: str, threads: list[dict]):
         if pick:
             return "recognised", pick, hits[0][0]
     if len({h[0] for h in hits}) > 1 or len({h[1] for h in hits}) > 1:  # two threads, or two sources equally likely: ask, never guess
+        if len({h[0] for h in hits}) == 1:  # one build, two sources: two models of different families decide; a person gets only their disagreement
+            from sh_platform.v1 import v3_judge as J
+            srcs = sorted({h[1] for h in hits})
+            try:
+                head = plane.path("dropbox", name).read_text(encoding="utf-8-sig", errors="replace")[:300]
+            except OSError:
+                head = ""
+            if pick := J.judged(plane, "file", J.question("file", name=name), srcs, {"file name": name, "first lines": head}, J.standard("file"), hits[0][0]):
+                return "recognised", pick, hits[0][0]
         return "question", hits[0][1], None
     return "recognised", hits[0][1], hits[0][0]
 
@@ -1028,6 +1045,8 @@ _P.register(sys.modules[__name__])
 from sh_platform.v1 import v3_figures as _F  # noqa: E402 - every figure of the brief ends in a filled ready table (chain B steps, Decision 3 lines)
 _F.install(sys.modules[__name__])
 from sh_platform.v1 import v3_recipes as _R  # noqa: E402 - Decision 1 binds each figure to a recipe by meaning; every later step reads the binding
+from sh_platform.v1 import v3_figstore as _FS  # noqa: E402 - each figure is a versioned record: made at Decision 1, checked at Decision 3, a run appended each live run
+_FS.install(sys.modules[__name__])
 
 
 def _who(app, account_id) -> str | None:

@@ -1,0 +1,579 @@
+{
+ "note": "Held-out judge cases from the round-8 offices (copies). key: the right pick; null: the right outcome is no agreed pick.",
+ "old_standards": {
+  "file": "Pick a source when the file's name, headings or columns name what that source holds. Say none only when two sources fit equally.",
+  "amount_line": "The amount to load is the statement's closing value or total in a currency; not an opening balance, a movement, a fee or a rate.",
+  "fund_match": "Same fund when the names differ only by spelling, case, punctuation, an abbreviation or a legal suffix (Ltd, LP, Fund). Different when a distinguishing word differs: a number, a series, a strategy, a currency or a sponsor.",
+  "trade_side": "Buy when the word means acquiring or paying for the holding (bot, bought, purchase, long, subscribe, receive); sell when it means disposing of it (sld, sold, sale, short, redeem, deliver). A dividend, fee, transfer or anything else is neither.",
+  "recipe": "Bind only when the recipe computes that very quantity, the same thing measured from the kind of records the brief names. A total, a split or a subset of the recipe's quantity is that recipe's figure. A count of items, or a share of the result, is none. Decide by the definition and formula, not the name alone."
+ },
+ "cases": [
+  {
+   "id": "file:ops_clerk:trading_export_20261001.csv",
+   "kind": "file",
+   "subject": {
+    "name": "trading_export_20261001.csv"
+   },
+   "options": [
+    "Administrator booking system",
+    "Desk trade system",
+    "FX confirmation feed"
+   ],
+   "evidence": {
+    "file name": "trading_export_20261001.csv",
+    "first lines": "external_trade_id,trade_date,settle_date,portfolio,side,instrument_code,instrument_name,instrument_type,quantity,price,amount,currency,counterparty,status,source_system\nT-20261001-001,2026-10-01,2026-10-05,EG-LIQUID,buy,MRF.SYN,Meridian Foods,listed_equity,20000,33.10,662000.00,USD,Synthetic Broker "
+   },
+   "key": "Desk trade system"
+  },
+  {
+   "id": "file:head_of_data:trading_export_20261005.csv",
+   "kind": "file",
+   "subject": {
+    "name": "trading_export_20261005.csv"
+   },
+   "options": [
+    "Administrator positions file",
+    "Trading export"
+   ],
+   "evidence": {
+    "file name": "trading_export_20261005.csv",
+    "first lines": "external_trade_id,trade_date,settle_date,portfolio,side,instrument_code,instrument_name,instrument_type,quantity,price,amount,currency,counterparty,status,source_system\nT-20261005-004,2026-10-05,2027-01-05,EG-LIQUID,sell USD / buy SGD,FXF-2026-002,USD/SGD forward to 2027-01-05,fx_forward,3000000.00,"
+   },
+   "key": "Trading export"
+  },
+  {
+   "id": "file:cfo:bank_cash_EG-B_2026-07.csv",
+   "kind": "file",
+   "subject": {
+    "name": "bank_cash_EG-B_2026-07.csv"
+   },
+   "options": [
+    "Custodian cash file",
+    "Fund call notices",
+    "Private‑fund portal data"
+   ],
+   "evidence": {
+    "file name": "bank_cash_EG-B_2026-07.csv",
+    "first lines": "value_date,entity_code,entity_name,bank,account_number,account_name,currency,opening_ledger_balance,net_movement,closing_ledger_balance,narrative\n2026-07-01,EG-B,Entity B,Tidewater Commercial Bank (synthetic),TCB-7730-210958,Entity B - USD Operating,USD,\"1,225,558.36\",\"1,801.17\",\"1,227,359.53\",\"COU-"
+   },
+   "key": "Custodian cash file"
+  },
+  {
+   "id": "file:cfo:notice_receipt_log.csv",
+   "kind": "file",
+   "subject": {
+    "name": "notice_receipt_log.csv"
+   },
+   "options": [
+    "Custodian cash file",
+    "Fund call notices",
+    "Private‑fund portal data"
+   ],
+   "evidence": {
+    "file name": "notice_receipt_log.csv",
+    "first lines": "file,notice_kind,manager_reference,fund,amount_usd,notice_date,due_or_payment_date,received_on,office_note\n"
+   },
+   "key": "Fund call notices"
+  },
+  {
+   "id": "file:principal:fx_usdsgd_wmr4pm.csv",
+   "kind": "file",
+   "subject": {
+    "name": "fx_usdsgd_wmr4pm.csv"
+   },
+   "options": [
+    "Bank balances",
+    "Custodian positions",
+    "FX rates feed",
+    "Manual adjustments",
+    "Private fund portal"
+   ],
+   "evidence": {
+    "file name": "fx_usdsgd_wmr4pm.csv",
+    "first lines": "Date,Pair,Fixing,Rate (SGD per 1 USD),Source\n2025-09-30,USD/SGD,WMR 4pm,1.3138,Synthetic FX fixing\n2025-10-01,USD/SGD,WMR 4pm,1.3136,Synthetic FX fixing\n2025-10-02,USD/SGD,WMR 4pm,1.3134,Synthetic FX fixing\n2025-10-03,USD/SGD,WMR 4pm,1.3131,Synthetic FX fixing\n2025-10-06,USD/SGD,WMR 4pm,1.3129,Synth"
+   },
+   "key": "FX rates feed"
+  },
+  {
+   "id": "amount_line:FXF-2026-001_confirmation_2026-09-15.pdf",
+   "kind": "amount_line",
+   "subject": {
+    "name": "FXF-2026-001_confirmation_2026-09-15.pdf"
+   },
+   "options": [
+    "Client sells (USD): USD 2,000,000.00",
+    "Client buys (SGD): SGD 2,680,000.00"
+   ],
+   "evidence": {
+    "lines read": [
+     "Confirmation reference: HB2026001",
+     "Our ref (client): FXF-2026-001",
+     "Issued: 2026-09-15",
+     "To: Evergreen Office (portfolio EG-LIQUID)",
+     "Counterparty: Harbour Bank (synthetic)",
+     "Client: Evergreen Office",
+     "Transaction type: FX Forward (deliverable)",
+     "Trade date: 2026-09-15",
+     "Value date: 2026-12-15",
+     "Client sells (USD): USD 2,000,000.00",
+     "Client buys (SGD): SGD 2,680,000.00",
+     "Forward rate (USD/SGD): 1.3400",
+     "Settlement: Standard settlement instructions on file"
+    ]
+   },
+   "key": "Client sells (USD): USD 2,000,000.00"
+  },
+  {
+   "id": "amount_line:FXF-2026-002_confirmation_2026-10-05.pdf",
+   "kind": "amount_line",
+   "subject": {
+    "name": "FXF-2026-002_confirmation_2026-10-05.pdf"
+   },
+   "options": [
+    "Client sells (USD): USD 3,000,000.00",
+    "Client buys (SGD): SGD 4,035,600.00"
+   ],
+   "evidence": {
+    "lines read": [
+     "Confirmation reference: HB2026002",
+     "Our ref (client): FXF-2026-002",
+     "Issued: 2026-10-05",
+     "To: Evergreen Office (portfolio EG-LIQUID)",
+     "Counterparty: Harbour Bank (synthetic)",
+     "Client: Evergreen Office",
+     "Transaction type: FX Forward (deliverable)",
+     "Trade date: 2026-10-05",
+     "Value date: 2027-01-05",
+     "Client sells (USD): USD 3,000,000.00",
+     "Client buys (SGD): SGD 4,035,600.00",
+     "Forward rate (USD/SGD): 1.3452",
+     "Settlement: Standard settlement instructions on file"
+    ]
+   },
+   "key": "Client sells (USD): USD 3,000,000.00"
+  },
+  {
+   "id": "amount_line:northgate_A_2026-09-30_amended.pdf",
+   "kind": "amount_line",
+   "subject": {
+    "name": "northgate_A_2026-09-30_amended.pdf"
+   },
+   "options": [
+    "Closing capital account balance: USD 10,180,000.00",
+    "Previously reported: USD 10,000,000.00",
+    "Change: USD +180,000.00"
+   ],
+   "evidence": {
+    "lines read": [
+     "Date issued: 7 October 2026",
+     "Attn: Mei Chen, Investment Operations",
+     "Status of this statement: Final - Amended.",
+     "Reason for amendment: see page 2",
+     "Fund: Evergreen Growth I",
+     "Administrator code: 4471",
+     "Period end: 30 September 2026",
+     "Closing capital account balance: USD 10,180,000.00",
+     "Currency: USD",
+     "Units: n/a (no unitised holding)",
+     "Statement status: Final - Amended",
+     "Date issued: 7 October 2026",
+     "Previously reported: USD 10,000,000.00",
+     "Change: USD +180,000.00"
+    ]
+   },
+   "key": "Closing capital account balance: USD 10,180,000.00"
+  },
+  {
+   "id": "amount_line:cedarpoint_C_2026-06-30_amended.pdf",
+   "kind": "amount_line",
+   "subject": {
+    "name": "cedarpoint_C_2026-06-30_amended.pdf"
+   },
+   "options": [
+    "Limited partner capital balance: USD 8,275,000.00",
+    "Previously reported: USD 8,420,000.00",
+    "Change: USD -145,000.00"
+   ],
+   "evidence": {
+    "lines read": [
+     "Date issued: 18 August 2026",
+     "Attn: Mei Chen, Investment Operations",
+     "Status of this statement: Final - Amended.",
+     "Reason for amendment: Replaces the 8,420,000 final of 10 Jul 2026; a portfolio company write-down of 145,000.",
+     "Fund: Cedarpoint Ventures III, L.P.",
+     "Administrator code: 4473",
+     "Period end: 30 June 2026",
+     "Limited partner capital balance: USD 8,275,000.00",
+     "Currency: USD",
+     "Units: n/a (no unitised holding)",
+     "Statement status: Final - Amended",
+     "Date issued: 18 August 2026",
+     "Previously reported: USD 8,420,000.00",
+     "Change: USD -145,000.00"
+    ]
+   },
+   "key": "Limited partner capital balance: USD 8,275,000.00"
+  },
+  {
+   "id": "fund_match:Cedarpoint Ventures III, L.P.|Cedarpoint Ventures III",
+   "kind": "fund_match",
+   "subject": {
+    "page": "Cedarpoint Ventures III, L.P.",
+    "on_file": "Cedarpoint Ventures III"
+   },
+   "options": [
+    "same fund",
+    "different fund"
+   ],
+   "evidence": {
+    "name on the page": "Cedarpoint Ventures III, L.P.",
+    "fund on file": "Cedarpoint Ventures III"
+   },
+   "key": "same fund"
+  },
+  {
+   "id": "fund_match:Cedarpoint Ventures III, L.P.|Cedarpoint Opportunities II",
+   "kind": "fund_match",
+   "subject": {
+    "page": "Cedarpoint Ventures III, L.P.",
+    "on_file": "Cedarpoint Opportunities II"
+   },
+   "options": [
+    "same fund",
+    "different fund"
+   ],
+   "evidence": {
+    "name on the page": "Cedarpoint Ventures III, L.P.",
+    "fund on file": "Cedarpoint Opportunities II"
+   },
+   "key": "different fund"
+  },
+  {
+   "id": "fund_match:Kestrel Ridge Macro Fund|Kestrel Ridge Equity Long/Short Fund",
+   "kind": "fund_match",
+   "subject": {
+    "page": "Kestrel Ridge Macro Fund",
+    "on_file": "Kestrel Ridge Equity Long/Short Fund"
+   },
+   "options": [
+    "same fund",
+    "different fund"
+   ],
+   "evidence": {
+    "name on the page": "Kestrel Ridge Macro Fund",
+    "fund on file": "Kestrel Ridge Equity Long/Short Fund"
+   },
+   "key": "different fund"
+  },
+  {
+   "id": "trade_side:sell usd / buy sgd",
+   "kind": "trade_side",
+   "subject": {
+    "side": "sell usd / buy sgd"
+   },
+   "options": [
+    "buy",
+    "sell"
+   ],
+   "evidence": {
+    "side": "sell usd / buy sgd"
+   },
+   "key": null
+  },
+  {
+   "id": "recipe:ops_lead:Total break amount",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Total break amount",
+    "definition": "Sum of absolute cash differences for all entities",
+    "formula": "SUM(ABS(difference))"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "Every morning I check cash for each entity: administrator against the bank and our trading desk. Anything over 5,000 I want as a break with the likely cause, and the ones that are just timing marked as timing. Entity B was off on the 8th, start there.",
+    "sources": [],
+    "figures": [
+     "id: 0; name: Total break amount; definition: Sum of absolute cash differences for all entities; formula: SUM(ABS(difference)); unit: GBP"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "cash_break"
+  },
+  {
+   "id": "recipe:ops_clerk:Unmatched FX amount",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Unmatched FX amount",
+    "definition": "Total EUR amount of FX confirmations that differ from internal record",
+    "formula": "sum_unmatched_fx_amount"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record.",
+    "sources": [
+     "name: Desk trade system; holds: trade details",
+     "name: Administrator booking system; holds: booking details",
+     "name: FX confirmation feed; holds: FX confirmation records"
+    ],
+    "figures": [
+     "id: 0; name: Unmatched FX amount; definition: Total EUR amount of FX confirmations that differ from internal record; formula: sum_unmatched_fx_amount; unit: currency"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "fx_confirmation_variance"
+  },
+  {
+   "id": "recipe:cio:Amended statement change amount",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Amended statement change amount",
+    "definition": "Difference between the amended and original statement values for each line item.",
+    "formula": "Amended value – Original value"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "Every month I want to know why our number moved between the report we issued and what we know now. Fund A sent an amended September statement, so show me what changed and by how much, and who needs to look at it. I read it, Mei checks it.",
+    "sources": [
+     "name: Fund A amended statement; holds: line‑item values, dates, currencies",
+     "name: Fund A original statement; holds: original line‑item values"
+    ],
+    "figures": [
+     "id: 0; name: Amended statement change amount; definition: Difference between the amended and original statement values for each line item.; formula: Amended value – Original value; unit: currency"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "change_since_report"
+  },
+  {
+   "id": "recipe:ops_clerk:Unmatched trade count",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Unmatched trade count",
+    "definition": "Number of desk trades that cannot be matched to an admin booking",
+    "formula": "count_unmatched_trades"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record.",
+    "sources": [
+     "name: Desk trade system; holds: trade details",
+     "name: Administrator booking system; holds: booking details",
+     "name: FX confirmation feed; holds: FX confirmation records"
+    ],
+    "figures": [
+     "id: 0; name: Unmatched trade count; definition: Number of desk trades that cannot be matched to an admin booking; formula: count_unmatched_trades; unit: count"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "none"
+  },
+  {
+   "id": "recipe:head_of_data:Cash drag",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Cash drag",
+    "definition": "Cash balance divided by total net worth, showing the proportion of assets held as cash.",
+    "formula": "Cash / Net‑worth"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "Monthly pipeline that takes the administrator's positions and the trading export, cleans them, and gives net worth by portfolio on a board that shows where every number came from, handling occasional column‑name changes.",
+    "sources": [
+     "name: Administrator positions file; holds: positions data",
+     "name: Trading export; holds: trade activity data"
+    ],
+    "figures": [
+     "id: 0; name: Cash drag; definition: Cash balance divided by total net worth, showing the proportion of assets held as cash.; formula: Cash / Net‑worth; unit: currency"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "none"
+  },
+  {
+   "id": "recipe:risk_officer:Listed‑equity allocation",
+   "kind": "recipe",
+   "subject": {
+    "figure": "Listed‑equity allocation",
+    "definition": "Value of listed equity holdings ÷ total included asset value.",
+    "formula": "Listed equity value ÷ total asset value"
+   },
+   "describe": {
+    "net_worth": "Net worth: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.",
+    "cash_by_entity": "Cash by entity: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.",
+    "cash_break": "Cash break: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.",
+    "missing_statements": "Missing statements: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.",
+    "concentration": "Single-issuer concentration: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.",
+    "change_since_report": "Change since the issued report: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.",
+    "fx_confirmation_variance": "FX forward confirmation variance: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.",
+    "none": "No recipe here computes this figure; Span designs a table for it."
+   },
+   "options": [
+    "net_worth",
+    "cash_by_entity",
+    "cash_break",
+    "missing_statements",
+    "concentration",
+    "change_since_report",
+    "fx_confirmation_variance",
+    "none"
+   ],
+   "evidence": {
+    "brief_question": "I want to test the liquid book against our signed limits every month: no single name over 5 percent, listed equity between 60 and 90.",
+    "sources": [
+     "name: Custodian positions; holds: positions, cash balances, transaction history",
+     "name: Bank balances; holds: cash balances per account",
+     "name: Private‑fund portal; holds: NAV, calls, distributions, commitments",
+     "name: Policy document; holds: signed limits and rules"
+    ],
+    "figures": [
+     "id: 0; name: Listed‑equity allocation; definition: Value of listed equity holdings ÷ total included asset value.; formula: Listed equity value ÷ total asset value; unit: percent"
+    ],
+    "recipes": [
+     "id: net_worth; label: Net worth; also_called: net worth, networth, worth, total worth, nav, net asset value, assets under management, aum; formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.; reads: position_snapshots, valuation_observations, portfolios, legal_entities, instruments; why: Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding.",
+     "id: cash_by_entity; label: Cash by entity; also_called: cash by entity, cash position, cash balance, closing cash, cash on hand, cash; formula: Cash = the market value of the cash instrument's position snapshots, summed by entity and date.; reads: position_snapshots, instruments, portfolios, legal_entities; why: The administrator's cash is a balance, a position snapshot of the cash instrument. A movement is a change in a balance, never the balance.",
+     "id: cash_break; label: Cash break; also_called: cash break, cash breaks, cash difference, cash differs, cash reconciliation, cash variance, break; formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.; reads: position_snapshots, cash_movements, instruments, portfolios, legal_entities; why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.",
+     "id: missing_statements; label: Missing statements; also_called: missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements; formula: For each fund and month the office expects a statement (expected_statements, the latest row for the fund and period), count the manager statements received for that month (documents of type manager_statement). None received means missing; days overdue run from the due date to the latest date any document was received.; reads: expected_statements, documents, instruments; why: A statement is missing only against what was expected. Capital calls are not a reliable sign of what a fund should have sent.",
+     "id: concentration; label: Single-issuer concentration; also_called: single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position; formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.; reads: position_snapshots, instruments, portfolios; why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.",
+     "id: change_since_report; label: Change since the issued report; also_called: change since the issued report, change since report, change since the report, amended valuation, amended valuations, revised valuation, revision since report, restated value; formula: For each valuation that supersedes another (the link on the valuation), the original value is the valuation it replaces, the amended value is the replacing one, and the change is amended less original. Only the latest amendment of a chain counts.; reads: valuation_observations, instruments; why: An amended value replaces an earlier one. The change is the amended valuation less the valuation it supersedes, nothing else.",
+     "id: fx_confirmation_variance; label: FX forward confirmation variance; also_called: fx forward confirmation variance, fx confirmation variance, fx forward confirmation, fx confirmation, confirmation variance, fx forward difference, confirmation differs; formula: For each confirmation (the latest row for the trade reference), find the desk's trade by the same reference (its trade id, or the identifier of its instrument). Take the confirmation's leg in the trade's currency and compare it with the trade's cash amount (absolute). Variance = confirmation leg less trade amount.; reads: fx_confirmations, transactions, instruments, instrument_identifiers; why: A confirmation is checked against the trade the desk booked, by the trade reference, leg for leg. Cash balances and commitments say nothing about it."
+    ]
+   },
+   "key": "none"
+  }
+ ]
+}

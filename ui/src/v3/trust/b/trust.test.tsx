@@ -31,9 +31,10 @@ test("people: error offers retry", async () => {
 });
 
 test("proof: lists runs and shows the empty state", async () => {
-  vi.stubGlobal("fetch", vi.fn(async () => json({ runs: [{ run_id: "RUN-1", thread: "t1", kind: "live", started: "9 Sep", files: 4, checks_passed: 11, checks_total: 12, result: "Ready", signed_by: "Anita" }] })));
+  vi.stubGlobal("fetch", vi.fn(async () => json({ runs: [{ run_id: "RUN-1", thread: "t1", kind: "live", started: "2026-10-09T06:11:00", files: 4, checks_passed: 11, checks_total: 12, result: "Ready", signed_by: "Anita" }] })));
   at(<ProofPage />);
-  expect(await screen.findByText("RUN-1")).toBeInTheDocument();
+  expect(await screen.findByText("Run on 9 Oct, 06:11")).toBeInTheDocument();
+  expect(screen.queryByText("RUN-1")).toBeNull();
   expect(screen.getByText("11/12")).toBeInTheDocument();
 });
 

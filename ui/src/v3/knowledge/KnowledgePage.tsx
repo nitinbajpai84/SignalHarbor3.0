@@ -12,7 +12,7 @@ import "./k/knowledge.css";
 
 type View = "map" | "processes" | "things";
 const VIEWS: [View, string][] = [["map", "Map"], ["processes", "Processes"], ["things", "Things we track"]];
-const LINKS: [string, string][] = [["/v3/knowledge/skills", "Skills Harbor uses"], ["/v3/trust/proof", "Runs and proof"], ["/v3/trust/people", "People"], ["/v3/trust/connections", "Connections"]];
+const LINKS: [string, string][] = [["/v3/knowledge/figures", "Figures"], ["/v3/knowledge/skills", "Skills Harbor uses"], ["/v3/trust/proof", "Runs and proof"], ["/v3/trust/people", "People"], ["/v3/trust/connections", "Connections"]];
 
 /** /v3/knowledge: what this company knows about itself, from its own records only. */
 export default function KnowledgePage() {

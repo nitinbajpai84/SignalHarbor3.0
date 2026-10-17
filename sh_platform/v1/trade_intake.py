@@ -275,6 +275,13 @@ def _load(plane, rec: dict, path: Path, sheet: str, grid: list[list], layout: st
                     waiting = {k: v for k, v in waiting.items() if k not in labels}
                 code, side = _text(r.get("portfolio")).lower(), _text(r.get("side")).lower()
                 signed = _signed(itype.get(iid), side, abs(r["_qty"] or 0), abs(r["_amt"] or 0)) if iid else None
+                if signed is None and iid and side and r["_qty"] is not None and r["_amt"] is not None:  # an unusual side ("bot", "SLD", "purchase"): two models read it
+                    from sh_platform.v1 import v3_judge as J
+                    said = J.judged(plane, "trade_side", J.question("trade_side", side=side), ["buy", "sell"], {"side": side},  # the word alone, so every row with it shares one answer
+                                    J.standard("trade_side"))
+                    if said:
+                        side = said
+                        signed = _signed(itype.get(iid), side, abs(r["_qty"] or 0), abs(r["_amt"] or 0))
                 if r["_date"] is None or r["_qty"] is None or r["_amt"] is None or not _text(r.get("ccy")):
                     reason = f"{tid}: the row has no trade date, quantity, amount or currency"
                 elif not iid:

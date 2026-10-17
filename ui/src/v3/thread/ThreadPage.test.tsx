@@ -158,3 +158,11 @@ test("after sending, the raiser sees waiting for the signer and no Confirm", asy
   expect(await screen.findByText(/Waiting for Daniel Foo to confirm/)).toBeInTheDocument();
   expect(screen.queryByText("Confirm")).toBeNull();
 });
+
+test("decision1 with a reuse offer sends the choice in the reuse map", async () => {
+  const brief = { question: "q", files: ["a.csv"], read_by: "x", refresh: "daily", cases_when: "never" };
+  show(base("decision1", { decision: { n: 1, title: "t", brief }, reuse: [{ figure_id: "fig-cash", name: "Cash by entity", built_from: { kind: "recipe", id: "c" }, verified_runs: 3, first_used_by: "Daniel Foo", suggest: true }] }));
+  fireEvent.click(await screen.findByRole("button", { name: "Use" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+  await waitFor(() => expect(decide).toHaveBeenCalledWith("t1", 1, "confirm", undefined, { "fig-cash": "fig-cash" }));
+});

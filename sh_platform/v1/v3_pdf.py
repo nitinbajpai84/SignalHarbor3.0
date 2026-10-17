@@ -220,7 +220,12 @@ def _prematch(x, pairs: list[dict]) -> list[str]:
         if got.get("status") != "proposed" or not got.get("identifier_id"):
             return [name]
         mine = next((p for p in M.proposals(x.plane) if str(p["id"]) == str(got["identifier_id"])), None)
-        if mine and mine.get("instrument_name") and M.normalise(mine["name_in_file"]) == M.normalise(mine["instrument_name"]):
+        exact = mine and mine.get("instrument_name") and M.normalise(mine["name_in_file"]) == M.normalise(mine["instrument_name"])
+        if mine and mine.get("instrument_name") and not exact:  # a spelling-only match: two models of different families decide; a person gets only their disagreement
+            from sh_platform.v1 import v3_judge as J
+            exact = J.judged(x.plane, "fund_match", J.question("fund_match", page=name, on_file=mine["instrument_name"]), ["same fund", "different fund"],
+                             {"name on the page": name, "fund on file": mine["instrument_name"]}, J.standard("fund_match"), x.th["id"]) == "same fund"
+        if exact:
             with H._skill(x, "data.match-identity", "Matching the fund name quoted on the page"):
                 x.api("leo", "POST", f"/api/v1/evidence/aliases/{got['identifier_id']}/approve", {}, soft=True)
     except Exception:  # noqa: BLE001 - the match is a help; the document is registered either way
@@ -283,6 +288,10 @@ def intake(x) -> None:
                 ask = st["ask"][slug] = {"sig": sig, "name": name, "fields": fields, "files": [], "changed": bool(known),
                                          "cands": [{k: c[k] for k in ("label", "value", "page")} for c in cands],
                                          "read": [{k: p[k] for k in ("label", "value", "page")} for p in pairs if p["label"].lower() in {g["name"] for g in fresh}][:8]}
+                if len(cands) > 1 and "judged" not in ask:  # two or more lines could be the amount: two models pick one; the person still confirms the layout
+                    from sh_platform.v1 import v3_judge as J
+                    ask["judged"] = J.judged(x.plane, "amount_line", J.question("amount_line", name=name), [f"{c['label']}: {c['value']}" for c in cands],
+                                             {"lines read": [f"{p['label']}: {p['value']}" for p in pairs][:20]}, J.standard("amount_line"), x.th["id"], person=False)
             ask["files"].append(f["name"])
             rec["status"], rec["ask"] = "asked", slug
 
@@ -299,7 +308,7 @@ def questions(x) -> list[dict]:
         why = (f"The layout of {a['name']} looks different now: the line I used before is not there." if a["changed"]
                else f"I have not seen the layout of {a['name']} before ({len(a['files'])} file{'s' if len(a['files']) != 1 else ''}, for example {a['files'][0]}).")
         out.append({"id": f"pdf:{slug}", "text": f"{why} In the first one I read: {saw}. Which line holds the amount to load? Every file with this layout will be read the same way.",
-                    "options": [*opts, LEAVE], "assumed": opts[0]})
+                    "options": [*opts, LEAVE], "assumed": a.get("judged") or opts[0]})
     return out
 
 

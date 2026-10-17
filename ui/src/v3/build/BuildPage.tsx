@@ -7,6 +7,9 @@ import {
   decide, editBrief, getThread, listThreads, say, sendForSignature, startThread,
   type BriefLine, type FileRow, type Stage, type Thread, type ThreadRecord, type ThreadSummary,
 } from "../api";
+import AssumptionsCard from "../thread/AssumptionsCard";
+import FigureChecks from "../thread/FigureChecks";
+import QuestionBlock from "../thread/QuestionBlock";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
 import { SignNote, signAction } from "../thread/SignOff";
@@ -120,7 +123,7 @@ function Board() {
                 <section key={c.title} className="b3-col" aria-label={c.title}>
                   <h2>{c.title} <span className="b3-count">{mine.length}</span></h2>
                   {mine.map((r) => {
-                    const m = r.needs > 0 ? "needs" : r.stage === "live" ? "done" : "harbor";
+                    const m = r.needs > 0 ? "needs" : r.stage === "live" ? "info" : "harbor";
                     return (
                       <article key={r.id} className={`b3-card ${m}`}>
                         <b>{r.title}</b>
@@ -292,17 +295,8 @@ function Case({ id }: { id: string }) {
           ))}
         </ul>
         {qs.length > 0 && <b>{qs.length === 1 ? "One thing I am not sure about" : `${qs.length} things I am not sure about`}</b>}
-        {qs.map((q) => (
-          <div key={q.id} className="v3-col" style={{ gap: 8 }}>
-            <span>{q.text}</span>
-            <div className="v3-row">
-              {q.options.map((o) => (
-                <button key={o} className={value(q) === o ? "go" : undefined} aria-pressed={value(q) === o} onClick={() => setPicked({ ...picked, [q.id]: o })}>{o}</button>
-              ))}
-            </div>
-            {q.assumed && <small className="v3-mute">I have assumed {q.assumed}; change it if I am wrong.</small>}
-          </div>
-        ))}
+        {qs.map((q) => <QuestionBlock key={q.id} q={q} value={value(q)} onPick={(o) => setPicked({ ...picked, [q.id]: o })} onElse={() => composer.current?.focus()} />)}
+        <AssumptionsCard assumptions={d.assumptions} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         <div className="v3-row">
           <button className="go" disabled={busy || open > 0} onClick={() => void run(decide(id, 2, "carry_on", answers))}>This is right, carry on</button>
@@ -327,6 +321,7 @@ function Case({ id }: { id: string }) {
             ))}
           </tbody>
         </table>
+        <FigureChecks figures={t.figures} />
         {d.summary && <p className="v3-mute">{d.summary}</p>}
         <div className="v3-row">
           <button className="go" disabled={busy} onClick={() => void run(decide(id, 3, "go_live"))}>Go live</button>

@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 
 const TABS: [string, string][] = [
-  ["ontology", "Ontology"], ["model", "Industry model"], ["language", "Language"], ["people", "People"],
+  ["ontology", "What Harbor knows"], ["model", "Industry model"], ["language", "Language"], ["people", "People"],
   ["proof", "Runs and proof"], ["workbench", "Workbench"], ["connections", "Connections"],
 ];
 

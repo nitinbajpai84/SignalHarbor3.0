@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { getPeople, setAutonomy, type Level, type People } from "../api";
 import { getJobs, setJob, type JobPerson, type RoleOption } from "../desk/RoleSuggest";
+import { useThreadTitles } from "../plain";
 import { TrustPage, useLoad } from "./b/Shell";
 
 const LEVELS: [Level, string][] = [["assist", "Assist"], ["auto", "Auto"], ["silent", "Silent"]];
@@ -11,6 +12,7 @@ export default function PeoplePage() {
   const s = useLoad<People>(getPeople, "people");
   const [msg, setMsg] = useState("");
   const p = s.data;
+  const title = useThreadTitles();
   const [jobs, setJobs] = useState<JobPerson[]>([]);
   const [roles, setRoles] = useState<RoleOption[]>([]);
   useEffect(() => { getJobs().then((j) => { setJobs(Array.isArray(j.people) ? j.people.filter((x) => x.email) : []); setRoles(Array.isArray(j.roles) ? j.roles : []); }, () => undefined); }, []);
@@ -55,13 +57,13 @@ export default function PeoplePage() {
           {p.ask_rules.map((r) => (
             <div key={r.id} className="v3-row">
               <span style={{ flex: 1 }}>{r.text}{r.value !== undefined ? ` (${r.value})` : ""}</span>
-              <span className={`v3-pill ${r.on ? "done" : "info"}`}>{r.on ? "On" : "Off"}</span>
+              <span className="v3-pill info">{r.on ? "On" : "Off"}</span>
             </div>))}
         </section>
         <section className="v3-card"><h2>Autonomy per thread</h2>
           {p.autonomy.map((a) => (
-            <div key={a.thread} className="v3-row" role="group" aria-label={`Autonomy for ${a.thread}`}>
-              <b style={{ minWidth: 140 }}>{a.thread}</b>
+            <div key={a.thread} className="v3-row" role="group" aria-label={`Autonomy for ${title(a.thread)}`}>
+              <b style={{ minWidth: 140 }} title={a.thread}>{title(a.thread)}</b>
               {LEVELS.map(([l, label]) => (
                 <button key={l} className={a.level === l ? "go" : ""} aria-pressed={a.level === l} onClick={() => pick(a.thread, l)}>{label}</button>
               ))}

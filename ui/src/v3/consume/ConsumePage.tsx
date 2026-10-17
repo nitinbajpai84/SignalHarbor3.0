@@ -93,6 +93,7 @@ function Answer({ turn, golden, ask }: { turn: Turn; golden: string[]; ask: (q: 
         <button type="button" className="go" onClick={() => window.print()}>Download PDF</button>
         <button type="button" onClick={() => csv(turn)}>Excel</button>
       </div>
+      {a.figure?.id ? <p className="noprint"><Link to={`/v3/knowledge/figures/${encodeURIComponent(a.figure.id)}`}>Where this number comes from</Link></p> : null}
       <p className="v3c-src"><Check /><span>Source: {source}</span></p>
       {a.ms !== undefined ? <small className="noprint">Answered in {a.ms} ms{a.cached ? " (from memory)" : ""}</small> : null}
     </section>

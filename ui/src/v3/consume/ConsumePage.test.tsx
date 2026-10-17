@@ -63,3 +63,16 @@ test("an empty company says a use case goes live in Build; a failed read can be 
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByLabelText("Fund A")).toBeInTheDocument();
 });
+
+test("an answer that came from a figure links to where the number comes from", async () => {
+  m.getConsume.mockResolvedValue(data({ answer: { q: "q", ...answer({ figure: { label: "Cash", value: "1", change: "", id: "fig-cash", name: "Cash by entity", v: 2 } }) } }));
+  open();
+  expect(await screen.findByRole("link", { name: "Where this number comes from" })).toHaveAttribute("href", "/v3/knowledge/figures/fig-cash");
+});
+
+test("no figure id, no link", async () => {
+  m.getConsume.mockResolvedValue(data());
+  open();
+  await screen.findByText("Evergreen Office");
+  expect(screen.queryByRole("link", { name: "Where this number comes from" })).toBeNull();
+});
