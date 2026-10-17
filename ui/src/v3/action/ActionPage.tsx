@@ -2,22 +2,23 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import V3Frame from "../Frame";
-import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event } from "../api";
+import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event, type SignalNeed } from "../api";
+import SignalCard from "./SignalCard";
 import { listSkills, when, type SkillRow } from "./actionApi";
 import "./action.css";
 
 /** A desk card may carry the case it belongs to; the 3.0 desk shape does not name it, so it is optional here. */
 type NeedCard = Card & { case?: string };
-type Kind = "decision" | "exception" | "question" | "skill";
-interface Item { key: string; kind: Kind; title: string; text: string; card?: NeedCard; skill?: SkillRow }
+type Kind = "decision" | "exception" | "question" | "skill" | "signal";
+interface Item { key: string; kind: Kind; title: string; text: string; card?: NeedCard; skill?: SkillRow; signal?: SignalNeed }
 interface Done { by: string; at: string; text: string; thread: string }
 interface Loaded { items: Item[]; done: Done[]; skillsFailed: boolean }
 interface ThreadEvents { id: string; title: string; events: Event[] }
 
 const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3, send_for_signature: 1 };
-const LABEL: Record<Kind, string> = { decision: "Decision", exception: "Exception", question: "Question", skill: "New skill to review" };
-const PLURAL: Record<Kind, string> = { decision: "Decisions", exception: "Exceptions", question: "Questions", skill: "New skills" };
-const KINDS: Kind[] = ["decision", "exception", "question", "skill"];
+const LABEL: Record<Kind, string> = { decision: "Decision", exception: "Exception", question: "Question", skill: "New skill to review", signal: "Signal" };
+const PLURAL: Record<Kind, string> = { decision: "Decisions", exception: "Exceptions", question: "Questions", skill: "New skills", signal: "Signals" };
+const KINDS: Kind[] = ["decision", "exception", "question", "skill", "signal"];
 const WEEK = 7 * 24 * 3600 * 1000;
 
 async function load(): Promise<Loaded> {
@@ -25,7 +26,9 @@ async function load(): Promise<Loaded> {
   const [sk, ...threads] = await Promise.allSettled([listSkills(), ...desk.threads.map((t) => getThread(t.id))]);
   const skills = sk.status === "fulfilled" ? (sk.value as { skills: SkillRow[] }).skills.filter((s) => s.status === "waiting") : [];
   const items: Item[] = [
-    ...desk.needs.map((c, i): Item => ({ key: `c-${c.thread}-${i}`, kind: c.kind, title: c.title, text: c.text, card: c })),
+    ...desk.needs.map((c, i): Item => c.kind === "signal"
+      ? { key: `g-${c.id}`, kind: "signal", title: c.title, text: c.text, signal: c }
+      : { key: `c-${c.thread}-${i}`, kind: c.kind, title: c.title, text: c.text, card: c }),
     ...skills.map((s): Item => ({ key: `s-${s.id}`, kind: "skill", title: s.name, text: s.goal, skill: s })),
   ];
   const since = Date.now() - WEEK;
@@ -104,7 +107,7 @@ export default function ActionPage() {
       <div className="act-main" data-open={open ? "true" : "false"}>
         <section aria-label="Queue" className="act-queue">
           {!shown.length && <p className="v3-mute">{data.items.length ? "Nothing of this kind needs a person." : "Nothing needs a person right now."}</p>}
-          {shown.map((i) => (
+          {shown.map((i) => i.signal ? <SignalCard key={i.key} card={i.signal} onDone={reload} /> : (
             // The whole card opens it (a tap on a phone); the Open button toggles it and is the keyboard way in.
             <article key={i.key} className={`act-item ${i.kind}`} data-on={i.key === sel} onClick={() => { if (i.key !== sel) { setSel(i.key); setProblem(""); window.scrollTo?.(0, 0); } }}>
               <div className="v3-head">

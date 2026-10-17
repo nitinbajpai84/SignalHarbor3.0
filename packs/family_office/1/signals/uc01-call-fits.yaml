@@ -1,0 +1,20 @@
+# SUGGESTION. UC01 row 2: the logged call is checked against the commitment.
+suggestion: true
+id: uc01-call-fits
+title: The call fits the commitment
+pain_points: [PP-02]
+trigger: {on: action_done, signal: uc01-call-arrives}
+inputs:
+  - {kind: doc, fields: [fund, investor, amount, currency, call_no]}
+  - {kind: figure, id: commitments, as: commit, by: {fund: doc.fund, investor: doc.investor}}
+let:
+  unfunded_before: commit.commitment - commit.called
+  called_after: commit.called + doc.amount
+  unfunded: commit.commitment - commit.called - doc.amount
+condition: doc.amount <= unfunded_before
+subject: "{doc.fund} call {doc.call_no}"
+severity: needs
+route_to: fund_accountant
+action: {verb: record, options: [Record it]}
+message: "Call {doc.call_no} fits the commitment. Unfunded after this call: {unfunded:,.0f}. Record it?"
+evidence: [commit, doc.amount]

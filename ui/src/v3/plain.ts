@@ -17,6 +17,9 @@ export function plainName(raw: string): string {
   return LABELS[last] ?? last.replace(/[_\s]+/g, " ").trim().replace(/^./, (c) => c.toUpperCase());
 }
 
+/** A role id in words: ops_lead -> Ops lead, cfo -> CFO. */
+export const roleName = (id: string) => plainName(id).replace(/(cfo|coo|cio|ceo)/gi, (m) => m.toUpperCase());
+
 /** Skill names the office reads; the skill id is never touched. */
 const SKILL_NAMES: Record<string, string> = { "propose ontology addition": "Suggest a new kind of record" };
 export const skillLabel = (name: string) => SKILL_NAMES[name.trim().toLowerCase()] ?? name;

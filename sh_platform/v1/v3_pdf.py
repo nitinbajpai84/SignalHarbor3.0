@@ -535,6 +535,11 @@ def load_files(x, names: list[str], monthly: bool = False) -> tuple[int, list[di
                 continue
             by_layout.setdefault(sig, []).append({"file": n, "values": values})
             done.append(n)
+            try:  # a document that loaded is a file arriving: signals look at it
+                from sh_platform.v1 import v3_signals as SG
+                SG.on_document(x.plane, n, lay["name"], values)
+            except Exception:  # noqa: BLE001 - a signal never breaks a load
+                log.warning("signals for %s failed", n, exc_info=True)
         for sig, rows in by_layout.items():
             lay = mem[sig]
             fx = _fx_roles(lay)

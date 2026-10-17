@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal for a capital call notice. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml).
+# Use case: docs/v3/use-cases/UC01-CAPITAL-CALL.md, row 1. What arrives -> the signal Harbor catches -> the one person who acts.
+suggestion: true
+id: uc01-call-arrives
+title: A capital call has arrived
+pain_points: [PP-02]
+trigger: {on: file_arrived, kind: capital_call_notice}
+inputs:
+  - {kind: doc, fields: [fund, investor, amount, currency, due_date, call_no]}
+subject: "{doc.fund} call {doc.call_no}"
+condition: doc.amount > 0
+severity: needs
+route_to: ops_clerk
+action: {verb: log, options: [Log it]}
+message: "Capital call from {doc.fund}: {doc.currency} {doc.amount:,.0f}, due {doc.due_date}, for {doc.investor}. Log it?"
+evidence: [doc.fund, doc.investor, doc.amount, doc.due_date]

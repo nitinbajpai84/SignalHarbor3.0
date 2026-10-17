@@ -1,0 +1,5 @@
+# Harbor 3.0 signals: every company role reads the library and the cards; who may act on a card is checked in the handler (the routed role, or a company admin).
+routes:
+  GET /api/v3/signals: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v3/signals/fired: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/signals/{fired_id}/act: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}

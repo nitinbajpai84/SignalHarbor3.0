@@ -676,6 +676,11 @@ def run_chain(app, plane, tid, name, account_id, at=0) -> None:
         ev(th, "harbor", _P.SAY.get(name) or {"decision2": "Here is what I understood. Check the files and answer anything I was unsure of.", "decision3": "I have checked the numbers. Take a look."}[final])
     th["stage"] = final
     save(plane, th)
+    try:  # signals run on every run (chains A, B, C, M ...)
+        from sh_platform.v1 import v3_signals as SG
+        SG.on_run(plane, name, th["id"])
+    except Exception:  # noqa: BLE001 - a signal never breaks a run
+        log.warning("signals after chain %s failed", name, exc_info=True)
 
 
 # ---- the public calls the routes use ----------------------------------------------------------------------------------------------
@@ -958,10 +963,18 @@ def read_files(plane) -> list[dict]:
 def set_status(plane, name, status) -> None:
     with LOCK:
         fs = read_files(plane)
+        first = False
         for f in fs:
             if f["name"] == name:
+                first = status == "loaded" and f["status"] != "loaded"
                 f["status"] = status
         _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
+    if first and not V.is_pdf(name):  # the common load point: a csv, xlsx or eml that loaded is a file arriving, once (a PDF does it with its layout, v3_pdf)
+        try:
+            from sh_platform.v1 import v3_signals as SG
+            SG.on_file(plane, name)
+        except Exception:  # noqa: BLE001 - a signal never breaks a load
+            log.warning("signals for %s failed", name, exc_info=True)
 
 
 def drop(plane, name: str, data: bytes) -> None:
@@ -1101,6 +1114,7 @@ def start_scanner(app) -> None:
 
     def loop():
         from sh_platform.plane import PlaneStore
+        ticked: dict = {}
         while True:
             time.sleep(30)
             try:
@@ -1108,6 +1122,10 @@ def start_scanner(app) -> None:
                 for cid in store.list_company_ids():
                     if store.plane_for(cid).path("dropbox").is_dir():
                         scan(app, store.plane_for(cid))
+                    from sh_platform.v1 import v3_signals as SG
+                    if ticked.get(cid) != date.today() and store.plane_for(cid).path("dropbox").is_dir():  # the daily tick, once a day per office
+                        ticked[cid] = date.today()
+                        SG.tick(store.plane_for(cid))
             except Exception:  # noqa: BLE001 - the scanner never dies
                 pass
     threading.Thread(target=loop, daemon=True).start()
@@ -1127,6 +1145,8 @@ def desk(plane) -> dict:
             q = next((e for e in reversed(t["events"]) if e["kind"] == "question"), {})
             needs.append({"kind": "question", "thread": t["id"], "title": t["title"], "text": q.get("text", ""), "actions": [{"label": "Try again", "answer": "retry"}]})
         needs += [{"kind": "exception", "thread": t["id"], "title": e["title"], "text": e["text"], "actions": [{"label": "Open the thread", "answer": "open"}]} for e in t.get("exceptions") or []]
+    from sh_platform.v1 import v3_signals as SG
+    needs += SG.cards(plane)  # a fired signal is an Action card for its routed person
     note = next((t["note"] for t in ths if t.get("note")), None)
     return {"needs": needs, "note": note, "threads": [summary(t) for t in ths],
             "files": {"arrived": len(fs), "recognised": sum(f["status"] in ("recognised", "loaded") for f in fs), "waiting": sum(f["status"] in ("waiting", "question") for f in fs)}}

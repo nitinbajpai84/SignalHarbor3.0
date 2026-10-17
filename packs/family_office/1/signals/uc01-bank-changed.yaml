@@ -1,0 +1,18 @@
+# SUGGESTION. UC01 row 4, the red exception: the wire details differ from the standing instructions. Payment is held until a call-back is recorded.
+suggestion: true
+id: uc01-bank-changed
+title: Bank details changed, payment held
+pain_points: [PP-02]
+trigger: {on: file_arrived, kind: capital_call_notice}
+inputs:
+  - {kind: doc, fields: [fund, bank_account, call_no]}
+  - {kind: figure, id: standing_instructions, as: si, by: {fund: doc.fund}}
+  - {kind: rule, id: changed_bank_details, as: callback_rule}
+condition: last4(doc.bank_account) != last4(si.account)
+subject: "{doc.fund} call {doc.call_no}"
+severity: problem
+route_to: ops_lead
+action: {verb: call_back, options: [Record the call-back]}
+hold: {blocks: prepare_payment, scope: "{doc.fund}", until: the call-back is recorded}
+message: "Bank details for {doc.fund} changed since {si.since}: account ending {si.account} on file, {doc.bank_account} on the notice. Office rule: {callback_rule.text} The payment is held."
+evidence: [doc.bank_account, si, callback_rule]

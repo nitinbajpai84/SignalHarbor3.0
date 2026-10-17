@@ -1,0 +1,21 @@
+# SUGGESTION. UC01 row 3: the cash left after the calls due and the office buffer, and what to convert if it is short.
+suggestion: true
+id: uc01-cash-shortfall
+title: Cash is short after the buffer
+pain_points: [PP-01, PP-02]
+trigger: {on: action_done, signal: uc01-call-fits}
+inputs:
+  - {kind: doc, fields: [fund, investor, amount, currency, due_date, call_no]}
+  - {kind: figure, id: cash_by_entity, recipe: cash_by_entity, as: cash, by: {entity: doc.investor, currency: doc.currency}}
+  - {kind: figure, id: fx_rates, as: fx, by: {pair: USD/SGD}}
+  - {kind: rule, id: cash_buffer, as: buffer}
+let:
+  short: doc.amount + buffer.amount - cash.cash
+  convert: short * fx.rate
+condition: short > 0
+subject: "{doc.fund} call {doc.call_no}"
+severity: needs
+route_to: cfo
+action: {verb: approve, options: [Approve, Change, Fund from another entity], then: {choice: Approve, do: prepare_payment}}
+message: "{doc.investor} is short {doc.currency} {short:,.0f} after the {buffer.amount:,.0f} buffer. It can cover this by converting about SGD {convert:,.0f} at {fx.rate}. Approve?"
+evidence: [cash, fx, buffer, doc.amount]
