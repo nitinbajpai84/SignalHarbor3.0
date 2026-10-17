@@ -277,9 +277,8 @@ def _load(plane, rec: dict, path: Path, sheet: str, grid: list[list], layout: st
                 signed = _signed(itype.get(iid), side, abs(r["_qty"] or 0), abs(r["_amt"] or 0)) if iid else None
                 if signed is None and iid and side and r["_qty"] is not None and r["_amt"] is not None:  # an unusual side ("bot", "SLD", "purchase"): two models read it
                     from sh_platform.v1 import v3_judge as J
-                    said = J.judged(plane, "trade_side", f"Is the trade side {side!r} a buy or a sell?", ["buy", "sell"], {"side": side},  # the word alone, so every row with it shares one answer
-                                    "Buy when the word means acquiring or paying for the holding (bot, bought, purchase, long, subscribe, receive); sell when it means disposing "
-                                    "of it (sld, sold, sale, short, redeem, deliver). A dividend, fee, transfer or anything else is neither.")
+                    said = J.judged(plane, "trade_side", J.question("trade_side", side=side), ["buy", "sell"], {"side": side},  # the word alone, so every row with it shares one answer
+                                    J.standard("trade_side"))
                     if said:
                         side = said
                         signed = _signed(itype.get(iid), side, abs(r["_qty"] or 0), abs(r["_amt"] or 0))

@@ -163,14 +163,15 @@ def projections(sql: str):
 
 
 def null_columns(sql: str) -> set[str]:
-    """Columns a select fills with NULL ("cast(null as numeric) as drift"): a placeholder, not a design."""
+    """Columns a select fills with NULL or a fixed value ("cast(null as numeric) as drift", "12 as time_weighted_return"): a placeholder, not a
+    design. r9: Span's model design gave a return of 12 and a drift of 100 to every row of the commitments; a figure is read from records, never typed."""
     from sqlglot import exp
     out = set()
     for e in projections(sql):
         inner = e.this if isinstance(e, exp.Alias) else e
         while isinstance(inner, exp.Cast):
             inner = inner.this
-        if isinstance(inner, exp.Null):
+        if isinstance(inner, (exp.Null, exp.Literal)):
             out.add(e.alias_or_name)
     return out
 
@@ -219,7 +220,7 @@ def design(x, todo: list[dict], filled: set[str]) -> tuple[list[dict], dict[str,
         held = [n for n in t.get("kpis") or [] if _slug(n) not in empty and (not cols or has_column(n, cols))]
         for n in t.get("kpis") or []:
             if n not in held:
-                why[n] = ("Span could not work it out from the loaded data: the only design it found was an empty column." if _slug(n) in empty
+                why[n] = ("Span could not work it out from the loaded data: the only design it found was an empty or fixed column." if _slug(n) in empty
                           else "Span could not work it out from the loaded data: its design had no column for it.")
         if held:
             new[name] = {**t, "kpis": held}
@@ -263,6 +264,8 @@ def cover(x, phase: str = "draft") -> str:
             todo.append(k)
         elif phase == "loaded" and filled and not valued(x.plane, k, cov):  # built on the copy with the loaded data, and still no value for it
             todo.append(k)
+    held = {n for h in (th.get("held_tables") or {}).values() if h.get("answered") != "used" for n in h.get("kpis") or []}
+    todo = [k for k in todo if k["name"] not in held]  # r9: a table held for the person (or left out by them) is not designed again
     th["figures"] = [{"kpi": k["name"], "table": (covering(k, gold) or [{}])[0].get("name")} for k in kpis]
     if not todo:
         return f"all {len(kpis)} figures have a ready table"
@@ -292,9 +295,8 @@ def cover(x, phase: str = "draft") -> str:
     new = added
     th["figure_notes"] = {**(th.get("figure_notes") or {}), **notes}
     if new and pk.get("state") == "approved":  # the edit forked a new draft: the same two steps as the first pack
-        x.api("leo", "POST", A + "/pack/submit", {})
-        vs = x.api("leo", "GET", A + "/pack").get("versions") or [{"version": 1}]
-        x.api("anita", "POST", A + "/pack/approve", {"version": vs[-1]["version"], "note": "Approved by the head of data."})
+        from sh_platform.v1 import v3_rows
+        v3_rows.send(x)  # the new table's open rows are settled first (r9), else the submit refuses
         from sh_platform.v1 import v3_harbor as H
         H.b_run(x)  # the new pack version gets its own round (sources connected, built on the copy) before anyone can go live on it
         fresh(x)

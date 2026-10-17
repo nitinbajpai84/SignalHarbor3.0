@@ -223,10 +223,8 @@ def _prematch(x, pairs: list[dict]) -> list[str]:
         exact = mine and mine.get("instrument_name") and M.normalise(mine["name_in_file"]) == M.normalise(mine["instrument_name"])
         if mine and mine.get("instrument_name") and not exact:  # a spelling-only match: two models of different families decide; a person gets only their disagreement
             from sh_platform.v1 import v3_judge as J
-            exact = J.judged(x.plane, "fund_match", f"Is '{name}' the same fund as '{mine['instrument_name']}'?", ["same fund", "different fund"],
-                             {"name on the page": name, "fund on file": mine["instrument_name"]},
-                             "Same fund when the names differ only by spelling, case, punctuation, an abbreviation or a legal suffix (Ltd, LP, Fund). "
-                             "Different when a distinguishing word differs: a number, a series, a strategy, a currency or a sponsor.", x.th["id"]) == "same fund"
+            exact = J.judged(x.plane, "fund_match", J.question("fund_match", page=name, on_file=mine["instrument_name"]), ["same fund", "different fund"],
+                             {"name on the page": name, "fund on file": mine["instrument_name"]}, J.standard("fund_match"), x.th["id"]) == "same fund"
         if exact:
             with H._skill(x, "data.match-identity", "Matching the fund name quoted on the page"):
                 x.api("leo", "POST", f"/api/v1/evidence/aliases/{got['identifier_id']}/approve", {}, soft=True)
@@ -292,10 +290,8 @@ def intake(x) -> None:
                                          "read": [{k: p[k] for k in ("label", "value", "page")} for p in pairs if p["label"].lower() in {g["name"] for g in fresh}][:8]}
                 if len(cands) > 1 and "judged" not in ask:  # two or more lines could be the amount: two models pick one; the person still confirms the layout
                     from sh_platform.v1 import v3_judge as J
-                    ask["judged"] = J.judged(x.plane, "amount_line", f"In {name}, which line holds the amount to load?", [f"{c['label']}: {c['value']}" for c in cands],
-                                             {"lines read": [f"{p['label']}: {p['value']}" for p in pairs][:20]},
-                                             "The amount to load is the statement's closing value or total in a currency; not an opening balance, a movement, a fee or a rate.",
-                                             x.th["id"], person=False)
+                    ask["judged"] = J.judged(x.plane, "amount_line", J.question("amount_line", name=name), [f"{c['label']}: {c['value']}" for c in cands],
+                                             {"lines read": [f"{p['label']}: {p['value']}" for p in pairs][:20]}, J.standard("amount_line"), x.th["id"], person=False)
             ask["files"].append(f["name"])
             rec["status"], rec["ask"] = "asked", slug
 

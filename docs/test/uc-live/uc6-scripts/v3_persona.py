@@ -3,7 +3,8 @@
     sh py.sh v3_persona.py <role_id> [--build N] [--dry-run]
     (UC6_BASE=http://127.0.0.1:8640 UC6_ENV=D:/Temp/sh3-team-env UC6_SHOTS=<dir> UC6_TMP=<dir>)
 
-Plan comes from packs/family_office/1/role_builds.yaml. Resumable: state in D:/Temp/sh3-team-<role>.json, report in D:/Temp/sh3-team/<role>.json.
+Plan comes from packs/family_office/1/role_builds.yaml. Resumable: state in $UC6_STATE (default D:/Temp/sh3-team-<role>.json), report in $UC6_REPORT (default D:/Temp/sh3-team/<role>.json);
+give each parallel run its own pair so no run overwrites another's.
 Steps: drop the build's files -> say the build's words -> wait out drafting -> "use the usual practice" once if Decision 1 shows gaps -> confirm
 -> on a question try "retry" once, else STUCK -> Decision 2 (assumed answers; the administrator/custodian file as the check) -> Decision 3 go live
 -> POST /api/v3/ask with check.ask and test every expect value appears. Long waits poll with time.sleep: run it as a background shell.
@@ -28,6 +29,11 @@ NEW_PEOPLE = {"tom": "tom.hale", "priya": "priya.nair", "sam": "sam.lee", "helen
 REPORTS = Path("D:/Temp/sh3-team")
 LIMIT = 2 * 3600  # one persona run, all stages
 BUSY = ("drafting", "working")
+
+
+def paths(rid: str) -> tuple[Path, Path]:
+    """(state file, report file) of one run: UC6_STATE / UC6_REPORT, else the shared defaults."""
+    return Path(os.environ.get("UC6_STATE") or f"D:/Temp/sh3-team-{rid}.json"), Path(os.environ.get("UC6_REPORT") or REPORTS / f"{rid}.json")
 
 
 def files_of(spec: list[str]) -> list[Path]:
@@ -71,7 +77,8 @@ def dry_run(role: dict, build: dict, n: int) -> None:
     print("3 wait out drafting | 4 Decision 1: if gaps, say 'use the usual practice' once, then confirm")
     print("5 question: 'retry' once, then STUCK | 6 Decision 2: assumed answers; check file = administrator/custodian if offered | 7 Decision 3: go live")
     print(f"8 ask: {build['check']['ask']!r}  expect: {build['check']['expect']}")
-    print(f"state D:/Temp/sh3-team-{role['id']}.json | report {REPORTS / (role['id'] + '.json')}")
+    st, rp = paths(role["id"])
+    print(f"state {st} | report {rp}")
 
 
 def run(role: dict, build: dict, n: int) -> None:
@@ -79,8 +86,8 @@ def run(role: dict, build: dict, n: int) -> None:
     from uc6 import ENV, Person
     uc6.PEOPLE.update(NEW_PEOPLE)
     rid = role["id"]
-    state_f, report_f = Path(f"D:/Temp/sh3-team-{rid}.json"), REPORTS / f"{rid}.json"
-    REPORTS.mkdir(parents=True, exist_ok=True)
+    state_f, report_f = paths(rid)
+    report_f.parent.mkdir(parents=True, exist_ok=True)
     s = json.loads(state_f.read_text()) if state_f.exists() and json.loads(state_f.read_text()).get("build") == build["id"] else {}
     s.setdefault("times", {})
     s.setdefault("shots", {})
@@ -234,7 +241,7 @@ if __name__ == "__main__":
         while (signer := run(role, build, a.build)) and tries < 2:
             tries += 1
             from uc6 import Person
-            tid = json.loads(Path(f"D:/Temp/sh3-team-{role['id']}.json").read_text())["tid"]
+            tid = json.loads(paths(role["id"])[0].read_text())["tid"]
             with Person(signer) as q:
                 q.shot("/v3/action", f"team-{role['id']}-signer-action")
                 st, out = q.post(f"/api/v3/threads/{tid}/decide", {"n": 1, "answer": "confirm"})

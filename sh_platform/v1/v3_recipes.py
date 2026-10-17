@@ -95,8 +95,9 @@ BIND_SYSTEM = (
     'Reply with JSON only: {"bindings": [{"figure": <figure id>, "recipe": <recipe id or "none">, "why": <one plain sentence>}]}.')
 
 
-BIND_STANDARD = ("Bind only when the recipe computes that very quantity, the same thing measured from the kind of records the brief names. A total, a split or a "
-                 "subset of the recipe's quantity is that recipe's figure. A count of items, or a share of the result, is none. Decide by the definition and formula, not the name alone.")
+def described() -> dict[str, str]:
+    """The recipes in plain words for the judge's options, and the option that none computes the figure."""
+    return {**{r["id"]: f"{r['label']}: {r['formula']}" for r in recipes()}, "none": "No recipe here computes this figure; Span designs a table for it."}
 
 
 def bound(k: dict) -> dict | None:
@@ -180,7 +181,8 @@ def bind(plane, model, kpis: list[dict], question: str = "", sources: list[dict]
             for i, k in enumerate(left):
                 from sh_platform.v1.egress_fit import fit
                 one = fit({**ctx, "figures": [ctx["figures"][i]]})  # records as one-line strings: the row guard lets them out
-                said = J.judged(plane, "recipe", "Which recipe computes this figure, or none?", [*ids_, "none"], one, BIND_STANDARD, person=False)
+                said = J.judged(plane, "recipe", J.question("recipe", figure=k.get("name"), definition=k.get("definition") or "not given", formula=k.get("formula") or "not given"),
+                                [*ids_, "none"], one, J.standard("recipe"), person=False, describe=described())
                 if said:
                     got.setdefault("bindings", [])[:] = [b for b in got.get("bindings") or [] if str(b.get("figure")) != str(i)] + [
                         {"figure": i, "recipe": said, "why": "Two models of different families agreed."}]

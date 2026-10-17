@@ -295,14 +295,9 @@ def a_pack(x):
     x.api("leo", "POST", A + "/pack/generate")
     pk = x.api("leo", "GET", A + "/pack")
     x.th["tables"] = [{"layer": t.get("layer", ""), "name": t.get("name", ""), "rows": t.get("rows") or 0, "state": "reused" if t.get("existing") else "new"} for t in pk["pack"].get("tables") or []]
-    for m in pk["pack"].get("mapping") or []:
-        if m.get("needs_person") and not m.get("resolved"):
-            x.api("leo", "PUT", A + "/pack/edit", {"section": "mapping", "key": m["id"], "changes": {"resolve": "Mapped at intake from the uploaded file and approved by the head of data."}, "note": "Harbor settles this row."})
-    from sh_platform.v1 import v3_figures as F
+    from sh_platform.v1 import v3_figures as F, v3_rows as R
     F.cover(x, "draft")  # a figure of the brief with no ready table gets one designed before the pack is submitted
-    x.api("leo", "POST", A + "/pack/submit", {})
-    vs = x.api("leo", "GET", A + "/pack").get("versions") or [{"version": 1}]
-    x.api("anita", "POST", A + "/pack/approve", {"version": vs[-1]["version"], "note": "Approved by the head of data."})
+    R.send(x)  # r9: the open rows AFTER the design: the judge settles clear ones, unclear tables wait for one Decision 2 question; then submit and approve
     return "design pack approved"
 
 
@@ -354,6 +349,8 @@ def d2(x) -> dict:
     qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
     from sh_platform.v1 import v3_judge as J
     qs += J.pending(x.plane, th["id"])  # a small judgement two models could not agree on: both opinions as options
+    from sh_platform.v1 import v3_rows as R
+    qs += R.questions(x)  # r9: the columns two models could not agree are clear, in one question to the person who raised the brief
     from sh_platform.v1 import v3_figures as F
     qs += F.account_questions(x)  # "Which entity owns account X?": an account number no portfolio has holds back the whole bank statement
     csvs = [f["name"] for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
@@ -379,6 +376,9 @@ def b_answers(x):
         elif kind == "judge":
             from sh_platform.v1 import v3_judge as J
             J.answer(x.plane, key, val)
+        elif kind == "rows":
+            from sh_platform.v1 import v3_rows as R
+            R.answer(x, val)
         elif kind == "pdf":
             V.answer(x, key, val)
         elif kind == "acct" and val:
@@ -974,8 +974,7 @@ def recognise(plane, name: str, threads: list[dict]):
                 head = plane.path("dropbox", name).read_text(encoding="utf-8-sig", errors="replace")[:300]
             except OSError:
                 head = ""
-            if pick := J.judged(plane, "file", f"Which source is the file {name} from?", srcs, {"file name": name, "first lines": head},
-                                "Pick a source when the file's name, headings or columns name what that source holds. Say none only when two sources fit equally.", hits[0][0]):
+            if pick := J.judged(plane, "file", J.question("file", name=name), srcs, {"file name": name, "first lines": head}, J.standard("file"), hits[0][0]):
                 return "recognised", pick, hits[0][0]
         return "question", hits[0][1], None
     return "recognised", hits[0][1], hits[0][0]

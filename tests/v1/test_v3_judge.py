@@ -102,7 +102,7 @@ def test_agreed_judgements_reach_the_figure_assumptions(plane, pair):
 
 @pytest.fixture()
 def calls(monkeypatch):
-    def fake(plane, kind, question, options, evidence, standard, thread=None, person=True):
+    def fake(plane, kind, question, options, evidence, standard, thread=None, person=True, describe=None):
         fake.seen.append(SimpleNamespace(kind=kind, options=list(options), thread=thread, person=person))
         return fake.reply(options)
     fake.seen, fake.reply = [], (lambda options: None)
