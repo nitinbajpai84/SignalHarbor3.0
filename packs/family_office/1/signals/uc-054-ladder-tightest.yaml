@@ -1,0 +1,22 @@
+# SUGGESTION. uc-054 row 1: the 90 day rung of the entity with the least cash after calls and the approved or scheduled payments. Numbers come from the card's recipe (liquidity_ladder); the office edits or switches it off.
+suggestion: true
+id: uc-054-ladder-tightest
+title: The tightest entity on the 90 day ladder
+pain_points: [PP-01, PP-02, INT-LIQ]
+row: normal
+trigger: {on: figure_changed, figure: liquidity_ladder}
+inputs:
+- kind: figure
+  id: liquidity_ladder
+  recipe: liquidity_ladder
+  as: lad
+  by: {window_days: 90, lowest_in_window: true}
+condition: lad.cash_after >= lad.buffer
+subject: 'ladder {lad.entity} {lad.cash_after:,.0f}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [See the ladder]
+message: '{lad.entity} has the least cash over the next 90 days: USD {lad.cash_usd_equivalent:,.2f} less calls of {lad.calls:,.2f} and {lad.payment_lines} approved or scheduled payments of {lad.approved_and_scheduled_payments:,.2f} leaves {lad.cash_after:,.2f}, above the {lad.buffer:,.0f} buffer. Held and expected payments are left out.'
+evidence: [lad]

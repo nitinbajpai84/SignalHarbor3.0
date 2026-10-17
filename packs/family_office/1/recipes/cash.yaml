@@ -101,7 +101,7 @@ recipes:
         where exists (select 1 from transactions as t where t.external_trade_id = c.trade_reference)
         or exists (select 1 from transactions as t join instrument_identifiers as x on x.instrument_id = t.instrument_id where x.identifier_value = c.trade_reference))
 
-  # ---- W1 cash builder: the stubs of cards 2, 4, 5, 6, 8, 10, 18, 28, 37 are built below (liquidity_ladder and cash_forecast, cards 54 and 72, stay stubs).
+  # ---- W1 cash builder: the stubs of cards 2, 4, 5, 6, 8, 10, 18, 28, 37 are built below (cash_forecast, card 72, stays a stub; liquidity_ladder is built by W1b, below).
   # Two recipes are new: call_fee_check (card 2 figure fee_part_check) and calls_due (card 3 figure calls_due); fx_rate_check (card 6, the bank's rate against the fixing) was added in wave 2.
   # Where a recipe needs a signed office rule, business_rules and rule_versions are added to may_read (the stub lists did not name them); the rule is read, never typed (docs/v3/ASSUMPTIONS.md A20).
   # Wave 2 (verifier fixes): an unpaid call that is past due stays in the calls (open = noticed or expected, or recorded with a due date not yet passed); every date is the entity's own latest cash date;
@@ -808,15 +808,141 @@ recipes:
         select (select count(*) from {name}), (select count(*) from cash_movements as m where m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and m.due_date is not null
         and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
 
+  # ---- W1b cash builder (cards 51 to 100): liquidity_ladder (card 54) is built on the payment schedule's stages (A34); cash_runway (card 73) on office_expenses (A33).
+  # cash_forecast (card 72) stays a stub and card 70 has no recipe: both wait on the signed rules forecast_call_assumption, forecast_floor and ladder_window_days (A34).
   - id: liquidity_ladder
     label: Liquidity ladder
-    status: stub
     cards: [54]
-    names: [liquidity ladder, 30 60 90 day liquidity]
-    may_read: [position_snapshots, instruments, extracted_fields, cash_movements]
-    formula: 'Market value placed in 30, 60, 90 day and longer buckets by days to cash: listed and cash at once, funds by the notice and lock-up terms read from their documents; calls due are taken off the matching bucket.'
-    sql: null
+    names: [liquidity ladder, 30 60 90 day liquidity, cash against calls and payments]
+    words_all: [[ladder], [calls, call, payments, payment, cash]]
+    may_read: [position_snapshots, instruments, portfolios, legal_entities, bank_accounts, cash_movements, market_observations, business_rules, rule_versions]
+    never_read: [commitments, transactions]
+    why: The cash is the administrator's balance; the calls are open call movements; the payments are the schedule's payments that are approved or scheduled (held and merely expected ones are not money that will leave). Commitments say what may be called, not what is due.
+    formula: For each entity and each window the question names (30, 60 and 90 days from the entity's own latest cash date), cash in USD (the administrator's cash of that date, each other currency at the latest USD fixing on or before it, SGD per 1 USD) less the open calls due up to the end of the window (open as calls_due counts them) less the expected payments whose stage is approved or scheduled and due up to the end of the window, each line in USD at the same fixing, rounded to the cent. below_buffer compares the result with the signed cash_buffer (USD); with no signed buffer it is empty. A currency with no fixing leaves the entity's figures empty and is counted in unconverted.
+    grain: By entity and window
+    sql: >-
+      create table {name} as with {positions},
+      cashp as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      refd as (select entity_id, max(position_date) as d from cashp group by all),
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      fx as (select a.entity_id, f.currency, f.rate from refd as a join fxall as f on f.rate_date <= a.d qualify row_number() over (partition by a.entity_id, f.currency order by f.rate_date desc) = 1),
+      cashu as (select c.entity_id, case when c.currency = 'USD' then c.cash else round(c.cash / f.rate, 2) end as usd from cashp as c join refd as a on a.entity_id = c.entity_id and a.d = c.position_date
+      left join fx as f on f.entity_id = c.entity_id and f.currency = c.currency),
+      mv as (select p.legal_entity_id as entity_id, m.movement_type, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount from cash_movements as m
+      join portfolios as p on p.id = m.portfolio_id where m.due_date is not null and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)
+      and ((m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected'))
+      or (m.movement_type = 'payment' and m.confirmation_status = 'expected' and m.payment_stage in ('approved', 'scheduled')))),
+      outu as (select a.entity_id, m.movement_type, m.due_date, case when m.currency = 'USD' then m.amount else round(m.amount / f.rate, 2) end as usd from refd as a
+      join mv as m on m.entity_id = a.entity_id and (m.movement_type = 'payment' or m.status in ('noticed', 'expected') or m.due_date >= a.d)
+      left join fx as f on f.entity_id = a.entity_id and f.currency = m.currency),
+      bufall as (select cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number, v.effective_from, v.effective_to
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status = 'approved'),
+      buf as (select a.entity_id, b.amount from refd as a join bufall as b on b.currency = 'USD' and b.effective_from <= a.d and (b.effective_to is null or b.effective_to >= a.d)
+      qualify row_number() over (partition by a.entity_id order by b.version_number desc) = 1),
+      w as (select a.entity_id, a.d, x.days, (select sum(u.usd) from cashu as u where u.entity_id = a.entity_id) as cash,
+      (select count(*) from cashu as u where u.entity_id = a.entity_id and u.usd is null) + (select count(*) from outu as o where o.entity_id = a.entity_id and o.usd is null
+      and o.due_date <= a.d + x.days * interval 1 day) as unconverted,
+      coalesce((select sum(o.usd) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'call' and o.due_date <= a.d + x.days * interval 1 day), 0) as calls,
+      coalesce((select sum(o.usd) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'payment' and o.due_date <= a.d + x.days * interval 1 day), 0) as payments,
+      (select count(*) from outu as o where o.entity_id = a.entity_id and o.movement_type = 'payment' and o.due_date <= a.d + x.days * interval 1 day) as payment_lines
+      from refd as a cross join (select 30 as days union all select 60 union all select 90) as x),
+      r as (select e.entity_name as entity, w.days as window_days, w.d as as_of, case when w.unconverted = 0 then cast(w.cash as decimal(18,2)) end as cash_usd_equivalent,
+      case when w.unconverted = 0 then cast(w.calls as decimal(18,2)) end as calls, case when w.unconverted = 0 then cast(w.payments as decimal(18,2)) end as approved_and_scheduled_payments,
+      cast(w.payment_lines as integer) as payment_lines, case when w.unconverted = 0 then cast(w.cash - w.calls - w.payments as decimal(18,2)) end as cash_after,
+      cast(b.amount as decimal(18,2)) as buffer, case when w.unconverted = 0 then w.cash - w.calls - w.payments < b.amount end as below_buffer, cast(w.unconverted as integer) as unconverted
+      from w join legal_entities as e on e.id = w.entity_id left join buf as b on b.entity_id = w.entity_id)
+      select r.*, (select min(y.window_days) from r as y where y.entity = r.entity and y.below_buffer) as first_below_window,
+      coalesce(r.cash_after = min(r.cash_after) over (partition by r.window_days), false) as lowest_in_window from r
+    measure: cash_after
+    columns:
+      as_of: The entity's latest cash date; the windows start here.
+      cash_usd_equivalent: The administrator's cash of that date in USD, other currencies at the fixing of that date (or the latest before it).
+      calls: The open calls due up to the end of the window, in USD.
+      approved_and_scheduled_payments: The schedule's payments approved or scheduled and due up to the end of the window, in USD; held and expected ones are left out.
+      payment_lines: How many payments make up that amount.
+      cash_after: Cash less the calls less the payments. Empty when a currency has no fixing.
+      buffer: The cash buffer of the signed office rule (USD). Empty while no rule is signed.
+      below_buffer: True when the cash after is under the buffer. Empty while no rule is signed.
+      unconverted: Lines (cash or outflow) in a currency with no fixing on or before the cash date.
+      first_below_window: The shortest window in which the entity falls under the buffer; empty when it never does.
+      lowest_in_window: True for the entity with the least cash after in that window.
+    tie_out:
+      label: The payments in the 90 day window are the approved and scheduled payments due within 90 days of each entity's cash date
+      sql: >-
+        select (select coalesce(sum(payment_lines), 0) from {name} where window_days = 90), (select count(*) from cash_movements as m join portfolios as p on p.id = m.portfolio_id
+        join legal_entities as e on e.id = p.legal_entity_id join {name} as t on t.entity = e.entity_name and t.window_days = 90 where m.movement_type = 'payment'
+        and m.confirmation_status = 'expected' and m.payment_stage in ('approved', 'scheduled') and m.due_date <= t.as_of + interval 90 day
+        and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
+    needs:   # without the schedule's stages the payment leg would be empty and the ladder would look better than it is
+      - why: No payment of the payment schedule is loaded (no cash movement carries a payment stage), so the payment leg of the ladder cannot be stated.
+        sql: >-
+          select count(*) from cash_movements as m where m.movement_type = 'payment' and m.payment_stage is not null
 
+  - id: cash_runway
+    label: Months of spending covered
+    cards: [73]
+    names: [cash runway, runway, months of cash, months of spending covered, months the family can spend]
+    words_all: [[months, runway], [spend, spending, sustainable]]
+    may_read: [position_snapshots, instruments, portfolios, bank_accounts, office_expenses, market_observations]
+    never_read: [cash_movements, commitments, transactions]
+    why: The spending is the office's own expense ledger (office_expenses), not the bank lines, which would count the same payment again and mix in calls and trades (A33). The cash is the administrator's balance.
+    formula: Cash = the administrator's cash of every entity at its latest date, other currencies at the latest USD fixing on or before it (SGD per 1 USD). Spend = every expense of the ledger in USD at the fixing of its day (or the latest before it), rounded to the cent, by category. Average monthly spend = the total over the months the ledger spans (first to last month, both counted). Months of cash = cash over the average. Liquid book = the latest value of the listed instruments (listed equity, bonds, convertibles) in USD; months of cash and liquid book adds it to the cash. Cash, expenses or holdings in a currency with no fixing are counted in unconverted and leave the totals empty.
+    grain: By expense category, with the totals on every row
+    sql: >-
+      create table {name} as with {positions},
+      fxall as (select o.quote_currency as currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o
+      where o.observation_type = 'fx' and o.base_currency = 'USD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
+      cashp0 as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
+      join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
+      where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
+      cashp as (select c.* from cashp0 as c where c.position_date = (select max(x.position_date) from cashp0 as x where x.entity_id = c.entity_id)),
+      cashu as (select c.position_date, case when c.currency = 'USD' then c.cash else round(c.cash / f.rate, 2) end as usd from cashp as c
+      left join fxall as f on f.currency = c.currency and f.rate_date <= c.position_date qualify row_number() over (partition by c.entity_id, c.currency order by f.rate_date desc nulls last) = 1),
+      liq0 as (select l.* from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type in ('listed_equity', 'bond', 'convertible')),
+      liq as (select case when l.currency = 'USD' then l.source_market_value else l.source_market_value / f.rate end as usd from liq0 as l
+      left join fxall as f on f.currency = l.currency and f.rate_date <= l.position_date where l.position_date = (select max(position_date) from liq0)
+      qualify row_number() over (partition by l.id order by f.rate_date desc nulls last) = 1),
+      ex as (select x.category, x.spent_on, case when x.currency = 'USD' then x.amount else round(x.amount / f.rate, 2) end as usd from office_expenses as x
+      left join fxall as f on f.currency = x.currency and f.rate_date <= x.spent_on where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id)
+      qualify row_number() over (partition by x.id order by f.rate_date desc nulls last) = 1),
+      tot as (select (select max(position_date) from cashu) as as_of, (select sum(usd) from cashu) as cash,
+      (select count(*) from cashu where usd is null) + (select count(*) from ex where usd is null) + (select count(*) from liq where usd is null) as unconverted,
+      (select sum(usd) from ex) as spend, (select min(spent_on) from ex) as first_day, (select max(spent_on) from ex) as last_day,
+      (select date_diff('month', date_trunc('month', min(spent_on)), date_trunc('month', max(spent_on))) + 1 from ex) as months, (select sum(usd) from liq) as liquid_book),
+      cat as (select category, sum(usd) as spend, count(*) as lines from ex group by all)
+      select c.category, cast(c.spend as decimal(18,2)) as spend_usd, cast(c.lines as integer) as lines, coalesce(c.spend = max(c.spend) over (), false) as is_largest, t.as_of, t.first_day, t.last_day,
+      cast(t.months as integer) as months, cast(t.unconverted as integer) as unconverted, case when t.unconverted = 0 then cast(t.cash as decimal(18,2)) end as cash_usd_eq,
+      case when t.unconverted = 0 then cast(t.spend as decimal(18,2)) end as total_spend, case when t.unconverted = 0 then cast(t.spend / t.months as decimal(18,2)) end as average_monthly_spend,
+      case when t.unconverted = 0 then cast(t.cash / (t.spend / t.months) as decimal(9,2)) end as months_of_cash, case when t.unconverted = 0 then cast(t.liquid_book as decimal(18,2)) end as liquid_book,
+      case when t.unconverted = 0 then cast((t.cash + t.liquid_book) / (t.spend / t.months) as decimal(9,2)) end as months_of_cash_and_liquid_book
+      from cat as c cross join tot as t
+    measure: months_of_cash
+    columns:
+      spend_usd: The category's spending over the ledger, in USD at each day's fixing.
+      lines: How many expenses make up the category.
+      is_largest: True for the category with the most spending.
+      as_of: The latest administrator cash date.
+      first_day: The first expense of the ledger.
+      last_day: The last expense of the ledger.
+      months: The months the ledger spans, first and last counted.
+      unconverted: Cash, expense or listed lines in a currency with no fixing; the totals are empty while any is.
+      cash_usd_eq: The administrator's cash of every entity in USD.
+      total_spend: All spending of the ledger in USD.
+      average_monthly_spend: Total spend over the months.
+      months_of_cash: Cash over the average monthly spend.
+      liquid_book: The latest value of the listed instruments, in USD.
+      months_of_cash_and_liquid_book: Cash and the liquid book over the average monthly spend.
+    tie_out:
+      label: Every expense of the ledger is counted once in a category
+      sql: >-
+        select (select coalesce(sum(lines), 0) from {name}), (select count(*) from office_expenses as x where not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = x.id))
+    needs:   # with no ledger the average would be a division by nothing
+      - why: No office expense is loaded (the expense ledger), so the monthly spend cannot be stated.
+        sql: >-
+          select count(*) from office_expenses
 
   - id: cash_forecast
     label: Twelve month cash forecast

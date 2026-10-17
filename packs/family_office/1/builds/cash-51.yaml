@@ -1,4 +1,52 @@
-# W1b cash, cards 51 to 100: no persona build yet. Cards 54, 70, 72 and 73 are not built (their sources have no reader); see docs/v3/w1/build51-cash.md.
-# A build is added here, with files as office6m:<glob> and check.expect copied from answer_keys.yaml, when a card is built.
+# W1b cash, cards 51 to 100: the persona builds of the cash and treasury cards that could be built on the real readers (54 ladder, 73 runway). Merged by role id with role_builds.yaml.
+# Cards 70 (idle cash) and 72 (12 month forecast) are not built: they wait on the signed rules ladder_window_days, forecast_call_assumption and forecast_floor (A34); see docs/v3/w1/build51-cash.md.
+# files: office6m:<glob under tests/v1/fixtures/office6m>. check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml.
 template: family_office@1
-roles: []
+roles:
+- id: cfo
+  builds:
+  - id: uc-054-ladder
+    title: 30, 60, 90 day liquidity ladder
+    say: Every Monday, and after we record a call, I want each entity's cash in USD against the calls and the approved or scheduled payments falling in the next 30, 60 and 90 days, and whether any of them drops under the 250,000 buffer. Leave out the held payments and the ones only expected. Show where each number comes from.
+    files:
+    - office6m:*/payment_schedule/payment_schedule_2026-10-13.csv
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/notices/2026-10-13_C_call7.pdf
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    skills:
+    - check.adds-up
+    - action.detect-exception
+    - consume.answer-question
+    dashboard: 'Consume: the ladder by entity, cash less calls and payments at 30, 60 and 90 days, against the buffer'
+    check:
+      ask: How much cash do we have against calls and payments in the next 30, 60 and 90 days?
+      expect:
+      - 2,424,029.85
+      - 131,654.02
+      - 393,801.77
+      - 780,228.08
+      - 1,930,584.33
+      - 1,822,351.67
+      - 1,801,427.23
+      - 1,736,127.24
+- id: principal
+  builds:
+  - id: uc-073-runway
+    title: How many months the family can spend
+    say: At the quarter end I want to know how many months our cash covers at the way we have been spending, and how many with the liquid book too. Take the spending from the office's expense ledger, every payment in dollars at its day's rate, and show me what we spend it on.
+    files:
+    - office6m:*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    skills:
+    - build.write-formula-table
+    - consume.answer-question
+    dashboard: 'Consume: months of cash and of cash with the liquid book, with six months of spending by category'
+    check:
+      ask: Whether spending is sustainable
+      expect:
+      - 6,156,041.41
+      - 243,977.13
+      - '25.23'
+      - '198.5'
+      - 42,273,700
+      - 580,620.95
