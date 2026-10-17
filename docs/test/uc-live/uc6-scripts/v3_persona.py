@@ -39,7 +39,8 @@ def paths(rid: str) -> tuple[Path, Path]:
 def files_of(spec: list[str]) -> list[Path]:
     out: list[Path] = []
     for entry in spec:
-        base, pat = (UC6_SOURCES, entry[4:]) if entry.startswith("uc6:") else (FIXTURES, entry)
+        base, pat = ((UC6_SOURCES, entry[4:]) if entry.startswith("uc6:") else (OFFICE6M, entry[9:]) if entry.startswith("office6m:")
+                     else (FIXTURES, entry))
         for m in sorted(glob.glob(str(base / pat))):
             p = Path(m)
             out += sorted(f for f in p.iterdir() if f.is_file() and f.name != "MANIFEST.md") if p.is_dir() else [p]
@@ -55,8 +56,29 @@ def missing(answer: str, expect: list[str]) -> list[str]:
     return [e for e in expect if norm(e) not in a and norm(e).removesuffix(".00") not in a]
 
 
+OFFICE6M = REPO / "tests" / "v1" / "fixtures" / "office6m"
+BUILDS_DIR = BUILDS.parent / "builds"  # one file per domain for the top-50 use cases; merged with role_builds.yaml
+
+
+def all_roles() -> dict:
+    roles = {r["id"]: dict(r, builds=list(r["builds"])) for r in yaml.safe_load(BUILDS.read_text(encoding="utf-8"))["roles"]}
+    for f in sorted(BUILDS_DIR.glob("*.yaml")) if BUILDS_DIR.is_dir() else []:
+        for r in (yaml.safe_load(f.read_text(encoding="utf-8")) or {}).get("roles") or []:
+            roles.setdefault(r["id"], {**r, "builds": []})["builds"] += r.get("builds") or []
+    return roles
+
+
+def load_uc(uc: str) -> tuple[dict, dict]:
+    """The role and build whose build id is `uc` (a top-50 card id), from any builds file."""
+    for r in all_roles().values():
+        for i, b in enumerate(r["builds"], 1):
+            if b["id"] == uc:
+                return r, b
+    raise SystemExit(f"unknown use case {uc}")
+
+
 def load_plan(role_id: str, n: int) -> tuple[dict, dict]:
-    roles = {r["id"]: r for r in yaml.safe_load(BUILDS.read_text(encoding="utf-8"))["roles"]}
+    roles = all_roles()
     if role_id not in roles:
         raise SystemExit(f"unknown role {role_id}; one of: {', '.join(roles)}")
     r = roles[role_id]
@@ -232,8 +254,9 @@ if __name__ == "__main__":
     ap.add_argument("role")
     ap.add_argument("--build", type=int, default=1)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--uc", help="run a top-50 use case by its id (the role argument is then ignored)")
     a = ap.parse_args()
-    role, build = load_plan(a.role, a.build)
+    role, build = load_uc(a.uc) if a.uc else load_plan(a.role, a.build)
     if a.dry_run:
         dry_run(role, build, a.build)
     else:
