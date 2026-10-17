@@ -433,6 +433,11 @@ recipes:
     status: ready
     cards: [64]
     names: [currency exposure, exposure by currency, fx exposure, sgd exposure, unhedged exposure]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: no_rate, all: true, say: "{currency}: no USD fixing on record, so {spot_native} {currency} cannot be converted"}
+      - {if: "non_base and fwd_gap", all: true, say: "{currency}: {spot_native} held ({cash} cash, {investments} investments), {spot_usd_eq} USD at {rate}; forwards bought {fwd_bought} {currency} ({fwd_bought_usd_eq} USD) and sold {fwd_sold}, which leaves {after_usd_eq} USD, {share_after_pct}% of the family total {family_total_usd_eq}; the bank confirms the forwards {fwd_gap} apart from the bookings"}
+      - {if: non_base, all: true, say: "{currency}: {spot_native} held ({cash} cash, {investments} investments), {spot_usd_eq} USD at {rate}; forwards bought {fwd_bought} {currency} ({fwd_bought_usd_eq} USD) and sold {fwd_sold}, which leaves {after_usd_eq} USD, {share_after_pct}% of the family total {family_total_usd_eq}"}
+      - {if: not non_base, all: true, say: "{currency}: {spot_native} held ({cash} cash, {investments} investments); forwards bought {fwd_bought} and sold {fwd_sold}, which leaves {after_usd_eq}, {share_after_pct}% of the family total {family_total_usd_eq}"}
     may_read: [position_snapshots, valuation_observations, transactions, fx_confirmations, market_observations, instruments]
     never_read: [commitments, cash_movements]
     why: "What the family owns in each currency is its investments (the funds at their latest value known, the listed holdings at the latest month end, as the allocation counts them) plus the administrator's cash, and an open FX forward moves value from the currency sold to the currency bought. A commitment is a promise, not a holding."
@@ -508,6 +513,14 @@ recipes:
     status: ready
     cards: [55]
     names: [corporate actions, actions next 14 days, corporate action calendar, dividends coming, coupons coming, elections due, tender offer]
+    words_all: [[action, actions], [decision, decisions, booking, bookings, election, elections]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: "bucket = decide and not last_price", all: true, lead: "Needs a decision:", say: "{security} {event} on {quantity} held, reply by {respond_by}, offer {offer_price}, no last price on record"}
+      - {if: "bucket = decide", all: true, lead: "Needs a decision:", say: "{security} {event} on {quantity} held, reply by {respond_by}: the offer is {offer_price} against the last price {last_price}, a premium of {premium_pct}%"}
+      - {if: "bucket = missed", all: true, lead: "The deadline has passed for:", say: "{security} {event}, the reply was due {respond_by}"}
+      - {if: "bucket = book", once: true, all: true, say: "{n} actions to book add up to {cash_to_book}"}
+      - {if: "bucket = book", all: true, lead: "To book:", say: "{security} {event}, {quantity} held, {expected_cash} on {pay_date}"}
+      - {if: "bucket = later", all: true, lead: "Announced for after the window:", say: "{security} {event}, {quantity} held, {expected_cash} on {pay_date}"}
     may_read: [corporate_actions, documents, extracted_fields, position_snapshots, instruments]
     never_read: [commitments, transactions]
     why: "What is coming on the liquid book is what the custodian's notices announce: an ex-date or a pay date in the window is a booking, an election with a deadline in the window is a decision. The cash to book is the notice's own figure at the holding it states, never a rate worked out here."
@@ -557,6 +570,11 @@ recipes:
     status: ready
     cards: [65]
     names: [real assets, real asset register, property register, real asset value, property and art, what real assets we own]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: no_rate, all: true, say: "{asset_name} ({asset_ref}) is appraised at {latest_value} {currency} and has no USD fixing on record"}
+      - {once: true, all: true, say: "The {n} real assets are worth {total_usd} USD in all"}
+      - {if: title_differs, all: true, lead: "Title not in the owner's name:", say: "{asset_name} ({asset_ref}, {asset_type}) is owned by {entity} but the title is held by {title_holder}: {latest_value} {currency} appraised {appraised_on} by {appraiser}, {value_usd} USD; {entity} holds {entity_total_usd} USD of real assets and {asset_type} totals {type_total_usd} USD"}
+      - {all: true, say: "{asset_name} ({asset_ref}, {asset_type}), owned by {entity}, title in the name of {title_holder}: {latest_value} {currency} appraised {appraised_on} by {appraiser}, {value_usd} USD; {entity} holds {entity_total_usd} USD of real assets and {asset_type} totals {type_total_usd} USD"}
     may_read: [real_assets, legal_entities, market_observations, position_snapshots]
     never_read: [commitments, cash_movements, transactions]
     why: "A real asset is worth its latest appraisal; an older appraisal is history. Who owns it is the entity on the appraisal, and the title deed's registered holder is set beside it, never put in its place."
@@ -601,7 +619,10 @@ recipes:
     label: Appraisal age of the real assets
     status: ready
     cards: [66]
-    names: [appraisal age, appraisal due, appraisal overdue, revaluation due, age of appraisal]
+    names: [appraisal age, appraisal due, appraisal overdue, revaluation due, age of appraisal, new appraisal]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: due, all: true, lead: "Order a new appraisal, last done more than {due_after_days} days ago:", say: "{asset_name} ({asset_ref}), appraised {appraised_on}, {age_days} days ago"}
+      - {if: not due, all: true, lead: "Not yet due:", say: "{asset_name} ({asset_ref}), appraised {appraised_on}, {age_days} days ago"}
     may_read: [real_assets, legal_entities, position_snapshots]
     never_read: [commitments, cash_movements, transactions]
     why: "How old an appraisal is depends on the date the appraiser valued the asset, not on when the report was filed."
@@ -635,7 +656,13 @@ recipes:
     label: Unrealised gain by lot
     status: ready
     cards: [67]
-    names: [unrealised gain, unrealized gain, unrealised gain by lot, tax lots, lot gains, loss lots, tax loss candidates]
+    names: [unrealised gain, unrealized gain, unrealised gain by lot, tax lots, lot gains, loss lots, tax loss candidates, lots to sell, open lot, lots at a loss]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, all: true, say: "The {lots} open lots show a net gain of {total_gain}; the {loss_lots} lots at a loss add up to {total_loss}"}
+      - {if: unpriced_lots, once: true, all: true, say: "{unpriced_lots} lots have no price at the register date and are left out"}
+      - {if: "sell_to_limit and first_of_security", all: true, lead: "Over the single-name limit, for a rebalance:", say: "{security} is {holding_pct}% of {portfolio} against the limit of {limit_pct}%: selling {sell_to_limit} brings it back; its lots net {holding_gain} in all and its oldest lot {lot} {gain}"}
+      - {if: is_loss, sort: loss, max: 8, lead: "Lots at a loss, for tax, largest first:", say: "{lot} {security} cost {cost}, worth {value}, gain {gain}"}
+      - {if: not is_loss, sort: gain, max: 3, lead: "Other lots with the largest gains:", say: "{lot} {security} held {days_held} days, gain {gain}"}
     may_read: [tax_lots, position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements]
     why: "A gain not yet taken is what an open lot is worth today less what it cost. The lots are the custodian's register; the price is the position's own at the register date, so the lots and the holding agree."
@@ -647,12 +674,16 @@ recipes:
       and l.as_at = (select max(y.as_at) from tax_lots as y where y.portfolio_id = l.portfolio_id)),
       px as (select p.portfolio_id, p.instrument_id, p.position_date, sum(p.source_market_value) as v, sum(p.quantity) as q from positions as p group by all),
       book as (select portfolio_id, position_date, sum(v) as total from px group by all),
+      lim as (select p.id as portfolio_id, max(cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,2))) as limit_pct from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      join portfolios as p on p.portfolio_code = coalesce(json_extract_string(v.parameters, '$.portfolio'), json_extract_string(v.parameters, '$.portfolio_code'))
+      where r.rule_type in ('policy', 'limit') and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name' group by p.id),
       s as (select l.lot_ref as lot, i.canonical_name as security, i.instrument_type, pf.portfolio_name as portfolio, l.acquired_on as acquired, l.as_at,
       cast(date_diff('day', l.acquired_on, l.as_at) as integer) as days_held, l.quantity, l.cost_amount as cost, l.currency,
-      round(l.quantity * x.v / nullif(x.q, 0), 2) as value, x.v as holding_value, b.total as book_value
+      round(l.quantity * x.v / nullif(x.q, 0), 2) as value, x.v as holding_value, b.total as book_value, m.limit_pct
       from lots as l join instruments as i on i.id = l.instrument_id left join portfolios as pf on pf.id = l.portfolio_id
       left join px as x on x.portfolio_id = l.portfolio_id and x.instrument_id = l.instrument_id and x.position_date = l.as_at
-      left join book as b on b.portfolio_id = l.portfolio_id and b.position_date = l.as_at),
+      left join book as b on b.portfolio_id = l.portfolio_id and b.position_date = l.as_at
+      left join lim as m on m.portfolio_id = l.portfolio_id),
       ex as (select distinct json_extract_string(v.parameters, '$.instrument') as security from rule_versions as v join business_rules as b on b.id = v.business_rule_id
       where v.approval_status = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name_exempt'),
       g as (select s.*, s.value - s.cost as gain, s.security in (select security from ex) as exempt from s)
@@ -660,6 +691,9 @@ recipes:
       cast(g.value as decimal(18,2)) as value, cast(g.gain as decimal(18,2)) as gain, g.currency, (g.gain < 0) as is_loss,
       cast(sum(g.gain) over (partition by g.portfolio, g.security) as decimal(18,2)) as holding_gain, cast(g.holding_value as decimal(18,2)) as holding_value,
       cast(g.book_value as decimal(18,2)) as book_value, cast(100 * g.holding_value / nullif(g.book_value, 0) as decimal(9,2)) as holding_pct,
+      cast(g.limit_pct as decimal(9,2)) as limit_pct, cast(case when g.limit_pct is not null and not g.exempt and 100 * g.holding_value / nullif(g.book_value, 0) > g.limit_pct
+      then round((g.holding_value - g.limit_pct / 100 * g.book_value) / (1 - g.limit_pct / 100), 2) end as decimal(18,2)) as sell_to_limit,
+      cast(case when g.gain < 0 then -g.gain end as decimal(18,2)) as loss,
       g.exempt, case when not g.exempt then dense_rank() over (partition by g.portfolio, g.exempt order by g.holding_value desc, g.security) end as name_rank,
       cast(count(*) over () as integer) as lots, cast(coalesce(sum(g.gain) over (), 0) as decimal(18,2)) as total_gain,
       cast(coalesce(sum(g.gain) filter (where g.gain < 0) over (), 0) as decimal(18,2)) as total_loss,
@@ -677,6 +711,9 @@ recipes:
       book_value: Everything the portfolio holds at the register date.
       holding_pct: The security's share of the book, in percent (the measure the single-name limit uses).
       exempt: True when a signed rule exempts the security from the single-name limit.
+      limit_pct: The portfolio's signed single-name limit, in percent (empty when none is signed, so nothing is worked out against it).
+      sell_to_limit: What to sell of the security to bring it back to the limit, the sale also coming out of the book; empty when it is under the limit, exempt, or the portfolio has no signed limit.
+      loss: The lot's loss as a positive amount, empty for a gain (so the lots at a loss can be read largest first).
       name_rank: 1 for the largest holding that is not exempt, 2 for the next (none when exempt).
       total_gain: The gain of all the lots, losses taken off (the same on every row).
       total_loss: The lots with a loss, added (the same on every row).
@@ -692,7 +729,11 @@ recipes:
     label: Dividend and coupon income forecast
     status: ready
     cards: [68]
-    names: [income forecast, dividend forecast, coupon income, income next 12 months, dividend and coupon income]
+    names: [income forecast, dividend forecast, coupon income, income next 12 months, dividend and coupon income, income to plan for, income the liquid book will pay us, income calendar]
+    words_all: [[coupons, coupon, dividends, dividend], [calendar, expects, expected]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, all: true, say: "Income to plan for from {period_from} to {period_to} is {total}: {coupons} of coupons and {dividends} of dividends, {events} payments in all"}
+      - {all: true, lead: "By quarter:", say: "{quarter} {quarter_total}"}
     may_read: [cash_movements, instruments, position_snapshots]
     never_read: [commitments, transactions]
     why: "The income the liquid book will pay is the dividends and coupons the office's income calendar expects, each at its pay date. Cash already received is a fact, not a forecast; a payment past its date is not counted again."
@@ -732,7 +773,12 @@ recipes:
     label: Look-through exposure by company
     status: ready
     cards: [69]
-    names: [look-through exposure, lookthrough exposure, what the funds own, look through the funds, exposure through funds, company exposure through funds, fund overlap]
+    names: [look-through exposure, lookthrough exposure, what the funds own, look through the funds, exposure through funds, company exposure through funds, fund overlap, see through our private funds, over exposed to one company or sector]
+    words_all: [[company, companies, sector, sectors], [through], [fund, funds]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, all: true, say: "{n} companies sit behind the funds, out of {family_investments} of family investments; {several_count} of them are in more than one fund: {several_names}"}
+      - {if: direct_value, all: true, lead: "Also held directly:", say: "{company} {direct_value} directly, {direct_pct_of_liquid_book}% of the liquid book of {liquid_book}, and {with_funds_pct_of_liquid_book}% with the {through_funds} it adds through the funds"}
+      - {sort: through_funds, max: 5, lead: "Largest through the funds:", say: "{company} ({sector}, sector total {sector_through_funds}) {through_funds} via {fund_names}, {share_of_family_pct}% of the family"}
     may_read: [fund_holdings, source_records, valuation_observations, position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: "What the family owns through a fund is the fund's value times the weight the manager's holdings list gives the company. A commitment or a call says nothing of what the fund holds."

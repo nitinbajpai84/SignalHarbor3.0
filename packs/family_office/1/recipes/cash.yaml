@@ -900,8 +900,12 @@ recipes:
   - id: liquidity_ladder
     label: Liquidity ladder
     cards: [54]
-    names: [liquidity ladder, 30 60 90 day liquidity, cash against calls and payments]
+    names: [liquidity ladder, 30 60 90 day liquidity, cash against calls and payments, 30 60 and 90 days, cash buffer status]
     words_all: [[ladder], [calls, call, payments, payment, cash]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: unconverted, all: true, say: "{entity} {window_days} days: not worked out, a currency has no USD fixing"}
+      - {if: below_buffer, all: true, say: "{entity} drops under the {buffer} buffer within {window_days} days: cash {cash_usd_equivalent} less calls {calls} and approved or scheduled payments {approved_and_scheduled_payments} leaves {cash_after}"}
+      - {if: not below_buffer, all: true, say: "{entity} within {window_days} days: cash {cash_usd_equivalent}, calls {calls}, approved or scheduled payments {approved_and_scheduled_payments}, cash after {cash_after}"}
     may_read: [position_snapshots, instruments, portfolios, legal_entities, bank_accounts, cash_movements, market_observations, business_rules, rule_versions]
     never_read: [commitments, transactions]
     why: The cash is the administrator's balance; the calls are open call movements; the payments are the schedule's payments that are approved or scheduled (held and merely expected ones are not money that will leave). Commitments say what may be called, not what is due.
@@ -942,7 +946,7 @@ recipes:
       cast(b.amount as decimal(18,2)) as buffer, case when w.unconverted = 0 then w.cash - w.calls - w.payments < b.amount end as below_buffer, cast(w.unconverted as integer) as unconverted
       from w join legal_entities as e on e.id = w.entity_id left join buf as b on b.entity_id = w.entity_id)
       select r.*, (select min(y.window_days) from r as y where y.entity = r.entity and y.below_buffer) as first_below_window,
-      coalesce(r.cash_after = min(r.cash_after) over (partition by r.window_days), false) as lowest_in_window from r
+      coalesce(r.cash_after = min(r.cash_after) over (partition by r.window_days), false) as lowest_in_window from r order by r.window_days, r.entity
     measure: cash_after
     columns:
       as_of: The entity's latest cash date; the windows start here.
@@ -971,7 +975,13 @@ recipes:
   - id: idle_cash
     label: Idle cash above the 90 day need
     cards: [70]
-    names: [idle cash, cash above 90 day need, cash above what we need, surplus cash, idle cash above the buffer]
+    names: [idle cash, cash above 90 day need, cash above what we need, surplus cash, idle cash above the buffer, sitting idle, cash headroom, above what it needs]
+    words_all: [[idle, surplus, spare], [cash, invest, repay], [need, needs, above, invest, repay, hold]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: short, all: true, say: "{entity} is short {short}: cash {cash_usd_equivalent} against {outflow} of calls and approved or scheduled payments in the next {window_days} days and the {buffer} buffer"}
+      - {if: not short, all: true, say: "{entity} holds {idle} above its need: cash {cash_usd_equivalent} less {outflow} of calls and approved or scheduled payments in the next {window_days} days and the {buffer} buffer"}
+      - {once: true, all: true, say: "Idle cash across the entities is {total_idle}"}
+      - {if: total_short, once: true, all: true, say: "Shortfalls across the entities add up to {total_short}"}
     may_read: [position_snapshots, instruments, portfolios, legal_entities, bank_accounts, cash_movements, market_observations, business_rules, rule_versions]
     never_read: [commitments, transactions]
     why: Idle cash is what is left of the administrator's cash after the ladder's outflow of the signed window and the signed buffer. The outflow is the same as the liquidity ladder's (open calls, and payments approved or scheduled); commitments say what may be called, not what is due.
@@ -1053,7 +1063,10 @@ recipes:
     label: Months of spending covered
     cards: [73]
     names: [cash runway, runway, months of cash, months of spending covered, months the family can spend]
-    words_all: [[months, runway], [spend, spending, sustainable]]
+    words_all: [[months, runway, sustainable], [spend, spending, sustainable]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, all: true, say: "Cash of {cash_usd_eq} covers {months_of_cash} months of spending at {average_monthly_spend} a month over the {months} months from {first_day} to {last_day}; with the liquid book of {liquid_book} it covers {months_of_cash_and_liquid_book} months"}
+      - {sort: spend_usd, all: true, lead: "Spent on, largest first:", say: "{category} {spend_usd}"}
     may_read: [position_snapshots, instruments, portfolios, bank_accounts, office_expenses, market_observations]
     never_read: [cash_movements, commitments, transactions]
     why: The spending is the office's own expense ledger (office_expenses), not the bank lines, which would count the same payment again and mix in calls and trades (A33). The cash is the administrator's balance.
@@ -1116,6 +1129,11 @@ recipes:
     label: Twelve month cash forecast
     cards: [72]
     names: [cash forecast, 12 month cash forecast, twelve month cash forecast, cash in cash out closing by month, "cash in, cash out, closing by month"]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {once: true, all: true, say: "Cash starts at {opening_cash_usd_eq} on {as_of} and ends {horizon} at {closing_end}; the lowest month is {lowest_month} at {lowest_closing}"}
+      - {if: cash_to_raise, once: true, all: true, say: "To stay above the {floor} floor the family needs to raise {cash_to_raise}"}
+      - {if: below_floor, all: true, lead: "Months under the {floor} floor:", say: "{month} closes at {closing}: opening {opening}, distributions {distributions}, income {income}, calls {calls}, expenses {expenses}"}
+      - {if: not below_floor, all: true, lead: "Months above it:", say: "{month} closes at {closing}: opening {opening}, distributions {distributions}, income {income}, calls {calls}, expenses {expenses}"}
     may_read: [position_snapshots, instruments, portfolios, bank_accounts, cash_movements, market_observations, business_rules, rule_versions, valuation_observations, documents, extracted_fields]
     never_read: [commitments, transactions]
     why: The opening is the administrator's cash; the calls are the open noticed calls plus the signed monthly call assumption (the register says what may be called, not when); distributions are the managers' projected payout rates on the latest statement values (as expected_distributions); income is the expected coupons and dividends; expenses are the payment schedule, held payments left out by the signed rule. Every assumption is a signed office rule, never fixed in the recipe.

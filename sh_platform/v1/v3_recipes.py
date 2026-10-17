@@ -28,6 +28,7 @@ MARK, SAVED = "Recipe ", "Saved design "
 COUNTLIKE = re.compile(r"\b(?:number of|count of|how many|counts?)\b", re.I)  # a count of breaks is not the break ("Matched trades count", c7)
 # "Breaks over 5,000": the break; its threshold is the signed tolerance, applied when the figure is answered (v3_rule_checks)
 THRESHOLD = re.compile(r"\s*\b(?:over|above|exceed\w*|more than|at least|greater than)\s+[$\d][\d,.]*\s*[km]?\b.*$", re.I)
+LEAD_COUNT = re.compile(r"^\s*(?:the\s+)?(?:total\s+)?(?:count|number) of\b|^\s*how many\b", re.I)  # a definition that leads with a count: a count of items is not a recipe's amount (live r3b uc-053)
 TOL = 0.01
 
 
@@ -71,6 +72,14 @@ SHARE = {"percent", "percentage", "proportion", "ratio", "share", "fraction", "p
 SPLIT = re.compile(r"\b(?:(?:by|per|for each|each)\s+[a-z]+|in\s+[a-z]{3})\b", re.I)  # "cash by entity", "net worth in usd": a split or a unit, not another figure
 
 
+def _covers(words: set, groups: list) -> bool:
+    """A word of each word group, each word serving one group only: "limits" alone is not both "approval" and "over" (live r3b: a figure about policy limits
+    was bound to the payments over their approval limit)."""
+    def pick(i: int, used: frozenset) -> bool:
+        return i == len(groups) or any(pick(i + 1, used | {w}) for w in words & set(groups[i]) - used)
+    return pick(0, frozenset())
+
+
 FLAG = re.compile(r"\b(?:flags?|indicators?|availability|available|sufficiency)\b")  # the words of a yes/no figure that are not the quantity it tests
 
 
@@ -96,19 +105,21 @@ def _match(kpi: dict, strict: bool = True) -> dict | None:
     text, have = _words(name), set(_words(name).split())
     core = _words(SPLIT.sub(" ", name)).strip()
     best, score, tied = None, 0, False
+    got_of: dict[str, int] = {}
     for r in recipes():
         got = max([10 + len(n) for n in r.get("names") or [] if _words(n) in text and (not strict or " " in n.strip() or _words(n).strip() == core)] or [0])
-        if r.get("words_all") and all(have & set(g) for g in r["words_all"]):
+        if r.get("words_all") and _covers(have, r["words_all"]):
             got = max(got, 25)
+        got_of[r["id"]] = got
         if got > score:
             best, score, tied = r, got, False
         elif got and got == score:
             tied = True
     said = kpi.get("definition") or kpi.get("formula")  # a figure drafted with a formula only is read by it too
     if tied:  # two recipes answer to the name equally: the one whose written formula the figure's own words are closest to, when one leads; else the model and the judge decide (w2)
-        top = [r for r in recipes() if max([10 + len(n) for n in r.get("names") or [] if _words(n) in text and (not strict or " " in n.strip() or _words(n).strip() == core)] or [0]) == score]
+        top = [r for r in recipes() if got_of[r["id"]] == score]  # the same scores that found the tie (a words_all tie has no name to re-score by)
         near = sorted(((len(_stems(said) & _stems(f"{r['label']} {r.get('formula', '')}")), r) for r in top), key=lambda t: -t[0])
-        return near[0][1] if said and near[0][0] > near[1][0] else None
+        return near[0][1] if said and len(near) > 1 and near[0][0] > near[1][0] else None
     if best is None and kpi.get("definition") and not set(_words(kpi["definition"]).split()) & SHARE:
         # the definition leads with a recipe's phrase ("Cash balance at month start minus ..." leads with cash_by_entity's "cash balance"): that is the quantity it
         # states first. A phrase the definition only mentions ("Opening cash + ... - known obligations") is a term of another figure, so it is none; so is a
@@ -117,11 +128,14 @@ def _match(kpi: dict, strict: bool = True) -> dict | None:
         # with cash_runway's phrase, but runway is months of spending, and that figure never says spending (uc-023 r1)
         dfn, full = _words(kpi["definition"]), set(_words(f"{name} {kpi['definition']}").split())
         named_in_definition = [r for r in recipes() if any(" " in n.strip() and dfn.startswith(_words(n)) for n in r.get("names") or [])
-                               and all(full & set(g) for g in r.get("words_all") or [])]
+                               and _covers(full, r.get("words_all") or [])]
         best = named_in_definition[0] if len(named_in_definition) == 1 else None
-    if best is None and kpi.get("definition"):
-        full = set(_words(f"{name} {kpi['definition']}").split())
-        hits = [r for r in recipes() if r.get("words_all") and all(full & set(g) for g in r["words_all"])]
+    if best is None and kpi.get("definition") and not LEAD_COUNT.match(str(kpi["definition"])):
+        # the word sets of name and definition together; the figure's own name must share a word with the recipe (live r3b uc-085: "Reconciliation check (paid
+        # vs bank)" is not the missing statements recipe because its definition says "received in bank statements")
+        full, mine = set(_words(f"{name} {kpi['definition']}").split()), _stems(name)
+        hits = [r for r in recipes() if r.get("words_all") and _covers(full, r["words_all"])
+                and mine & _stems(" ".join([r["label"], *(r.get("names") or []), *(w for g in r["words_all"] for w in g)]))]
         best = hits[0] if len(hits) == 1 else None  # more than one: left to the model and the judge
     return best
 
@@ -295,7 +309,7 @@ def asks(question: str, r: dict) -> bool:
     """The question's own words name the recipe: one of its phrases, or a word from each of its word groups."""
     text = _words(question)
     return any(" " in n.strip() and _words(n) in text for n in r.get("names") or []) or bool(
-        r.get("words_all") and all(set(text.split()) & set(g) for g in r["words_all"]))
+        r.get("words_all") and _covers(set(text.split()), r["words_all"]))
 
 
 def shown(k: dict) -> str:
