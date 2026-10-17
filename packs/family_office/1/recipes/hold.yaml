@@ -134,7 +134,7 @@ recipes:
     label: Allocation by asset class and entity
     status: ready
     cards: [31]
-    names: [allocation, allocation by asset class, asset allocation]
+    names: [allocation, allocation by asset class, asset allocation, private market allocation, private markets allocation, private equity allocation, in each asset class, by asset class and entity]  # "in each asset class" is the question's words (w7)
     may_read: [position_snapshots, instruments, portfolios, legal_entities]
     never_read: [commitments, cash_movements, transactions]
     why: "Allocation is a share of what is held, so it reads the positions (counted as net_worth counts them) and the class on the instrument. An instrument with no class is shown as unclassified, never dropped."
@@ -177,7 +177,7 @@ recipes:
     label: Private fund value roll-forward
     status: ready
     cards: [38]
-    names: [nav rollforward, value roll-forward, nav roll-forward]
+    names: [nav rollforward, value roll-forward, nav roll-forward, private fund valuation reconciliation, valuation reconciliation, latest reported nav, private fund value]
     may_read: [valuation_observations, cash_movements, instruments, extracted_fields]
     never_read: [position_snapshots, commitments, transactions]
     why: "The change in a fund's value between two quarter ends is explained by the calls paid in, the distributions paid out and the gain. Calls and distributions are the confirmed cash movements of the fund; the manager's own gain is the net gain or loss line of its statement."
@@ -249,7 +249,7 @@ recipes:
     label: Liquid book gain or loss this month
     status: ready
     cards: [43]
-    names: [liquid pnl, gain or loss this month, month to date gain]
+    names: [liquid pnl, gain or loss this month, month to date gain, liquid book profit and loss, daily liquid book profit and loss, liquid book gain or loss]
     may_read: [position_snapshots, transactions, instruments, portfolios]
     never_read: [commitments, cash_movements]
     why: "The gain is the change in value less what was put in or taken out by trading, so it reads the positions of the listed instruments and their trades. Dividends and coupons are income, not part of this figure."
@@ -390,7 +390,7 @@ recipes:
     label: Credit facility headroom
     status: ready
     cards: [17]
-    names: [facility headroom, loan headroom, headroom, undrawn facility]
+    names: [facility headroom, loan headroom, headroom, undrawn facility, loan debt, debt outstanding, outstanding principal, loan outstanding, loan principal]
     may_read: [credit_facilities, legal_entities]
     never_read: [position_snapshots, commitments, cash_movements, transactions]
     why: "Headroom is what a facility still allows: its limit less what is drawn at its latest statement. A facility whose terms state no limit has no headroom figure; it is left empty, never guessed."

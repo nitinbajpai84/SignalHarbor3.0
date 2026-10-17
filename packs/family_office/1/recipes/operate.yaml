@@ -239,7 +239,7 @@ recipes:
   - id: statement_timeliness
     label: Statements received late or never, in business days
     cards: [19]
-    names: [statement timeliness, statements received late, late or missing statements, bank statements late or missing, business days late]
+    names: [statement timeliness, statements received late, late or missing statements, bank statements late or missing, business days late, statement receipt status, statement receipt]
     may_read: [expected_statements, documents, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: A statement is late only against what was expected (expected_statements), and the first one received counts; an amended re-issue is a correction, not a delivery.
@@ -314,7 +314,7 @@ recipes:
   - id: statement_vs_admin
     label: Latest manager statement against the administrator value
     cards: [26]
-    names: [statement against administrator, statement less administrator value, statement vs admin, manager statement against administrator]
+    names: [statement against administrator, statement less administrator value, statement vs admin, manager statement against administrator, statement variance, administrator value minus manager statement, variance against administrator]
     may_read: [valuation_observations, documents, position_snapshots, instruments, source_records, source_batches, source_systems]
     never_read: [commitments, cash_movements, transactions]
     why: The administrator may still carry a value from an earlier date. The comparison is the latest statement the office knows against the latest administrator position of the same fund, and the administrator row's own status says why they differ.

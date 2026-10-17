@@ -331,3 +331,67 @@ def test_the_question_North_was_asked_adds_the_tie_out_and_the_intercompany_figu
     k28 = _r1("uc-028")
     R.bind(None, None, k28, "We moved money between entities in August.", [], said28)
     assert [(k["name"], k["built_from"]) for k in k28 if k.get("pack_suggested")] == [("Intercompany balance", "intercompany_balance")]
+
+
+# Live run 2 (docs/v3/LIVE-R2-ANALYSIS.md, class a): the brief figures of the failing offices, by the exact names and definitions North wrote. Each must be
+# bound to the recipe that computes it, by the rules alone (no model), so the same brief binds the same way on every build.
+R2_FIGURES = [
+    ("uc-015", "Cash availability", "Cash balance at month start minus total scheduled payments; must be non-negative.", "cash_by_entity"),
+    ("uc-017", "Loan debt", "Total outstanding principal from the monthly loan statement.", "facility_headroom"),
+    ("uc-026", "Statement variance", "Administrator value minus manager statement value", "statement_vs_admin"),
+    ("uc-031", "Private\u2011market allocation", "Value of funded private-equity and venture-capital holdings divided by total assets", "allocation"),
+    ("uc-034", "Minimum ticket vs policy limit", "Compare the manager's minimum ticket size with the maximum ticket allowed in policy.", "mandate_fit"),
+    ("uc-034", "Ticket vs uncalled commitments", "Ticket amount expressed as a proportion of total uncalled commitments still available.", "called_to_date"),
+    ("uc-038", "Quarterly private\u2011fund valuation reconciliation", "Previous quarter-end value plus calls less distributions gives the net change", "nav_rollforward"),
+    ("uc-040", "Called amount (including latest call)", "Sum of all capital calls received to date, with the most recent call added", "called_to_date"),
+    ("uc-040", "Latest value", "Latest reported NAV or market value of each private fund", "nav_rollforward"),
+    ("uc-040", "Amendment status", "Whether the manager has amended the latest valuation", "change_since_report"),
+    ("uc-040", "Unfunded amount", "Commitment less total called amount to date", "commitments_by_fund"),
+    ("uc-043", "Daily liquid\u2011book profit\u2011and\u2011loss", "Change in the value of the liquid book since the start of the month, after accounting for cash flows from trading.", "liquid_pnl_mtd"),
+    ("uc-044", "Quarter return", "Time\u2011weighted return for the quarter, net of fees, chained from month\u2011end values", "time_weighted_return"),
+    ("uc-044", "Year\u2011to\u2011date return", "Time\u2011weighted return from start of year to current quarter\u2011end, net of fees", "time_weighted_return"),
+    ("uc-044", "Benchmark return", "Return of the agreed benchmark over the same period (quarter or YTD)", "time_weighted_return"),
+    ("uc-047", "Private\u2011market allocation", "Funded private equity and VC carrying value divided by total asset value; unfunded commitments shown separately.", "allocation"),
+    ("uc-049", "Fee share of gain", "Manager fee paid divided by the manager's reported gain for the period", "fee_drag"),
+    ("uc3", "Statement receipt status", "For each fund: expected month\u2011end statement date, actual receipt date, days late (actual \u2013 expected), and a boolean flag if never received.", "statement_timeliness"),
+    ("uc-032", "Allocation drift", "Difference between actual asset allocation and policy target ranges.", "drift_vs_target"),
+]
+
+
+@pytest.mark.parametrize("uc,name,definition,want", R2_FIGURES, ids=[f"{u}-{n}"[:60] for u, n, _, _ in R2_FIGURES])
+def test_a_live_r2_figure_binds_to_the_recipe_that_computes_it(uc, name, definition, want):
+    r = R.match({"name": name, "definition": definition, "formula": definition})
+    assert (r or {}).get("id") == want, uc
+
+
+def test_a_question_adds_the_recipe_its_words_name_when_no_figure_does():
+    # uc-031 / uc-045 / uc-047: the asked question names the recipe, not a figure of the brief
+    assert [r["id"] for r in R.recipes() if R.asks("What share of the family is in each asset class, and in each entity?", r)] == ["allocation"]
+    assert [r["id"] for r in R.recipes() if R.asks("Whether to sign off and issue the report: which sections are ready?", r)] == ["report_ready"]
+    assert [r["id"] for r in R.recipes() if R.asks("Which matters to put to the committee and what to recommend?", r)] == ["pack_items"]
+
+
+def test_bind_by_rules_gives_each_live_r2_figure_its_recipe_and_adds_the_asked_one():
+    kpis = [{"name": n, "definition": d, "formula": d, "period": "monthly", "owner": "x", "status": "defined"} for _, n, d, _ in R2_FIGURES[:4]]
+    R.bind(None, None, kpis, "What do we owe each family member this month, and do we have the cash?", [], "")
+    assert [k["built_from"] for k in kpis] == ["cash_by_entity", "facility_headroom", "statement_vs_admin", "allocation"]
+    assert all(k["built_from_by"] == R.RULES for k in kpis)
+    qk: list[dict] = [{"name": "Net worth", "definition": "Total value of all family assets", "formula": "x", "period": "monthly", "owner": "x", "status": "defined"}]
+    R.bind(None, None, qk, "What share of the family is in each asset class, and in each entity?", [], "")
+    added = [k for k in qk if k.get("pack_suggested")]
+    assert [(k["name"], k["built_from"]) for k in added] == [("Allocation by asset class and entity", "allocation")]
+
+
+def test_a_definition_that_only_mentions_a_recipe_term_or_states_a_ratio_is_not_bound_by_it():
+    # a forecast that mentions "known obligations" is not the allowances recipe; a percentage of cash is not the cash balance; a figure whose definition
+    # leads with another term is not the recipe that term names
+    assert R.match({"name": "Available cash after buffer", "definition": "Opening cash + approved inflows \u2013 known obligations \u2013 pending calls \u2013 $250,000 buffer"}) is None
+    assert R.match({"name": "Cash drag", "definition": "Cash balance expressed as a percentage of total assets, indicating idle capital."}) is None
+    assert R.match({"name": "Fee ratio", "definition": "Total fees paid (management, performance, custody) divided by total asset value."}) is None
+    assert R.match({"name": "Assets", "definition": "Total assets under management reported in the questionnaire"}) is None
+
+
+def test_the_age_of_the_latest_value_is_not_nav_rollforward():
+    # uc-021 (score50 card 21): "latest value" is a name of nav_rollforward's latest reported NAV, but "the age of the latest value" is another figure
+    k = {"name": "Figure Age of the latest value per fund", "definition": "As-of date less the latest valuation date, flagged above 90 days."}
+    assert (R.match(k) or {}).get("id") != "nav_rollforward"
