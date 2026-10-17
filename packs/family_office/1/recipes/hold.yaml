@@ -430,19 +430,373 @@ recipes:
 
   - id: currency_exposure
     label: Currency exposure
-    status: stub
+    status: ready
     cards: [64]
-    names: [currency exposure, exposure by currency]
-    may_read: [position_snapshots, fx_confirmations, market_observations, instruments]
-    formula: Market value by currency over net worth, before and after the open FX forwards (the bought leg added, the sold leg taken off).
-    sql: null
+    names: [currency exposure, exposure by currency, fx exposure, sgd exposure, unhedged exposure]
+    may_read: [position_snapshots, valuation_observations, transactions, fx_confirmations, market_observations, instruments]
+    never_read: [commitments, cash_movements]
+    why: "What the family owns in each currency is its investments (the funds at their latest value known, the listed holdings at the latest month end, as the allocation counts them) plus the administrator's cash, and an open FX forward moves value from the currency sold to the currency bought. A commitment is a promise, not a holding."
+    formula: One row for each currency. investments = the latest value of each fund known (valuation_observations, valued on or before the latest month end loaded, received by the as-of date; a superseded value out, an estimate only when nothing else of that date) plus the listed holdings at the latest month end (a position of an instrument with no valuation). cash = the administrator's cash positions (the instruments named Cash <currency>) at the latest date. The two added are spot_native, and spot_usd_eq converts it at the latest USD fixing on or before the as-of date (market_observations, fx_fixing; USD is 1). The open forwards are the executed forward bookings (transactions) that settle after the as-of date; the currency bought is the booking's currency with its cash amount, the currency sold is the one on the bank's confirmation of the same reference with the booking's quantity; a forward with no confirmation has no known sold currency and is counted in unplaced_forwards, never guessed. fwd_bought and fwd_sold are those legs, fwd_net_usd_eq their net at the fixing, after_usd_eq = spot_usd_eq + fwd_net_usd_eq, share_after_pct its percent of the family total (spot, in USD). fwd_net_confirmed is the same net read from the bank's confirmations of forwards still open, and fwd_gap = confirmed less booked (zero when the bank agrees with the booking). The family reports in USD (the base currency of every portfolio). No hedge limit is signed, so none is applied here.
+    grain: By currency at the as-of date
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      me as (select max(p.position_date) as d from positions as p where p.position_date = last_day(p.position_date)),
+      fx as (select o.quote_currency as currency, arg_max(o.value, o.observed_at) as rate from market_observations as o
+      where o.observation_type = 'fx_fixing' and o.base_currency = 'USD' and cast(o.observed_at as date) <= (select d from today)
+      and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id) group by o.quote_currency),
+      vals as (select o.*, row_number() over (partition by o.instrument_id order by o.valuation_date desc, coalesce(o.approval_status = 'estimate', false), o.recorded_at desc, o.id) as rn
+      from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)
+      and o.valuation_date <= (select d from me) and cast(o.received_at as date) <= (select d from today)),
+      inv as (select v.currency, sum(v.value_amount) as v from vals as v where v.rn = 1 group by v.currency
+      union all select p.currency, sum(p.source_market_value) from positions as p join instruments as i on i.id = p.instrument_id
+      where p.position_date = (select d from me) and i.instrument_type <> 'cash' and not exists (select 1 from valuation_observations as o where o.instrument_id = p.instrument_id) group by p.currency),
+      cash as (select c.currency, sum(c.source_market_value) as v from (select p.currency, p.source_market_value,
+      row_number() over (partition by p.portfolio_id, p.instrument_id order by p.position_date desc) as rk from positions as p join instruments as i on i.id = p.instrument_id
+      where i.instrument_type = 'cash' and i.canonical_name = 'Cash ' || p.currency and p.position_date <= (select d from today)) as c where c.rk = 1 group by c.currency),
+      cfm as (select c.* from fx_confirmations as c where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = c.id)
+      and c.value_date > (select d from today) and c.trade_date <= (select d from today)),
+      fwd as (select t.external_trade_id as ref, t.currency as bought_ccy, t.cash_amount as bought, c.currency_sold as sold_ccy, t.quantity_delta as qty
+      from transactions as t join instruments as i on i.id = t.instrument_id
+      left join (select * from fx_confirmations as y where not exists (select 1 from fx_confirmations as x where x.supersedes_fx_confirmation_id = y.id)) as c on c.trade_reference = t.external_trade_id
+      where i.instrument_type = 'fx_forward' and t.status = 'executed' and t.settlement_date > (select d from today) and t.trade_date <= (select d from today)
+      and not exists (select 1 from transactions as x where x.supersedes_transaction_id = t.id)),
+      legs as (select bought_ccy as currency, bought as amt, 'booked' as src from fwd
+      union all select sold_ccy, qty, 'booked' from fwd where sold_ccy is not null
+      union all select currency_bought, amount_bought, 'confirmed' from cfm
+      union all select currency_sold, -amount_sold, 'confirmed' from cfm),
+      ccy as (select currency from inv union select currency from cash union select currency from legs),
+      m as (select k.currency, (select d from today) as as_of, (select d from me) as month_end, coalesce(f.rate, case when k.currency = 'USD' then 1 end) as rate,
+      coalesce((select sum(v) from inv where inv.currency = k.currency), 0) as investments, coalesce((select v from cash where cash.currency = k.currency), 0) as cash,
+      coalesce((select sum(amt) filter (where amt > 0) from legs where legs.currency = k.currency and src = 'booked'), 0) as fwd_bought,
+      coalesce(-(select sum(amt) filter (where amt < 0) from legs where legs.currency = k.currency and src = 'booked'), 0) as fwd_sold,
+      coalesce((select sum(amt) from legs where legs.currency = k.currency and src = 'confirmed'), 0) as fwd_net_confirmed,
+      (select count(*) from fwd where sold_ccy is null) as unplaced_forwards from ccy as k left join fx as f on f.currency = k.currency),
+      u as (select m.*, m.investments + m.cash as spot_native, round((m.investments + m.cash) / m.rate, 2) as spot_usd_eq,
+      round((m.fwd_bought - m.fwd_sold) / m.rate, 2) as fwd_net_usd_eq from m)
+      select u.currency, u.as_of, u.month_end, cast(u.rate as decimal(18,6)) as rate, cast(u.investments as decimal(18,2)) as investments, cast(u.cash as decimal(18,2)) as cash,
+      cast(u.spot_native as decimal(18,2)) as spot_native, cast(u.spot_usd_eq as decimal(18,2)) as spot_usd_eq, cast(u.fwd_bought as decimal(18,2)) as fwd_bought,
+      cast(u.fwd_sold as decimal(18,2)) as fwd_sold, cast(round(u.fwd_bought / u.rate, 2) as decimal(18,2)) as fwd_bought_usd_eq, cast(u.fwd_net_usd_eq as decimal(18,2)) as fwd_net_usd_eq,
+      cast(u.spot_usd_eq + u.fwd_net_usd_eq as decimal(18,2)) as after_usd_eq,
+      cast(sum(u.spot_usd_eq) over () as decimal(18,2)) as family_total_usd_eq,
+      cast(100 * u.spot_usd_eq / nullif(sum(u.spot_usd_eq) over (), 0) as decimal(9,2)) as share_spot_pct,
+      cast(100 * (u.spot_usd_eq + u.fwd_net_usd_eq) / nullif(sum(u.spot_usd_eq) over (), 0) as decimal(9,2)) as share_after_pct,
+      cast(u.fwd_net_confirmed as decimal(18,2)) as fwd_net_confirmed, cast(u.fwd_net_confirmed - (u.fwd_bought - u.fwd_sold) as decimal(18,2)) as fwd_gap,
+      cast(u.unplaced_forwards as integer) as unplaced_forwards, (u.currency <> 'USD') as non_base, (u.rate is null) as no_rate
+      from u
+    measure: after_usd_eq
+    columns:
+      investments: The funds at their latest value known plus the listed holdings at the latest month end, in the currency shown.
+      cash: The administrator's cash at the latest date, in the currency shown.
+      spot_usd_eq: What is held in the currency (investments and cash), in USD at the latest fixing.
+      fwd_bought: The open forwards' bought leg in the currency, as booked.
+      fwd_sold: The open forwards' sold leg in the currency, as booked (a positive amount).
+      after_usd_eq: What is held in the currency after the open forwards, in USD at the fixing (the bought leg added, the sold leg taken off).
+      family_total_usd_eq: Everything held, in USD (the same on every row).
+      share_after_pct: The currency's after-forward amount as a percent of the family total.
+      fwd_gap: The open forwards in the currency as the bank confirms them, less as booked (positive means the bank confirmed more).
+      unplaced_forwards: How many open forwards have no confirmation, so no known sold currency (the same on every row).
+      non_base: True for a currency other than USD.
+    tie_out:
+      label: The forward legs bought add up to the open forwards as booked
+      sql: >-
+        select (select coalesce(sum(fwd_bought), 0) from {name}), (select coalesce(sum(t.cash_amount), 0) from transactions as t join instruments as i on i.id = t.instrument_id
+        where i.instrument_type = 'fx_forward' and t.status = 'executed' and t.settlement_date > (select max(as_of) from {name}) and t.trade_date <= (select max(as_of) from {name}))
 
+  - id: actions_next_14d
+    label: Corporate actions in the next 14 days
+    status: ready
+    cards: [55]
+    names: [corporate actions, actions next 14 days, corporate action calendar, dividends coming, coupons coming, elections due, tender offer]
+    may_read: [corporate_actions, documents, extracted_fields, position_snapshots, instruments]
+    never_read: [commitments, transactions]
+    why: "What is coming on the liquid book is what the custodian's notices announce: an ex-date or a pay date in the window is a booking, an election with a deadline in the window is a decision. The cash to book is the notice's own figure at the holding it states, never a rate worked out here."
+    formula: "One row for each corporate action as it stands (a re-issued notice supersedes the earlier one). The window is the as-of date (the latest position date) to 14 days after it, both days in (the card's 14 days). bucket = decide when the notice needs an election and its deadline is in the window; missed when the deadline has passed; book when no election is needed and the ex-date or the pay date is in the window; later when the event is after the window; past otherwise. quantity and expected_cash are the notice's fields (quantity_held, expected_cash; a corrected value wins, a rejected one is out). For a decision, offer_price is the notice's price, last_price the position's value over its quantity at the as-of date, premium_pct the offer over that price, in percent. cash_to_book is the sum of expected_cash of the bookings."
+    grain: By corporate action notice
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      ca as (select c.* from corporate_actions as c where not exists (select 1 from corporate_actions as x where x.supersedes_corporate_action_id = c.id)),
+      fld as (select cast(f.document_id as varchar) as doc, f.field_name, coalesce(try_cast(f.corrected_value_text as decimal(28,10)), f.value_numeric) as v from extracted_fields as f
+      join documents as d on d.id = f.document_id where d.document_type = 'corporate_action_notice' and f.review_status <> 'rejected' and f.field_name in ('quantity_held', 'expected_cash')),
+      px as (select p.instrument_id, sum(p.source_market_value) / nullif(sum(p.quantity), 0) as price from positions as p where p.position_date = (select d from today) group by p.instrument_id),
+      s as (select i.canonical_name as security, replace(c.action_type, '_', ' ') as event, c.action_type, c.ex_date, c.pay_date, c.election_required, c.election_deadline as respond_by,
+      c.custodian_ref, t.d as window_from, cast(t.d + 14 as date) as window_to,
+      (select max(v) from fld where fld.doc = c.source_document_id and fld.field_name = 'quantity_held') as quantity,
+      (select max(v) from fld where fld.doc = c.source_document_id and fld.field_name = 'expected_cash') as expected_cash,
+      case when c.election_required then c.rate_per_unit end as offer_price, case when c.election_required then x.price end as last_price,
+      case when c.election_required and c.election_deadline between t.d and t.d + 14 then 'decide' when c.election_required and c.election_deadline < t.d then 'missed'
+      when not coalesce(c.election_required, false) and (c.ex_date between t.d and t.d + 14 or c.pay_date between t.d and t.d + 14) then 'book'
+      when greatest(c.ex_date, c.pay_date, c.election_deadline) > t.d + 14 then 'later' else 'past' end as bucket
+      from ca as c join instruments as i on i.id = c.instrument_id cross join today as t left join px as x on x.instrument_id = c.instrument_id)
+      select s.security, s.event, s.bucket, s.ex_date, s.pay_date, s.respond_by, s.window_from, s.window_to, cast(s.quantity as decimal(18,2)) as quantity,
+      cast(s.expected_cash as decimal(18,2)) as expected_cash, cast(s.offer_price as decimal(18,4)) as offer_price, cast(round(s.last_price, 2) as decimal(18,2)) as last_price,
+      cast(round(100 * (s.offer_price / nullif(round(s.last_price, 2), 0) - 1), 2) as decimal(9,2)) as premium_pct, s.custodian_ref,
+      cast(coalesce(sum(s.expected_cash) filter (where s.bucket = 'book') over (), 0) as decimal(18,2)) as cash_to_book,
+      cast(count(*) filter (where s.bucket = 'book') over () as integer) as book_count, cast(count(*) filter (where s.bucket = 'decide') over () as integer) as decide_count,
+      (row_number() over (partition by s.bucket order by coalesce(s.respond_by, s.pay_date), s.security) = 1) as first_in_bucket
+      from s
+    measure: expected_cash
+    columns:
+      bucket: "book (a mandatory cash event in the window), decide (an election due in the window), missed (an election whose deadline has passed), later (after the window), past."
+      quantity: The holding the notice states.
+      expected_cash: The cash the notice states, in the notice's currency (none for an election until the office elects).
+      respond_by: The election deadline of the notice, when it needs one.
+      offer_price: The price the notice offers, for an election.
+      last_price: The position's value over its quantity at the as-of date.
+      premium_pct: The offer price over the last price, in percent.
+      cash_to_book: The expected cash of all the bookings in the window (the same on every row).
+      first_in_bucket: True on one row of each bucket (the earliest deadline or pay date), so a signal can read the counts once.
+    tie_out:
+      label: Every corporate action as it stands has one row
+      sql: >-
+        select (select count(*) from {name}), (select count(*) from corporate_actions as c where not exists (select 1 from corporate_actions as x where x.supersedes_corporate_action_id = c.id))
+
+  - id: real_asset_value
+    label: Real assets register
+    status: ready
+    cards: [65]
+    names: [real assets, real asset register, property register, real asset value, property and art, what real assets we own]
+    may_read: [real_assets, legal_entities, market_observations, position_snapshots]
+    never_read: [commitments, cash_movements, transactions]
+    why: "A real asset is worth its latest appraisal; an older appraisal is history. Who owns it is the entity on the appraisal, and the title deed's registered holder is set beside it, never put in its place."
+    formula: "One row for each real asset: its latest appraisal on or before the as-of date (the latest position date; a superseded appraisal out). value_usd = the appraised value at the latest USD fixing on or before the as-of date (market_observations, fx_fixing; USD is 1). type_total_usd and entity_total_usd sum value_usd by asset type and by owning entity, total_usd over all. title_differs is true when the title holder is not the owning entity's name."
+    grain: By real asset
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      fx as (select o.quote_currency as currency, arg_max(o.value, o.observed_at) as rate from market_observations as o
+      where o.observation_type = 'fx_fixing' and o.base_currency = 'USD' and cast(o.observed_at as date) <= (select d from today)
+      and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id) group by o.quote_currency),
+      a as (select r.*, row_number() over (partition by r.asset_ref order by r.appraised_on desc, r.recorded_at desc, r.id) as rn from real_assets as r
+      where not exists (select 1 from real_assets as x where x.supersedes_real_asset_id = r.id) and r.appraised_on <= (select d from today)),
+      s as (select a.asset_ref, a.asset_name, a.asset_type, e.entity_name as entity, a.title_holder_name as title_holder, a.currency, a.appraised_value, a.appraised_on, a.appraiser,
+      (select d from today) as as_of, coalesce(f.rate, case when a.currency = 'USD' then 1 end) as rate from a left join legal_entities as e on e.id = a.legal_entity_id
+      left join fx as f on f.currency = a.currency where a.rn = 1),
+      v as (select s.*, round(s.appraised_value / s.rate, 2) as value_usd, (s.title_holder is distinct from s.entity) as title_differs from s)
+      select v.asset_ref, v.asset_name, v.asset_type, v.entity, v.title_holder, v.currency, cast(v.appraised_value as decimal(18,2)) as latest_value, v.appraised_on, v.appraiser, v.as_of,
+      cast(v.rate as decimal(18,6)) as rate, cast(v.value_usd as decimal(18,2)) as value_usd,
+      cast(sum(v.value_usd) over (partition by v.asset_type) as decimal(18,2)) as type_total_usd, cast(sum(v.value_usd) over (partition by v.entity) as decimal(18,2)) as entity_total_usd,
+      cast(sum(v.value_usd) over () as decimal(18,2)) as total_usd, v.title_differs, cast(count(*) filter (where v.title_differs) over () as integer) as title_differs_count,
+      (v.rate is null) as no_rate, (row_number() over (partition by v.title_differs order by v.value_usd desc, v.asset_ref) = 1) as first_in_kind
+      from v
+    measure: value_usd
+    columns:
+      latest_value: The latest appraised value, in the asset's currency.
+      value_usd: The latest value in USD at the fixing.
+      type_total_usd: All real assets of the same type, in USD.
+      entity_total_usd: All real assets of the same owning entity, in USD.
+      total_usd: All real assets, in USD (the same on every row).
+      title_holder: The holder the title deed registers (the owner of record on the appraisal when no deed is on file).
+      title_differs: True when the title holder is not the entity that owns the asset.
+      title_differs_count: How many assets have title in another name (the same on every row).
+      no_rate: True when no fixing is loaded for the asset's currency (no USD value, never guessed).
+      first_in_kind: True on the largest asset with title in another name and on the largest one without, so a signal can read one of each.
+    tie_out:
+      label: Every real asset has one row
+      sql: >-
+        select (select count(*) from {name}), (select count(distinct asset_ref) from real_assets)
+
+  - id: appraisal_age
+    label: Appraisal age of the real assets
+    status: ready
+    cards: [66]
+    names: [appraisal age, appraisal due, appraisal overdue, revaluation due, age of appraisal]
+    may_read: [real_assets, legal_entities, position_snapshots]
+    never_read: [commitments, cash_movements, transactions]
+    why: "How old an appraisal is depends on the date the appraiser valued the asset, not on when the report was filed."
+    formula: "One row for each real asset: the as-of date (the latest position date) less the date of its latest appraisal (a superseded appraisal out), in days; due when above 365 days (the card's line)."
+    grain: By real asset
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      a as (select r.*, row_number() over (partition by r.asset_ref order by r.appraised_on desc, r.recorded_at desc, r.id) as rn from real_assets as r
+      where not exists (select 1 from real_assets as x where x.supersedes_real_asset_id = r.id) and r.appraised_on <= (select d from today)),
+      s as (select a.asset_ref, a.asset_name, a.asset_type, e.entity_name as entity, a.appraised_on, a.appraiser, t.d as as_of,
+      cast(date_diff('day', a.appraised_on, t.d) as integer) as age_days, cast(365 as integer) as due_after_days, (date_diff('day', a.appraised_on, t.d) > 365) as due
+      from a cross join today as t left join legal_entities as e on e.id = a.legal_entity_id where a.rn = 1)
+      select s.*, cast(count(*) filter (where s.due) over () as integer) as due_count,
+      coalesce(string_agg(s.asset_name, ', ' order by s.age_days desc) filter (where s.due) over (), 'none') as due_names,
+      (row_number() over (partition by s.due order by s.age_days desc, s.asset_ref) = 1 and s.due) as first_due
+      from s
+    measure: age_days
+    columns:
+      age_days: Days from the latest appraisal to the as-of date.
+      due: True when the latest appraisal is more than 365 days old.
+      due_count: How many assets are due a new appraisal (the same on every row).
+      due_names: Those assets, oldest appraisal first (the same on every row; 'none' when there are none).
+      first_due: True on the asset with the oldest appraisal among those due.
+    tie_out:
+      label: Every real asset has one row
+      sql: >-
+        select (select count(*) from {name}), (select count(distinct asset_ref) from real_assets)
+
+  - id: unrealised_gain
+    label: Unrealised gain by lot
+    status: ready
+    cards: [67]
+    names: [unrealised gain, unrealized gain, unrealised gain by lot, tax lots, lot gains, loss lots, tax loss candidates]
+    may_read: [tax_lots, position_snapshots, instruments, portfolios, business_rules, rule_versions]
+    never_read: [commitments, cash_movements]
+    why: "A gain not yet taken is what an open lot is worth today less what it cost. The lots are the custodian's register; the price is the position's own at the register date, so the lots and the holding agree."
+    formula: "One row for each open lot of the latest register of each portfolio (a superseded lot out). value = the lot's quantity times the price of the holding at the register date (the position's market value over its quantity, same portfolio and instrument); gain = value less cost; days_held = register date less acquired date. holding_value and holding_gain sum by security; book_value is everything the portfolio holds at the register date, and holding_pct the security's share of it, in percent (what the single-name limit measures). exempt is true for a security a signed, approved rule exempts from the single-name limit (rule_versions, dimension single_name_exempt); name_rank ranks the other securities of the portfolio by holding_pct, largest first. total_gain is the gain of all the lots (losses taken off), total_loss the lots with a loss."
+    grain: By tax lot
+    sql: >-
+      create table {name} as with {positions},
+      lots as (select l.* from tax_lots as l where not exists (select 1 from tax_lots as x where x.supersedes_tax_lot_id = l.id) and coalesce(l.status, 'open') = 'open'
+      and l.as_at = (select max(y.as_at) from tax_lots as y where y.portfolio_id = l.portfolio_id)),
+      px as (select p.portfolio_id, p.instrument_id, p.position_date, sum(p.source_market_value) as v, sum(p.quantity) as q from positions as p group by all),
+      book as (select portfolio_id, position_date, sum(v) as total from px group by all),
+      s as (select l.lot_ref as lot, i.canonical_name as security, i.instrument_type, pf.portfolio_name as portfolio, l.acquired_on as acquired, l.as_at,
+      cast(date_diff('day', l.acquired_on, l.as_at) as integer) as days_held, l.quantity, l.cost_amount as cost, l.currency,
+      round(l.quantity * x.v / nullif(x.q, 0), 2) as value, x.v as holding_value, b.total as book_value
+      from lots as l join instruments as i on i.id = l.instrument_id left join portfolios as pf on pf.id = l.portfolio_id
+      left join px as x on x.portfolio_id = l.portfolio_id and x.instrument_id = l.instrument_id and x.position_date = l.as_at
+      left join book as b on b.portfolio_id = l.portfolio_id and b.position_date = l.as_at),
+      ex as (select distinct json_extract_string(v.parameters, '$.instrument') as security from rule_versions as v join business_rules as b on b.id = v.business_rule_id
+      where v.approval_status = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name_exempt'),
+      g as (select s.*, s.value - s.cost as gain, s.security in (select security from ex) as exempt from s)
+      select g.lot, g.security, g.instrument_type, g.portfolio, g.acquired, g.as_at, g.days_held, cast(g.quantity as decimal(18,2)) as quantity, cast(g.cost as decimal(18,2)) as cost,
+      cast(g.value as decimal(18,2)) as value, cast(g.gain as decimal(18,2)) as gain, g.currency, (g.gain < 0) as is_loss,
+      cast(sum(g.gain) over (partition by g.portfolio, g.security) as decimal(18,2)) as holding_gain, cast(g.holding_value as decimal(18,2)) as holding_value,
+      cast(g.book_value as decimal(18,2)) as book_value, cast(100 * g.holding_value / nullif(g.book_value, 0) as decimal(9,2)) as holding_pct,
+      g.exempt, case when not g.exempt then dense_rank() over (partition by g.portfolio, g.exempt order by g.holding_value desc, g.security) end as name_rank,
+      cast(count(*) over () as integer) as lots, cast(coalesce(sum(g.gain) over (), 0) as decimal(18,2)) as total_gain,
+      cast(coalesce(sum(g.gain) filter (where g.gain < 0) over (), 0) as decimal(18,2)) as total_loss,
+      cast(count(*) filter (where g.gain < 0) over () as integer) as loss_lots, cast(count(*) filter (where g.value is null) over () as integer) as unpriced_lots,
+      (row_number() over (partition by g.portfolio, g.security order by g.acquired, g.lot) = 1) as first_of_security,
+      (row_number() over (order by g.gain, g.lot) = 1) as first_row
+      from g
+    measure: gain
+    columns:
+      value: The lot's quantity at the holding's price on the register date.
+      gain: Value less cost (negative is a loss).
+      days_held: Days from the acquired date to the register date.
+      holding_gain: The gain of all the lots of the same security.
+      holding_value: The holding of the security at the register date.
+      book_value: Everything the portfolio holds at the register date.
+      holding_pct: The security's share of the book, in percent (the measure the single-name limit uses).
+      exempt: True when a signed rule exempts the security from the single-name limit.
+      name_rank: 1 for the largest holding that is not exempt, 2 for the next (none when exempt).
+      total_gain: The gain of all the lots, losses taken off (the same on every row).
+      total_loss: The lots with a loss, added (the same on every row).
+      unpriced_lots: Lots with no position at the register date, so no value (never guessed).
+      first_of_security: True on the oldest lot of each security, so a signal can read the holding once.
+      first_row: True on the lot with the largest loss, so a signal can read the totals once.
+    tie_out:
+      label: The lots add up to the book at the register date
+      sql: >-
+        select (select coalesce(sum(value), 0) from {name}), (select coalesce(max(book_value), 0) from {name})
 
   - id: income_forecast
     label: Dividend and coupon income forecast
-    status: stub
+    status: ready
     cards: [68]
-    names: [income forecast, dividend forecast, coupon income]
-    may_read: [position_snapshots, cash_movements, instruments, market_observations]
-    formula: 'Dividend and coupon cash received in the last twelve months by instrument, carried forward on the instruments held today and labelled an estimate. ponytail: a trailing run rate until a corporate-actions source exists.'
-    sql: null
+    names: [income forecast, dividend forecast, coupon income, income next 12 months, dividend and coupon income]
+    may_read: [cash_movements, instruments, position_snapshots]
+    never_read: [commitments, transactions]
+    why: "The income the liquid book will pay is the dividends and coupons the office's income calendar expects, each at its pay date. Cash already received is a fact, not a forecast; a payment past its date is not counted again."
+    formula: "One row for each expected dividend or coupon (cash_movements, expected, as the income calendar gives it; a superseded line out) paid after the as-of date (the latest position date) and up to one year after it (the card's 12 months). quarter = the calendar quarter of the pay date. quarter_total sums the quarter, total all, coupons and dividends each kind; events counts the payments. Totals are by currency."
+    grain: By expected payment
+    sql: >-
+      create table {name} as with {positions},
+      today as (select max(p.position_date) as d from positions as p),
+      c as (select c.* from cash_movements as c cross join today as t where not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = c.id)
+      and c.confirmation_status = 'expected' and c.movement_type in ('dividend', 'coupon') and c.due_date > t.d and c.due_date <= cast(t.d + interval 1 year as date))
+      select c.due_date as pay_date, i.canonical_name as security, i.instrument_type, c.movement_type as event, cast(c.amount as decimal(18,2)) as amount, c.currency,
+      (select d from today) as period_from, cast((select d from today) + interval 1 year as date) as period_to,
+      cast(year(c.due_date) as varchar) || '-Q' || cast(quarter(c.due_date) as varchar) as quarter,
+      cast(sum(c.amount) over (partition by c.currency, year(c.due_date), quarter(c.due_date)) as decimal(18,2)) as quarter_total,
+      cast(sum(c.amount) over (partition by c.currency) as decimal(18,2)) as total,
+      cast(coalesce(sum(c.amount) filter (where c.movement_type = 'coupon') over (partition by c.currency), 0) as decimal(18,2)) as coupons,
+      cast(coalesce(sum(c.amount) filter (where c.movement_type = 'dividend') over (partition by c.currency), 0) as decimal(18,2)) as dividends,
+      cast(count(*) over (partition by c.currency) as integer) as events,
+      (row_number() over (partition by c.currency order by c.due_date, i.canonical_name) = 1) as first_row
+      from c left join instruments as i on i.id = c.instrument_id
+    measure: amount
+    columns:
+      amount: The expected cash of the payment, in the currency shown.
+      quarter: The calendar quarter of the pay date.
+      quarter_total: The expected income of the quarter.
+      total: The expected income of the 12 months (the same on every row of a currency).
+      coupons: The coupons of the 12 months.
+      dividends: The dividends of the 12 months.
+      events: How many payments are expected.
+      first_row: True on the first payment, so a signal can read the totals once.
+    tie_out:
+      label: Coupons and dividends add up to the total
+      sql: >-
+        select (select coalesce(sum(coupons + dividends), 0) from (select distinct currency, coupons, dividends from {name}) as t), (select coalesce(sum(amount), 0) from {name})
+
+  - id: lookthrough_exposure
+    label: Look-through exposure by company
+    status: ready
+    cards: [69]
+    names: [look-through exposure, lookthrough exposure, what the funds own, look through the funds, exposure through funds, company exposure through funds, fund overlap]
+    may_read: [fund_holdings, source_records, valuation_observations, position_snapshots, instruments, portfolios, business_rules, rule_versions]
+    never_read: [commitments, cash_movements, transactions]
+    why: "What the family owns through a fund is the fund's value times the weight the manager's holdings list gives the company. A commitment or a call says nothing of what the fund holds."
+    formula: >-
+      For each fund with a holdings list (the latest list of each fund, a superseded row out): its latest statement value (the valuation nothing supersedes with the latest
+      valuation date, as expected_distributions) times each company's weight, rounded to the cent, summed by company and by sector. 'Other holdings' is the manager's
+      remainder, not a company, and has no row. funds = the fund keys the holdings list gives (the office's own fund codes), fund_names the funds. The liquid book is
+      what the portfolios with a signed single-name limit hold at their latest position date (as the single-name limit measures it); direct_value is the company's own
+      holding in it. family_investments = the liquid book plus the latest value of every fund (cash out). Shares are percent, two decimals.
+    grain: By company
+    sql: >-
+      create table {name} as with {positions},
+      vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+      lv as (select instrument_id, valuation_date, value_amount from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc,
+      v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+      fh as (select h.* from fund_holdings as h where not exists (select 1 from fund_holdings as x where x.supersedes_fund_holding_id = h.id)
+      and h.as_at = (select max(y.as_at) from fund_holdings as y where y.instrument_id = h.instrument_id)),
+      line as (select h.holding_name as company, h.sector, split_part(s.external_record_id, ':', 1) as fund_key, i.canonical_name as fund, l.valuation_date, h.as_at,
+      round(l.value_amount * h.weight_pct / 100, 2) as amount from fh as h join lv as l on l.instrument_id = h.instrument_id join instruments as i on i.id = h.instrument_id
+      left join source_records as s on s.id = h.source_record_id where lower(h.holding_name) <> 'other holdings'),
+      lim as (select p.id as portfolio_id from business_rules as r join rule_versions as v on v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio')
+      where r.rule_type = 'policy' and lower(v.approval_status) = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.dimension') = 'single_name'),
+      book as (select l.instrument_id, l.position_date, l.source_market_value as v from positions as l join lim as m on m.portfolio_id = l.portfolio_id
+      where l.position_date = (select max(z.position_date) from positions as z where z.portfolio_id = l.portfolio_id)),
+      tot as (select (select sum(v) from book) as liquid_book, (select max(position_date) from book) as book_date,
+      (select sum(v) from book) + (select coalesce(sum(l.value_amount), 0) from lv as l join instruments as i on i.id = l.instrument_id where i.instrument_type like '%fund') as family_investments),
+      co as (select company, min(sector) as sector, sum(amount) as through_funds, list(distinct fund_key order by fund_key) as funds,
+      string_agg(distinct fund, ', ' order by fund) as fund_names, count(distinct fund_key) as fund_count, min(valuation_date) as oldest_value, max(as_at) as holdings_as_at
+      from line group by company),
+      dir as (select lower(i.canonical_name) as company, sum(b.v) as direct_value from book as b join instruments as i on i.id = b.instrument_id group by 1),
+      x as (select c.*, coalesce(d.direct_value, 0) as direct_value, t.liquid_book, t.book_date, t.family_investments,
+      sum(c.through_funds) over (partition by c.sector) as sector_total from co as c cross join tot as t left join dir as d on d.company = lower(c.company))
+      select company, sector, cast(through_funds as decimal(18,2)) as through_funds, funds, fund_names, cast(fund_count as integer) as fund_count, (fund_count > 1) as in_several_funds,
+      cast(round(100 * through_funds / nullif(family_investments, 0), 2) as decimal(9,2)) as share_of_family_pct, cast(sector_total as decimal(18,2)) as sector_through_funds,
+      cast(direct_value as decimal(18,2)) as direct_value, cast(round(100 * direct_value / nullif(liquid_book, 0), 2) as decimal(9,2)) as direct_pct_of_liquid_book,
+      cast(round(100 * (direct_value + through_funds) / nullif(liquid_book, 0), 2) as decimal(9,2)) as with_funds_pct_of_liquid_book,
+      cast(liquid_book as decimal(18,2)) as liquid_book, book_date, cast(family_investments as decimal(18,2)) as family_investments, oldest_value, holdings_as_at,
+      cast(row_number() over (order by through_funds desc, company) as integer) as rank,
+      cast(count(*) filter (where fund_count > 1) over () as integer) as several_count,
+      string_agg(company, ', ' order by through_funds desc, company) filter (where fund_count > 1) over () as several_names,
+      (row_number() over (order by through_funds desc, company) = 1) as first_row
+      from x
+    measure: through_funds
+    columns:
+      through_funds: What the family holds in the company through its funds (fund value times weight, summed over the funds).
+      funds: The fund keys of the holdings lists the company is in.
+      fund_names: The funds the company is in.
+      in_several_funds: True when the company sits in more than one fund.
+      share_of_family_pct: through_funds as a percent of family_investments.
+      sector_through_funds: The look-through total of the company's sector (the same on every row of the sector).
+      direct_value: The company's own holding in the liquid book at its latest position date (0 when not held directly).
+      direct_pct_of_liquid_book: direct_value as a percent of the liquid book.
+      with_funds_pct_of_liquid_book: direct_value plus through_funds, as a percent of the liquid book.
+      family_investments: The liquid book plus the latest value of every fund (the same on every row).
+      oldest_value: The oldest fund statement date the company's figure rests on.
+      several_count: How many companies sit in more than one fund (the same on every row).
+      several_names: Those companies, largest first (the same on every row).
+      first_row: True on the largest company, so a signal can read the totals once.
+    tie_out:
+      label: The companies and the managers' 'Other holdings' add up to the latest values of the funds with a holdings list
+      sql: >-
+        with vo as (select o.* from valuation_observations as o where not exists (select 1 from valuation_observations as x where x.supersedes_valuation_id = o.id)),
+        lv as (select instrument_id, value_amount from (select v.*, row_number() over (partition by v.instrument_id order by v.valuation_date desc, v.received_at desc, v.recorded_at desc) as rn from vo as v) as v where v.rn = 1),
+        fh as (select h.* from fund_holdings as h where not exists (select 1 from fund_holdings as x where x.supersedes_fund_holding_id = h.id)
+        and h.as_at = (select max(y.as_at) from fund_holdings as y where y.instrument_id = h.instrument_id))
+        select (select coalesce(sum(through_funds), 0) from {name}) + (select coalesce(sum(round(l.value_amount * h.weight_pct / 100, 2)), 0) from fh as h join lv as l on l.instrument_id = h.instrument_id where lower(h.holding_name) = 'other holdings'),
+        (select coalesce(sum(l.value_amount), 0) from lv as l where l.instrument_id in (select instrument_id from fh))

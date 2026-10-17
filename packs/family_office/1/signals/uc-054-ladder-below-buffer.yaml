@@ -1,0 +1,23 @@
+# SUGGESTION. uc-054 row 2, exception: an entity falls under the signed cash buffer inside the 90 day ladder. No new commitment or discretionary payment from the entity until the CFO decides how to raise the cash. The buffer is the signed office rule (cash_buffer); with none signed below_buffer is empty and the signal does not fire. The office edits or switches it off.
+suggestion: true
+id: uc-054-ladder-below-buffer
+title: An entity falls under the buffer inside 90 days
+pain_points: [PP-01, PP-02, INT-LIQ]
+row: exception
+trigger: {on: figure_changed, figure: liquidity_ladder}
+inputs:
+- kind: figure
+  id: liquidity_ladder
+  recipe: liquidity_ladder
+  as: lad
+  by: {window_days: 90, lowest_in_window: true}
+condition: lad.below_buffer
+subject: 'under buffer {lad.entity} in {lad.first_below_window} days'
+severity: needs
+route_to: cfo
+action:
+  verb: approve
+  options: [Raise cash, Sell from the liquid book, Draw on a facility]
+hold: {blocks: new_commitment, scope: '{lad.entity}', until: the CFO decides how to raise the cash}
+message: '{lad.entity} falls under the {lad.buffer:,.0f} buffer within {lad.first_below_window} days: after 90 days its USD {lad.cash_usd_equivalent:,.2f} less calls of {lad.calls:,.2f} and payments of {lad.approved_and_scheduled_payments:,.2f} leaves {lad.cash_after:,.2f}. Raise cash, sell or draw on a facility before then?'
+evidence: [lad]

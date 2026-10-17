@@ -1,0 +1,21 @@
+# SUGGESTION. uc-069 row 1: the company the family owns most of through its funds, and its share of the family's investments. Numbers come from the card's recipe (lookthrough_exposure); the office edits or switches it off.
+suggestion: true
+id: uc-069-lookthru-top
+title: What the private funds really own
+pain_points: [INT-RISK, PP-08]
+trigger: {on: figure_changed, figure: lookthrough_exposure}
+inputs:
+- kind: figure
+  id: lookthrough_exposure
+  recipe: lookthrough_exposure
+  as: lt
+  by: {first_row: true}
+condition: lt.through_funds > 0
+subject: 'look-through {lt.company} {lt.through_funds:,.0f}'
+severity: info
+route_to: investment_analyst
+action:
+  verb: see
+  options: [See the look-through]
+message: 'Through the funds the family owns most of {lt.company}: USD {lt.through_funds:,.0f}, {lt.share_of_family_pct}% of its investments of USD {lt.family_investments:,.0f} (holdings lists as at {lt.holdings_as_at}).'
+evidence: [lt]

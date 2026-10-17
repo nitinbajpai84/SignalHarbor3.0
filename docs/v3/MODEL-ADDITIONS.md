@@ -166,3 +166,64 @@ Every top-50 card has a home for each thing it needs. Four things to know, two o
 - **Card 29 (close checklist)** has no table: its steps are `exceptions` of type `close_item` (A27). If Nitin wants a checklist template with steps that repeat each month, that is a new source-fact table.
 - **Card 24 (auditor sample)** keeps the auditor's request list as source records of the loaded file and traces with `metric_evidence`; no request table (A22).
 - **Cards 4 and 8 (payments)** write `cash_movements`, whose `source_record_id` and `portfolio_id` are required; a payment made in Harbor needs a source record for the act of recording it, as the FX confirmations do.
+
+## Wave 2: cards 51 to 100 (decided 17 Oct 2026, A32 to A47)
+
+The same rule. The builders of cards 51 to 100 (`docs/v3/w1/build51-*.md`) found 36 new file kinds with no reader and asked for tables. One steward decided every need. Result: **10 new core tables, 14 new columns on 6 existing tables**, signed rules for the numbers, and recipes for the figures. The core grows from 50 to 60 tables.
+
+### New core tables (10)
+
+Each has `id`, `organization_id`, `source_record_id`, `source_document_id`, `source_page`, `received_at`, `recorded_at` and `supersedes_<table>_id`, like `fx_confirmations`. A change is a new row that supersedes the old. Group `office_records`.
+
+| Table | Own columns |
+|---|---|
+| `office_expenses` | spent_on, category, payee_name, legal_entity_id, currency, amount, reference, approver_name, approver_user_id |
+| `corporate_actions` | instrument_id, action_type, custodian_ref, announced_on, ex_date, record_date, pay_date, rate_per_unit, currency, election_required, election_deadline, elected_option, status |
+| `real_assets` | asset_ref, asset_name, asset_type, legal_entity_id, title_holder_name, currency, appraised_value, appraised_on, appraiser, status |
+| `tax_lots` | portfolio_id, instrument_id, lot_ref, acquired_on, quantity, unit_cost, cost_amount, currency, as_at, status |
+| `tax_obligations` | obligation_ref, legal_entity_id, obligation, due_date, prepared_by, estimated_amount, currency, status, filed_on, paid_on |
+| `grants` | grant_ref, charity_name, charity_registered_on, purpose, legal_entity_id, amount, currency, requested_on, decided_on, paid_on, payment_reference, status |
+| `staff_payroll` (sensitive) | pay_period, employee_name, title, employment_kind, legal_entity_id, currency, gross_pay, employee_contribution, employer_contribution, net_pay, pay_date, run_status |
+| `kyc_records` (sensitive) | subject_kind, subject_name, legal_entity_id, document_kind, issued_on, expires_on, verified_on, verified_by, status |
+| `fund_holdings` | instrument_id, holding_name, sector, weight_pct, as_at |
+| `system_access_grants` | person_name, user_id, system_name, access_level, granted_on, approved_by_name, approved_by_user_id, last_used_on, revoked_on, status |
+
+### New columns on existing tables (14)
+
+| Table | Columns |
+|---|---|
+| `cash_movements` | `payment_stage`, `payee_name`, `reference`; movement type `coupon` and notice kinds `dividend`, `coupon` named in the notes |
+| `transactions` | `counterparty_name`, `status_reason` |
+| `exceptions` | `external_ref`, `legal_entity_id` |
+| `source_batches` | `arrived_on_time`, `manual_fix` |
+| `sheet_mapping_columns` | `confidence` |
+| `vendor_contracts` | `contract_kind`, `sum_insured`, `covered_asset_ref` |
+
+### Every need, decided
+
+| Need (card) | Decision | See |
+|---|---|---|
+| expense ledger (73, 89, 90) | table `office_expenses`; budget and approver limits are signed rules | A33 |
+| payment schedule (54, 64, 70, 72) | columns on `cash_movements` (payment_stage, payee_name, reference) | A34 |
+| income calendar (68, 72) | `cash_movements` expected dividend or coupon; no table | A35 |
+| corporate actions (55) | table `corporate_actions` | A35 |
+| property valuations, title deeds (65, 66, 82, 88) | table `real_assets`; not positions | A36 |
+| insurance schedule (52, 82) | columns on `vendor_contracts`; `renewals_due` is `renewals_vendors` filtered | A37 |
+| access register (91, 92) | table `system_access_grants` | A38 |
+| family access (100) | signed rule per member and entity; scopes already exist | A38 |
+| kyc register (97), bank forms (94), onboarding (93) | table `kyc_records`; signatories as fields; signing policy a rule; onboarding a recipe | A39 |
+| tax calendar, tax notices, tax lots (67, 83, 84) | tables `tax_obligations`, `tax_lots`; tax rates are rules | A40 |
+| grant ledger, grant requests (85, 86) | table `grants`; budget and charity age are rules | A41 |
+| payroll drafts (81) | table `staff_payroll` | A42 |
+| fund holdings (69), manager outlook (71), fund documents (78), target allocation (79), manager news (53) | table `fund_holdings`; the rest are fields or proposed rules | A43 |
+| trust deed (87), estate planning (88) | fields and rules; `succession_plan` stays out of scope | A44 |
+| settlement status (58), break register (59), load log (61), new feed (99), bank line purpose (63) | columns on existing tables; card 63 a recipe | A45 |
+| custody statements (56), market data (57), inbox (60), SOPs (95, 96), glossary (98) | existing tables or documents; glossary not a model item; `automation_score` out of scope | A46 |
+
+### Recipes these tables unblock (owners write them; no stub written here)
+
+`cash_runway`, `office_cost`, `payroll_total`, `real_asset_value`, `estate_cash_need`, `tax_due`, `tax_estimate`, `unrealised_gain`, `grants_used`, `lookthrough_exposure`, `actions_next_14d`, `income_forecast` (now with a dividend per share from `corporate_actions`), `expected_distributions`, `liquidity_ladder`, `cash_forecast`, `position_break`, `price_gap_pct`, `unsettled_trades`, `source_quality`, `sop_age`, `feed_mapping`, `cash_code` (bank lines with no matching reference) and an insurance filter on `renewals_vendors`. Out of scope: `automation_score` (no step minutes or failures in the model) and `succession_plan`.
+
+### Signed rules these cards lean on (not model items, A20)
+
+`office_budget_<category>`, `approver_limit_<person>`, `forecast_call_assumption`, `forecast_floor`, `ladder_window_days`, `access_idle_days`, `family_access_<member>_<entity>`, `signing_policy`, `tax_rate_<entity>`, `grant_budget`, `grant_charity_min_months`, `price_tolerance_pct`, `sop_review_days`, `estate_tax_exemption`, `estate_tax_rate`, `limit_vintage_year`, the manager scorecard, the stuck-deal limit and the proposed `allocation_<asset_class>` targets. Each is a `business_rules` row with its numbers in `rule_versions.parameters`, signed through `approvals`. None is signed yet; a recipe that needs one is held, never given a typed number.

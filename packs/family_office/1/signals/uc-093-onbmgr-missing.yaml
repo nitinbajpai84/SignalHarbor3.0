@@ -1,0 +1,16 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-093-onbmgr, the exception: an onboarding item is not complete -> the manager is not ready and its first call is not paid.
+suggestion: true
+id: uc-093-onbmgr-missing
+title: A new manager is not ready for the first call
+pain_points: [INT-DOC, INT-GOV, PP-05]
+trigger: {on: figure_changed, figure: onboarding_items}
+inputs:
+  - {kind: doc, fields: [manager, item, status, note, complete, items, complete_items]}
+subject: "{doc.manager} {doc.item}"
+condition: doc.complete == 0
+severity: problem
+route_to: ops_lead
+action: {verb: record, options: [Complete the item, then sign the manager off]}
+hold: {blocks: prepare_payment, scope: "{doc.manager} first call", until: every onboarding item is complete}
+message: "{doc.manager}: {doc.item} is {doc.status} ({doc.note}). {doc.complete_items:,.0f} of {doc.items:,.0f} items are complete, so the manager is not ready for the first call."
+evidence: [doc.manager, doc.item, doc.status]

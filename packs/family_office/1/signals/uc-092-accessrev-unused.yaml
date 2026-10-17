@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-092-accessrev, the exception: a grant not used in more than 90 days. No hold: the Principal attests, the Head of Data removes.
+suggestion: true
+id: uc-092-accessrev-unused
+title: Access not used in 90 days
+pain_points: [INT-GOV, INT-DATAGOV]
+trigger: {on: figure_changed, figure: access_review}
+inputs:
+  - {kind: doc, fields: [person, system, permission, no_approver, leaver, joiner_not_requested, unused_90, days_unused, last_used_on]}
+subject: "{doc.person} {doc.system} unused"
+condition: doc.unused_90 == 1
+severity: needs
+route_to: head_of_data
+action: {verb: record, options: [Remove the access or record why it is still needed]}
+message: "{doc.person} has not used {doc.system} ({doc.permission}) since {doc.last_used_on}, {doc.days_unused:,.0f} days. Remove it or record why it is still needed."
+evidence: [doc.person, doc.system, doc.days_unused]

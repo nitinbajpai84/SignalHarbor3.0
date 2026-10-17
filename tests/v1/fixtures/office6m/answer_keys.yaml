@@ -1589,3 +1589,2475 @@ keys:
           trade_booked_twice_in_export:
           - T-20260602-005
         how: OMS trades against administrator bookings and the bank confirmation; the duplicate row is in the June export
+  uc-052-insurance:
+    title: Insurance policies and renewals
+    priority: null
+    input_files:
+    - '*/insurance_schedule/insurance_schedule_2026-10-01.pdf'
+    - '*/insurance/*_renewal.pdf'
+    questions:
+      Which policies expire in the next 60 days and what is each worth?:
+        expected:
+          expiring_in_60_days:
+          - policy: POL-LIAB-03
+            name: Umbrella liability
+            next_renewal: '2026-11-01'
+            days_left: 19
+            sum_insured: 10000000
+            premium: 9800
+            currency: USD
+            renewal_notice_received: true
+          - policy: POL-CYB-04
+            name: Family office cyber
+            next_renewal: '2026-12-01'
+            days_left: 49
+            sum_insured: 1000000
+            premium: 6200
+            currency: SGD
+            renewal_notice_received: false
+          count: 2
+          all_policies:
+          - policy: POL-LIAB-03
+            name: Umbrella liability
+            next_renewal: '2026-11-01'
+            days_left: 19
+            sum_insured: 10000000
+            premium: 9800
+            currency: USD
+            renewal_notice_received: true
+          - policy: POL-CYB-04
+            name: Family office cyber
+            next_renewal: '2026-12-01'
+            days_left: 49
+            sum_insured: 1000000
+            premium: 6200
+            currency: SGD
+            renewal_notice_received: false
+          - policy: POL-HOME-01
+            name: Bayview Residence home and contents
+            next_renewal: '2027-06-01'
+            days_left: 231
+            sum_insured: 8500000
+            premium: 18400
+            currency: SGD
+            renewal_notice_received: true
+          - policy: POL-ART-02
+            name: Fine art collection
+            next_renewal: '2027-08-15'
+            days_left: 306
+            sum_insured: 2000000
+            premium: 22500
+            currency: USD
+            renewal_notice_received: true
+        how: next renewal date (renewal date this year, else next year) less 13 Oct 2026; worth = sum insured and premium from the insurance schedule
+  uc-053-watchlist:
+    title: 'Manager watchlist: late, restated or changed'
+    priority: null
+    input_files:
+    - '*/manager_statements/*.pdf'
+    - '*/manager_news/*.eml'
+    - reference/kestrel_ridge_q3_2026_newsletter.pdf
+    - received_log_all.csv
+    questions:
+      Which managers have given us a late, restated or changed statement this quarter?:
+        expected:
+          window_start: '2026-07-15'
+          by_manager:
+            Bluewater Capital:
+              late: 0
+              amended: 0
+              missing: 0
+              personnel_changes: 0
+              total: 0
+            Cedarpoint Ventures:
+              late: 0
+              amended: 1
+              missing: 1
+              personnel_changes: 0
+              total: 2
+            Kestrel Ridge Advisors:
+              late: 1
+              amended: 1
+              missing: 0
+              personnel_changes: 0
+              total: 2
+            Meridian Index Managers:
+              late: 0
+              amended: 0
+              missing: 0
+              personnel_changes: 0
+              total: 0
+            Northgate Partners:
+              late: 0
+              amended: 1
+              missing: 0
+              personnel_changes: 1
+              total: 2
+            Saltmarsh Real Assets:
+              late: 2
+              amended: 0
+              missing: 0
+              personnel_changes: 1
+              total: 3
+          on_watchlist:
+          - Cedarpoint Ventures
+          - Kestrel Ridge Advisors
+          - Northgate Partners
+          - Saltmarsh Real Assets
+        how: 'per manager: statements received in the last 90 days after their due date, amended statements received in the window, statements still missing, personnel-change
+          mails dated in the window'
+  uc-054-ladder:
+    title: 30, 60, 90 day liquidity ladder
+    priority: null
+    input_files:
+    - '*/payment_schedule/payment_schedule_2026-10-13.csv'
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    - '*/notices/2026-10-13_C_call7.pdf'
+    - '*/commitments/commitments_register_2026-10-13.xlsx'
+    questions:
+      How much cash do we have against calls and payments in the next 30, 60 and 90 days?:
+        expected:
+          by_entity:
+            Evergreen Holdings:
+              cash_usd: 1230000
+              cash_sgd: 1600000
+              cash_usd_equivalent: 2424029.85
+              windows:
+                '30':
+                  calls: 1250000
+                  approved_and_scheduled_payments: 131654.02
+                  cash_after: 1042375.83
+                  below_buffer: false
+                '60':
+                  calls: 1250000
+                  approved_and_scheduled_payments: 278101.03
+                  cash_after: 895928.82
+                  below_buffer: false
+                '90':
+                  calls: 1250000
+                  approved_and_scheduled_payments: 393801.77
+                  cash_after: 780228.08
+                  below_buffer: false
+            Evergreen Family Trust:
+              cash_usd: 213895.52
+              cash_sgd: 2300363.01
+              cash_usd_equivalent: 1930584.33
+              windows:
+                '30':
+                  calls: 0
+                  approved_and_scheduled_payments: 43832.66
+                  cash_after: 1886751.67
+                  below_buffer: false
+                '60':
+                  calls: 0
+                  approved_and_scheduled_payments: 66832.66
+                  cash_after: 1863751.67
+                  below_buffer: false
+                '90':
+                  calls: 0
+                  approved_and_scheduled_payments: 108232.66
+                  cash_after: 1822351.67
+                  below_buffer: false
+            Entity B:
+              cash_usd: 868343.96
+              cash_sgd: 1250331.58
+              cash_usd_equivalent: 1801427.23
+              windows:
+                '30':
+                  calls: 0
+                  approved_and_scheduled_payments: 36833.33
+                  cash_after: 1764593.9
+                  below_buffer: false
+                '60':
+                  calls: 0
+                  approved_and_scheduled_payments: 51066.66
+                  cash_after: 1750360.57
+                  below_buffer: false
+                '90':
+                  calls: 0
+                  approved_and_scheduled_payments: 65299.99
+                  cash_after: 1736127.24
+                  below_buffer: false
+        how: administrator cash of 13 Oct (SGD at the 1.3400 fixing) less calls with a due date inside the window less payments of status approved or scheduled in
+          the payment schedule (held and expected ones are left out)
+  uc-055-corpact:
+    title: Corporate actions and income calendar
+    priority: null
+    input_files:
+    - '*/corporate_actions/*.pdf'
+    - reference/EG_security_master_20261008.xlsx
+    questions:
+      Which actions need a decision or a booking:
+        expected:
+          window:
+          - '2026-10-13'
+          - '2026-10-27'
+          to_book:
+          - security: Atlas Harbour Shipping
+            event: dividend
+            ex_date: '2026-10-08'
+            pay_date: '2026-10-15'
+            quantity: 60000
+            expected_cash: 9552
+          - security: Blue Heron Insurance
+            event: dividend
+            ex_date: '2026-10-08'
+            pay_date: '2026-10-15'
+            quantity: 30000
+            expected_cash: 8655
+          - security: Coastal Rail Holdings
+            event: dividend
+            ex_date: '2026-10-08'
+            pay_date: '2026-10-15'
+            quantity: 30000
+            expected_cash: 10413
+          - security: Granite Bay Materials
+            event: dividend
+            ex_date: '2026-10-08'
+            pay_date: '2026-10-15'
+            quantity: 50000
+            expected_cash: 8645
+          - security: Northwind Logistics
+            event: dividend
+            ex_date: '2026-10-08'
+            pay_date: '2026-10-15'
+            quantity: 62000
+            expected_cash: 11662.2
+          - security: Bay Street Utilities
+            event: dividend
+            ex_date: '2026-10-13'
+            pay_date: '2026-10-20'
+            quantity: 30000
+            expected_cash: 6453
+          - security: Juniper Consumer Brands
+            event: dividend
+            ex_date: '2026-10-13'
+            pay_date: '2026-10-20'
+            quantity: 50000
+            expected_cash: 9990
+          - security: Kingfisher Telecom
+            event: dividend
+            ex_date: '2026-10-13'
+            pay_date: '2026-10-20'
+            quantity: 90000
+            expected_cash: 8748
+          - security: Larkspur Health
+            event: dividend
+            ex_date: '2026-10-13'
+            pay_date: '2026-10-20'
+            quantity: 40000
+            expected_cash: 10152
+          - security: Orchard Lane Retail
+            event: dividend
+            ex_date: '2026-10-13'
+            pay_date: '2026-10-20'
+            quantity: 80000
+            expected_cash: 8920
+          cash_to_book: 93190.2
+          to_decide:
+          - security: Tidewater Energy
+            event: voluntary tender offer
+            respond_by: '2026-10-22'
+            offer_price: 31.5
+            last_price: 29.28
+            premium_pct: 7.58
+            quantity_held: 70000
+          announced_outside_window:
+          - security: Harbour Treasury Note 2029 (synthetic sovereign)
+            event: coupon
+            ex_date: '2026-12-23'
+            pay_date: '2026-12-30'
+            quantity: 3000000
+            expected_cash: 58500
+        how: notices with an ex-date or pay date between 13 and 27 Oct are bookings (mandatory cash events at the quantity held); the tender offer is a decision with
+          a deadline inside the window; the HTN29 coupon of 30 Dec is announced but outside
+  uc-056-custrecon:
+    title: Custodian positions against administrator positions
+    priority: null
+    input_files:
+    - '*/custody_statements/custody_statement_2026-09-30.pdf'
+    - '*/administrator_nav/administrator_export_2026-09.xlsx'
+    - '*/custodian_positions/positions_20260930.csv'
+    questions:
+      Which holdings differ between the custodian and the administrator, and why:
+        expected:
+          breaks:
+          - security: Bay Street Utilities
+            administrator_qty: 40000
+            custodian_qty: 41250
+            difference: -1250
+            value_usd: -60062.5
+            reason: Scrip dividend credited on 29 Sep, not yet advised to the administrator
+          - security: Redwood Pharma
+            administrator_qty: 40000
+            custodian_qty: 39600
+            difference: 400
+            value_usd: 18940
+            reason: Transfer-out to a family brokerage account on 30 Sep, instruction not copied to the administrator
+          holdings_compared: 20
+        how: administrator quantity (30 Sep pack) less the quantity on the custodian's 30 Sep safekeeping statement, per holding; value at the 30 Sep price; the reason
+          is the custodian's own note
+  uc-057-pricecheck:
+    title: Prices against a second source
+    priority: null
+    input_files:
+    - '*/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv'
+    - '*/administrator_nav/administrator_export_2026-09.xlsx'
+    questions:
+      Which prices differ from a second source by more than tolerance:
+        expected:
+          tolerance_pct: 0.5
+          prices_compared: 40
+          over_tolerance:
+          - date: '2026-09-30'
+            security: Kingfisher Telecom
+            administrator_price: 21.6
+            second_source_price: 22.01
+            gap_pct: -1.8628
+          - date: '2026-09-30'
+            security: Kingfisher Telecom 4.6% 2030 bond
+            administrator_price: 0.984
+            second_source_price: 0.9761
+            gap_pct: 0.8093
+        how: (administrator price less second-source price) over second-source price, for 20 securities on 30 Sep and 13 Oct, flagged above 0.5 percent
+  uc-058-settle:
+    title: Trades not settled on time
+    priority: null
+    input_files:
+    - '*/settlement_status/settlement_report_2026-10-13.csv'
+    - '*/trading_export/trading_export_2026100*.csv'
+    questions:
+      Which trades failed to settle and whom to chase:
+        expected:
+          failed:
+          - trade: BR2-20261002-001
+            security: Larkspur Health
+            side: buy
+            quantity: 5000
+            amount: 281150
+            settle_date: '2026-10-06'
+            business_days_late: 5
+            chase: Synthetic Broker Two
+            reason: seller short delivery
+            cash_booked: false
+          - trade: BR2-20261007-002
+            security: Evermore Banking Group
+            side: buy
+            quantity: 10000
+            amount: 312000
+            settle_date: '2026-10-09'
+            business_days_late: 2
+            chase: Synthetic Broker Two
+            reason: settlement instruction mismatch
+            cash_booked: false
+          count: 2
+          settled_in_report:
+          - T-20261001-001
+          - T-20261002-002
+          - T-20261002-003
+          - T-20261006-005
+          - T-20261007-006
+          chase_counterparties:
+          - Synthetic Broker Two
+        how: trades in the custodian settlement report with a settle date before 13 Oct, status not settled and no cash booked; age in business days after the settle
+          date
+  uc-059-breakage:
+    title: Open breaks by age
+    priority: null
+    input_files:
+    - '*/break_register/break_register_2026-10-13.csv'
+    - '*/exception_log/exception_log_2026-10-13.csv'
+    questions:
+      Which breaks are older than five days and go to Finance:
+        expected:
+          cash_breaks_over_5_days:
+          - id: BRK-003
+            type: cash break
+            entity: Evergreen Family Trust
+            subject: Trust USD 17 Jun, administrator books the 6,200 fee a day late
+            detected: '2026-06-17'
+            age_business_days: 84
+          - id: BRK-004
+            type: cash break
+            entity: Entity B
+            subject: Entity B USD, Tidewater July statement never received, Tidewater leg cannot be reconciled
+            detected: '2026-08-07'
+            age_business_days: 47
+          open_cash_breaks: 4
+          all_open:
+          - id: BRK-001
+            type: cash break
+            entity: Entity B
+            subject: Entity B USD 8 Oct, administrator 12,400 above the bank
+            detected: '2026-10-08'
+            age_business_days: 3
+          - id: BRK-002
+            type: cash break
+            entity: Evergreen Family Trust
+            subject: Trust USD 8 Oct, desk 1,800 below the bank
+            detected: '2026-10-08'
+            age_business_days: 3
+          - id: BRK-003
+            type: cash break
+            entity: Evergreen Family Trust
+            subject: Trust USD 17 Jun, administrator books the 6,200 fee a day late
+            detected: '2026-06-17'
+            age_business_days: 84
+          - id: BRK-004
+            type: cash break
+            entity: Entity B
+            subject: Entity B USD, Tidewater July statement never received, Tidewater leg cannot be reconciled
+            detected: '2026-08-07'
+            age_business_days: 47
+          - id: BRK-005
+            type: confirmation break
+            entity: Evergreen Holdings
+            subject: FX conversion FXS-20260602-HOLD has no bank confirmation
+            detected: '2026-06-05'
+            age_business_days: 92
+          - id: BRK-006
+            type: statement break
+            entity: Entity B
+            subject: Cedarpoint Opportunities II statement as at 30 Jun never received
+            detected: '2026-07-15'
+            age_business_days: 64
+        how: 'open cash breaks in the register: business days from the detection date to 13 Oct; older than five go to Finance'
+  uc-060-docinbox:
+    title: Documents the office could not recognise
+    priority: null
+    input_files:
+    - '*/inbox/*'
+    questions:
+      Where each unrecognised file belongs or whether to refuse it:
+        expected:
+          files: 5
+          recognised:
+          - file: scan_0412.pdf
+            what: a copy of the Saltmarsh Renewables I distribution notice of 10 Sep
+            belongs_in: notices
+            action: duplicate of a notice already loaded
+          - file: account_extract.xlsx
+            what: Tidewater Trust USD bank statement, 1 to 13 Oct
+            belongs_in: bank_statements
+            action: duplicate of the statement already loaded
+          - file: INV-OIT-2610.pdf
+            what: Orchard IT Services invoice for October, SGD 2,950.00
+            belongs_in: invoices
+            action: new, to the payment run
+          unrecognised:
+          - file: IMG_2210.pdf
+            what: a restaurant receipt, not office business
+            belongs_in: unknown
+            action: refuse and return to the sender
+          - file: data_export.xlsx
+            what: a sheet of four columns with no source, header or date
+            belongs_in: unknown
+            action: hold and ask the sender what it is
+        how: 'the five files of the inbox read by content: three are known kinds, two are not (a receipt to refuse, a sheet to query)'
+  uc-061-dqscore:
+    title: Data quality score for each source
+    priority: null
+    input_files:
+    - '*/load_log/load_log_2026-10-13.csv'
+    - received_log_all.csv
+    questions:
+      Which source to fix first:
+        expected:
+          by_source:
+          - source: administrator_cash
+            loads: 7
+            passed: 5
+            late_or_missing: 0
+            did_not_add_up: 2
+            manual_fixes: 0
+            score_pct: 71.4
+          - source: administrator_nav
+            loads: 7
+            passed: 6
+            late_or_missing: 0
+            did_not_add_up: 0
+            manual_fixes: 1
+            score_pct: 85.7
+          - source: custodian_transactions
+            loads: 7
+            passed: 6
+            late_or_missing: 0
+            did_not_add_up: 0
+            manual_fixes: 1
+            score_pct: 85.7
+          - source: notices
+            loads: 17
+            passed: 15
+            late_or_missing: 0
+            did_not_add_up: 1
+            manual_fixes: 1
+            score_pct: 88.2
+          - source: fx_confirmations
+            loads: 9
+            passed: 8
+            late_or_missing: 0
+            did_not_add_up: 1
+            manual_fixes: 0
+            score_pct: 88.9
+          - source: invoices
+            loads: 28
+            passed: 25
+            late_or_missing: 0
+            did_not_add_up: 1
+            manual_fixes: 2
+            score_pct: 89.3
+          - source: manager_statements
+            loads: 60
+            passed: 54
+            late_or_missing: 6
+            did_not_add_up: 1
+            manual_fixes: 0
+            score_pct: 90
+          - source: trading_export
+            loads: 35
+            passed: 32
+            late_or_missing: 0
+            did_not_add_up: 2
+            manual_fixes: 1
+            score_pct: 91.4
+          - source: bank_statements
+            loads: 84
+            passed: 82
+            late_or_missing: 2
+            did_not_add_up: 1
+            manual_fixes: 0
+            score_pct: 97.6
+          - source: commitments
+            loads: 7
+            passed: 7
+            late_or_missing: 0
+            did_not_add_up: 0
+            manual_fixes: 0
+            score_pct: 100
+          - source: custodian_positions
+            loads: 140
+            passed: 140
+            late_or_missing: 0
+            did_not_add_up: 0
+            manual_fixes: 0
+            score_pct: 100
+          - source: investment_reports
+            loads: 12
+            passed: 12
+            late_or_missing: 0
+            did_not_add_up: 0
+            manual_fixes: 0
+            score_pct: 100
+          fix_first: administrator_cash
+        how: 'per source: share of loads that were on time, added up and needed no manual fix (load log built from the planted mess of each file and the received
+          log); lowest score first'
+  uc-062-fxlife:
+    title: 'FX forwards: upcoming value dates and mark to market'
+    priority: null
+    input_files:
+    - '*/fx_confirmations/FXF-*_confirmation.pdf'
+    - '*/fx_rates/fx_usdsgd_20261013.csv'
+    - '*/trading_export/trading_export_2026091*.csv'
+    - '*/trading_export/trading_export_2026100*.csv'
+    questions:
+      Which forwards need settlement cash or a roll:
+        expected:
+          forwards:
+          - id: FXF-2026-001
+            value_date: '2026-12-15'
+            days_to_value: 63
+            sell_usd: 2000000
+            buy_sgd: 2680000
+            contract_rate: 1.34
+            spot: 1.34
+            mtm_usd: 0
+            confirmation_status: matched
+          - id: FXF-2026-002
+            value_date: '2027-01-05'
+            days_to_value: 84
+            sell_usd: 3000000
+            buy_sgd: 4027500
+            contract_rate: 1.3425
+            spot: 1.34
+            mtm_usd: 5597.01
+            confirmation_status: mismatch
+          due_within_30_days: []
+          total_usd_to_deliver: 5000000
+          trust_usd_cash: 213895.52
+          trust_usd_shortfall: 4786104.48
+          next_value_date: '2026-12-15'
+        how: mark to market = buy amount over the 13 Oct spot (1.3400) less sell amount (forward points ignored by convention); USD to deliver on each value date
+          against the Trust's USD cash
+  uc-063-cashcode:
+    title: Unexplained bank lines
+    priority: null
+    input_files:
+    - '*/bank_statements/HB_HOLD_USD_2026-08.xlsx'
+    - '*/bank_statements/TCB_HOLD_USD_2026-09.xlsx'
+    - '*/bank_statements/HB_B_USD_2026-10_mtd.xlsx'
+    questions:
+      Which bank lines have no purpose and need coding:
+        expected:
+          uncoded:
+          - account: HB-HOLD-USD
+            date: '2026-08-19'
+            amount: 48250
+            description: TT IN REF 7741XQ - remitter name not stated
+          - account: TCB-HOLD-USD
+            date: '2026-09-23'
+            amount: -3980
+            description: ACH DEBIT MERCHANT 55201 SINGAPORE
+          - account: HB-B-USD
+            date: '2026-10-06'
+            amount: -2150
+            description: CHEQUE 000417 presented, payee not shown
+          count: 3
+          net_amount: 42120
+        how: bank lines that carry no event of the World (no invoice, notice, payroll, trade or transfer), leaving out the bank's own fee and interest lines
+  uc-064-fxexp:
+    title: Currency exposure of the family
+    priority: null
+    input_files:
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    - '*/fx_confirmations/FXF-*_confirmation.pdf'
+    - '*/fx_rates/fx_usdsgd_20261013.csv'
+    - '*/payment_schedule/payment_schedule_2026-10-13.csv'
+    questions:
+      Whether to hedge a currency exposure:
+        expected:
+          sgd_cash: 5150694.59
+          sgd_cash_usd_eq: 3843801.93
+          sgd_bought_forward: 6707500
+          sgd_forward_usd_eq: 5005597.01
+          net_sgd_exposure_usd_eq: 8849398.94
+          share_of_family_pct: 7.62
+          usd_exposure_usd_eq: 112272239.48
+          sgd_payments_next_90_days_usd_eq: 388599.93
+          family_total_usd_eq: 116116041.41
+        how: SGD cash of the three entities plus SGD bought forward (both at the 13 Oct fixing) against the total of investments (fund values as known on 13 Oct,
+          liquid book at 30 Sep) and cash; every investment is in USD; SGD payments in the next 90 days from the payment schedule
+  uc-065-realassets:
+    title: Real assets register
+    priority: null
+    input_files:
+    - '*/property_valuations/valuation_RA-*.pdf'
+    - '*/title_deeds/title_deed_RA-*.pdf'
+    questions:
+      What real assets we own, their values and who holds them:
+        expected:
+          assets:
+          - id: RA-01
+            name: Bayview Residence
+            type: residential property
+            entity: Evergreen Holdings
+            latest_value: 9600000
+            currency: SGD
+            value_usd: 7164179.1
+            appraised: '2025-11-18'
+            title_holder: Evergreen Holdings
+          - id: RA-02
+            name: Hillcrest House
+            type: residential property
+            entity: Evergreen Family Trust
+            latest_value: 6400000
+            currency: SGD
+            value_usd: 4776119.4
+            appraised: '2026-03-02'
+            title_holder: Evergreen Family Trust
+          - id: RA-03
+            name: Fine art collection
+            type: art
+            entity: Evergreen Holdings
+            latest_value: 2400000
+            currency: USD
+            value_usd: 2400000
+            appraised: '2024-08-20'
+            title_holder: Evergreen Holdings
+          - id: RA-04
+            name: Coastal Land Parcel Lot 14
+            type: land
+            entity: Entity B
+            latest_value: 1800000
+            currency: USD
+            value_usd: 1800000
+            appraised: '2026-06-10'
+            title_holder: Lin Chen
+          - id: RA-05
+            name: Wine cellar collection
+            type: wine
+            entity: Evergreen Family Trust
+            latest_value: 650000
+            currency: USD
+            value_usd: 650000
+            appraised: '2025-09-30'
+            title_holder: Evergreen Family Trust
+          - id: RA-06
+            name: Motor yacht Evergreen Star
+            type: vessel
+            entity: Evergreen Holdings
+            latest_value: 1200000
+            currency: USD
+            value_usd: 1200000
+            appraised: '2025-10-25'
+            title_holder: Evergreen Holdings
+          total_usd: 17990298.5
+          by_type:
+            residential property: 11940298.5
+            art: 2400000
+            land: 1800000
+            wine: 650000
+            vessel: 1200000
+          by_entity:
+            Evergreen Holdings: 10764179.1
+            Evergreen Family Trust: 5426119.4
+            Entity B: 1800000
+          title_not_in_entity_name:
+          - Coastal Land Parcel Lot 14
+        how: latest appraisal per asset, SGD at the 13 Oct fixing; the title deed holder against the entity that owns the asset
+  uc-066-propreval:
+    title: Appraisal due on a real asset
+    priority: null
+    input_files:
+    - '*/property_valuations/valuation_RA-*.pdf'
+    questions:
+      Whether to order a new appraisal:
+        expected:
+          by_asset:
+          - id: RA-01
+            name: Bayview Residence
+            appraised: '2025-11-18'
+            age_days: 329
+            due: false
+          - id: RA-02
+            name: Hillcrest House
+            appraised: '2026-03-02'
+            age_days: 225
+            due: false
+          - id: RA-03
+            name: Fine art collection
+            appraised: '2024-08-20'
+            age_days: 784
+            due: true
+          - id: RA-04
+            name: Coastal Land Parcel Lot 14
+            appraised: '2026-06-10'
+            age_days: 125
+            due: false
+          - id: RA-05
+            name: Wine cellar collection
+            appraised: '2025-09-30'
+            age_days: 378
+            due: true
+          - id: RA-06
+            name: Motor yacht Evergreen Star
+            appraised: '2025-10-25'
+            age_days: 353
+            due: false
+          order_new:
+          - Fine art collection
+          - Wine cellar collection
+        how: 13 Oct 2026 less the date of the latest appraisal, flagged above 365 days
+  uc-067-unrl:
+    title: Unrealised gain by lot
+    priority: null
+    input_files:
+    - '*/tax_lots/lot_register_2026-09-30.xlsx'
+    - '*/trading_export/trading_export_2026*.csv'
+    - '*/administrator_nav/administrator_export_2026-09.xlsx'
+    questions:
+      Which lots to sell for a tax or rebalance reason:
+        expected:
+          lots: 66
+          total_unrealised_gain: 4030570
+          total_unrealised_loss: -1454950
+          loss_lots:
+          - lot: LOT-AHS-2
+            security: Atlas Harbour Shipping
+            acquired: '2022-02-15'
+            days_held: 1688
+            quantity: 18000
+            cost: 793080
+            value: 633600
+            gain: -159480
+          - lot: LOT-SPS-1
+            security: Silverpine Software
+            acquired: '2021-10-15'
+            days_held: 1811
+            quantity: 5000
+            cost: 656150
+            value: 511500
+            gain: -144650
+          - lot: LOT-TWE-1
+            security: Tidewater Energy
+            acquired: '2021-01-15'
+            days_held: 2084
+            quantity: 32000
+            cost: 1085440
+            value: 940800
+            gain: -144640
+          - lot: LOT-AHS-3
+            security: Atlas Harbour Shipping
+            acquired: '2025-11-15'
+            days_held: 319
+            quantity: 12000
+            cost: 542400
+            value: 422400
+            gain: -120000
+          - lot: LOT-GBM-2
+            security: Granite Bay Materials
+            acquired: '2023-10-15'
+            days_held: 1081
+            quantity: 15000
+            cost: 673500
+            value: 579000
+            gain: -94500
+          - lot: LOT-MRF-3
+            security: Meridian Foods
+            acquired: '2025-12-15'
+            days_held: 289
+            quantity: 11000
+            cost: 435490
+            value: 360800
+            gain: -74690
+          - lot: LOT-TWE-3
+            security: Tidewater Energy
+            acquired: '2021-12-15'
+            days_held: 1750
+            quantity: 16000
+            cost: 538880
+            value: 470400
+            gain: -68480
+          - lot: LOT-HTN29-1
+            security: Harbour Treasury Note 2029 (synthetic sovereign)
+            acquired: '2022-08-15'
+            days_held: 1507
+            quantity: 1500000
+            cost: 1523700
+            value: 1458750
+            gain: -64950
+          - lot: LOT-SPS-20260406-009
+            security: Silverpine Software
+            acquired: '2026-04-06'
+            days_held: 177
+            quantity: 8000
+            cost: 875840
+            value: 818400
+            gain: -57440
+          - lot: LOT-PRC29-1
+            security: Pacific Rim Convertible 2029 note
+            acquired: '2021-11-15'
+            days_held: 1780
+            quantity: 5000
+            cost: 617600
+            value: 561000
+            gain: -56600
+          - lot: LOT-OLR-3
+            security: Orchard Lane Retail
+            acquired: '2023-03-15'
+            days_held: 1295
+            quantity: 15000
+            cost: 427200
+            value: 371250
+            gain: -55950
+          - lot: LOT-BHI-3
+            security: Blue Heron Insurance
+            acquired: '2025-11-15'
+            days_held: 319
+            quantity: 8000
+            cost: 555440
+            value: 512800
+            gain: -42640
+          - lot: LOT-HTN29-2
+            security: Harbour Treasury Note 2029 (synthetic sovereign)
+            acquired: '2022-12-15'
+            days_held: 1385
+            quantity: 900000
+            cost: 912060
+            value: 875250
+            gain: -36810
+          - lot: LOT-JCB-2
+            security: Juniper Consumer Brands
+            acquired: '2023-04-15'
+            days_held: 1264
+            quantity: 14000
+            cost: 656600
+            value: 620200
+            gain: -36400
+          - lot: LOT-HTN29-3
+            security: Harbour Treasury Note 2029 (synthetic sovereign)
+            acquired: '2023-11-15'
+            days_held: 1050
+            quantity: 600000
+            cost: 616800
+            value: 583500
+            gain: -33300
+          - lot: LOT-PRC29-2
+            security: Pacific Rim Convertible 2029 note
+            acquired: '2023-03-15'
+            days_held: 1295
+            quantity: 3000
+            cost: 369000
+            value: 336600
+            gain: -32400
+          - lot: LOT-SPS-3
+            security: Silverpine Software
+            acquired: '2024-08-15'
+            days_held: 776
+            quantity: 3000
+            cost: 338910
+            value: 306900
+            gain: -32010
+          - lot: LOT-PRC29-3
+            security: Pacific Rim Convertible 2029 note
+            acquired: '2024-09-15'
+            days_held: 745
+            quantity: 2000
+            cost: 255800
+            value: 224400
+            gain: -31400
+          - lot: LOT-NWL-1
+            security: Northwind Logistics
+            acquired: '2021-02-15'
+            days_held: 2053
+            quantity: 21000
+            cost: 909300
+            value: 879900
+            gain: -29400
+          - lot: LOT-CRB31-2
+            security: Coastal Rail 5.1% 2031 bond
+            acquired: '2024-07-15'
+            days_held: 807
+            quantity: 600000
+            cost: 623580
+            value: 594600
+            gain: -28980
+          - lot: LOT-LKH-3
+            security: Larkspur Health
+            acquired: '2024-09-15'
+            days_held: 745
+            quantity: 8000
+            cost: 472960
+            value: 450000
+            gain: -22960
+          - lot: LOT-KFB30-3
+            security: Kingfisher Telecom 4.6% 2030 bond
+            acquired: '2025-08-15'
+            days_held: 411
+            quantity: 500000
+            cost: 512800
+            value: 492000
+            gain: -20800
+          - lot: LOT-EBG-3
+            security: Evermore Banking Group
+            acquired: '2025-06-15'
+            days_held: 472
+            quantity: 16000
+            cost: 518080
+            value: 498400
+            gain: -19680
+          - lot: LOT-KFB30-2
+            security: Kingfisher Telecom 4.6% 2030 bond
+            acquired: '2024-10-15'
+            days_held: 715
+            quantity: 750000
+            cost: 755550
+            value: 738000
+            gain: -17550
+          - lot: LOT-NWL-3
+            security: Northwind Logistics
+            acquired: '2023-01-15'
+            days_held: 1354
+            quantity: 12000
+            cost: 519960
+            value: 502800
+            gain: -17160
+          - lot: LOT-GBM-1
+            security: Granite Bay Materials
+            acquired: '2023-01-15'
+            days_held: 1354
+            quantity: 25000
+            cost: 974500
+            value: 965000
+            gain: -9500
+          - lot: LOT-OLR-20260410-003
+            security: Orchard Lane Retail
+            acquired: '2026-04-10'
+            days_held: 173
+            quantity: 8000
+            cost: 199680
+            value: 198000
+            gain: -1680
+          - lot: LOT-KFB30-1
+            security: Kingfisher Telecom 4.6% 2030 bond
+            acquired: '2024-06-15'
+            days_held: 837
+            quantity: 750000
+            cost: 738900
+            value: 738000
+            gain: -900
+          largest_gain_lots:
+          - lot: LOT-CRH-1
+            security: Coastal Rail Holdings
+            acquired: '2021-02-15'
+            days_held: 2053
+            quantity: 15000
+            cost: 657600
+            value: 1162500
+            gain: 504900
+          - lot: LOT-EBG-1
+            security: Evermore Banking Group
+            acquired: '2021-05-15'
+            days_held: 1964
+            quantity: 33000
+            cost: 608850
+            value: 1027950
+            gain: 419100
+          - lot: LOT-HVS-1
+            security: Harborview Semiconductor
+            acquired: '2022-10-15'
+            days_held: 1446
+            quantity: 10000
+            cost: 767300
+            value: 1184000
+            gain: 416700
+          - lot: LOT-RWP-1
+            security: Redwood Pharma
+            acquired: '2022-11-15'
+            days_held: 1415
+            quantity: 20000
+            cost: 577600
+            value: 947000
+            gain: 369400
+          - lot: LOT-BHI-1
+            security: Blue Heron Insurance
+            acquired: '2021-06-15'
+            days_held: 1933
+            quantity: 13000
+            cost: 510380
+            value: 833300
+            gain: 322920
+          gain_by_security:
+            Atlas Harbour Shipping: -121940
+            Bay Street Utilities: 386680
+            Blue Heron Insurance: 526700
+            Coastal Rail 5.1% 2031 bond: -12860
+            Coastal Rail Holdings: 599940
+            Evermore Banking Group: 685860
+            Granite Bay Materials: 41600
+            Harborview Semiconductor: 621340
+            Harbour Treasury Note 2029 (synthetic sovereign): -135060
+            Juniper Consumer Brands: 128890
+            Kingfisher Telecom: 376740
+            Kingfisher Telecom 4.6% 2030 bond: -39250
+            Larkspur Health: 218840
+            Meridian Foods: 178910
+            Northwind Logistics: 38780
+            Orchard Lane Retail: 325560
+            Pacific Rim Convertible 2029 note: -120400
+            Redwood Pharma: 536560
+            Silverpine Software: -128500
+            Tidewater Energy: -77820
+          harborview_lots:
+          - lot: LOT-HVS-1
+            security: Harborview Semiconductor
+            acquired: '2022-10-15'
+            days_held: 1446
+            quantity: 10000
+            cost: 767300
+            value: 1184000
+            gain: 416700
+          - lot: LOT-HVS-2
+            security: Harborview Semiconductor
+            acquired: '2024-02-15'
+            days_held: 958
+            quantity: 6000
+            cost: 595800
+            value: 710400
+            gain: 114600
+          - lot: LOT-HVS-3
+            security: Harborview Semiconductor
+            acquired: '2024-04-15'
+            days_held: 898
+            quantity: 4000
+            cost: 383560
+            value: 473600
+            gain: 90040
+          harborview_sale_to_reach_5_pct: 324210.53
+        how: market value at the 30 Sep price less cost for each open lot (opening lots of 31 Mar plus the 2026 buys, sells taken first-in first-out); losses are
+          the tax candidates, Harborview lots the rebalance candidates
+  uc-068-incomef:
+    title: Dividend and coupon income forecast
+    priority: null
+    input_files:
+    - '*/income_calendar/income_calendar_2026-10-13.csv'
+    - '*/corporate_actions/*.pdf'
+    - reference/EG_security_master_20261008.xlsx
+    questions:
+      How much income to plan for next year:
+        expected:
+          period:
+          - '2026-10-13'
+          - '2027-10-13'
+          total: 811406.6
+          coupons: 362000
+          dividends: 449406.6
+          by_quarter:
+            2026-Q4: 151690.2
+            2027-Q1: 122500
+            2027-Q2: 208302.2
+            2027-Q3: 272302.2
+            2027-Q4: 56612
+          events: 54
+        how: coupon rate over two times face for the three bonds, plus 0.45 percent of the 13 Oct price per share each quarter for the equities, at the quantity held
+          on 13 Oct, paid between 14 Oct 2026 and 13 Oct 2027
+  uc-069-lookthru:
+    title: What the private funds really own
+    priority: null
+    input_files:
+    - '*/fund_holdings/fund_holdings_2026-09-30.xlsx'
+    - '*/manager_statements/*_final.pdf'
+    - '*/ddq/cedarpoint_ddq_2026.pdf'
+    questions:
+      Whether the family is over-exposed to one company or sector through funds:
+        expected:
+          top_companies:
+          - company: Helix Cloud Systems
+            through_funds: 2740050
+            funds:
+            - A
+            - C
+            - F
+            share_of_family_pct: 2.47
+          - company: Saltmarsh Grid Holdings
+            through_funds: 2378900
+            funds:
+            - E
+            - K
+            share_of_family_pct: 2.14
+          - company: Tidal Pipeline Partners
+            through_funds: 1393000
+            funds:
+            - E
+            share_of_family_pct: 1.25
+          - company: Quarry Logistics
+            through_funds: 1381200
+            funds:
+            - A
+            - D
+            share_of_family_pct: 1.24
+          - company: Harborview Semiconductor
+            through_funds: 1374600
+            funds:
+            - A
+            - C
+            share_of_family_pct: 1.24
+          companies_in_more_than_one_fund:
+          - Helix Cloud Systems
+          - Saltmarsh Grid Holdings
+          - Quarry Logistics
+          - Harborview Semiconductor
+          - Redstone Mortgage Trust
+          - Lumen Genomics
+          - Alder Freight Loans
+          - Pennant Retail Group
+          by_sector:
+            Technology: 4114650
+            Utilities: 2378900
+            Energy: 2265800
+            Industrials: 2247600
+            Health care: 1857500
+            Consumer: 1400100
+            Real estate credit: 1089600
+            Financials: 744750
+          harborview_direct: 1779300
+          harborview_through_funds: 1374600
+          harborview_direct_pct_of_liquid_book: 4.21
+          harborview_with_funds_pct_of_liquid_book: 7.46
+          family_investments: 111033700
+        how: latest statement value of each private fund times the weight in the manager's holdings list, summed by company and sector; the direct holding of Harborview
+          Semiconductor from the 13 Oct book; share of the liquid book as the single-name limit measures it
+  uc-070-idle:
+    title: Idle cash above what we need
+    priority: null
+    input_files:
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    - '*/payment_schedule/payment_schedule_2026-10-13.csv'
+    - reference/office_rules.csv
+    questions:
+      Whether to invest, repay or hold the surplus:
+        expected:
+          by_entity:
+            Evergreen Holdings:
+              cash_usd_equivalent: 2424029.85
+              outflow_90_days: 1643801.77
+              buffer: 250000
+              idle: 530228.08
+              short: 0
+            Evergreen Family Trust:
+              cash_usd_equivalent: 1930584.33
+              outflow_90_days: 108232.66
+              buffer: 250000
+              idle: 1572351.67
+              short: 0
+            Entity B:
+              cash_usd_equivalent: 1801427.23
+              outflow_90_days: 65299.99
+              buffer: 250000
+              idle: 1486127.24
+              short: 0
+          total_idle: 3588706.99
+          total_short: 0
+        how: cash less the 90 day ladder outflow (calls plus approved and scheduled payments) less the 250,000 buffer, per entity; a negative result is a shortfall,
+          not an idle amount
+  uc-071-expdist:
+    title: Distributions we expect in the next year
+    priority: null
+    input_files:
+    - '*/manager_outlook/*_distribution_outlook_2026-27.pdf'
+    - '*/manager_statements/*_final.pdf'
+    - '*/notices/*_call*.pdf'
+    questions:
+      How much money to expect back from the funds:
+        expected:
+          by_quarter:
+            '2026-12-31': 628215
+            '2027-03-31': 464215
+            '2027-06-30': 787115
+            '2027-09-30': 781265
+          total_next_4_quarters: 2660810
+          by_fund:
+            Evergreen Growth I:
+              latest_value: 10180000
+              valuation_date: '2026-09-30'
+              payout_pct:
+              - 3
+              - 2
+              - 2.5
+              - 3
+              amounts:
+              - 305400
+              - 203600
+              - 254500
+              - 305400
+              total: 1068900
+            Evergreen Income II:
+              latest_value: 6400000
+              valuation_date: '2026-09-30'
+              payout_pct:
+              - 1.5
+              - 1.5
+              - 1.5
+              - 1.5
+              amounts:
+              - 96000
+              - 96000
+              - 96000
+              - 96000
+              total: 384000
+            Cedarpoint Ventures III:
+              latest_value: 8275000
+              valuation_date: '2026-06-30'
+              payout_pct:
+              - 0
+              - 0
+              - 1
+              - 2
+              amounts:
+              - 0
+              - 0
+              - 82750
+              - 165500
+              total: 248250
+            Cedarpoint Opportunities II:
+              latest_value: 4650000
+              valuation_date: '2026-03-31'
+              payout_pct:
+              - 2
+              - 0
+              - 3
+              - 0
+              amounts:
+              - 93000
+              - 0
+              - 139500
+              - 0
+              total: 232500
+            Saltmarsh Infrastructure Fund II:
+              latest_value: 9950000
+              valuation_date: '2026-09-30'
+              payout_pct:
+              - 1
+              - 1
+              - 1.5
+              - 1.5
+              amounts:
+              - 99500
+              - 99500
+              - 149250
+              - 149250
+              total: 497500
+            Evergreen Growth II:
+              latest_value: 3080000
+              valuation_date: '2026-09-30'
+              payout_pct:
+              - 0
+              - 1
+              - 1
+              - 1
+              amounts:
+              - 0
+              - 30800
+              - 30800
+              - 30800
+              total: 92400
+            Evergreen Credit III:
+              latest_value: 2420000
+              valuation_date: '2026-09-30'
+              payout_pct:
+              - 1.2
+              - 1.2
+              - 1.2
+              - 1.2
+              amounts:
+              - 29040
+              - 29040
+              - 29040
+              - 29040
+              total: 116160
+            Saltmarsh Renewables I:
+              latest_value: 1055000
+              valuation_date: '2026-06-30'
+              payout_pct:
+              - 0.5
+              - 0.5
+              - 0.5
+              - 0.5
+              amounts:
+              - 5275
+              - 5275
+              - 5275
+              - 5275
+              total: 21100
+        how: latest statement value of each private fund times the payout rate of the manager's outlook, per quarter end (31 Dec 2026 to 30 Sep 2027)
+  uc-072-cashfc:
+    title: 12 month cash forecast
+    priority: null
+    input_files:
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    - '*/commitments/commitments_register_2026-10-13.xlsx'
+    - '*/payment_schedule/payment_schedule_2026-10-13.csv'
+    - '*/income_calendar/income_calendar_2026-10-13.csv'
+    - '*/manager_outlook/*_distribution_outlook_2026-27.pdf'
+    questions:
+      Whether the family needs to raise cash:
+        expected:
+          opening_cash_usd_eq: 6156041.41
+          monthly_call_assumption: 991666.67
+          by_month:
+            2026-10:
+              opening: 6156041.41
+              distributions: 0
+              income: 93190.2
+              calls: 1250000
+              expenses: 165714.04
+              closing: 4833517.57
+            2026-11:
+              opening: 4833517.57
+              distributions: 0
+              income: 0
+              calls: 991666.67
+              expenses: 218823.55
+              closing: 3623027.35
+            2026-12:
+              opening: 3623027.35
+              distributions: 628215
+              income: 58500
+              calls: 991666.67
+              expenses: 182104.15
+              closing: 3135971.53
+            2027-01:
+              opening: 3135971.53
+              distributions: 0
+              income: 46000
+              calls: 991666.67
+              expenses: 187402.08
+              closing: 2002902.78
+            2027-02:
+              opening: 2002902.78
+              distributions: 0
+              income: 0
+              calls: 991666.67
+              expenses: 144843.95
+              closing: 866392.16
+            2027-03:
+              opening: 866392.16
+              distributions: 464215
+              income: 76500
+              calls: 991666.67
+              expenses: 173310.61
+              closing: 242129.88
+            2027-04:
+              opening: 242129.88
+              distributions: 0
+              income: 149802.2
+              calls: 991666.67
+              expenses: 187402.08
+              closing: -787136.67
+            2027-05:
+              opening: -787136.67
+              distributions: 0
+              income: 0
+              calls: 991666.67
+              expenses: 159077.28
+              closing: -1937880.62
+            2027-06:
+              opening: -1937880.62
+              distributions: 787115
+              income: 58500
+              calls: 991666.67
+              expenses: 272808.62
+              closing: -2356740.91
+            2027-07:
+              opening: -2356740.91
+              distributions: 0
+              income: 195802.2
+              calls: 991666.67
+              expenses: 186893.75
+              closing: -3339499.13
+            2027-08:
+              opening: -3339499.13
+              distributions: 0
+              income: 0
+              calls: 991666.67
+              expenses: 181068.95
+              closing: -4512234.75
+            2027-09:
+              opening: -4512234.75
+              distributions: 781265
+              income: 76500
+              calls: 991666.67
+              expenses: 258568.95
+              closing: -4904705.37
+          lowest_month: 2027-09
+          lowest_closing: -4904705.37
+          floor: 750000
+          cash_to_raise: 5654705.37
+          months_below_floor:
+          - 2027-03
+          - 2027-04
+          - 2027-05
+          - 2027-06
+          - 2027-07
+          - 2027-08
+          - 2027-09
+          closing_sep_2027: -4904705.37
+        how: cash of 13 Oct (SGD at 1.3400) plus distributions (value x payout rate at each quarter end) plus coupons and dividends, less the noticed call 7, less
+          future calls at the average of 1 Apr to 30 Sep (991,667 a month from November), less the payment schedule (held items left out); floor = three buffers
+  uc-073-runway:
+    title: How many months the family can spend
+    priority: null
+    input_files:
+    - '*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx'
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    questions:
+      Whether spending is sustainable:
+        expected:
+          cash_usd_eq: 6156041.41
+          average_monthly_spend: 243977.13
+          months_of_cash: 25.23
+          months_of_cash_and_liquid_book: 198.5
+          liquid_book: 42273700
+          six_month_spend_by_category:
+            Banking: 2409.54
+            Courier and other: 284.13
+            Debt service: 289975.01
+            Family allowances: 133000
+            Fund and custody fees: 26735.72
+            Grants: 175000
+            Insurance: 36176.23
+            Premises: 83007.43
+            Professional fees: 78252.48
+            Property running costs: 37761.59
+            Research: 9600
+            Staff: 580620.95
+            Technology: 11039.68
+        how: cash of the three entities at 13 Oct (SGD at 1.3400) over the average monthly spending of April to September in the expense ledger (every payment in
+          USD equivalent at its day's fixing)
+  uc-074-boardpack:
+    title: Family board pack
+    priority: null
+    input_files:
+    - '*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf'
+    - '*/meeting_notes/ic_note_*.md'
+    - '*/meeting_notes/08_investment_committee_note_2026-10-08.md'
+    questions:
+      What to tell the board of the family:
+        expected:
+          net_worth_usd: 57600000
+          net_worth_sgd: 77253120
+          net_worth_status: Evergreen Growth I is an estimate in the issued report
+          liquid_book_q3_return_pct: 3.5148
+          benchmark_since_1_apr_pct: 5.7563
+          cash_usd_eq: 6156041.41
+          call_7_shortfall_usd: 270000
+          uncalled_commitments: 14600000
+          statements_amended_after_last_report: 1
+          sources:
+          - investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf
+          - custodian_positions
+          - administrator_cash
+          - notices/2026-10-13_C_call7.pdf
+          - commitments_register_2026-10-13.xlsx
+        how: headline figures taken from the keys of the morning net worth note, the time-weighted return, the call check, the uncalled commitments and the amendment
+          log, each of which traces to its own files
+  uc-075-yearwalk:
+    title: What happened to our worth this year
+    priority: null
+    input_files:
+    - '*/investment_reports/Evergreen_Office_Investment_Report_*.pdf'
+    - '*/administrator_nav/administrator_export_*.xlsx'
+    - '*/bank_statements/*.xlsx'
+    questions:
+      What to tell the family about the year:
+        expected:
+          period:
+          - '2026-04-01'
+          - '2026-09-30'
+          opening: 114568027.06
+          investment_gains: 540967
+          liquid_book_gain: 1514870
+          private_and_hedge_fund_gain: -973903
+          income: 455668.98
+          spending: 1263862.76
+          fx_and_other: 94195.23
+          closing: 114394995.51
+          adds_up: true
+          fx_and_other_pct_of_closing: 0.082
+          capital_calls_paid: 5950000
+          distributions_received: 767500
+        how: net worth = fund values as known on 13 Oct + liquid book + bank cash (SGD at the day's fixing) - term loan; gains = book value change less net purchases,
+          plus fund value change less calls plus distributions; income = coupons, dividends and bank interest; spending = expense ledger without debt service, plus
+          loan interest; fx and other is the balancing item. Six months of data (1 Apr to 30 Sep), not twelve
+  uc-076-scorecard:
+    title: Manager scorecard
+    priority: null
+    input_files:
+    - '*/manager_statements/*.pdf'
+    - '*/meeting_notes/*.md'
+    - '*/notices/*_call*.pdf'
+    - '*/manager_news/*.eml'
+    questions:
+      Which managers to keep, add to, or exit:
+        expected:
+          by_manager:
+            Bluewater Capital:
+              return_pct_since_1_apr: 14.71
+              fee_drag_pct: 4.16
+              on_time_share: 1
+              watch_flags: 0
+              score: 98.3
+              verdict: add
+            Cedarpoint Ventures:
+              return_pct_since_1_apr: -19.1
+              fee_drag_pct: 100
+              on_time_share: 0.5
+              watch_flags: 2
+              score: 20
+              verdict: review or exit
+            Kestrel Ridge Advisors:
+              return_pct_since_1_apr: 1.71
+              fee_drag_pct: null
+              on_time_share: 0.929
+              watch_flags: 2
+              score: 45.4
+              verdict: review or exit
+            Northgate Partners:
+              return_pct_since_1_apr: 10.73
+              fee_drag_pct: 8.02
+              on_time_share: 1
+              watch_flags: 2
+              score: 86.8
+              verdict: add
+            Saltmarsh Real Assets:
+              return_pct_since_1_apr: -6.37
+              fee_drag_pct: 100
+              on_time_share: 0.4
+              watch_flags: 3
+              score: 13
+              verdict: review or exit
+          weights:
+            returns: 0.4
+            fees: 0.2
+            timeliness: 0.2
+            watch: 0.2
+        how: score = 100 x (0.4 x return/10% capped at 1 + 0.2 x (1 - fee drag/50%) + 0.2 x on-time share + 0.2 x (1 - watch flags/4)); fee drag counts 100 when the
+          gross gain is not positive and 0.5 when unknown (hedge funds); at least 75 add, 50 to 75 keep, below 50 review or exit
+  uc-077-deals:
+    title: Pipeline of deals under review
+    priority: null
+    input_files:
+    - '*/deal_pipeline/deal_pipeline_2026-10-13.csv'
+    - '*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf'
+    - '*/deal_pipeline/teaser_DL-*.pdf'
+    - '*/deal_pipeline/*.eml'
+    questions:
+      Which deals to move forward or drop:
+        expected:
+          by_stage:
+            Diligence: 2
+            Investment committee: 1
+            Sourced: 1
+            Teaser reviewed: 1
+          deals:
+          - deal: Harborlight Ventures IV
+            stage: Teaser reviewed
+            days_in_stage: 21
+            ticket: 2000000
+            stuck: false
+          - deal: Marlow Infrastructure Partners III
+            stage: Diligence
+            days_in_stage: 77
+            ticket: 3000000
+            stuck: true
+          - deal: Pelican Credit Opportunities II
+            stage: Diligence
+            days_in_stage: 13
+            ticket: 2500000
+            stuck: false
+          - deal: Ashgrove Growth Equity V
+            stage: Sourced
+            days_in_stage: 120
+            ticket: 4000000
+            stuck: true
+          - deal: Nimbus Secondaries I
+            stage: Investment committee
+            days_in_stage: 5
+            ticket: 1500000
+            stuck: false
+          stuck_over_60_days:
+          - Marlow Infrastructure Partners III
+          - Ashgrove Growth Equity V
+          total_ticket: 13000000
+        how: 13 Oct less the date the deal entered its stage; stuck above 60 days
+  uc-078-redemption:
+    title: Redeem from a hedge fund within notice and lock-up
+    priority: null
+    input_files:
+    - '*/fund_documents/kestrel_H*_redemption_terms.pdf'
+    - '*/manager_statements/kestrel_H*.pdf'
+    - reference/kestrel_ridge_ddq_2026.pdf
+    questions:
+      When the notice must be sent and the cash to expect:
+        expected:
+          by_fund:
+            Kestrel Ridge Macro Fund:
+              latest_value: 7320000
+              dealing_date: '2026-11-30'
+              send_notice_by: '2026-10-16'
+              days_to_send: 3
+              cash_date: '2026-12-14'
+              cash_at_payment: 6954000
+              held_back_until_audit: 366000
+            Kestrel Ridge Equity Long/Short Fund:
+              latest_value: 5180000
+              dealing_date: '2026-12-31'
+              send_notice_by: '2026-10-30'
+              days_to_send: 17
+              cash_date: '2027-02-01'
+              cash_at_payment: 4921000
+              held_back_until_audit: 259000
+        how: first dealing date on or after the lock-up end whose notice deadline (dealing date less the notice days, back to a business day) is not before 13 Oct;
+          cash = dealing date plus the payment lag, less the holdback
+  uc-079-rebalance:
+    title: Rebalancing proposal
+    priority: null
+    input_files:
+    - reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf
+    - '*/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx'
+    - '*/custodian_positions/positions_20261013.csv'
+    questions:
+      Which holdings to sell or buy and how much:
+        expected:
+          book: 42273700
+          targets_status: 'proposed at the 8 Oct committee, not signed: a suggestion only'
+          by_class:
+            listed_equity:
+              current: 33289600
+              current_pct: 78.75
+              target_pct: 65
+              target: 27477905
+              trade: -5811695
+            bond:
+              current: 7864200
+              current_pct: 18.6
+              target_pct: 30
+              target: 12682110
+              trade: 4817910
+            convertible:
+              current: 1119900
+              current_pct: 2.65
+              target_pct: 5
+              target: 2113685
+              trade: 993785
+          net_trade: 0
+        how: target percent of the 13 Oct liquid book less the current value of the class; positive = buy, negative = sell; the policy itself sets bands, not targets
+  uc-080-vintage:
+    title: Spread of private commitments by year
+    priority: null
+    input_files:
+    - '*/commitments/commitments_register_2026-10-13.xlsx'
+    - reference/fund_terms.csv
+    questions:
+      Whether commitments are too bunched in one year:
+        expected:
+          by_year:
+            '2021':
+              commitment: 15000000
+              share_pct: 27.35
+              funds:
+              - Evergreen Growth I
+            '2022':
+              commitment: 13000000
+              share_pct: 23.7
+              funds:
+              - Evergreen Income II
+              - Cedarpoint Opportunities II
+            '2023':
+              commitment: 10000000
+              share_pct: 18.23
+              funds:
+              - Cedarpoint Ventures III
+            '2024':
+              commitment: 12500000
+              share_pct: 22.79
+              funds:
+              - Saltmarsh Infrastructure Fund II
+              - Evergreen Credit III
+            '2025':
+              commitment: 4350000
+              share_pct: 7.93
+              funds:
+              - Evergreen Growth II
+              - Saltmarsh Renewables I
+          total: 54850000
+          largest_year: '2021'
+          largest_share_pct: 27.35
+        how: commitment amount of each of the eight private funds by the year of its commitment date (fund terms)
+  uc-081-payroll:
+    title: Household and office payroll
+    priority: null
+    input_files:
+    - '*/payroll_drafts/payroll_run_2026-10_draft.xlsx'
+    - '*/payroll/payroll_2026-09.xlsx'
+    - '*/bank_statements/HB_HOLD_SGD_2026-09.xlsx'
+    questions:
+      Whether to release the pay file:
+        expected:
+          draft_net: 100224
+          draft_employer_cpf: 21297.6
+          draft_total_cost: 121521.6
+          september_net: 93360
+          september_net_paid_per_bank: 93360
+          september_total_cost: 113199
+          change_pct: 7.35
+          flags:
+          - employee: Grace Ong
+            kind: gross changed
+            change_pct: 20
+          - employee: Jun Tan (contractor)
+            kind: not in the staff register
+            gross: 6500
+          release: false
+        how: net pay (80 percent of gross) plus employer CPF (17 percent) of the October draft against September's run; any line not on the staff register or with
+          a changed gross is a flag, and the file is not released while a flag is open
+  uc-082-covergap:
+    title: Insurance cover against what we own
+    priority: null
+    input_files:
+    - '*/insurance_schedule/insurance_schedule_2026-10-01.pdf'
+    - '*/property_valuations/valuation_RA-*.pdf'
+    questions:
+      Whether to raise or lower cover:
+        expected:
+          by_asset:
+          - asset: Bayview Residence
+            appraised_usd: 7164179.1
+            insured_usd: 6343283.58
+            gap_usd: -820895.52
+            status: under-insured
+          - asset: Hillcrest House
+            appraised_usd: 4776119.4
+            insured_usd: 0
+            gap_usd: -4776119.4
+            status: no policy
+          - asset: Fine art collection
+            appraised_usd: 2400000
+            insured_usd: 2000000
+            gap_usd: -400000
+            status: under-insured
+          - asset: Coastal Land Parcel Lot 14
+            appraised_usd: 1800000
+            insured_usd: 0
+            gap_usd: -1800000
+            status: no policy
+          - asset: Wine cellar collection
+            appraised_usd: 650000
+            insured_usd: 0
+            gap_usd: -650000
+            status: no policy
+          - asset: Motor yacht Evergreen Star
+            appraised_usd: 1200000
+            insured_usd: 0
+            gap_usd: -1200000
+            status: no policy
+          under_insured:
+          - Bayview Residence
+          - Fine art collection
+          no_policy:
+          - Hillcrest House
+          - Coastal Land Parcel Lot 14
+          - Wine cellar collection
+          - Motor yacht Evergreen Star
+          total_gap_usd: -9647014.92
+        how: sum insured of the policies linked to the asset less its latest appraisal, both in USD (SGD at 1.3400)
+  uc-083-taxcal:
+    title: Tax calendar
+    priority: null
+    input_files:
+    - '*/tax_calendar/tax_calendar_2026-27.xlsx'
+    - '*/tax_notices/eci_notice_EG-HOLD_2026.pdf'
+    questions:
+      Which filings and payments are due and who prepares them:
+        expected:
+          due_in_60_days:
+          - id: TX-01
+            entity: Evergreen Holdings
+            obligation: Estimated chargeable income (ECI) filing
+            due: '2026-11-30'
+            days: 48
+            prepared_by: Summit Tax Advisory
+            status: not started
+          - id: TX-02
+            entity: Evergreen Holdings
+            obligation: Corporate income tax return and payment
+            due: '2026-11-30'
+            days: 48
+            prepared_by: Summit Tax Advisory
+            status: draft with adviser
+          count_by_entity:
+            Evergreen Holdings: 2
+          overdue:
+          - id: TX-04
+            entity: Entity B
+            obligation: Corporate income tax return and payment
+            due: '2026-09-30'
+            days_overdue: 13
+            prepared_by: Summit Tax Advisory
+            status: not filed
+        how: tax calendar items with a due date within 60 days of 13 Oct, and items past their due date that are not filed
+  uc-084-taxest:
+    title: Estimated tax for the year
+    priority: null
+    input_files:
+    - '*/tax_calendar/tax_calendar_2026-27.xlsx'
+    - '*/trading_export/trading_export_2026*.csv'
+    - '*/notices/*_distribution.pdf'
+    questions:
+      How much cash to set aside for tax:
+        expected:
+          period:
+          - '2026-04-01'
+          - '2026-10-13'
+          by_entity:
+            Evergreen Holdings:
+              income: 244440.48
+              realised_gains: 0
+              rate_on_income: 0.17
+              rate_on_gains: 0
+              tax_before_credits: 41554.88
+              credits: 12500
+              tax_to_set_aside: 29054.88
+            Evergreen Family Trust:
+              income: 504980.42
+              realised_gains: 361740
+              rate_on_income: 0.12
+              rate_on_gains: 0.15
+              tax_before_credits: 114858.65
+              credits: 0
+              tax_to_set_aside: 114858.65
+            Entity B:
+              income: 89709.31
+              realised_gains: 0
+              rate_on_income: 0.17
+              rate_on_gains: 0
+              tax_before_credits: 15250.58
+              credits: 0
+              tax_to_set_aside: 15250.58
+          total_to_set_aside: 159164.11
+        how: income = coupons, dividends, bank interest and income distributions received 1 Apr to 13 Oct; realised gains from the sells matched first-in first-out
+          to the lots; times the 2026 rates of the tax calendar; credit = tax withheld on fund distributions (the 12,500 on Fund A)
+  uc-085-grants:
+    title: 'Philanthropy: budget used'
+    priority: null
+    input_files:
+    - '*/grant_ledger/grant_ledger_2026.xlsx'
+    - '*/bank_statements/HB_HOLD_USD_2026-0[5-9].xlsx'
+    questions:
+      Whether to approve more grants this year:
+        expected:
+          budget: 300000
+          paid: 175000
+          pledged: 90000
+          used: 265000
+          used_pct: 88.3
+          remaining: 35000
+          paid_matches_bank: true
+        how: paid plus pledged grants over the annual budget; paid grants agree with the bank debits
+  uc-086-grantappr:
+    title: Approve a grant payment
+    priority: null
+    input_files:
+    - '*/grant_requests/grant_request_REQ-2026-06.pdf'
+    - '*/grant_requests/2026-10-09_REQ-2026-06.eml'
+    - '*/grant_ledger/grant_ledger_2026.xlsx'
+    questions:
+      Whether to pay the grant:
+        expected:
+          request: REQ-2026-06
+          amount: 50000
+          remaining_budget: 35000
+          charity_registered_months: 19
+          required_months: 24
+          holdings_usd_cash: 1230000
+          calls_due_30_days: 1250000
+          cash_after_request_and_calls: -70000
+          checks:
+            within_budget: false
+            charity_old_enough: false
+            cash_covers: false
+          pay: false
+        how: request against the remaining 2026 budget, the age of the charity's registration (policy 24 months) and Holdings USD cash less the call due in 30 days
+          less the request, kept above the 250,000 buffer
+  uc-087-trustdist:
+    title: Trust distributions to beneficiaries
+    priority: null
+    input_files:
+    - '*/trust_deed/evergreen_family_trust_deed.pdf'
+    - '*/administrator_cash/administrator_cash_2026-10_mtd.csv'
+    - '*/family_allowances/allowance_schedule_2026-*.xlsx'
+    questions:
+      Whether the trust pays what its deed allows:
+        expected:
+          trust_year_start: '2026-04-01'
+          trust_income: 504980.42
+          trust_expenses: 46001.31
+          distributable_income: 458979.11
+          payout_cap_pct: 70
+          distributable_cap: 321285.38
+          by_beneficiary:
+            Lin Chen:
+              share_pct: 40
+              room: 128514.15
+              paid: 56000
+              left: 72514.15
+              over: false
+            Maya Chen:
+              share_pct: 25
+              room: 80321.35
+              paid: 42000
+              left: 38321.35
+              over: false
+            Ethan Chen:
+              share_pct: 27
+              room: 86747.05
+              paid: 30000
+              left: 56747.05
+              over: false
+            Wen Chen:
+              share_pct: 8
+              room: 25702.83
+              paid: 28000
+              left: -2297.17
+              over: true
+          over_distributed:
+          - Wen Chen
+        how: distributable income = coupons, dividends and interest of the Trust accounts less fees, bank fees and property costs, 1 Apr to 13 Oct; the deed lets
+          the trustees pay out 70 percent of it, split by share; allowances paid count as distributions
+  uc-088-estateliq:
+    title: Cash for an estate or transfer tax
+    priority: null
+    input_files:
+    - '*/trust_deed/evergreen_family_trust_deed.pdf'
+    - '*/estate_planning/transfer_tax_memo_2026.pdf'
+    - '*/property_valuations/valuation_RA-*.pdf'
+    questions:
+      Whether the family could meet a transfer tax from liquid assets:
+        expected:
+          estate_value: 131306339.91
+          investments_30_sep: 109960000
+          cash: 6156041.41
+          real_assets: 17990298.5
+          loan: 2800000
+          exemption: 5000000
+          rate: 0.15
+          transfer_tax: 18945950.99
+          liquid_assets_after_debt: 55879741.41
+          cover: 2.95
+          can_meet: true
+        how: estate = fund values as known on 13 Oct + liquid book (30 Sep) + cash (13 Oct) + latest real asset appraisals - term loan; tax = (estate - 5,000,000)
+          x 15 percent; liquid = cash + liquid book + the two index funds - loan
+  uc-089-expapp:
+    title: Expense approval and sign-off rules
+    priority: null
+    input_files:
+    - '*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx'
+    - reference/office_rules.csv
+    questions:
+      Which approval limits to set and who may approve:
+        expected:
+          limits:
+            Priya Nair: 10000
+            Grace Ong: 50000
+            Daniel Foo: 500000
+            Raj Patel: 5000000
+          payments: 151
+          over_limit:
+          - reference: BAL-2026-051
+            payee: Brightline Audit LLP
+            usd: 38000
+            approver: Priya Nair
+            limit: 10000
+          - reference: LL-2026-0708
+            payee: Lakeside Legal LLP
+            usd: 16662.93
+            approver: Priya Nair
+            limit: 10000
+          approvals_by_person:
+            Daniel Foo: 22
+            Grace Ong: 10
+            Priya Nair: 119
+        how: ledger payments whose USD equivalent exceeds the limit of the person who approved them
+  uc-090-offcost:
+    title: What the office costs
+    priority: null
+    input_files:
+    - '*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx'
+    - '*/office_budget/office_budget_2026.xlsx'
+    - '*/payroll/payroll_2026-0[4-9].xlsx'
+    - '*/invoices/*.pdf'
+    questions:
+      Whether the office costs more than planned:
+        expected:
+          by_category:
+            Staff:
+              actual: 580620.95
+              budget_half_year: 600000
+              variance: -19379.05
+              over: false
+            Premises:
+              actual: 83007.43
+              budget_half_year: 90000
+              variance: -6992.57
+              over: false
+            Technology:
+              actual: 11039.68
+              budget_half_year: 12000
+              variance: -960.32
+              over: false
+            Professional fees:
+              actual: 78252.48
+              budget_half_year: 42500
+              variance: 35752.48
+              over: true
+            Fund and custody fees:
+              actual: 26735.72
+              budget_half_year: 30000
+              variance: -3264.28
+              over: false
+            Insurance:
+              actual: 36176.23
+              budget_half_year: 40000
+              variance: -3823.77
+              over: false
+            Property running costs:
+              actual: 37761.59
+              budget_half_year: 40000
+              variance: -2238.41
+              over: false
+            Research:
+              actual: 9600
+              budget_half_year: 9600
+              variance: 0
+              over: false
+            Banking:
+              actual: 2409.54
+              budget_half_year: 3000
+              variance: -590.46
+              over: false
+            Courier and other:
+              actual: 284.13
+              budget_half_year: 750
+              variance: -465.87
+              over: false
+            Debt service:
+              actual: 289975.01
+              budget_half_year: 300000
+              variance: -10024.99
+              over: false
+            Family allowances:
+              actual: 133000
+              budget_half_year: 138000
+              variance: -5000
+              over: false
+            Grants:
+              actual: 175000
+              budget_half_year: 150000
+              variance: 25000
+              over: true
+          actual: 1463862.76
+          budget: 1455850
+          over_budget:
+          - Professional fees
+          - Grants
+          uncategorised: 0
+        how: expense ledger of April to September by category (USD at the day's fixing) against half of the annual budget set in April
+  uc-091-jml:
+    title: Joiner, mover, leaver access
+    priority: null
+    input_files:
+    - '*/access_register/access_register_2026-10-13.csv'
+    - '*/access_register/2026-10-02_joiner_leaver.eml'
+    questions:
+      Which access to give or remove:
+        expected:
+          granted_without_approver:
+          - person: Sam Lee
+            system: OMS
+            permission: trade entry
+          - person: Wei Tan
+            system: Harbour Bank portal
+            permission: initiate payments
+          leaver: J. Ng
+          leaver_access_to_remove:
+          - OMS
+          - Shared drive
+          - Harbor
+          joiner: Wei Tan
+          joiner_access_not_requested:
+          - Harbour Bank portal
+        how: grants with no approver in the register; every grant still held by the leaver; grants of the joiner outside the three systems the HR mail asked for
+  uc-092-accessrev:
+    title: Quarterly access review
+    priority: null
+    input_files:
+    - '*/access_register/access_register_2026-10-13.csv'
+    questions:
+      Which access to remove:
+        expected:
+          grants_reviewed: 38
+          not_used_in_90_days:
+          - person: Anita Rao
+            system: Custody portal
+            last_used: '2026-04-28'
+            days_unused: 168
+          - person: Sofia Reyes
+            system: OMS
+            last_used: '2026-05-20'
+            days_unused: 146
+          - person: Priya Nair
+            system: Shared drive
+            last_used: '2026-06-03'
+            days_unused: 132
+          count: 3
+        how: register grants whose last use is more than 90 days before 13 Oct (the leaver's grants are handled by the joiner and leaver card)
+  uc-093-onbmgr:
+    title: Onboard a new manager
+    priority: null
+    input_files:
+    - '*/onboarding/*'
+    questions:
+      Whether every document and feed is in place before the first call:
+        expected:
+          items: 5
+          complete: 3
+          missing:
+          - Bank details confirmed by call-back
+          - Statement schedule (frequency, due day, contact)
+          ready: false
+        how: rows of the onboarding checklist by status
+  uc-094-onbbank:
+    title: Open or change a bank or custody account
+    priority: null
+    input_files:
+    - '*/bank_forms/*'
+    questions:
+      Whether the account and its signatories are approved:
+        expected:
+          signatories:
+          - Raj Patel
+          - Grace Ong
+          required_head_of_finance: Daniel Foo
+          missing_signatory: Daniel Foo
+          meets_signing_policy: false
+          steps:
+          - step: Opening form completed
+            done: true
+          - step: KYC of the entity attached
+            done: true
+          - step: Board and trustee resolution attached
+            done: true
+          - step: Specimen signatures received
+            done: true
+          - step: Signatories meet the signing policy
+            done: false
+          - step: Head of Finance approval
+            done: false
+          outstanding:
+          - Signatories meet the signing policy
+          - Head of Finance approval
+          approved: false
+        how: signatories on the opening form against the signing policy (two or more, one the Head of Finance); the checklist steps
+  uc-095-sopreview:
+    title: SOPs not reviewed in a year
+    priority: null
+    input_files:
+    - '*/sops/sop_*.md'
+    questions:
+      Which procedures to review:
+        expected:
+          sops:
+          - sop: Month-end investment report
+            owner: Mei Chen
+            last_reviewed: '2026-03-12'
+            age_days: 215
+            due: false
+          - sop: Capital call payment
+            owner: Helen Foo
+            last_reviewed: '2025-11-04'
+            age_days: 343
+            due: false
+          - sop: Vendor payment run
+            owner: Grace Ong
+            last_reviewed: '2025-06-20'
+            age_days: 480
+            due: true
+          - sop: Bank statement chase
+            owner: Helen Foo
+            last_reviewed: '2026-05-09'
+            age_days: 157
+            due: false
+          - sop: Payroll release
+            owner: Priya Nair
+            last_reviewed: '2025-09-30'
+            age_days: 378
+            due: true
+          - sop: Quarterly access review
+            owner: Priya Nair
+            last_reviewed: '2026-07-14'
+            age_days: 91
+            due: false
+          - sop: Open or change a bank account
+            owner: Daniel Foo
+            last_reviewed: '2024-12-01'
+            age_days: 681
+            due: true
+          - sop: Insurance renewal
+            owner: Priya Nair
+            last_reviewed: '2026-02-03'
+            age_days: 252
+            due: false
+          to_review:
+          - Open or change a bank account
+          - Vendor payment run
+          - Payroll release
+        how: 13 Oct 2026 less the last review date in each SOP, flagged above 365 days
+  uc-096-automation:
+    title: Which processes to automate next
+    priority: null
+    input_files:
+    - '*/sops/sop_*.md'
+    - '*/exception_log/exception_log_2026-10-13.csv'
+    - received_log_all.csv
+    questions:
+      Which process to automate:
+        expected:
+          ranking:
+          - sop: Bank statement chase
+            runs_per_month: 4
+            manual_minutes_per_month: 280
+            total_minutes_per_month: 280
+            failures_6_months: 8
+            score: 2040
+            slowest_manual_step: Chase late or missing ones
+          - sop: Month-end investment report
+            runs_per_month: 1
+            manual_minutes_per_month: 300
+            total_minutes_per_month: 360
+            failures_6_months: 3
+            score: 1935
+            slowest_manual_step: Collect manager statements
+          - sop: Vendor payment run
+            runs_per_month: 2
+            manual_minutes_per_month: 210
+            total_minutes_per_month: 280
+            failures_6_months: 3
+            score: 1395
+            slowest_manual_step: Match invoices to contracts and the fee schedule
+          - sop: Capital call payment
+            runs_per_month: 2
+            manual_minutes_per_month: 150
+            total_minutes_per_month: 200
+            failures_6_months: 2
+            score: 990
+            slowest_manual_step: Call back on changed bank details
+          - sop: Payroll release
+            runs_per_month: 1
+            manual_minutes_per_month: 90
+            total_minutes_per_month: 105
+            failures_6_months: 0
+            score: 540
+            slowest_manual_step: Prepare pay file
+          - sop: Quarterly access review
+            runs_per_month: 0.33
+            manual_minutes_per_month: 49.5
+            total_minutes_per_month: 49.5
+            failures_6_months: 0
+            score: 297
+            slowest_manual_step: Review unused and unapproved access
+          - sop: Insurance renewal
+            runs_per_month: 0.33
+            manual_minutes_per_month: 26.4
+            total_minutes_per_month: 29.7
+            failures_6_months: 0
+            score: 158.4
+            slowest_manual_step: Compare with assets and last year
+          - sop: Open or change a bank account
+            runs_per_month: 0.1
+            manual_minutes_per_month: 13.5
+            total_minutes_per_month: 13.5
+            failures_6_months: 0
+            score: 81
+            slowest_manual_step: Complete the bank form
+          automate_next: Bank statement chase
+        how: score = manual minutes per run x runs per month x 6 months + 45 minutes of rework per failure; failures counted from the late close steps, late or missing
+          statements, unapproved or changed-account calls and the planted invoice problems
+  uc-097-kycrefresh:
+    title: Know-your-client documents expiring
+    priority: null
+    input_files:
+    - '*/kyc_register/kyc_register_2026-10-13.csv'
+    - '*/kyc_register/kyc_pack_Evergreen_Holdings_2026.pdf'
+    questions:
+      Which documents to refresh before the bank or manager freezes the account:
+        expected:
+          expiring_in_90_days:
+          - entity: Evergreen Holdings
+            counterparty: Harbour Bank (synthetic)
+            document: Director identity document, Raj Patel
+            expires: '2026-11-14'
+            days_left: 32
+          - entity: Evergreen Holdings
+            counterparty: Tidewater Commercial Bank (synthetic)
+            document: Certificate of incumbency
+            expires: '2026-12-02'
+            days_left: 50
+          - entity: Evergreen Holdings
+            counterparty: Cedarpoint Ventures
+            document: Limited partner KYC refresh
+            expires: '2027-01-05'
+            days_left: 84
+          expired:
+          - entity: Entity B
+            counterparty: Harbour Bank (synthetic)
+            document: Director identity document, Daniel Foo
+            expires: '2026-09-12'
+            days_left: -31
+          documents: 12
+        how: expiry date less 13 Oct 2026; within 90 days, or already past
+  uc-098-wordlist:
+    title: Keep the office words in step with the model
+    priority: null
+    input_files:
+    - '*/glossary/*'
+    questions:
+      Whether to add a word to the language list:
+        expected:
+          proposed:
+          - capital account
+          - dry powder
+          - side letter
+          - stub period
+          proposals_made: 5
+          distinct_terms: 4
+          already_in_list:
+          - capital account
+          - dry powder
+          to_add:
+          - side letter
+          - stub period
+          list_size: 20
+        how: distinct terms proposed in the email and the meeting note against the terms and aliases of the office word list
+  uc-099-newfeed:
+    title: Bring in a new source file
+    priority: null
+    input_files:
+    - '*/new_feed/*'
+    questions:
+      Whether the new feed is designed, mapped and safe to go live:
+        expected:
+          columns: 10
+          mapped_with_confidence: 8
+          share_mapped_pct: 80
+          in_doubt:
+          - Value
+          - Dt
+          rows_in_sample: 3
+          safe_to_go_live: false
+        how: each column of the file against the model fields by name and content; Value could be market or book value, Dt a valuation, trade or settle date
+  uc-100-famaccess:
+    title: What each family member can see
+    priority: null
+    input_files:
+    - '*/family_access/*'
+    questions:
+      What each family member may see:
+        expected:
+          by_member:
+            Lin Chen:
+              allowed:
+                Evergreen Holdings: full
+                Evergreen Family Trust: full
+              granted:
+                Evergreen Holdings: full
+                Evergreen Family Trust: full
+              over_granted: {}
+            Maya Chen:
+              allowed:
+                Evergreen Family Trust: summary
+              granted:
+                Evergreen Family Trust: summary
+              over_granted: {}
+            Ethan Chen:
+              allowed:
+                Evergreen Family Trust: summary
+              granted:
+                Evergreen Family Trust: summary
+              over_granted: {}
+            Wen Chen:
+              allowed:
+                Evergreen Family Trust: summary
+              granted:
+                Evergreen Family Trust: summary
+                Entity B: full
+              over_granted:
+                Entity B:
+                  granted: full
+                  allowed: none
+          over_grants:
+          - Wen Chen
+          request:
+            member: Maya Chen
+            entity: Evergreen Holdings
+            level: summary
+            allowed: false
+        how: views granted against the family access policy, per member and entity (none < summary < full)

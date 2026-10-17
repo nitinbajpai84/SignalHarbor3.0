@@ -1,0 +1,21 @@
+# SUGGESTION. uc-067 row 1: the gain the open lots are sitting on, and the lots at a loss (the tax candidates). Numbers come from the card's recipe (unrealised_gain); the office edits or switches it off.
+suggestion: true
+id: uc-067-unrl-losses
+title: Unrealised gain and the lots at a loss
+pain_points: [PP-08, INT-PERF]
+trigger: {on: figure_changed, figure: unrealised_gain}
+inputs:
+- kind: figure
+  id: unrealised_gain
+  recipe: unrealised_gain
+  as: lot
+  by: {first_row: true}
+condition: lot.lots > 0
+subject: 'unrealised {lot.total_gain:,.0f}, {lot.loss_lots} loss lots'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [See the lots]
+message: 'The {lot.lots} open lots at {lot.as_at} carry an unrealised gain of USD {lot.total_gain:,.0f}; {lot.loss_lots} lots are at a loss, USD {lot.total_loss:,.0f} in all, the largest {lot.lot} ({lot.security}) at USD {lot.gain:,.0f}.'
+evidence: [lot]

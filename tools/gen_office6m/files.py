@@ -38,6 +38,8 @@ def generate(out, w=None):
     fx_files(w, R); vendors(w, R); people_and_property(w, R); notes_and_mail(w, R); reports(w, R); loans(w, R); approvals(w, R); reference(w, R)
     from .files2 import generate2
     generate2(w, R)
+    from .more import generate3
+    generate3(w, R)
     write_csv(R.out / "received_log_all.csv", ["file", "kind", "period", "expected_on", "received_on", "status"], RECV)
     return w, R, MESS
 
@@ -431,9 +433,10 @@ def reference(w, R):
     write_csv(ref / "vendor_master.csv", ["vendor", "category", "currency", "account_last4"], [list(v) for v in VENDORS])
     write_csv(ref / "accounts.csv", ["account_id", "bank", "entity", "currency", "account_number"], [[a, BANK[v["bank"]], ENT[v["ent"]], v["ccy"], v["no"]] for a, v in ACCT.items()])
     import json
+    from .more import wave2_rules  # the rules of cards 51 to 100 (A48 onward); imported here because more imports this module
     write_csv(ref / "office_rules.csv", ["rule", "value", "text", "rule_type", "parameters", "approval_status", "version"], [[*r, "", "", "", ""] for r in [["approval_over_usd", 500000, "Payments over 500,000 need the Head of Finance's approval"], ["bank_detail_change", "call-back", "Changed bank details need a call-back on a known number before payment"],
               ["cash_buffer_usd", 250000, "Keep a 250,000 USD cash buffer per entity"], ["single_name_limit_pct", 5, "No single name above 5 percent of the liquid portfolio"], ["cash_tolerance_usd", 5000, "Daily cash may differ by up to 5,000 per entity before it is a break"]]]
-              + [[c, v, t, k, json.dumps(p, sort_keys=True), s, n] for c, v, t, k, p, s, n in SIGNED_RULES])
+              + [[c, v, t, k, json.dumps(p, sort_keys=True), s, n] for c, v, t, k, p, s, n in SIGNED_RULES + wave2_rules(w)])
     from .world import PEOPLE
     md = dict(office="Evergreen Office (synthetic)", period=["2026-04-01", "2026-10-13"], entities={k: v for k, v in ENT.items()},
               accounts={a: dict(bank=BANK[v["bank"]], entity=v["ent"], currency=v["ccy"], number=v["no"]) for a, v in ACCT.items()},

@@ -1,0 +1,28 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-060-docinbox (use cases 51 to 100, no priority): a file in the inbox read by its content -> where it belongs, or that it is not office business -> the Operations Clerk names its source or refuses it.
+suggestion: true
+id: uc-060-docinbox-new
+title: A file in the inbox is a known kind, not yet loaded
+pain_points:
+- INT-DOC
+- INT-GOV
+trigger:
+  'on': figure_changed
+  figure: unrecognised_files
+inputs:
+- kind: doc
+  fields:
+  - file
+  - recognition
+  - belongs_in
+  - status
+subject: '{doc.file} to {doc.belongs_in}'
+condition: doc.recognition == 'recognised' and doc.status != 'duplicate'
+severity: needs
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Move it to its folder
+message: '{doc.file} is a new file of {doc.belongs_in}. Move it there to be read.'
+evidence:
+- doc.belongs_in

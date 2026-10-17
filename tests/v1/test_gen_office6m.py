@@ -261,6 +261,138 @@ def check_M21():
     assert sum(1 for x, y in zip(a[3:11], b[3:11]) if x != y) == 5
 
 
+def csvrows(pattern):
+    return list(csv.DictReader(open(one(pattern), encoding="utf-8")))
+
+
+def check_M22():
+    assert any("TT IN REF 7741XQ" in r[3] and r[5] == 48250 for r in tx("HOLD", "USD", "2026-08"))
+    assert any("ACH DEBIT MERCHANT 55201" in r[3] for r in tx("HOLD", "USD", "2026-09")) and any("CHEQUE 000417" in r[3] for r in tx("B", "USD", "2026-10_mtd"))
+
+
+def check_M23():
+    r = csvrows("2026-10/settlement_status/settlement_report_2026-10-13.csv")
+    assert [x["trade_ref"] for x in r if x["status"] == "failed"] == ["BR2-20261002-001", "BR2-20261007-002"] and all(x["cash_booked"] == "no" for x in r if x["status"] == "failed")
+
+
+def check_M24():
+    t = pdf_text(one("2026-10/custody_statements/custody_statement_2026-09-30.pdf"))
+    assert "Note BSU" in t and "+1,250" in t and "Note RWP" in t and "-400" in t
+
+
+def check_M25():
+    pos = {r["security_id"]: float(r["price"]) for r in csv.DictReader(open(one("2026-09/custodian_positions/positions_20260930.csv")))}
+    sec = {(r["date"], r["security_id"]): float(r["price"]) for r in csvrows("2026-10/market_data/second_source_prices_*.csv")}
+    assert abs(pos["SEC-KFT"] / sec[("2026-09-30", "SEC-KFT")] - 1) > 0.005 and abs(pos["SEC-KFB30"] / sec[("2026-09-30", "SEC-KFB30")] - 1) > 0.005 and abs(pos["SEC-HVS"] / sec[("2026-09-30", "SEC-HVS")] - 1) < 0.005
+
+
+def check_M26():
+    r = csvrows("2026-10/break_register/break_register_2026-10-13.csv")
+    assert len(r) == 6 and {x["status"] for x in r} == {"open"} and min(x["detected_on"] for x in r) == "2026-06-05"
+
+
+def check_M27():
+    assert sorted(p.name for p in FIX.glob("2026-10/inbox/*")) == ["IMG_2210.pdf", "INV-OIT-2610.pdf", "account_extract.xlsx", "data_export.xlsx", "scan_0412.pdf"]
+
+
+def check_M28():
+    assert "20 August 2024" in pdf_text(one("2026-04/property_valuations/valuation_RA-03_2024-08-20.pdf")) and "30 September 2025" in pdf_text(one("2026-04/property_valuations/valuation_RA-05_2025-09-30.pdf"))
+
+
+def check_M29():
+    assert "Registered proprietor: Lin Chen" in pdf_text(one("2026-04/title_deeds/title_deed_RA-04.pdf")) and "Evergreen Holdings" in pdf_text(one("2026-04/title_deeds/title_deed_RA-01.pdf"))
+
+
+def check_M30():
+    t = pdf_text(one("2026-10/insurance_schedule/insurance_schedule_2026-10-01.pdf"))
+    assert "POL-ART-02" in t and "sum insured USD 2,000,000.00" in t and "RA-02" not in t
+
+
+def check_M31():
+    r = rows(one("2026-10/fund_holdings/fund_holdings_2026-09-30.xlsx"), "Holdings")[1:]
+    assert sorted(x[0] for x in r if x[2] == "Helix Cloud Systems") == ["A", "C", "F"] and sorted(x[0] for x in r if x[2] == "Harborview Semiconductor") == ["A", "C"]
+
+
+def check_M32():
+    d_ = {r[0]: r[2] for r in rows(one("2026-10/payroll_drafts/payroll_run_2026-10_draft.xlsx"), "Draft")[1:]}
+    s_ = {r[0]: r[2] for r in rows(one("2026-09/payroll/payroll_2026-09.xlsx"), "Payroll")[1:]}
+    assert "Jun Tan (contractor)" in d_ and "Jun Tan (contractor)" not in s_ and d_["Grace Ong"] == pytest.approx(s_["Grace Ong"] * 1.2)
+
+
+def check_M33():
+    r = {x[0]: x for x in rows(one("2026-10/tax_calendar/tax_calendar_2026-27.xlsx"), "Obligations")[1:]}
+    assert r["TX-04"][3] == "2026-09-30" and r["TX-04"][7] == "not filed"
+
+
+def check_M34():
+    t = pdf_text(one("2026-10/grant_requests/grant_request_REQ-2026-06.pdf")); g = rows(one("2026-10/grant_ledger/grant_ledger_2026.xlsx"), "Grants")[1:]
+    assert "USD 50,000.00" in t and "1 March 2025" in t and sum(r[3] for r in g) == 265000
+
+
+def check_M35():
+    f = one("2026-10/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx"); led = rows(f, "Ledger")[1:]; lim = dict(rows(f, "Approval limits")[1:])
+    assert sorted(r[7] for r in led if r[6] > lim[r[8]]) == ["BAL-2026-051", "LL-2026-0708"]
+
+
+def check_M36():
+    r = csvrows("2026-10/access_register/access_register_2026-10-13.csv")
+    assert sorted((x["person"], x["system"]) for x in r if not x["approved_by"]) == [("Sam Lee", "OMS"), ("Wei Tan", "Harbour Bank portal")] and len([x for x in r if x["person"] == "J. Ng"]) == 3
+    assert sum(1 for x in r if x["last_used"] < "2026-07-15" and x["person"] != "J. Ng") == 3 and list(FIX.glob("2026-10/access_register/*.eml"))
+
+
+def check_M37():
+    r = csvrows("2026-10/onboarding/onboarding_checklist_Harborlight.csv")
+    assert [x["item"][:12] for x in r if x["status"] == "missing"] == ["Bank details", "Statement sc"]
+
+
+def check_M38():
+    t = pdf_text(one("2026-10/bank_forms/account_opening_form_TCB_TRUST_EUR.pdf"))
+    assert "Raj Patel" in t and "Grace Ong" in t and "Daniel Foo" not in t and "Head of Finance" in pdf_text(one("2026-10/bank_forms/signing_policy_2026.pdf"))
+
+
+def check_M39():
+    old = [p.name for p in sorted(FIX.glob("2026-10/sops/*.md")) if re.search(r"Last reviewed: (\d{4}-\d\d-\d\d)", p.read_text()).group(1) < "2025-10-13"]
+    assert old == ["sop_new-bank-account.md", "sop_payroll-release.md", "sop_vendor-payment-run.md"]
+
+
+def check_M40():
+    r = csvrows("2026-10/kyc_register/kyc_register_2026-10-13.csv")
+    assert sum(1 for x in r if x["expires"] < "2026-10-13") == 1 and sum(1 for x in r if "2026-10-13" <= x["expires"] <= "2027-01-11") == 3
+
+
+def check_M41():
+    e = one("2026-10/glossary/2026-10-06_word_proposal.eml").read_text()
+    terms = " ".join(r["term"] + " " + r["aliases"] for r in csvrows("2026-10/glossary/office_words_2026-10-01.csv"))
+    assert "dry powder" in e and "dry powder" in terms and "stub period" not in terms and "stub period" in one("2026-10/glossary/word_review_2026-10-08.md").read_text()
+
+
+def check_M42():
+    h = open(one("2026-10/new_feed/pinnacle_custody_positions_2026-10-12.csv")).readline().strip().split(",")
+    assert len(h) == 10 and "Value" in h and "Dt" in h
+
+
+def check_M43():
+    r = csvrows("2026-10/family_access/family_view_grants_2026-10-13.csv")
+    assert {"member": "Wen Chen", "entity": "EG-B", "level": "full", "granted_on": "2026-01-15"} in r and "Wen Chen: Evergreen Holdings none, Evergreen Family Trust summary, Entity B none" in pdf_text(one("2026-10/family_access/family_access_policy_2026.pdf"))
+
+
+def check_M44():
+    assert len(list(FIX.glob("*/manager_news/*.eml"))) == 2 and "resigned" in one("2026-08/manager_news/2026-08-18_saltmarsh_personnel.eml").read_text()
+
+
+def check_M45():
+    assert "Respond by: 22 October 2026" in pdf_text(one("2026-10/corporate_actions/2026-10-08_TWE_tender_offer.pdf")) and "mandatory" in pdf_text(sorted(FIX.glob("2026-10/corporate_actions/*_dividend.pdf"))[0])
+
+
+def check_M46():
+    r = {x["deal"]: x for x in csvrows("2026-10/deal_pipeline/deal_pipeline_2026-10-13.csv")}
+    assert r["DL-02"]["stage_entered"] == "2026-07-28" and r["DL-04"]["stage_entered"] == "2026-06-15"
+
+
+def check_M47():
+    assert "Wen Chen 8 percent" in pdf_text(one("2026-04/trust_deed/evergreen_family_trust_deed.pdf"))
+
+
 MESS_CHECKS = {k[len("check_"):]: v for k, v in dict(globals()).items() if k.startswith("check_M")}
 
 
@@ -301,3 +433,48 @@ def test_old_keys_still_hold():
     assert (brk["entity"], brk["difference"]) == ("Entity B", 12400)
     assert k["uc5-limits"]["questions"]["Which holding is over its single-name limit?"]["expected"]["pct_of_portfolio"] == 5.75
     assert k["uc3-statements-inbox"]["questions"]["Which statement is missing and how overdue is it?"]["expected"]["missing"][0]["business_days_overdue_9_oct"] == 63
+
+
+def test_other_cards_have_inputs_and_keys():
+    y = yaml.safe_load(PACK.read_text(encoding="utf-8"))
+    others = [u["id"] for u in y["use_cases"] if not (u.get("priority") and u["priority"] <= 50)]
+    assert len(others) == 50
+    k = keys()
+    for i in others:
+        assert i in k, f"no answer key for {i}"
+        assert k[i]["questions"], i
+        assert [p for g in k[i]["input_files"] for p in FIX.glob(g)], f"no input file for {i}: {k[i]['input_files']}"
+        for q in k[i]["questions"].values():
+            assert q["expected"] is not None and q["how"], i
+    assert len(k) == 100
+
+
+def test_signed_rules_of_cards_51_to_100_agree_with_the_keys():
+    """A48 onward: every rule a card 51-100 needs is signed in reference/office_rules.csv with the value its answer key already uses."""
+    import json
+    rows = list(csv.DictReader((FIX / "reference" / "office_rules.csv").open(encoding="utf-8")))
+    signed = {r["rule"]: json.loads(r["parameters"]) for r in rows if r["approval_status"] == "approved" and r["parameters"]}
+    ex = lambda cid: next(iter(keys()[cid]["questions"].values()))["expected"]  # noqa: E731
+    assert {k[len("approver_limit_"):]: v["limit"] for k, v in signed.items() if k.startswith("approver_limit_")} == {n.lower().replace(" ", "_"): v for n, v in ex("uc-089-expapp")["limits"].items()}
+    assert {k: v["annual"] for k, v in signed.items() if k.startswith("office_budget_")} == {"office_budget_" + re.sub(r"[^a-z0-9]+", "_", c.lower()).strip("_"): 2 * v["budget_half_year"] for c, v in ex("uc-090-offcost")["by_category"].items()}
+    fc = ex("uc-072-cashfc")
+    assert (signed["forecast_call_assumption"]["amount"], signed["forecast_floor"]["amount"]) == (fc["monthly_call_assumption"], fc["floor"])
+    assert signed["price_tolerance_pct"]["max_pct"] == ex("uc-057-pricecheck")["tolerance_pct"]
+    assert {k: signed["manager_score_weights"][k] for k in ("returns", "fees", "timeliness", "watch")} == ex("uc-076-scorecard")["weights"]
+    allowed = {(m, e): lv for m, v in ex("uc-100-famaccess")["by_member"].items() for e, lv in v["allowed"].items()}
+    assert sum(1 for k, v in signed.items() if k.startswith("family_access_") and v["level"] != "none") == len(allowed) and all(v["level"] in ("none", "summary", "full") for k, v in signed.items() if k.startswith("family_access_"))
+    assert signed["signing_policy"] == {"min_signatories": 2, "required_role": "Head of Finance"} and signed["ladder_window_days"] == {"days": 90} and signed["automation_rework_minutes"]["minutes_per_failure"] == 45
+    assert not any(k.startswith("allocation_") for k in signed), "the interim targets of card 79 are proposed, not signed (its key says so)"
+    deals = ex("uc-077-deals")["deals"]  # A55: the stage limit of card 77; stuck exactly when the days in stage are above it
+    assert all(d["stuck"] == (d["days_in_stage"] > signed["deal_stage_limit_days"]["days"]) for d in deals) and signed["deal_stage_limit_days"] == {"days": 60}
+
+
+def test_signed_family_rules_of_cards_86_and_88_agree_with_the_keys():
+    """A54: the charity age of card 86 and the transfer tax of card 88 are signed with the values their answer keys use."""
+    import json
+    rows = list(csv.DictReader((FIX / "reference" / "office_rules.csv").open(encoding="utf-8")))
+    signed = {r["rule"]: json.loads(r["parameters"]) for r in rows if r["approval_status"] == "approved" and r["parameters"]}
+    ex = lambda cid: next(iter(keys()[cid]["questions"].values()))["expected"]  # noqa: E731
+    assert signed["grant_min_charity_months"] == {"months": ex("uc-086-grantappr")["required_months"]}
+    assert signed["estate_tax_exemption"] == {"amount": ex("uc-088-estateliq")["exemption"], "currency": "USD"} and signed["estate_tax_rate"] == {"rate": ex("uc-088-estateliq")["rate"]}
+    assert not any(k.startswith("tax_rate_") for k in signed), "card 84: the tax rates stay proposed (A54)"

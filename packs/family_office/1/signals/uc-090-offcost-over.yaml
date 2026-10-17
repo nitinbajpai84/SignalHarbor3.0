@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-090-offcost: a cost category spent more than its budget for the period.
+suggestion: true
+id: uc-090-offcost-over
+title: A cost category is over budget
+pain_points: [INT-PERF, INT-GOV]
+trigger: {on: figure_changed, figure: office_cost}
+inputs:
+  - {kind: doc, fields: [category, actual, budget_period, variance, months, over]}
+subject: "{doc.category} over budget"
+condition: doc.over == 1
+severity: needs
+route_to: cfo
+action: {verb: record, options: [Explain the overrun to the Principal]}
+message: "{doc.category}: USD {doc.actual:,.2f} spent over {doc.months:,.0f} months against a budget of {doc.budget_period:,.2f}, {doc.variance:,.2f} over."
+evidence: [doc.category, doc.actual, doc.budget_period, doc.variance]

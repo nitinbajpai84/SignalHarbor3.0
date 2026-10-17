@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-083-taxcal: a tax filing or payment is past its due date and not filed (M33).
+suggestion: true
+id: uc-083-taxcal-overdue
+title: A tax filing is overdue
+pain_points: [INT-GOV, INT-RISK]
+trigger: {on: figure_changed, figure: tax_due}
+inputs:
+  - {kind: doc, fields: [id, entity, obligation, due, days_overdue, prepared_by, status, overdue]}
+subject: "{doc.id} {doc.entity} overdue"
+condition: doc.overdue == 1
+severity: problem
+route_to: fund_accountant
+action: {verb: record, options: [Chase the preparer and file, Record the penalty risk]}
+message: "{doc.entity}: {doc.obligation} was due on {doc.due} and is '{doc.status}', {doc.days_overdue:,.0f} days overdue. {doc.prepared_by} prepares it."
+evidence: [doc.id, doc.entity, doc.due, doc.status]

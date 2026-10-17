@@ -1,0 +1,98 @@
+# Persona builds of the 'Operate and control' cards 51 to 100 (no priority) that are built: uc8-trades-vs-admin, uc-056-custrecon, uc-058-settle, uc-059-breakage,
+# uc-060-docinbox, uc-061-dqscore, uc-062-fxlife, uc-099-newfeed, uc-057-pricecheck and uc-063-cashcode. See docs/v3/w1/build51-operate.md.
+# Same shape as role_builds.yaml, merged by role id (docs/test/uc-live/uc6-scripts/v3_persona.py). files: "office6m:<glob under tests/v1/fixtures/office6m>".
+# check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml (numbers as printed with thousands separators; names as the key spells them).
+# uc8-trades-vs-admin also has an older build in legacy-office6m.yaml (FX leg only, expects 8,100); this one adds the trade breaks of the key and keeps the same id.
+template: family_office@1
+roles:
+  - id: ops_clerk
+    title: Operations Clerk
+    person: Sam Lee
+    builds:
+      - id: uc8-trades-vs-admin
+        title: "Trades and FX forwards against the administrator and the confirmations"
+        say: "Each day I match what our desk traded against what the administrator booked, and the FX forward confirmations against our own record. Show me what matches and what does not, by how much, and which ones I should send to Grace."
+        files: ["office6m:*/trading_export/trading_export_2026100*.csv", "office6m:*/administrator_trades/administrator_trades_2026-10.csv", "office6m:*/fx_confirmations/FXF-2026-002_confirmation.pdf"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "check.against-source", "action.detect-exception", "check.explain-difference", "action.route-owner"]
+        dashboard: "Action: trades matched against the administrator, breaks open with the money at stake, the forward confirmation difference"
+        check: {ask: "How much does the FX forward confirmation differ from our record, and which October trades does the administrator not match?", expect: ["8,100", "75,870", "592,000"]}
+
+      - id: uc-062-fxlife
+        title: "FX forwards: upcoming value dates and mark to market"
+        say: "Show me the FX forwards we have open: when each one settles, what it is worth at today's rate, whether the bank confirmed it as we booked it, and how much USD we deliver. Tell me which ones need settlement cash or a roll."
+        files: ["office6m:*/fx_confirmations/FXF-*_confirmation.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv", "office6m:*/trading_export/trading_export_2026091*.csv", "office6m:*/trading_export/trading_export_2026100*.csv"]
+        skills: ["data.read-pdf-fields", "check.against-source", "action.size-impact"]
+        dashboard: "Action: open forwards by value date with the mark to market, the confirmation status and the USD to deliver"
+        check: {ask: "Which forwards need settlement cash or a roll, and what are they worth now?", expect: ["5,597.01", "FXF-2026-002", "5,000,000"]}
+
+      - id: uc-058-settle
+        title: "Trades not settled on time"
+        say: "Each day after settlement date I check the custodian's settlement report against our trades. Show me which trades should have settled and have not, how many business days late, the money at stake, why they failed and which broker I chase."
+        files: ["office6m:*/settlement_status/settlement_report_2026-10-13.csv", "office6m:*/trading_export/trading_export_2026100*.csv", "office6m:*/custodian_positions/positions_2026100*.csv"]
+        skills: ["action.detect-exception", "action.size-impact", "action.draft-message"]
+        dashboard: "Action: failed trades with business days late, amount, reason and the broker to chase"
+        check: {ask: "Which trades failed to settle and whom do I chase?", expect: ["BR2-20261002-001", "281,150", "Synthetic Broker Two"]}
+
+      - id: uc-060-docinbox
+        title: "Documents the office could not recognise"
+        say: "Some files land in the inbox with names that tell me nothing. Read each one by what is in it: tell me which ones are kinds we know and where they belong, which are copies of something already loaded, and which are not office business at all."
+        files: ["office6m:*/inbox/*"]
+        skills: ["data.recognise-file", "data.detect-duplicate", "map.explain-doubt"]
+        dashboard: "Action: each inbox file with where it belongs, duplicate or new, and the unrecognised ones to refuse or query"
+        check: {ask: "Where does each unrecognised file belong, or should I refuse it?", expect: ["IMG_2210.pdf", "data_export.xlsx", "scan_0412.pdf"]}
+
+      - id: uc-063-cashcode
+        title: "Unexplained bank lines"
+        say: "When a bank file arrives I go through its lines. Show me every line that no payment, invoice, notice, payroll, trade, transfer, grant or expense explains, leaving out the bank's own fees and interest, so I can code it or ask Finance."
+        files: ["office6m:*/bank_statements/HB_HOLD_USD_2026-08.xlsx", "office6m:*/bank_statements/TCB_HOLD_USD_2026-09.xlsx", "office6m:*/bank_statements/HB_B_USD_2026-10_mtd.xlsx"]
+        skills: ["data.match-identity", "action.detect-exception", "action.route-owner"]
+        dashboard: "Action: bank lines with no purpose, with account, date, amount and the bank's description, to code or send to Finance"
+        check: {ask: "Which bank lines have no purpose and need coding?", expect: ["48,250", "-3,980", "-2,150", "42,120"]}
+
+  - id: ops_lead
+    title: Operations Lead
+    person: Grace Ong
+    builds:
+      - id: uc-056-custrecon
+        title: "Custodian positions against administrator positions"
+        say: "When the custodian's safekeeping statement and the administrator's pack both arrive, show me every holding where they hold another quantity, by how much and what it is worth, and the reason the custodian gives. I close each one with a reason or chase the custodian."
+        files: ["office6m:*/custody_statements/custody_statement_2026-09-30.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:*/custodian_positions/positions_20260930.csv"]
+        skills: ["data.recognise-file", "data.match-identity", "check.against-source", "action.detect-exception", "check.explain-difference"]
+        dashboard: "Action: holdings compared, the breaks with their value and the custodian's note"
+        check: {ask: "Which holdings differ between the custodian and the administrator, and why?", expect: ["Bay Street Utilities", "60,062.5", "18,940"]}
+
+      - id: uc-059-breakage
+        title: "Open breaks by age"
+        say: "Every Monday I go through the break register. Show me every open break with its entity and how many business days it has been open, and the cash breaks older than five business days that I hand to Finance."
+        files: ["office6m:*/break_register/break_register_2026-10-13.csv", "office6m:*/exception_log/exception_log_2026-10-13.csv"]
+        skills: ["action.route-owner", "action.close-with-reason", "consume.answer-question"]
+        dashboard: "Action: open breaks by age, the cash breaks over five business days to Finance"
+        check: {ask: "Which breaks are older than five days and go to Finance?", expect: ["BRK-003", "BRK-004", "Evergreen Family Trust"]}
+
+      - id: uc-057-pricecheck
+        title: "Prices against a second source"
+        say: "When the daily prices arrive I check our prices against a second source. Show me every security where they differ by more than our signed tolerance, with both prices and the gap, so I can ask the administrator to confirm."
+        files: ["office6m:*/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
+        skills: ["check.against-source", "action.detect-exception", "check.explain-difference"]
+        dashboard: "Action: prices compared against the second source, the ones over tolerance with both prices and the gap"
+        check: {ask: "Which prices differ from a second source by more than tolerance?", expect: ["Kingfisher Telecom", "-1.8628", "0.8093", "22.01"]}
+
+  - id: head_of_data
+    title: Head of Data
+    person: Anita Rao
+    builds:
+      - id: uc-061-dqscore
+        title: "Data quality score for each source"
+        say: "At month end I want a score for each source: of its loads, how many arrived on time, added up and needed no fix by hand. Lowest first, so I know which source to raise with its owner."
+        files: ["office6m:*/load_log/load_log_2026-10-13.csv", "office6m:received_log_all.csv"]
+        skills: ["check.adds-up", "consume.build-board"]
+        dashboard: "Consume: score per source, lowest first, with loads late, not added up and fixed by hand"
+        check: {ask: "Which source should I fix first?", expect: ["administrator_cash", "71.4", "97.6"]}
+
+      - id: uc-099-newfeed
+        title: "Bring in a new source file"
+        say: "We will get a new custodian file. Profile it against our model, propose a mapping for each column, tell me which columns are in doubt and why, and whether it is safe to go live. Nothing loads until I approve the mapping."
+        files: ["office6m:*/new_feed/*"]
+        skills: ["data.profile-file", "map.map-file", "map.explain-doubt", "model.propose-clean-table"]
+        dashboard: "Build: the proposed mapping with a confidence mark per column, the columns in doubt, held until approved"
+        check: {ask: "Is the new feed mapped and safe to go live?", expect: ["Value"]}

@@ -1,0 +1,41 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-058-settle (use cases 51 to 100, no priority): a trade past its settle date that the custodian has not settled -> the broker to chase and the money at stake -> the Operations Clerk chases the broker and tells the Operations Lead.
+suggestion: true
+id: uc-058-settle-failed
+title: A trade failed to settle
+pain_points:
+- PP-06
+- PP-01
+trigger:
+  'on': figure_changed
+  figure: unsettled_trades
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - security
+  - side
+  - quantity
+  - amount
+  - currency
+  - settle_date
+  - business_days_late
+  - chase
+  - reason
+  - status
+subject: '{doc.trade} failed to settle'
+condition: doc.status == 'failed'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Chase the broker and tell the Operations Lead
+hold:
+  blocks: release_trade_cash
+  scope: '{doc.trade}'
+  until: the broker confirms the trade has settled
+message: '{doc.security} {doc.trade} ({doc.side} {doc.quantity:,.0f}, about {doc.amount:,.0f} {doc.currency}) should have settled on {doc.settle_date} and is {doc.business_days_late:,.0f} business days
+  late: {doc.reason}. Chase {doc.chase}. No cash goes out for it until it settles.'
+evidence:
+- doc.amount
+- doc.business_days_late

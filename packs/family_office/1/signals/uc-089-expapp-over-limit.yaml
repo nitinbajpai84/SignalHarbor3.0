@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-089-expapp: a payment was approved by someone whose signed limit is lower (M35).
+suggestion: true
+id: uc-089-expapp-over-limit
+title: A payment was approved above the approver's limit
+pain_points: [INT-GOV, INT-PAY]
+trigger: {on: figure_changed, figure: approval_exceptions}
+inputs:
+  - {kind: doc, fields: [reference, payee, usd, approver, limit_usd, over_limit]}
+subject: "{doc.reference} {doc.payee}"
+condition: doc.over_limit == 1
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Ratify the payment, Record the breach of the approval limit]}
+message: "{doc.reference} to {doc.payee}, USD {doc.usd:,.2f}, was approved by {doc.approver}, whose limit is USD {doc.limit_usd:,.2f}."
+evidence: [doc.reference, doc.usd, doc.approver, doc.limit_usd]

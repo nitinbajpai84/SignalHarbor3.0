@@ -1,0 +1,42 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-062-fxlife (use cases 51 to 100, no priority): a forward whose bank confirmation differs from the desk's record -> the exception -> the Operations Clerk raises it with the bank.
+suggestion: true
+id: uc-062-fxlife-confirmation-differs
+title: The bank confirms a forward at other amounts than the desk booked
+pain_points:
+- PP-06
+- INT-RISK
+- PP-01
+trigger:
+  on: figure_changed
+  figure: fx_mtm
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - value_date
+  - days_to_value
+  - sell_amount
+  - buy_amount
+  - buy_currency
+  - contract_rate
+  - spot
+  - mtm_usd
+  - usd_to_deliver
+  - confirmation_status
+subject: '{doc.trade} confirmation differs'
+condition: doc.confirmation_status == 'mismatch'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Raise the difference with the bank
+hold:
+  blocks: settle_forward
+  scope: '{doc.trade}'
+  until: the difference is raised with the bank
+message: 'Forward {doc.trade} ({doc.value_date}): the bank confirmation does not agree with the amounts the desk booked ({doc.buy_amount:,.0f} {doc.buy_currency}). The forward is not settled or rolled until
+  the difference is raised.'
+evidence:
+- doc.buy_amount
+- doc.confirmation_status

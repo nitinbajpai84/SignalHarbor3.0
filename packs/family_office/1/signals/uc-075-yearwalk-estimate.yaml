@@ -1,0 +1,15 @@
+# SUGGESTION. Card 75 row 2. Some fund values at the end of the period are manager estimates: the walk says so beside the closing figure.
+suggestion: true
+id: uc-075-yearwalk-estimate
+title: The closing net worth rests on estimates
+pain_points: [PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: networth_walk}
+inputs:
+  - {kind: doc, fields: [period_to, closing_estimated_funds, closing]}
+subject: "net worth walk closing at {doc.period_to}: estimates"
+condition: "doc.closing_estimated_funds > 0"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Name the estimates beside the closing figure]}
+message: "{doc.closing_estimated_funds:,.0f} fund value(s) in the closing net worth of USD {doc.closing:,.2f} at {doc.period_to} are manager estimates, not final statements. The walk must say so."
+evidence: [doc.period_to, doc.closing_estimated_funds, doc.closing]

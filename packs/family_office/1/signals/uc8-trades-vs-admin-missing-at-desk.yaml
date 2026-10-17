@@ -1,0 +1,31 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc8-trades-vs-admin (use cases 51 to 100, no priority): a trade only the administrator lists -> the break -> the Operations Clerk raises it.
+suggestion: true
+id: uc8-trades-vs-admin-missing-at-desk
+title: The administrator booked a trade the desk has no record of
+pain_points:
+- PP-06
+- INT-DOC
+trigger:
+  on: figure_changed
+  figure: trade_breaks
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - break_kind
+  - administrator_quantity
+subject: '{doc.trade} missing at our desk'
+condition: doc.break_kind == 'missing at our desk'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Raise the break and send it to the Operations Lead
+hold:
+  blocks: accept_administrator_trades
+  scope: '{doc.trade}'
+  until: the break is raised and sent to the Operations Lead
+message: The administrator lists trade {doc.trade} ({doc.administrator_quantity:,.0f} units); the desk export has no such trade. The administrator trades are not accepted until the break is raised.
+evidence:
+- doc.administrator_quantity

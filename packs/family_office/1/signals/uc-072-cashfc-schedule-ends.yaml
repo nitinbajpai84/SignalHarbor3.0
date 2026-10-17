@@ -1,0 +1,22 @@
+# SUGGESTION. uc-072 row 3: the payment schedule stops before the forecast horizon, so the expenses of the later months are only what it lists; the recipe never fills them with a guess (no run rate is signed). The office edits or switches it off.
+suggestion: true
+id: uc-072-cashfc-schedule-ends
+title: The payment schedule stops before the horizon
+pain_points: [INT-LIQ, PP-02]
+row: normal
+trigger: {on: figure_changed, figure: cash_forecast}
+inputs:
+- kind: figure
+  id: cash_forecast
+  recipe: cash_forecast
+  as: fc
+  by: {is_first_incomplete: true}
+condition: not fc.expenses_complete
+subject: 'schedule ends {fc.schedule_ends}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [See the payment schedule]
+message: 'The payment schedule lists nothing after {fc.schedule_ends}, so from {fc.month} to {fc.horizon} the forecast counts only the listed payments. Ask for the schedule to the horizon before the closings from {fc.month} are relied on.'
+evidence: [fc]

@@ -1,0 +1,33 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-061-dqscore (use cases 51 to 100, no priority): each source's loads on time, added up and not fixed by hand -> the source with the lowest score -> the Head of Data raises it with its owner.
+suggestion: true
+id: uc-061-dqscore-fix-first
+title: The source to fix first
+pain_points:
+- INT-TRUST
+- INT-DATAGOV
+trigger:
+  'on': figure_changed
+  figure: source_quality
+inputs:
+- kind: doc
+  fields:
+  - source
+  - loads
+  - passed
+  - late_or_missing
+  - did_not_add_up
+  - manual_fixes
+  - score_pct
+  - fix_first
+subject: Fix {doc.source} first
+condition: doc.fix_first == 1
+severity: problem
+route_to: head_of_data
+action:
+  verb: record
+  options:
+  - Raise it with the source's owner
+message: '{doc.source} has the lowest score: {doc.passed:,.0f} of {doc.loads:,.0f} loads good ({doc.score_pct:,.1f} percent); {doc.did_not_add_up:,.0f} did not add up, {doc.late_or_missing:,.0f} late or
+  missing, {doc.manual_fixes:,.0f} fixed by hand.'
+evidence:
+- doc.score_pct

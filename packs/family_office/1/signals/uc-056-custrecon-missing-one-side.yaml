@@ -1,0 +1,34 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-056-custrecon (use cases 51 to 100, no priority): a holding the custodian's statement and the administrator count differently -> the break with its value and the custodian's note -> the Operations Lead closes it with a reason or chases the custodian.
+suggestion: true
+id: uc-056-custrecon-missing-one-side
+title: A holding is on one side only
+pain_points:
+- PP-06
+- PP-04
+- INT-TRUST
+trigger:
+  'on': figure_changed
+  figure: position_break
+inputs:
+- kind: doc
+  fields:
+  - security
+  - portfolio
+  - position_date
+  - break_kind
+subject: '{doc.security} {doc.break_kind}'
+condition: doc.break_kind in ['missing at custodian', 'missing at administrator']
+severity: problem
+route_to: ops_lead
+action:
+  verb: record
+  options:
+  - Chase the custodian
+  - Ask the administrator
+hold:
+  blocks: accept_administrator_positions
+  scope: '{doc.security}'
+  until: the holding is found on both sides or closed with a reason
+message: '{doc.security} ({doc.portfolio}) on {doc.position_date}: {doc.break_kind}. The administrator''s positions are not accepted until it is explained.'
+evidence:
+- doc.break_kind

@@ -1,0 +1,21 @@
+# SUGGESTION. uc-064 row 1: the month-end positions and the open forwards give a currency other than USD a net exposure. The figure is the card's recipe (currency_exposure); with more than one such currency the signal is skipped until the office says which to watch. The office edits or switches it off.
+suggestion: true
+id: uc-064-fxexp-exposure
+title: Currency exposure after the open forwards
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: currency_exposure}
+inputs:
+- kind: figure
+  id: currency_exposure
+  recipe: currency_exposure
+  as: fx
+  by: {non_base: true}
+condition: fx.after_usd_eq > 0
+subject: 'exposure {fx.currency} {fx.after_usd_eq:,.0f}'
+severity: info
+route_to: risk_officer
+action:
+  verb: see
+  options: [See the exposure]
+message: 'The family holds {fx.currency} {fx.spot_native:,.0f} (USD {fx.spot_usd_eq:,.0f} at {fx.rate:.4f}) and has bought {fx.currency} {fx.fwd_bought:,.0f} forward; after the forwards that is USD {fx.after_usd_eq:,.0f}, {fx.share_after_pct:.2f} percent of the family (USD {fx.family_total_usd_eq:,.0f}).'
+evidence: [fx]

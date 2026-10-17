@@ -569,3 +569,6 @@ def build_keys(w):
     for i, fn in KEYS.items():
         k = deep(fn(w)); out[i] = dict(title=cat.get(i, {}).get("title", ""), priority=cat.get(i, {}).get("priority"), input_files=FILES[i], questions=k)
     return out
+
+
+from . import keys2  # noqa: E402,F401  (the other 49 cards register their keys here, after everything they import is defined)

@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-083-taxcal: a tax filing or payment falls due in the next 60 days.
+suggestion: true
+id: uc-083-taxcal-due
+title: A tax filing is due in the next 60 days
+pain_points: [INT-GOV]
+trigger: {on: figure_changed, figure: tax_due}
+inputs:
+  - {kind: doc, fields: [id, entity, obligation, due, days, prepared_by, status, due_in_60_days]}
+subject: "{doc.id} {doc.entity} due {doc.due}"
+condition: doc.due_in_60_days == 1
+severity: needs
+route_to: fund_accountant
+action: {verb: record, options: [Confirm the preparer has it in hand]}
+message: "{doc.entity}: {doc.obligation} is due on {doc.due}, in {doc.days:,.0f} days. {doc.prepared_by} prepares it; status '{doc.status}'."
+evidence: [doc.id, doc.entity, doc.due, doc.status]

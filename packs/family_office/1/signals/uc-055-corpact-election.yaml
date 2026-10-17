@@ -1,0 +1,22 @@
+# SUGGESTION. uc-055 row 2, exception: a notice needs an election by a deadline inside the window (with no answer the notice's default applies; for this tender, no tender). The clerk does not book it until the Operations Lead records the election. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-055-corpact-election
+title: A corporate action needs an election
+pain_points: [PP-06, INT-DOC]
+trigger: {on: figure_changed, figure: actions_next_14d}
+inputs:
+- kind: figure
+  id: actions_next_14d
+  recipe: actions_next_14d
+  as: ca
+  by: {bucket: decide, first_in_bucket: true}
+condition: ca.decide_count > 0
+subject: 'election {ca.security} by {ca.respond_by}'
+severity: needs
+route_to: ops_lead
+action:
+  verb: approve
+  options: [Elect, Do not elect]
+hold: {blocks: book_action, scope: '{ca.security}', until: the Operations Lead records the election}
+message: '{ca.security}: {ca.event} at {ca.offer_price:,.2f} against the last price of {ca.last_price:,.2f} ({ca.premium_pct:.2f} percent above), on the {ca.quantity:,.0f} held. Respond by {ca.respond_by}; with no answer the default applies. {ca.decide_count} election(s) due in the window.'
+evidence: [ca]

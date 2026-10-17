@@ -302,9 +302,8 @@ def built(con):
 def test_every_recipe_is_built_reads_only_what_it_may_and_ties_out(con, built):
     from sh_platform.v1 import v3_recipes as R
     rs = _recipes()
-    ready = [r for r in rs.values() if r.get("status") != "stub"]
-    assert {r["id"] for r in ready} == set(MINE)
-    assert rs["networth_walk"]["status"] == "stub"  # card 75 is not in the top 50
+    ready = [r for r in rs.values() if r.get("status") != "stub" and r["id"] in MINE]
+    assert {r["id"] for r in rs.values() if r.get("status") != "stub"} == set(MINE) | {"board_summary", "networth_walk"}  # the two cards after the top 50 are proved in tests/v1/test_w1b_report.py
     for r in ready:
         sql = sql_of(r["id"])
         cols = {c[0] for c in con.execute(f"describe t_{r['id']}").fetchall()}

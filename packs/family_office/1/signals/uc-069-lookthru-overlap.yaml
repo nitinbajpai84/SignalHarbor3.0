@@ -1,0 +1,21 @@
+# SUGGESTION. uc-069 row 2, exception: the same company sits in more than one fund (M31), so the family's exposure to it is larger than any one fund shows. The Investment Analyst flags the overlap to the CIO. No limit is signed for look-through exposure, so the signal states the overlap and does not judge it. Numbers come from the card's recipe (lookthrough_exposure); the office edits or switches it off.
+suggestion: true
+id: uc-069-lookthru-overlap
+title: The same company sits in several funds
+pain_points: [INT-RISK, INT-TRUST]
+trigger: {on: figure_changed, figure: lookthrough_exposure}
+inputs:
+- kind: figure
+  id: lookthrough_exposure
+  recipe: lookthrough_exposure
+  as: lt
+  by: {first_row: true}
+condition: lt.several_count > 0
+subject: 'fund overlap {lt.several_count} companies'
+severity: needs
+route_to: cio
+action:
+  verb: record
+  options: [Noted, Review the overlap with the managers]
+message: '{lt.several_count} companies sit in more than one fund: {lt.several_names}. The largest, {lt.company}, is USD {lt.through_funds:,.0f} through {lt.fund_count} funds ({lt.fund_names}).'
+evidence: [lt]

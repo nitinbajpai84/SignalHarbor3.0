@@ -1,0 +1,15 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-052-insurance: a policy renews in the next 60 days and the insurer's notice is on file -> HR drafts the renewal request for the Principal.
+suggestion: true
+id: uc-052-insurance-due
+title: A policy renews in the next 60 days
+pain_points: [PP-08, INT-GOV]
+trigger: {on: figure_changed, figure: renewals_due}
+inputs:
+  - {kind: doc, fields: [policy, policy_name, currency, sum_insured, premium, next_renewal_date, days_left, due_in_60_days, renewal_notice_received]}
+subject: "{doc.policy} renews {doc.next_renewal_date}"
+condition: doc.due_in_60_days == 1 and doc.renewal_notice_received == 1
+severity: needs
+route_to: hr_admin
+action: {verb: record, options: [Draft the renewal request for the Principal]}
+message: "{doc.policy_name} ({doc.policy}) renews on {doc.next_renewal_date}, in {doc.days_left:,.0f} days: sum insured {doc.currency} {doc.sum_insured:,.0f}, premium {doc.currency} {doc.premium:,.0f}. Draft the renewal request for the Principal."
+evidence: [doc.policy, doc.sum_insured, doc.next_renewal_date]

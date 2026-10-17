@@ -1,0 +1,15 @@
+# SUGGESTION. Card 78, the exception: the fund is still in its lock-up, so the first dealing date is the lock-up end at the earliest. The CIO hears it before any notice is drafted. No hold: the notice for that date can still be sent.
+suggestion: true
+id: uc-078-redemption-locked
+title: The fund is still locked up
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: redemption_dates}
+inputs:
+  - {kind: doc, fields: [fund, lockup_end, locked_up, dealing_date, send_notice_by]}
+subject: "{doc.fund}"
+condition: doc.locked_up == 1
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Plan for the first dealing date after the lock-up, Reduce another fund]}
+message: "{doc.fund} is locked up until {doc.lockup_end}: the earliest dealing date is {doc.dealing_date}, notice by {doc.send_notice_by}."
+evidence: [doc.lockup_end, doc.dealing_date]

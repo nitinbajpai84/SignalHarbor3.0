@@ -564,11 +564,258 @@ recipes:
       sql: >-
         select (select count(*) from {name}), 5
 
+  # Card 74. The board's headline figures, each worked out by the recipe that owns it (report_total_fx, time_weighted_return, cash_by_bank, cash_after_calls, called_to_date,
+  # amendments_open) and written here as a common table expression of the same SQL: a recipe reads tables, never another recipe's ready table (A8). tests/v1/test_w1b_report.py runs
+  # each sibling beside this one and asserts the headline equals it, so a change to a sibling that is not made here fails the test.
+  - id: board_summary
+    label: Board pack headline figures
+    cards: [74]
+    names: [board pack headline figures, board headline figures, headline figures for the family board, what to tell the board of the family, "net worth, return, liquidity, decisions"]
+    may_read: [documents, extracted_fields, market_observations, position_snapshots, transactions, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions, bank_accounts, instruments, cash_movements, commitments, legal_entities, valuation_observations]
+    never_read: [deal_pipeline, committee_decisions]
+    why: The board sees the figures the office already stands behind, each from its own recipe, with the state it rests on. The report total is the one the issued report states (A3), the return is the signed benchmark link's, the cash is the banks' balances, the shortfall is cash less the calls due less the signed buffer, and the uncalled is the commitment file less the calls. A deal in the pipeline or a committee decision is not a headline figure here.
+    formula: One row for the liquid book that has a signed benchmark link (a row for each when there are several). Net worth in USD and SGD = the Total line of the latest issued report and the WMR fixing of its date (report_total_fx), with the lines of that report that are estimates named. Last complete quarter return and the return over every month loaded (from and to dates shown), against the benchmark (time_weighted_return). Cash in USD = the office banks' latest balances at the latest rate (cash_by_bank); empty when one account has no rate. Call shortfall = the shortfall of the entities that have a call due (cash_after_calls); empty when the buffer is not signed, and call_entities_unmeasured counts entities with a call but no shortfall. Uncalled = unfunded after the noticed calls on the commitments in USD (called_to_date), other-currency commitments counted apart. Amendments after the report = amended valuations received after the latest issued report (amendments_open).
+    grain: By liquid portfolio with a signed benchmark link (the latest issued report, the latest balances)
+    sql: >-
+      create table {name} as with nw as (with rep0 as (select id, title, document_date, received_at from (select d.*, row_number() over (order by d.document_date desc,
+      d.received_at desc, d.id) as rn from documents as d where d.document_type = 'investment_report') as q where rn = 1), rep as (select id, title, document_date,
+      cast(received_at at time zone 'UTC' as date) as issued_on from rep0), fx as (select cast(observed_at at time zone 'UTC' as date) as d, arg_max(value, observed_at) as rate
+      from market_observations where observation_type = 'fx' and base_currency = 'USD' and quote_currency = 'SGD' group by 1) select r.title as report_file, r.document_date as
+      report_date, r.issued_on, cast(u.value_numeric as decimal(18,2)) as total_usd, u.value_text as total_status, fx.rate as usd_sgd_fixing, cast(u.value_numeric * fx.rate as
+      decimal(18,2)) as total_sgd, cast(s.value_numeric as decimal(18,2)) as total_sgd_reported from rep as r join extracted_fields as u on u.document_id = r.id and
+      u.field_name = 'Total' left join extracted_fields as s on s.document_id = r.id and s.field_name ilike 'total (sgd)%' left join fx on fx.d = r.document_date), est as
+      (select count(*) as n, string_agg(f.field_name, ', ' order by f.field_name) as lines from extracted_fields as f where f.document_id = (select id from documents where
+      document_type = 'investment_report' order by document_date desc, received_at desc, id limit 1) and f.field_name not ilike 'total%' and f.value_text ilike 'estimat%'), tw
+      as (with {positions}, pv as (select l.portfolio_id, l.position_date, sum(l.source_market_value) as v, count(*) as n, count(*) filter (where coalesce(l.data_status, '') in
+      ('Carried forward', 'Estimate')) as n_unsettled, count(*) filter (where l.currency <> g.base_currency) as n_foreign from positions as l join portfolios as g on g.id =
+      l.portfolio_id where (l.position_date = last_day(l.position_date) or l.position_date = last_day(l.position_date) - case dayofweek(last_day(l.position_date)) when 0 then 2
+      when 6 then 1 else 0 end) group by all), me as (select portfolio_id, position_date as month_end, v, n, n_unsettled, n_foreign from (select *, row_number() over (partition
+      by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1), pm as (select portfolio_id, month_end, v as end_value,
+      n as end_n, n_unsettled + lag(n_unsettled) over w as unsettled, n_foreign + lag(n_foreign) over w as foreign_n, lag(month_end) over w as start_date, lag(v) over w as
+      start_value, lag(n) over w as start_n from me window w as (partition by portfolio_id order by month_end)), fl as (select pm.portfolio_id, pm.month_end,
+      coalesce(-sum(t.cash_amount) filter (where t.transaction_type in ('buy', 'sell')), 0) as net_flow, count(*) filter (where t.transaction_type in ('buy', 'sell')) as
+      trades, count(*) filter (where t.transaction_type in ('buy', 'sell') and t.currency <> g.base_currency) as foreign_trades, coalesce(sum(t.cash_amount) filter (where
+      t.transaction_type in ('dividend', 'coupon')), 0) as income from pm join portfolios as g on g.id = pm.portfolio_id left join transactions as t on t.portfolio_id =
+      pm.portfolio_id and t.effective_date > pm.start_date and t.effective_date <= pm.month_end group by all), lv as (select series_key, date_trunc('month', cast(observed_at at
+      time zone 'UTC' as date)) as m, arg_max(value, observed_at) as level from market_observations where observation_type = 'index_level' group by all), bd as (select id as
+      def_id, benchmark_code, effective_from, coalesce(effective_to, date '9999-12-31') as effective_to from benchmark_definitions where lower(approval_status) = 'approved'),
+      lk as (select p.id as portfolio_id, json_extract_string(v.parameters, '$.benchmark_code') as benchmark_code from business_rules as r join rule_versions as v on
+      v.business_rule_id = r.id join portfolios as p on p.portfolio_code = json_extract_string(v.parameters, '$.portfolio') where r.rule_code = 'benchmark_link' and
+      lower(v.approval_status) = 'approved' and v.effective_to is null), bm as (select pm.portfolio_id, pm.month_end, bd.benchmark_code, case when count(e.level) = count(*) and
+      count(s.level) = count(*) then sum(c.component_weight * (100 * (e.level / s.level - 1) + coalesce(c.spread_bps, 0) / 12 / 100)) end as b, string_agg(c.market_series_key,
+      ', ') filter (where e.level is null or s.level is null) as gap from pm join lk on lk.portfolio_id = pm.portfolio_id join bd on bd.benchmark_code = lk.benchmark_code and
+      pm.month_end between bd.effective_from and bd.effective_to join benchmark_components as c on c.benchmark_definition_id = bd.def_id and pm.month_end >=
+      c.weight_effective_from and pm.month_end <= coalesce(c.weight_effective_to, date '9999-12-31') left join lv as e on e.series_key = c.market_series_key and e.m =
+      date_trunc('month', pm.month_end) left join lv as s on s.series_key = c.market_series_key and s.m = date_trunc('month', pm.start_date) group by all), m0 as (select
+      pm.portfolio_id, bm.benchmark_code, pm.start_date, pm.month_end, pm.start_value, pm.end_value, fl.net_flow, fl.income, bm.b, bm.gap, pm.unsettled = 0 and pm.foreign_n = 0
+      and fl.foreign_trades = 0 and date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) = 1 and (pm.end_n = pm.start_n or fl.trades > 0)
+      as usable, case when pm.unsettled > 0 then 'a value is carried forward or estimated' when pm.foreign_n > 0 or fl.foreign_trades > 0 then 'holdings in another currency are
+      not converted' when date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) <> 1 then 'a month end is missing' when pm.end_n <>
+      pm.start_n and fl.trades = 0 then 'the holdings changed with no trade on record' end as why_not from pm join fl on fl.portfolio_id = pm.portfolio_id and fl.month_end =
+      pm.month_end left join bm on bm.portfolio_id = pm.portfolio_id and bm.month_end = pm.month_end where pm.start_value is not null), m as (select *, case when usable then
+      100 * (end_value - start_value - net_flow) / nullif(start_value + 0.5 * net_flow, 0) end as r from m0), lastm as (select max(month_end) as last_end from m), p as ( select
+      portfolio_id, benchmark_code, 'month' as period_kind, strftime(month_end, '%Y-%m') as period_label, start_date as first_start, month_end as last_month_end, 1 as months,
+      true as complete, start_value, end_value, net_flow, income, r as pr, b as br, cast(b is null as integer) as months_without_benchmark, gap, cast(r is null as integer) as
+      months_not_usable, why_not from m union all select portfolio_id, benchmark_code, 'quarter', strftime(month_end, '%Y') || 'Q' || cast(quarter(month_end) as varchar),
+      min(start_date), max(month_end), count(*), count(*) = 3, null, null, null, null, case when count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when
+      count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not,
+      ', ') from m group by portfolio_id, benchmark_code, strftime(month_end, '%Y') || 'Q' || cast(quarter(month_end) as varchar) union all select portfolio_id, benchmark_code,
+      'ytd', 'YTD ' || strftime(month_end, '%Y'), min(start_date), max(month_end), count(*), min(month(month_end)) = 1, null, null, null, null, case when count(r) = count(*)
+      then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct
+      gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ') from m group by portfolio_id, benchmark_code, strftime(month_end, '%Y') union all select portfolio_id,
+      benchmark_code, 'last_12_months', 'Last 12 months', min(start_date), max(month_end), count(*), count(*) = 12, null, null, null, null, case when count(r) = count(*) then
+      100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b), string_agg(distinct gap, ',
+      '), count(*) - count(r), string_agg(distinct why_not, ', ') from m where month_end > (select last_end from lastm) - interval 12 month group by portfolio_id,
+      benchmark_code union all select portfolio_id, benchmark_code, 'all', 'All months', min(start_date), max(month_end), count(*), true, null, null, null, null, case when
+      count(r) = count(*) then 100 * (exp(sum(ln(1 + r / 100))) - 1) end, case when count(b) = count(*) then 100 * (exp(sum(ln(1 + b / 100))) - 1) end, count(*) - count(b),
+      string_agg(distinct gap, ', '), count(*) - count(r), string_agg(distinct why_not, ', ') from m group by portfolio_id, benchmark_code) select g.portfolio_name as
+      portfolio, p.benchmark_code, p.benchmark_code is not null as benchmark_linked, p.period_kind, p.period_label, p.first_start as from_date, p.last_month_end as to_date,
+      p.months, p.complete, cast(p.start_value as decimal(18,2)) as start_value, cast(p.end_value as decimal(18,2)) as end_value, cast(p.net_flow as decimal(18,2)) as net_flow,
+      cast(p.income as decimal(18,2)) as income, cast(p.pr as decimal(12,4)) as portfolio_return_pct, cast(p.br as decimal(12,4)) as benchmark_return_pct, cast(p.pr - p.br as
+      decimal(12,4)) as active_pct, p.months_without_benchmark, p.gap as benchmark_gap, p.months_not_usable, p.why_not as data_note from p join portfolios as g on g.id =
+      p.portfolio_id), twq as (select * from tw where benchmark_linked and period_kind = 'quarter' and complete qualify row_number() over (partition by portfolio order by
+      to_date desc) = 1), twa as (select * from tw where benchmark_linked and period_kind = 'all'), cb as (with {positions}, acct as (select b.* from bank_accounts as b where
+      b.holder_kind = 'office' and b.cash_instrument_id is not null and b.status <> 'closed' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id
+      = b.id)), bal as (select a.bank_name, a.id as account_id, l.currency, l.position_date, l.source_market_value as v from acct as a join positions as l on l.instrument_id =
+      a.cash_instrument_id where l.position_date = (select max(y.position_date) from positions as y where y.instrument_id = a.cash_instrument_id)), fx as (select
+      o.base_currency, o.quote_currency, o.value as rate, cast(o.observed_at as date) as rate_date from market_observations as o where o.observation_type = 'fx' and not exists
+      (select 1 from market_observations as x where x.supersedes_observation_id = o.id)), usd as (select b.bank_name, b.currency, b.position_date, b.v, case when b.currency =
+      'USD' then b.v else b.v / (select f.rate from fx as f where f.base_currency = 'USD' and f.quote_currency = b.currency and f.rate_date <= b.position_date order by
+      f.rate_date desc limit 1) end as usd_value from bal as b), bank as (select u.bank_name, count(*) as accounts, max(u.position_date) as as_of, sum(u.usd_value) as usd_sum,
+      count(*) filter (where u.usd_value is null) as unconverted_accounts, string_agg(u.currency || ' ' || cast(round(u.v, 2) as varchar), '; ' order by u.currency) as balances
+      from usd as u group by u.bank_name), lim as (select r.rule_code, cast(json_extract_string(v.parameters, '$.max_pct') as decimal(9,4)) as max_pct from business_rules as r
+      join rule_versions as v on v.business_rule_id = r.id where v.approval_status = 'approved' and r.rule_code like 'bank_limit_%' and v.effective_from <= (select
+      max(position_date) from bal) and (v.effective_to is null or v.effective_to >= (select max(position_date) from bal)) qualify row_number() over (partition by r.id order by
+      v.version_number desc) = 1), conv as (select k.*, case when k.unconverted_accounts = 0 then k.usd_sum end as usd_equivalent, sum(k.unconverted_accounts) over () as
+      unconverted_all from bank as k), shared as (select k.*, case when k.unconverted_all = 0 then 100 * k.usd_equivalent / sum(k.usd_equivalent) over () end as share_pct,
+      (select l.max_pct from lim as l where l.rule_code = 'bank_limit_' || rtrim(regexp_replace(lower(k.bank_name), '[^a-z0-9]+', '_', 'g'), '_')) as limit_pct from conv as k)
+      select s.bank_name as bank, s.accounts, s.as_of, s.balances, cast(s.usd_equivalent as decimal(18,2)) as usd_equivalent, s.unconverted_accounts, cast(s.share_pct as
+      decimal(9,2)) as share_pct, s.limit_pct, cast(s.share_pct - s.limit_pct as decimal(9,2)) as excess_pct, s.share_pct > s.limit_pct as over_limit, case when s.limit_pct is
+      not null and s.share_pct is not null then row_number() over (partition by s.limit_pct is not null order by s.share_pct - s.limit_pct desc, s.bank_name) end as worst,
+      count(*) filter (where s.share_pct > s.limit_pct) over () as banks_over_limit from shared as s), ca as (with {positions}, cashp as (select p.legal_entity_id as entity_id,
+      l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join
+      portfolios as p on p.id = l.portfolio_id where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all), calls as (select
+      p.legal_entity_id as entity_id, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount from cash_movements as m join portfolios as p on p.id =
+      m.portfolio_id where m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected') and not exists (select 1 from cash_movements as x where
+      x.supersedes_cash_movement_id = m.id)), lastc0 as (select c.* from cashp as c where c.position_date = (select max(x.position_date) from cashp as x where x.entity_id =
+      c.entity_id and x.currency = c.currency)), lastc as (select entity_id, currency, position_date, cash from lastc0 union all select distinct k.entity_id, k.currency,
+      (select max(x.position_date) from cashp as x where x.entity_id = k.entity_id), 0 from calls as k where exists (select 1 from cashp as x where x.entity_id = k.entity_id)
+      and not exists (select 1 from lastc0 as x where x.entity_id = k.entity_id and x.currency = k.currency)), due as (select c.entity_id, c.currency, sum(k.amount) as amount,
+      min(k.due_date) as next_due_date, sum(k.amount) filter (where k.due_date < c.position_date) as overdue from lastc as c join calls as k on k.entity_id = c.entity_id and
+      k.currency = c.currency and (k.status in ('noticed', 'expected') or k.due_date >= c.position_date) group by c.entity_id, c.currency), bufall as (select
+      cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number,
+      v.effective_from, v.effective_to from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status =
+      'approved'), buf as (select c.entity_id, c.currency, b.amount from lastc as c join bufall as b on b.currency = c.currency and b.effective_from <= c.position_date and
+      (b.effective_to is null or b.effective_to >= c.position_date) qualify row_number() over (partition by c.entity_id, c.currency order by b.version_number desc) = 1) select
+      e.entity_name as entity, c.currency, c.position_date as as_of, cast(c.cash as decimal(18,2)) as cash, cast(coalesce(d.amount, 0) as decimal(18,2)) as calls_due,
+      cast(coalesce(d.overdue, 0) as decimal(18,2)) as overdue_calls, d.next_due_date, cast(b.amount as decimal(18,2)) as buffer, case when b.amount is not null then
+      cast(c.cash - coalesce(d.amount, 0) - b.amount as decimal(18,2)) end as cash_after_calls, case when b.amount is not null then cast(greatest(coalesce(d.amount, 0) +
+      b.amount - c.cash, 0) as decimal(18,2)) end as shortfall from lastc as c join legal_entities as e on e.id = c.entity_id left join due as d on d.entity_id = c.entity_id
+      and d.currency = c.currency left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency), cd as (with cur as (select c.* from commitments as c where not
+      exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id)), mv as (select m.*, c.currency as commit_currency from cash_movements as m join cur as c
+      on c.id = m.commitment_id where m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and not exists (select 1 from cash_movements as x where
+      x.supersedes_cash_movement_id = m.id)), conf as (select c.id as commitment_id, coalesce(sum(abs(m.amount)) filter (where m.confirmation_status = 'confirmed' and
+      m.currency = c.currency and m.effective_date > coalesce(c.called_as_at, date '1900-01-01')), 0) as since_stated, count(m.id) filter (where m.currency <> c.currency) as
+      other_currency_calls from cur as c left join mv as m on m.commitment_id = c.id group by c.id), nt as (select m.commitment_id, sum(abs(m.amount)) filter (where m.currency
+      = m.commit_currency) as noticed, min(m.due_date) as due_date from mv as m where m.confirmation_status = 'noticed' group by m.commitment_id), base as (select c.id as
+      commitment_id, c.legal_entity_id, e.entity_name as investor, i.canonical_name as fund, c.currency, c.commitment_amount as commitment, coalesce(c.called_to_date, 0) +
+      f.since_stated as called_before, coalesce(n.noticed, 0) as noticed, n.due_date as notice_due_date, f.other_currency_calls from cur as c join instruments as i on i.id =
+      c.instrument_id join legal_entities as e on e.id = c.legal_entity_id join conf as f on f.commitment_id = c.id left join nt as n on n.commitment_id = c.id) select
+      b.commitment_id, b.legal_entity_id, b.investor, b.fund, b.currency, cast(b.commitment as decimal(18,2)) as commitment, cast(b.called_before as decimal(18,2)) as
+      called_before_notice, cast(b.noticed as decimal(18,2)) as noticed_not_recorded, b.notice_due_date, cast(b.called_before + b.noticed as decimal(18,2)) as
+      called_after_notice, cast(b.commitment - b.called_before as decimal(18,2)) as unfunded_before_notice, cast(b.commitment - b.called_before - b.noticed as decimal(18,2)) as
+      unfunded_after_notice, b.noticed <= b.commitment - b.called_before and b.other_currency_calls = 0 as notice_fits, b.other_currency_calls as calls_in_other_currency from
+      base as b), am as (with last_report as (select max(cast(d.received_at as date)) as d from documents as d where d.document_type = 'investment_report') select
+      i.canonical_name as fund, a.valuation_date, a.currency, cast(o.value_amount as decimal(18,2)) as replaces, cast(a.value_amount as decimal(18,2)) as amended_value,
+      cast(a.value_amount - o.value_amount as decimal(18,2)) as change, cast(a.received_at as date) as received_on, (select d from last_report) as last_issued_report, cast(case
+      when cast(a.received_at as date) > (select d from last_report) then 1 else 0 end as integer) as open_amendments from valuation_observations as a join documents as d on
+      d.id = a.evidence_document_id and d.document_status = 'amended' join valuation_observations as o on o.id = a.supersedes_valuation_id join instruments as i on i.id =
+      a.instrument_id), cash as (select case when sum(unconverted_accounts) = 0 then sum(usd_equivalent) end as usd, max(as_of) as as_of, sum(unconverted_accounts) as
+      unconverted from cb), calls as (select case when count(*) filter (where calls_due > 0) = 0 then 0 else sum(shortfall) filter (where calls_due > 0) end as shortfall,
+      count(*) filter (where calls_due > 0 and shortfall is null) as unmeasured from ca), unf as (select sum(unfunded_after_notice) filter (where currency = 'USD') as usd,
+      count(*) filter (where currency <> 'USD') as other from cd), amd as (select coalesce(sum(open_amendments), 0) as n from am) select nw.report_file, nw.report_date,
+      nw.issued_on, nw.total_usd as net_worth_usd, nw.total_sgd as net_worth_sgd, nw.usd_sgd_fixing, nw.total_status as net_worth_status, case when est.n = 0 then 'no line of
+      the issued report is an estimate' else est.lines || case when est.n = 1 then ' is an estimate' else ' are estimates' end || ' in the issued report' end as estimate_note,
+      cast(est.n as integer) as estimated_lines, twa.portfolio, twa.benchmark_code, twq.period_label as last_quarter, twq.portfolio_return_pct as last_quarter_return_pct,
+      twq.benchmark_return_pct as last_quarter_benchmark_pct, twa.from_date as performance_from, twa.to_date as performance_to, twa.portfolio_return_pct as
+      since_start_return_pct, twa.benchmark_return_pct as since_start_benchmark_pct, cast(cash.usd as decimal(18,2)) as cash_usd_eq, cash.as_of as cash_as_of,
+      cast(cash.unconverted as integer) as cash_unconverted_accounts, cast(calls.shortfall as decimal(18,2)) as call_shortfall_usd, cast(calls.unmeasured as integer) as
+      call_entities_unmeasured, cast(unf.usd as decimal(18,2)) as uncalled_commitments_usd, cast(unf.other as integer) as uncalled_other_currency, cast(amd.n as integer) as
+      amendments_after_report from nw cross join est cross join cash cross join calls cross join unf cross join amd left join twa on true left join twq on twq.portfolio =
+      twa.portfolio
+    measure: net_worth_usd
+    columns:
+      net_worth_usd: The Total line of the latest issued report, in USD.
+      net_worth_sgd: The USD total times the WMR USD/SGD fixing of the report date.
+      net_worth_status: The status the report gives its total, such as estimated or official.
+      estimate_note: In words, which lines of the report are estimates.
+      estimated_lines: How many lines of the report are estimates.
+      last_quarter: The latest quarter whose three months all have a return.
+      last_quarter_return_pct: The liquid book's return for that quarter, in percent.
+      last_quarter_benchmark_pct: The signed benchmark's return for the same quarter, in percent.
+      performance_from: The month end the return over all months loaded starts from.
+      since_start_return_pct: The liquid book's return over every month loaded, in percent, chained.
+      since_start_benchmark_pct: The benchmark's return over the same months, in percent.
+      cash_usd_eq: The office banks' latest balances in USD. Empty when one account has no rate to USD.
+      cash_unconverted_accounts: Accounts with no rate to USD (the cash is then empty).
+      call_shortfall_usd: How much the entities with a call due are short after the buffer, in USD. Empty while the buffer is not signed.
+      call_entities_unmeasured: Entities with a call due that have no shortfall figure (no signed buffer in the call's currency).
+      uncalled_commitments_usd: Commitments less called after the noticed calls, USD commitments only.
+      uncalled_other_currency: Commitments in another currency, not in the uncalled figure.
+      amendments_after_report: Amended valuations received after the latest issued report.
+    tie_out:
+      label: The net worth shown equals the Total line of the latest issued report
+      sql: >-
+        select (select max(net_worth_usd) from {name}), (select coalesce(sum(f.value_numeric), 0) from extracted_fields as f where f.field_name = 'Total'
+        and f.document_id = (select id from documents where document_type = 'investment_report' order by document_date desc, received_at desc, id limit 1))
+    needs:
+      - why: No issued investment report with a Total line is loaded, so there is no net worth to put in front of the board.
+        sql: >-
+          select count(*) from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'Total' where d.document_type = 'investment_report'
+
+  # Card 75: what happened to our worth between the month end before the first balance on file and the last month end. The 31 March fixing is in no file, so the
+  # opening net worth and the balancing item are empty until it is loaded (opening_fixing_missing says so). See docs/v3/w1/build51-report.md.
   - id: networth_walk
     label: Net worth walk
-    status: stub
     cards: [75]
-    names: [net worth walk, what happened to our worth, networth walk]
-    may_read: [position_snapshots, transactions, cash_movements, market_observations, instruments]
-    formula: 'From net worth at the start of the year to now: + contributions - withdrawals + market gain + currency effect + other, each part shown; the parts sum to the change.'
-    sql: null
+    names: [net worth walk, what happened to our worth, networth walk, what happened to our worth this year, what to tell the family about the year]
+    may_read: [position_snapshots, instruments, bank_accounts, valuation_observations, cash_movements, transactions, market_observations, office_expenses, credit_facilities, documents, extracted_fields]
+    never_read: [deal_pipeline, committee_decisions]
+    why: The walk says how the family got from what it was worth at the start of the period to what it is worth at the end, each part shown. Net worth is the funds at the value the office knows today, the liquid book, the office banks' cash and less the loan, so every part is a table of the model and none is typed. The balancing item is what the other parts do not explain; it is never spread over them.
+    formula: 'Period = the day after the last month end before the first office bank balance on file, to the last month end on or before the last balance (period_from, period_to). Net worth at a month end = the funds (every instrument with a manager valuation) at the latest valuation of a period on or before that month end, amended over final over estimate, as known on the latest day loaded + the liquid book (positions of instruments that are neither a fund nor a bank balance) on the last position date on or before it + the office banks cash in USD, SGD at the latest fixing on or before the balance date - the amount owed on the loan statement of that date. The opening cash is the first balances less the movements between the month end and the first balance date; the opening loan is the first statement interest over the facility rate / 12. Liquid book gain = book at the end less book at the start less the net cost of the settled buys and sells settling in the period. Fund gain = funds at the end less funds at the start, less the capital calls paid in the period, plus the distributions received. Investment gains = liquid book gain + fund gain. Income = confirmed coupons, dividends and bank interest in the period, SGD at the fixing of the day. Spending = the office expense ledger of the period without debt service lines, SGD at the fixing of the day, plus the interest charged on the loan statements. FX and other = closing - opening - (investment gains + income - spending). A figure that needs a fixing the files do not have is empty, and opening_fixing_missing counts the accounts it concerns; nothing is estimated. bank_months_missing counts the account months between the first and the last balance with no statement on file; their movements, interest included, are not in the walk.'
+    grain: One row for the period between the first office bank balance and the last month end
+    sql: >-
+      create table {name} as with {positions},
+      fxr as (select cast(observed_at at time zone 'UTC' as date) as rate_date, arg_max(value, observed_at) as rate from market_observations where observation_type = 'fx' and base_currency = 'USD' and quote_currency = 'SGD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = market_observations.id) group by 1),
+      acct as (select b.id as account_id, b.cash_instrument_id from bank_accounts as b where b.holder_kind = 'office' and b.cash_instrument_id is not null and b.status <> 'closed' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id)),
+      bal as (select a.account_id, l.portfolio_id, l.currency, l.position_date, l.source_market_value as v from acct as a join positions as l on l.instrument_id = a.cash_instrument_id),
+      span as (select min(position_date) as first_d, max(position_date) as last_d from bal),
+      per as (select first_d - cast(day(first_d) as integer) as x0, case when last_d = last_day(last_d) then last_d else last_d - cast(day(last_d) as integer) end as x1 from span),
+      pts as (select 0 as k, x0 as x from per union all select 1, x1 from per),
+      mv as (select m.portfolio_id, m.currency, m.effective_date, m.movement_type, m.amount from cash_movements as m where m.confirmation_status = 'confirmed' and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id)),
+      grp as (select portfolio_id, currency, max(fd) as d1 from (select portfolio_id, currency, account_id, min(position_date) as fd from bal group by all) as q group by all),
+      c0 as (select g.portfolio_id, g.currency, (select sum(b.v) from bal as b where b.portfolio_id = g.portfolio_id and b.currency = g.currency and b.position_date = (select max(y.position_date) from bal as y where y.account_id = b.account_id and y.position_date <= g.d1))
+      - coalesce((select sum(m.amount) from mv as m, per where m.portfolio_id = g.portfolio_id and m.currency = g.currency and m.effective_date > per.x0 and m.effective_date <= g.d1), 0) as native, per.x0 as d from grp as g, per),
+      c1 as (select b.portfolio_id, b.currency, sum(b.v) as native, b.position_date as d from bal as b, per where b.position_date = (select max(y.position_date) from bal as y where y.account_id = b.account_id and y.position_date <= per.x1) group by all),
+      cash as (select 0 as k, currency, native, d, (select f.rate from fxr as f where f.rate_date <= c0.d order by f.rate_date desc limit 1) as rate from c0 union all select 1, currency, native, d, (select f.rate from fxr as f where f.rate_date <= c1.d order by f.rate_date desc limit 1) from c1),
+      cashu as (select k, count(*) filter (where currency <> 'USD' and rate is null) as unconverted, case when count(*) filter (where currency <> 'USD' and rate is null) = 0 then sum(case when currency = 'USD' then native else native / rate end) end as usd from cash group by k),
+      gaps as (select coalesce(sum(date_diff('month', date_trunc('month', f), date_trunc('month', l)) + 1 - n), 0) as missing from (select account_id, min(position_date) as f, max(position_date) as l, count(distinct date_trunc('month', position_date)) as n from bal group by account_id) as q),
+      fv as (select v.instrument_id, v.valuation_date, v.value_amount, v.currency, v.approval_status, case v.approval_status when 'amended' then 3 when 'final' then 2 else 1 end as rk from valuation_observations as v where not exists (select 1 from valuation_observations as s where s.supersedes_valuation_id = v.id)),
+      fk as (select p.k, f.*, row_number() over (partition by p.k, f.instrument_id order by f.valuation_date desc, f.rk desc) as rn from pts as p join fv as f on f.valuation_date <= p.x),
+      funds as (select k, sum(value_amount) filter (where currency = 'USD') as v, count(*) filter (where currency <> 'USD') as other_currency, count(*) filter (where approval_status = 'estimate') as estimated from fk where rn = 1 group by k),
+      sec as (select l.* from positions as l where not exists (select 1 from valuation_observations as v where v.instrument_id = l.instrument_id) and not exists (select 1 from instruments as i where i.id = l.instrument_id and i.instrument_type = 'cash')),
+      book as (select p.k, sum(s.source_market_value) filter (where s.currency = 'USD') as v, count(*) filter (where s.currency <> 'USD') as other_currency from pts as p join sec as s on s.position_date = (select max(y.position_date) from sec as y where y.position_date <= p.x) group by p.k),
+      net as (select coalesce(-sum(t.cash_amount) filter (where t.currency = 'USD'), 0) as buys, count(*) filter (where t.currency <> 'USD') as other_currency from transactions as t, per where t.transaction_type in ('buy', 'sell') and t.status = 'settled' and t.settlement_date > per.x0 and t.settlement_date <= per.x1
+      and not exists (select 1 from transactions as y where y.supersedes_transaction_id = t.id)),
+      fl as (select coalesce(-sum(m.amount) filter (where m.movement_type = 'call' and m.currency = 'USD'), 0) as calls, coalesce(sum(m.amount) filter (where m.movement_type = 'distribution' and m.currency = 'USD'), 0) as dists,
+      count(*) filter (where m.movement_type in ('call', 'distribution') and m.currency <> 'USD') as other_currency from mv as m, per where m.effective_date > per.x0 and m.effective_date <= per.x1),
+      inc as (select sum(case when m.currency = 'USD' then m.amount else round(m.amount / (select f.rate from fxr as f where f.rate_date <= m.effective_date order by f.rate_date desc limit 1), 2) end) as v,
+      count(*) filter (where m.currency <> 'USD' and (select f.rate from fxr as f where f.rate_date <= m.effective_date order by f.rate_date desc limit 1) is null) as unconverted
+      from mv as m, per where m.movement_type in ('coupon', 'dividend', 'interest') and m.effective_date > per.x0 and m.effective_date <= per.x1),
+      ex as (select sum(case when e.currency = 'USD' then e.amount else round(e.amount / (select f.rate from fxr as f where f.rate_date <= e.spent_on order by f.rate_date desc limit 1), 2) end) as v,
+      count(*) filter (where e.currency <> 'USD' and (select f.rate from fxr as f where f.rate_date <= e.spent_on order by f.rate_date desc limit 1) is null) as unconverted
+      from office_expenses as e, per where e.spent_on > per.x0 and e.spent_on <= per.x1 and e.category is distinct from 'Debt service' and not exists (select 1 from office_expenses as y where y.supersedes_office_expense_id = e.id)),
+      li as (select coalesce(sum(abs(f.value_numeric)), 0) as v from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'interest_charged_as_shown', per where d.document_type = 'loan_statement' and d.document_date > per.x0 and d.document_date <= per.x1),
+      cf as (select c.*, row_number() over (partition by c.facility_ref order by c.as_at) as first_n, row_number() over (partition by c.facility_ref order by c.as_at desc) as last_n from credit_facilities as c where c.currency = 'USD' and not exists (select 1 from credit_facilities as y where y.supersedes_credit_facility_id = c.id)),
+      loan as (select (select coalesce(sum(c.drawn_amount), 0) from cf as c, per where c.last_n = 1 and c.as_at <= per.x1) as closing,
+      (select sum(round(abs(f.value_numeric) / (c.interest_rate / 12), 2)) from cf as c join documents as d on d.id = c.source_document_id join extracted_fields as f on f.document_id = d.id and f.field_name = 'interest_charged_as_shown', per
+      where c.first_n = 1 and c.interest_rate > 0 and date_diff('month', per.x0, c.as_at) = 1) as opening),
+      w as (select per.x0, per.x1, o.usd as o_cash, o.unconverted as o_unconv, c.usd as c_cash, c.unconverted as c_unconv, fo.v as o_funds, fc.v as c_funds, fc.estimated as c_est, fo.other_currency + fc.other_currency as f_other, bo.v as o_book, bc.v as c_book, bo.other_currency + bc.other_currency as b_other, gaps.missing as gap_months
+      from per, gaps, cashu as o, cashu as c, funds as fo, funds as fc, book as bo, book as bc where o.k = 0 and c.k = 1 and fo.k = 0 and fc.k = 1 and bo.k = 0 and bc.k = 1),
+      r as (select w.*, net.buys, net.other_currency + fl.other_currency as t_other, fl.calls, fl.dists, case when inc.unconverted = 0 then inc.v end as income, inc.unconverted as i_unconv, case when ex.unconverted = 0 then ex.v + li.v end as spending, ex.unconverted as s_unconv, loan.opening as o_loan, loan.closing as c_loan,
+      w.o_funds + w.o_book + w.o_cash - loan.opening as opening, w.c_funds + w.c_book + w.c_cash - loan.closing as closing, w.c_book - w.o_book - net.buys as book_gain, w.c_funds - w.o_funds - fl.calls + fl.dists as fund_gain
+      from w, net, fl, inc, ex, li, loan)
+      select r.x0 + 1 as period_from, r.x1 as period_to, r.x0 as opening_date, cast(r.opening as decimal(18,2)) as opening, cast(r.book_gain + r.fund_gain as decimal(18,2)) as investment_gains, cast(r.book_gain as decimal(18,2)) as liquid_book_gain,
+      cast(r.fund_gain as decimal(18,2)) as private_and_hedge_fund_gain, cast(r.income as decimal(18,2)) as income, cast(r.spending as decimal(18,2)) as spending,
+      cast(r.closing - r.opening - (r.book_gain + r.fund_gain + r.income - r.spending) as decimal(18,2)) as fx_and_other, cast(r.closing as decimal(18,2)) as closing,
+      cast(100 * (r.closing - r.opening - (r.book_gain + r.fund_gain + r.income - r.spending)) / nullif(r.closing, 0) as decimal(9,3)) as fx_and_other_pct_of_closing,
+      cast(r.calls as decimal(18,2)) as capital_calls_paid, cast(r.dists as decimal(18,2)) as distributions_received,
+      cast(r.o_funds as decimal(18,2)) as opening_funds, cast(r.o_book as decimal(18,2)) as opening_book, cast(r.o_cash as decimal(18,2)) as opening_cash_usd_eq, cast(r.o_loan as decimal(18,2)) as opening_loan,
+      cast(r.c_funds as decimal(18,2)) as closing_funds, cast(r.c_book as decimal(18,2)) as closing_book, cast(r.c_cash as decimal(18,2)) as closing_cash_usd_eq, cast(r.c_loan as decimal(18,2)) as closing_loan,
+      r.opening is not null and r.closing is not null as adds_up, r.o_unconv as opening_fixing_missing, r.c_unconv as closing_fixing_missing, r.i_unconv + r.s_unconv as flows_fixing_missing,
+      r.c_est as closing_estimated_funds, r.gap_months as bank_months_missing, r.f_other + r.b_other + r.t_other as other_currency_lines from r
+    measure: closing
+    columns:
+      opening: Net worth at the month end before the period starts, in USD; empty when a fixing it needs is not on file (opening_fixing_missing says how many accounts).
+      investment_gains: Liquid book gain plus fund gain over the period.
+      liquid_book_gain: The liquid book at the end less at the start, less the net cost of the buys and sells that settled in the period.
+      private_and_hedge_fund_gain: Funds at the end less at the start, less the capital calls paid, plus the distributions received (every fund with a manager valuation, the index funds too).
+      income: Confirmed coupons, dividends and bank interest of the period in USD.
+      spending: The expense ledger without debt service, plus the interest charged on the loan.
+      fx_and_other: The balancing item, closing less opening less the other parts; empty when the opening is empty.
+      closing: Net worth at the last month end in USD.
+      adds_up: True when the opening and the closing are both worked out, so the parts and the balancing item add up to the change.
+      opening_fixing_missing: The number of SGD accounts whose opening balance has no USD/SGD fixing on or before the opening date.
+      closing_estimated_funds: The number of funds whose closing value is a manager estimate.
+      bank_months_missing: The number of account months between the first and the last balance with no statement on file; their movements, interest included, are not in the walk.
+    tie_out:
+      label: The closing liquid book equals the position snapshots of the book on its last date
+      sql: >-
+        with pc as (select c.* from ({positions_check}) as c where not exists (select 1 from valuation_observations as v where v.instrument_id = c.instrument_id)
+        and not exists (select 1 from instruments as i where i.id = c.instrument_id and i.instrument_type = 'cash'))
+        select (select coalesce(sum(closing_book), 0) from {name}), (select coalesce(sum(v), 0) from pc where position_date = (select max(position_date) from pc where position_date <= (select max(period_to) from {name})))
+    needs:
+      - sql: select count(*) from valuation_observations
+        why: No manager valuations are loaded, so the funds are not in the walk.
+      - sql: select count(*) from bank_accounts as b where b.holder_kind = 'office' and b.cash_instrument_id is not null
+        why: No office bank balances are loaded, so there is no period and no cash.

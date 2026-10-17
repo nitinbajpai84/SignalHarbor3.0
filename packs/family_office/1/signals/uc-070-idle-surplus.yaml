@@ -1,0 +1,22 @@
+# SUGGESTION. uc-070 row 1: the cash above the 90 day need, per entity and in total, from the card's recipe (idle_cash). The window is the signed rule ladder_window_days and the buffer the signed cash_buffer; the CFO proposes what to do with the surplus to the CIO. The office edits or switches it off.
+suggestion: true
+id: uc-070-idle-surplus
+title: Cash idle above the 90 day need
+pain_points: [PP-01, INT-LIQ]
+row: normal
+trigger: {on: figure_changed, figure: idle_cash}
+inputs:
+- kind: figure
+  id: idle_cash
+  recipe: idle_cash
+  as: idle
+  by: {is_largest_idle: true}
+condition: idle.total_idle > 0
+subject: 'idle cash {idle.total_idle:,.0f}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [Propose to the CIO, Keep as cash]
+message: 'After {idle.window_days} days of calls and approved or scheduled payments and the {idle.buffer:,.0f} buffer, USD {idle.total_idle:,.2f} is idle across the entities; the most is at {idle.entity} ({idle.idle:,.2f} of its {idle.cash_usd_equivalent:,.2f}). Invest, repay or hold it?'
+evidence: [idle]

@@ -1,6 +1,6 @@
 # Score of the top 50 use cases
 
-Written by `python tools/score50.py` on 2026-10-17 20:45. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 59 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 12 s, whole run 23 s.
+Written by `python tools/score50.py` on 2026-10-17 23:49. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 106 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 14 s, whole run 28 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -177,7 +177,7 @@ Figures bound: net_worth -> net_worth. Answered from: net_worth.
 
 Signals fired: uc10-pipeline-column-held x1; uc10-pipeline-net-worth-shown x168.
 
-Signals that cannot run on the loaded data: uc10-pipeline-files-ready cannot run: no reader gives doc.file_rows, doc.loaded_rows, doc.mapping_status.
+Signals that cannot run on the loaded data: uc10-pipeline-files-ready cannot run: no reader gives doc.file_rows, doc.loaded_rows.
 
 ### 12. uc5-limits: PASS
 
@@ -335,13 +335,13 @@ Figures bound: cost_to_cure -> single_name_breach. Answered from: single_name_br
 
 Signals fired: uc-033-breachesc-cost-to-cure x7.
 
-Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cannot run: no reader gives doc.breach_open, doc.days_past_expiry, doc.expires_on; uc-033-breachesc-waiver-recorded cannot run: no reader gives doc.committee, doc.decided_on, doc.expires_on, doc.outcome, doc.subject_id, doc.title.
+Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cannot run: no reader gives doc.breach_open, doc.days_past_expiry; uc-033-breachesc-waiver-recorded cannot run: no reader gives doc.committee, doc.decided_on, doc.outcome, doc.subject_id.
 
 ### 34. uc-034-prospect: PASS
 
 Figures bound: mandate_fit -> mandate_fit. Answered from: mandate_fit.
 
-Signals fired: uc-034-prospect-screened x1.
+Signals fired: uc-034-prospect-screened x5.
 
 Signals that cannot run on the loaded data: uc-034-prospect-class-over cannot run: doc.class_limit_pct on every row.
 
@@ -387,7 +387,7 @@ Signals fired: uc-040-icmemo-figure-source x2.
 
 Figures bound: commit_check -> commit_check. Answered from: commit_check.
 
-Signals fired: uc-041-commitappr-cash-short x1; uc-041-commitappr-test-not-on-record x1.
+Signals fired: uc-041-commitappr-cash-short x5; uc-041-commitappr-test-not-on-record x5.
 
 ### 42. uc4-vs-benchmark: PASS
 

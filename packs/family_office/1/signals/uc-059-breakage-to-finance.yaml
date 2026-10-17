@@ -1,0 +1,32 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-059-breakage (use cases 51 to 100, no priority): an open break of the register and its age in business days -> a cash break older than five business days (the card's question) -> the Operations Lead hands it to Finance.
+suggestion: true
+id: uc-059-breakage-to-finance
+title: A cash break is older than five business days
+pain_points:
+- PP-01
+- PP-06
+- INT-OPS
+trigger:
+  'on': figure_changed
+  figure: break_age
+inputs:
+- kind: doc
+  fields:
+  - break_id
+  - break_type
+  - entity
+  - subject
+  - detected
+  - age_business_days
+  - over_five_business_days
+subject: '{doc.break_id} open {doc.age_business_days:,.0f} business days'
+condition: doc.break_type == 'cash break' and doc.over_five_business_days == 1
+severity: problem
+route_to: ops_lead
+action:
+  verb: record
+  options:
+  - Hand the break to Finance
+message: '{doc.break_id} on {doc.entity} ({doc.subject}) has been open since {doc.detected}, {doc.age_business_days:,.0f} business days. It goes to Finance.'
+evidence:
+- doc.age_business_days

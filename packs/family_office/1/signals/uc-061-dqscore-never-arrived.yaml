@@ -1,0 +1,27 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc-061-dqscore (use cases 51 to 100, no priority): each source's loads on time, added up and not fixed by hand -> the source with the lowest score -> the Head of Data raises it with its owner.
+suggestion: true
+id: uc-061-dqscore-never-arrived
+title: A source has a statement that never arrived
+pain_points:
+- INT-TRUST
+- INT-DATAGOV
+trigger:
+  'on': figure_changed
+  figure: source_quality
+inputs:
+- kind: doc
+  fields:
+  - source
+  - never_arrived
+  - loads
+subject: '{doc.source}: {doc.never_arrived:,.0f} never arrived'
+condition: doc.never_arrived > 0
+severity: needs
+route_to: head_of_data
+action:
+  verb: see
+  options:
+  - See it
+message: '{doc.source}: {doc.never_arrived:,.0f} of {doc.loads:,.0f} expected loads never arrived.'
+evidence:
+- doc.never_arrived

@@ -1,0 +1,15 @@
+# SUGGESTION. Card 74 row 2. A line of the issued report is an estimate: the board page says so beside the net worth.
+suggestion: true
+id: uc-074-boardpack-estimate
+title: The net worth rests on an estimate
+pain_points: [PP-07, INT-TRUST]
+trigger: {on: figure_changed, figure: board_summary}
+inputs:
+  - {kind: doc, fields: [report_date, estimated_lines, estimate_note]}
+subject: "board net worth estimate as at {doc.report_date}"
+condition: "doc.estimated_lines > 0"
+severity: needs
+route_to: cio
+action: {verb: approve, options: [Name the estimate on the board page]}
+message: "{doc.estimate_note} (report of {doc.report_date}). The net worth on the board page must say it rests on an estimate."
+evidence: [doc.report_date, doc.estimated_lines, doc.estimate_note]

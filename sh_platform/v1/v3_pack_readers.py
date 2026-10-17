@@ -343,7 +343,7 @@ class Office:
         steps = [self.reference_state if shadow else self.reference, self.registers, (lambda: None) if shadow else self.benchmark, self.admin_nav, self.admin_cash, self.custodian_positions, self.bank_statements, self.trading_and_custody,
                  self.administrator_trades, self.market, self.manager_statements, self.notices, self.fx_confirmations, self.emails, self.invoices, self.payroll, self.loans,
                  self.vendor_contracts, self.allowances, self.insurance_and_property, self.approvals_and_close, self.reports_and_audit, self.diligence_and_notes,
-                 self.expected_statements, self.links]
+                 self.expected_statements, self.links, self.treasury, self.controls, self.family, self.invest]
         for step in steps:
             kinds = [k for k in STEP_KINDS.get(step.__name__, ()) if self.staged.get(k)]
             fn = step
@@ -807,24 +807,28 @@ class Office:
             doc_period = re.search(r"_(\d{4})-(\d{2})", p.name)
             month_end = last_day(int(doc_period[1]), int(doc_period[2]))
             sr = self.record("bank", p, recv, effective=month_end)
-            self.doc(p, "bank_statement", p.stem, kind="bank", instrument=a["cash"], valuation=month_end, date_=month_end, received=recv, record=sr)
+            did = self.doc(p, "bank_statement", p.stem, kind="bank", instrument=a["cash"], valuation=month_end, date_=month_end, received=recv, record=sr)
             for r in bal:
                 d = parse_date(r["Value date"])
                 self.add("position_snapshots", source_record_id=sr, portfolio_id=self.cashport[a["entity"]], instrument_id=a["cash"], position_date=d, as_of_at=stamp(d, 20), received_at=stamp(recv, 6),
                          recorded_at=stamp(recv, 6), quantity=r["Closing ledger balance"], source_market_value=r["Closing ledger balance"], currency=r["Currency"], data_status="Final")
                 nbal += 1
             for i, r in enumerate(dicts(sheet_rows(p, "Transactions")), 2):
-                self.bank_line(p, recv, a, acct, r, i)
+                self.bank_line(p, recv, a, acct, r, i, did)
                 nlines += 1
             self.note("bank_statements", files=1)
         self.note("bank_statements", rows=nbal + nlines)
 
-    def bank_line(self, p: Path, recv: date, a: dict, acct: str, r: dict, i: int) -> None:
+    def bank_line(self, p: Path, recv: date, a: dict, acct: str, r: dict, i: int, did: str | None = None) -> None:
         typ, desc, amt, ccy, ref = r["Type"], r["Description"], Decimal(str(r["Amount"])), r["Currency"], r["Reference"]
         d = parse_date(r["Value date"])
         sr = self.record("bank", p, recv, rtype="bank_line", external=ref, sheet="Transactions", row=i, effective=d)
         port = self.cashport[a["entity"]]
-        base = dict(source_record_id=sr, portfolio_id=port, effective_date=d, received_at=stamp(recv, 6), recorded_at=stamp(recv, 6), amount=amt, currency=ccy, confirmation_status="confirmed")
+        # card 63: the line's own reference and counterparty, and its description as a field of the statement (line = the sheet row), so a line no event explains can be shown as the bank wrote it
+        base = dict(source_record_id=sr, portfolio_id=port, effective_date=d, received_at=stamp(recv, 6), recorded_at=stamp(recv, 6), amount=amt, currency=ccy, confirmation_status="confirmed",
+                    reference=ref, payee_name=r["Counterparty"])
+        if did:
+            self.field(did, "description", desc, line=i)
         mt = {"capital_call": "payment", "bank_fee": "fee", "fee": "fee", "vendor_payment": "payment", "wire": "payment", "property": "payment", "insurance": "payment", "payroll": "payment",
               "payroll_tax": "payment", "trade_settlement": "settlement", "internal_transfer": "transfer", "intercompany_transfer": "transfer"}.get(typ, typ)
         if typ == "capital_call":
@@ -1293,8 +1297,8 @@ class Office:
             pol = re.search(r"Policy: (\S+)", t)[1]
             self.doc(p, "insurance_renewal", p.stem, received=self.arrival(p), date_=parse_date(re.search(r"Notice date: (.+)", t)[1]),
                      fields=[("policy", pol), ("renewal_date", parse_date(re.search(r"Renewal date: (.+)", t)[1]).isoformat()),
-                             ("expiring_premium", None, money(re.search(r"Expiring premium: [A-Z]{3} ([\d,\.]+)", t)[1]), "SGD"),
-                             ("renewal_premium", None, money(re.search(r"Renewal premium: [A-Z]{3} ([\d,\.]+)", t)[1]), "SGD"),
+                             ("expiring_premium", None, money(re.search(r"Expiring premium: [A-Z]{3} ([\d,\.]+)", t)[1]), re.search(r"Expiring premium: ([A-Z]{3})", t)[1]),
+                             ("renewal_premium", None, money(re.search(r"Renewal premium: [A-Z]{3} ([\d,\.]+)", t)[1]), re.search(r"Renewal premium: ([A-Z]{3})", t)[1]),
                              ("change_pct", None, Decimal(re.search(r"Change: ([\d.]+)%", t)[1]))])
             self.note("insurance", files=1, rows=1)
         for p in self.files("property_bills"):
@@ -1866,3 +1870,14 @@ def monthly(x) -> tuple[set[str], int, list[dict]]:
         return set(), 0, []
     ok, aside = _read(x, list(kinds), kinds)
     return set(kinds), len(ok), aside
+
+from sh_platform.v1 import v3_pack_readers_treasury as _treasury  # noqa: E402 - the treasury kinds register themselves in the tables above
+_treasury.install(__import__('sys').modules[__name__])
+from sh_platform.v1 import v3_pack_readers_assets as _assets  # noqa: E402 - the assets kinds register themselves in the tables above
+_assets.register(__import__("sys").modules[__name__])
+from sh_platform.v1 import v3_pack_readers_controls as _controls  # noqa: E402 - the controls kinds register themselves in the tables above
+_controls.install(__import__("sys").modules[__name__])
+from sh_platform.v1 import v3_pack_readers_family as _family  # noqa: E402 - the family kinds register themselves in the tables above
+_family.install(__import__("sys").modules[__name__])
+from sh_platform.v1 import v3_pack_readers_invest as _invest  # noqa: E402 - the invest kinds register themselves in the tables above
+_invest.install(__import__("sys").modules[__name__])

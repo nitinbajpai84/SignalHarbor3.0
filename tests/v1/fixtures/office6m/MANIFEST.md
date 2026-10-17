@@ -10,7 +10,8 @@ April to 13 October 2026. The last days run past September so that the capital c
 - **Private funds (8, four managers):** A Evergreen Growth I and F Evergreen Growth II (Northgate); B Evergreen Income II and G Evergreen Credit III (Bluewater); C Cedarpoint Ventures III and D Cedarpoint Opportunities II (Cedarpoint); E Saltmarsh Infrastructure Fund II and K Saltmarsh Renewables I (Saltmarsh). Commitments and fee terms: `reference/fund_terms.csv`.
 - **Cedarpoint Ventures III:** commitment 10,000,000 for Holdings; calls 5 (April) and 6 (July) paid to the account ending 2209; 6,000,000 called before call 7 (13 October, 1,250,000, account ending 4471); unfunded 2,750,000 after it.
 - **People:** the ten people of `docs/v3/TEAM-OF-TEN.md` (payroll, approvals, emails, notes).
-- **Office rules (`reference/office_rules.csv`):** payments over 500,000 need the Head of Finance (Daniel Foo); changed bank details need a call-back; 250,000 cash buffer per entity; 5 percent single-name limit; 5,000 daily cash tolerance. Signed rules with their parameters (A28-A30): the sovereign note Harbour Treasury Note 2029 is exempt from the single-name limit; the liquid book is measured against EG-OFFICE-BLEND (benchmark_link); an invoice above its fee schedule is held from the payment run.
+- **Office rules (`reference/office_rules.csv`):** payments over 500,000 need the Head of Finance (Daniel Foo); changed bank details need a call-back; 250,000 cash buffer per entity; 5 percent single-name limit; 5,000 daily cash tolerance. Signed rules with their parameters (A28-A30): the sovereign note Harbour Treasury Note 2029 is exempt from the single-name limit; the liquid book is measured against EG-OFFICE-BLEND (benchmark_link); an invoice above its fee schedule is held from the payment run. Signed for cards 51 to 100 (A48 onward): approver limits, the 2026 office budget, the signing policy and the family access levels (each a signed version 2 beside the proposed version 1 the reader takes from its file), the 90 day idle-cash window, the 12 month forecast assumptions (call assumption, floor, horizon, distribution basis, held payments), the 0.5 percent price tolerance, the manager scorecard weights and bands, the bank-line purpose rule and 45 minutes of rework per failure. The interim allocation targets stay proposed.
+- **Added for the other 49 cards** (`tools/gen_office6m/more.py`; keys in `keys2.py`): new kinds of files in their own folders (payment schedule, corporate actions, real assets, tax lots, SOPs, access, ...). The bank statements gain three unexplained lines (card 63) and five grant payments from Holdings USD (card 85); nothing else of the first 51 cards moves.
 - **Reused from the 10-use-case set** (`tests/v1/fixtures/10uc`, `docs/test/10uc_universe.json`): securities and their month-end prices, the manager statements of funds A, B, C, D, E, H1, H2, L1, L2 (values, dates, late, missing and amended ones), the WMR fixings, the October trades, index levels, the policy, benchmark workbook, security master, process narrative, research documents and some meeting notes. Generated new: everything else.
 
 ## Folders and names
@@ -22,40 +23,76 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 
 | Kind | Files | What | Example |
 |---|---|---|---|
+| `access_register` | 2 | csv + eml, access grants of twelve people, joiner and leaver mail. | `2026-10/access_register/access_register_2026-10-13.csv` |
 | `administrator_cash` | 7 | csv, the administrator's official daily cash per entity and currency, monthly, 2 business days after month end. | `2026-05/administrator_cash/administrator_cash_2026-04.csv` |
 | `administrator_nav` | 7 | xlsx monthly NAV pack as at the month end, released 06:00 UTC on the 2nd business day (Positions + NAV by portfolio). | `2026-04/administrator_nav/administrator_export_2026-03.xlsx` |
 | `administrator_trades` | 7 | csv, trades as the administrator booked them (monthly). | `2026-05/administrator_trades/administrator_trades_2026-04.csv` |
 | `approvals` | 6 | csv, approval log for payments over 500,000 USD. | `2026-04/approvals/approvals_2026-04.csv` |
 | `audit` | 1 | xlsx, the auditor's sample request. | `2026-09/audit/audit_request_2026-09-22.xlsx` |
+| `bank_forms` | 2 | pdf, a bank account opening form and the signing policy. | `2026-10/bank_forms/account_opening_form_TCB_TRUST_EUR.pdf` |
 | `bank_statements` | 83 | xlsx, one per account per month (Transactions + Daily balances); *_mtd = 1 to 13 Oct. Arrives 2 business days (Harbour Bank) or 4 (Tidewater) after month end. | `2026-05/bank_statements/HB_HOLD_USD_2026-04.xlsx` |
+| `break_register` | 1 | csv, register of open breaks with detection dates. | `2026-10/break_register/break_register_2026-10-13.csv` |
 | `close_checklist` | 6 | csv, month-end close checklist (the six steps of the month-end process). | `2026-05/close_checklist/close_checklist_2026-04.csv` |
 | `commitments` | 7 | xlsx, the commitments register as the office keeps it. | `2026-05/commitments/commitments_register_2026-04-30.xlsx` |
+| `corporate_actions` | 12 | pdf, custodian corporate action notices (dividends, a coupon, a voluntary tender offer). | `2026-10/corporate_actions/2026-10-02_AHS_dividend.pdf` |
 | `custodian_positions` | 140 | csv, one per business day, 20 positions of the Evergreen Liquid portfolio. | `2026-04/custodian_positions/positions_20260401.csv` |
 | `custodian_transactions` | 7 | csv, monthly, trades, dividends, coupons and fees at the custodian. | `2026-05/custodian_transactions/transactions_2026-04.csv` |
+| `custody_statements` | 1 | pdf, the custodian's safekeeping statement as at 30 Sep. | `2026-10/custody_statements/custody_statement_2026-09-30.pdf` |
 | `ddq` | 2 | pdf, two years of one manager's due diligence questionnaire. | `2026-04/ddq/cedarpoint_ddq_2025.pdf` |
+| `deal_pipeline` | 4 | csv + pdf + eml, deals under review. | `2026-10/deal_pipeline/deal_pipeline_2026-10-13.csv` |
 | `emails` | 84 | eml, deliveries (statement and notice PDFs attached), chasers, internal mail, a vendor bank-change mail. | `2026-04/emails/2026-04-02_stmt_A_2026-03-31_final.eml` |
+| `estate_planning` | 1 | pdf, transfer tax memo. | `2026-10/estate_planning/transfer_tax_memo_2026.pdf` |
 | `exception_log` | 1 | csv, exceptions up to 13 Oct (cash breaks, missing statements). | `2026-10/exception_log/exception_log_2026-10-13.csv` |
+| `expense_ledger` | 1 | xlsx, expense ledger 1 Apr to 30 Sep with approver, plus approval limits. | `2026-10/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx` |
+| `family_access` | 3 | pdf + csv + eml, family access policy, views granted, an access request. | `2026-10/family_access/family_access_policy_2026.pdf` |
 | `family_allowances` | 7 | xlsx, monthly family allowance schedule. | `2026-04/family_allowances/allowance_schedule_2026-04.xlsx` |
 | `fee_schedule` | 1 | pdf, administrator, custodian and manager fee schedule. | `reference/fee_schedule.pdf` |
+| `fund_documents` | 2 | pdf, redemption terms of the two hedge funds. | `2026-04/fund_documents/kestrel_H1_redemption_terms.pdf` |
+| `fund_holdings` | 1 | xlsx, look-through holdings of the eight private funds. | `2026-10/fund_holdings/fund_holdings_2026-09-30.xlsx` |
 | `fx_confirmations` | 9 | pdf, bank confirmations of FX conversions and forwards. | `2026-04/fx_confirmations/FXS-20260416-HOLD_confirmation.pdf` |
 | `fx_rates` | 139 | csv, one per business day, USD/SGD WMR 4pm fixing. | `2026-04/fx_rates/fx_usdsgd_20260401.csv` |
+| `glossary` | 3 | csv + eml + md, the office word list and proposed words. | `2026-10/glossary/office_words_2026-10-01.csv` |
+| `grant_ledger` | 1 | xlsx, philanthropy ledger and budget 2026. | `2026-10/grant_ledger/grant_ledger_2026.xlsx` |
+| `grant_requests` | 2 | pdf + eml, a grant request. | `2026-10/grant_requests/grant_request_REQ-2026-06.pdf` |
+| `inbox` | 5 | mixed pdf and xlsx, five unsorted files. | `2026-10/inbox/scan_0412.pdf` |
+| `income_calendar` | 1 | csv, coupon and dividend calendar of the liquid book, next 12 months. | `2026-10/income_calendar/income_calendar_2026-10-13.csv` |
 | `index_levels` | 7 | csv, daily levels of the two synthetic indices (monthly files). | `2026-04/index_levels/index_levels_2026-04.csv` |
 | `insurance` | 3 | pdf, insurance renewal notices. | `2026-04/insurance/2026-04-17_POL-HOME-01_renewal.pdf` |
+| `insurance_schedule` | 1 | pdf, schedule of the four policies with sum insured. | `2026-10/insurance_schedule/insurance_schedule_2026-10-01.pdf` |
 | `investment_reports` | 12 | xlsx + pdf, the monthly investment report as issued. | `2026-05/investment_reports/Evergreen_Office_Investment_Report_2026-04.xlsx` |
 | `invoices` | 28 | pdf, vendor invoices and administrator/custodian fee invoices. | `2026-04/invoices/2026-04-01_marina_MOS-2604.pdf` |
+| `kyc_register` | 2 | csv + pdf, KYC documents with expiry dates. | `2026-10/kyc_register/kyc_register_2026-10-13.csv` |
+| `load_log` | 1 | csv, load log of the source files: on time, adds up, manual fix. | `2026-10/load_log/load_log_2026-10-13.csv` |
 | `loan_agreement` | 1 | pdf, the term loan agreement. | `reference/loan_agreement_TL-B-01.pdf` |
 | `loan_statements` | 6 | xlsx, monthly statement of Entity B's term loan (amounts shown negative). | `2026-05/loan_statements/loan_statement_TL-B-01_2026-04.xlsx` |
+| `manager_news` | 2 | eml, manager personnel-change mails. | `2026-08/manager_news/2026-08-18_saltmarsh_personnel.eml` |
+| `manager_outlook` | 4 | pdf, manager distribution outlook, four quarters. | `2026-10/manager_outlook/bluewater_distribution_outlook_2026-27.pdf` |
 | `manager_statements` | 59 | pdf, capital account statements as received (monthly or quarterly; final, estimate or amended). | `2026-04/manager_statements/northgate_A_2026-03-31_final.pdf` |
+| `market_data` | 1 | csv, second-source prices for the 20 securities. | `2026-10/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv` |
 | `meeting_notes` | 12 | md, meeting and investment committee notes (some reused from the 10-use-case set). | `2026-04/meeting_notes/02_bluewater_quarterly_call_2026-04-22.md` |
+| `new_feed` | 2 | csv + pdf, a new custodian feed and its cover note. | `2026-10/new_feed/pinnacle_custody_positions_2026-10-12.csv` |
 | `notices` | 17 | pdf, capital call notices and distribution notices, by notice date. | `2026-04/notices/2026-04-07_C_call5.pdf` |
+| `office_budget` | 1 | xlsx, office budget 2026 by category. | `2026-04/office_budget/office_budget_2026.xlsx` |
+| `onboarding` | 3 | csv + pdf, onboarding checklist, KYC pack and draft subscription document of a new manager. | `2026-10/onboarding/onboarding_checklist_Harborlight.csv` |
+| `payment_schedule` | 1 | csv, treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments, 90 days. | `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` |
 | `payroll` | 6 | xlsx, monthly payroll of Evergreen Holdings. | `2026-04/payroll/payroll_2026-04.xlsx` |
+| `payroll_drafts` | 1 | xlsx, draft October pay file, not released. | `2026-10/payroll_drafts/payroll_run_2026-10_draft.xlsx` |
 | `property_bills` | 14 | pdf, monthly property bills for two properties. | `2026-04/property_bills/2026-04-05_PB-BV-2604.pdf` |
+| `property_valuations` | 7 | pdf, appraisals of six real assets. | `2026-04/property_valuations/valuation_RA-01_2024-11-20.pdf` |
 | `prospects` | 1 | pdf, a fund teaser. | `2026-09/prospects/fund_teaser_Harborlight_Ventures_IV.pdf` |
 | `reference` | 15 | standing data and reused documents: standing instructions, fund terms, vendor master, accounts, office rules, policy, benchmark workbook, security master, process narrative, research documents. | `reference/accounts.csv` |
+| `settlement_status` | 1 | csv, custodian settlement report as at 13 Oct. | `2026-10/settlement_status/settlement_report_2026-10-13.csv` |
+| `sops` | 8 | md, eight SOPs with last review date and step minutes. | `2026-10/sops/sop_month-end-report.md` |
+| `target_allocation` | 1 | xlsx, proposed interim targets of the liquid book (not signed). | `2026-10/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx` |
+| `tax_calendar` | 1 | xlsx, tax calendar 2026-27 with the rates. | `2026-10/tax_calendar/tax_calendar_2026-27.xlsx` |
+| `tax_lots` | 1 | xlsx, custodian tax lot register as at 30 Sep. | `2026-10/tax_lots/lot_register_2026-09-30.xlsx` |
+| `tax_notices` | 1 | pdf, tax notice (ECI). | `2026-10/tax_notices/eci_notice_EG-HOLD_2026.pdf` |
+| `title_deeds` | 3 | pdf, title deeds of two properties and a land parcel. | `2026-04/title_deeds/title_deed_RA-01.pdf` |
 | `trading_export` | 35 | csv, one per trade day (OMS export) and monthly cash_movements (the desk's cash view). | `2026-04/trading_export/trading_export_20260406.csv` |
+| `trust_deed` | 1 | pdf, deed of the Evergreen Family Trust. | `2026-04/trust_deed/evergreen_family_trust_deed.pdf` |
 | `vendor_contracts` | 4 | pdf, vendor contracts with renewal dates. | `reference/vendor_contract_orchard_it.pdf` |
 
-Total: 734 files.
+Total: 819 files.
 
 ## Mess planted on purpose
 
@@ -87,10 +124,36 @@ Total: 734 files.
 | M19b | unpaid allowance | `family_allowances/allowance_schedule_2026-09.xlsx` | Ethan Chen's September allowance of USD 5,000 is on the schedule but no payment appears in the Trust bank statement |
 | M20 | untraceable figure | `audit/audit_request_2026-09-22.xlsx` | Item 8 asks for Evergreen Growth I at 9,500,000 for July; no issued report shows that figure (the July report shows the statement value) |
 | M21 | questionnaire differences | `ddq/cedarpoint_ddq_2025.pdf vs _2026.pdf` | Five answers differ between the 2025 and 2026 questionnaires: investment professionals (12 vs 14), AUM, key person provision, management fee, chief operating officer |
+| M22 | unexplained bank lines | `bank_statements/HB_HOLD_USD_2026-08.xlsx, TCB_HOLD_USD_2026-09.xlsx, HB_B_USD_2026-10_mtd.xlsx` | Three bank lines match no invoice, notice, payroll, trade or transfer: a TT in of 48,250 (19 Aug), an ACH debit of 3,980 (23 Sep) and cheque 000417 of 2,150 (6 Oct) |
+| M23 | settlement fails | `settlement_status/settlement_report_2026-10-13.csv` | Two purchases through Synthetic Broker Two (Larkspur Health 5,000, Evermore Banking Group 10,000) are past their settlement date, not delivered, no cash booked; the desk export has no row for them |
+| M24 | custodian differs from administrator | `custody_statements/custody_statement_2026-09-30.pdf` | Bay Street Utilities +1,250 units and Redwood Pharma -400 units against the administrator pack of 30 Sep, each with the custodian's note |
+| M25 | price gap to second source | `market_data/second_source_prices_2026-09-30_and_2026-10-13.csv` | Kingfisher Telecom (+1.9 percent) and Kingfisher Telecom 4.6% 2030 (-0.8 percent) differ from the administrator price on 30 Sep by more than the 0.5 percent tolerance |
+| M26 | breaks never closed | `break_register/break_register_2026-10-13.csv` | Six breaks stay open in the register; the 17 Jun Trust cash break cleared the next day and the 8 Oct Entity B break on 9 Oct, but nobody closed them; two cash breaks are older than five business days |
+| M27 | unrecognised files | `inbox/IMG_2210.pdf, inbox/data_export.xlsx` | Five files arrive in the inbox; three are known kinds (a duplicate notice, a duplicate bank statement, a new Orchard IT invoice); a restaurant receipt and a four-column sheet with no source are not |
+| M28 | appraisal older than a year | `property_valuations/valuation_RA-03_2024-08-20.pdf, valuation_RA-05_2025-09-30.pdf` | The art collection was last appraised on 20 Aug 2024 and the wine collection on 30 Sep 2025: more than 365 days before 13 Oct 2026 |
+| M29 | title in a personal name | `title_deeds/title_deed_RA-04.pdf` | The Coastal Land Parcel, held by Entity B, is registered to Lin Chen personally |
+| M30 | cover below value | `insurance_schedule/insurance_schedule_2026-10-01.pdf` | The art collection and Bayview Residence are insured below their latest appraisal; Hillcrest House, the wine collection, the yacht and the land parcel have no policy |
+| M31 | same company in several funds | `fund_holdings/fund_holdings_2026-09-30.xlsx` | Helix Cloud Systems sits in funds A, C and F; Harborview Semiconductor in funds A and C and also directly in the liquid book |
+| M32 | payroll draft anomalies | `payroll_drafts/payroll_run_2026-10_draft.xlsx` | Grace Ong's gross is 20 percent above September with no approval, and a contractor (Jun Tan) who is not on the staff register is paid SGD 6,500 |
+| M33 | overdue filing | `tax_calendar/tax_calendar_2026-27.xlsx` | Entity B's corporate income tax return was due 30 Sep 2026 and is still 'not filed' |
+| M34 | grant request fails the policy | `grant_requests/grant_request_REQ-2026-06.pdf` | Seabird Sanctuary Trust asks for USD 50,000: more than the USD 35,000 left in the 2026 budget, and the charity was registered 19 months ago (policy: 24) |
+| M35 | approved above the approver's limit | `expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx` | Two legal and audit payments (LL-2026-0708, BAL-2026-051) are approved by Priya Nair, whose limit is USD 10,000 |
+| M36 | access not approved, left, unused | `access_register/access_register_2026-10-13.csv` | Two grants have no approver (Sam Lee OMS, Wei Tan Harbour Bank portal, which was not even requested); the leaver J. Ng still holds three grants; three grants were not used for more than 90 days |
+| M37 | onboarding items missing | `onboarding/onboarding_checklist_Harborlight.csv` | Bank details were never confirmed by call-back and no statement schedule is agreed with Harborlight Capital Partners |
+| M38 | signatory missing | `bank_forms/account_opening_form_TCB_TRUST_EUR.pdf` | The Head of Finance (Daniel Foo) is not among the signatories the signing policy requires |
+| M39 | SOP not reviewed in a year | `sops/` | Vendor payment run (20 Jun 2025), Payroll release (30 Sep 2025) and Open or change a bank account (1 Dec 2024) were last reviewed more than 365 days before 13 Oct 2026 |
+| M40 | KYC documents expiring | `kyc_register/` | Three documents expire within 90 days (a director's identity document 14 Nov, a certificate of incumbency 2 Dec, a manager refresh 5 Jan) and one expired on 12 Sep |
+| M41 | words proposed | `glossary/` | Four different words are proposed (dry powder, side letter, capital account, stub period); two are already in the list (dry powder as an alias, capital account) |
+| M42 | ambiguous columns | `new_feed/pinnacle_custody_positions_2026-10-12.csv` | Two of ten columns cannot be mapped with confidence: Value (market or book) and Dt (valuation, trade or settle date) |
+| M43 | view over-granted | `family_access/family_view_grants_2026-10-13.csv` | Wen Chen is granted the full Entity B report; the policy gives Wen Chen the Trust summary only |
+| M44 | manager personnel change | `manager_news/` | Saltmarsh Real Assets announces a resignation (18 Aug) and Northgate Partners adds a key person (9 Sep) |
+| M45 | decision needed | `corporate_actions/2026-10-08_TWE_tender_offer.pdf` | A voluntary tender offer on Tidewater Energy needs an instruction by 22 Oct; the other notices are mandatory and only need booking |
+| M46 | deals stuck in a stage | `deal_pipeline/deal_pipeline_2026-10-13.csv` | Marlow Infrastructure Partners III has been in Diligence since 28 Jul and Ashgrove Growth Equity V in Sourced since 15 Jun, both more than 60 days |
+| M47 | trust paid beyond its share | `trust_deed/evergreen_family_trust_deed.pdf` | Wen Chen's 8 percent share of the distributable income is smaller than the allowances paid to Wen Chen since April |
 
 ## Use cases: input files and answer keys
 
-Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1 to 50) plus the role-build `uc8-trades-vs-admin`.
+Use case ids are those of `packs/family_office/1/use_cases_100.yaml`: all 100 cards (priority 1 to 50 first, then the other 49) plus the role-build `uc8-trades-vs-admin`.
 
 | Priority | Use case | Title | Input files (count) | Keys |
 |---|---|---|---|---|
@@ -145,6 +208,55 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | 49 | `uc-049-feedrag` | Fees paid to each manager | 65 files: `*/notices/*_call*.pdf`; `reference/fee_schedule.pdf`; `*/manager_statements/*_final.pdf` | 1 |
 | 50 | `uc-050-feeinv` | Administrator and custodian invoices against the fee schedule | 5 files: `*/invoices/*FEE-*.pdf`; `reference/fee_schedule.pdf` | 1 |
 |  | `uc8-trades-vs-admin` | Trades and FX forwards against the administrator and the confirmations | 7 files: `*/trading_export/trading_export_2026100*.csv`; `*/administrator_trades/administrator_trades_2026-10.csv`; `*/fx_confirmations/FXF-2026-002_confirmation.pdf` | 1 |
+|  | `uc-052-insurance` | Insurance policies and renewals | 4 files: `*/insurance_schedule/insurance_schedule_2026-10-01.pdf`; `*/insurance/*_renewal.pdf` | 1 |
+|  | `uc-053-watchlist` | Manager watchlist: late, restated or changed | 63 files: `*/manager_statements/*.pdf`; `*/manager_news/*.eml`; `reference/kestrel_ridge_q3_2026_newsletter.pdf` ... | 1 |
+|  | `uc-054-ladder` | 30, 60, 90 day liquidity ladder | 4 files: `*/payment_schedule/payment_schedule_2026-10-13.csv`; `*/administrator_cash/administrator_cash_2026-10_mtd.csv`; `*/notices/2026-10-13_C_call7.pdf` ... | 1 |
+|  | `uc-055-corpact` | Corporate actions and income calendar | 13 files: `*/corporate_actions/*.pdf`; `reference/EG_security_master_20261008.xlsx` | 1 |
+|  | `uc-056-custrecon` | Custodian positions against administrator positions | 3 files: `*/custody_statements/custody_statement_2026-09-30.pdf`; `*/administrator_nav/administrator_export_2026-09.xlsx`; `*/custodian_positions/positions_20260930.csv` | 1 |
+|  | `uc-057-pricecheck` | Prices against a second source | 2 files: `*/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv`; `*/administrator_nav/administrator_export_2026-09.xlsx` | 1 |
+|  | `uc-058-settle` | Trades not settled on time | 6 files: `*/settlement_status/settlement_report_2026-10-13.csv`; `*/trading_export/trading_export_2026100*.csv` | 1 |
+|  | `uc-059-breakage` | Open breaks by age | 2 files: `*/break_register/break_register_2026-10-13.csv`; `*/exception_log/exception_log_2026-10-13.csv` | 1 |
+|  | `uc-060-docinbox` | Documents the office could not recognise | 5 files: `*/inbox/*` | 1 |
+|  | `uc-061-dqscore` | Data quality score for each source | 2 files: `*/load_log/load_log_2026-10-13.csv`; `received_log_all.csv` | 1 |
+|  | `uc-062-fxlife` | FX forwards: upcoming value dates and mark to market | 9 files: `*/fx_confirmations/FXF-*_confirmation.pdf`; `*/fx_rates/fx_usdsgd_20261013.csv`; `*/trading_export/trading_export_2026091*.csv` ... | 1 |
+|  | `uc-063-cashcode` | Unexplained bank lines | 3 files: `*/bank_statements/HB_HOLD_USD_2026-08.xlsx`; `*/bank_statements/TCB_HOLD_USD_2026-09.xlsx`; `*/bank_statements/HB_B_USD_2026-10_mtd.xlsx` | 1 |
+|  | `uc-064-fxexp` | Currency exposure of the family | 5 files: `*/administrator_cash/administrator_cash_2026-10_mtd.csv`; `*/fx_confirmations/FXF-*_confirmation.pdf`; `*/fx_rates/fx_usdsgd_20261013.csv` ... | 1 |
+|  | `uc-065-realassets` | Real assets register | 10 files: `*/property_valuations/valuation_RA-*.pdf`; `*/title_deeds/title_deed_RA-*.pdf` | 1 |
+|  | `uc-066-propreval` | Appraisal due on a real asset | 7 files: `*/property_valuations/valuation_RA-*.pdf` | 1 |
+|  | `uc-067-unrl` | Unrealised gain by lot | 30 files: `*/tax_lots/lot_register_2026-09-30.xlsx`; `*/trading_export/trading_export_2026*.csv`; `*/administrator_nav/administrator_export_2026-09.xlsx` | 1 |
+|  | `uc-068-incomef` | Dividend and coupon income forecast | 14 files: `*/income_calendar/income_calendar_2026-10-13.csv`; `*/corporate_actions/*.pdf`; `reference/EG_security_master_20261008.xlsx` | 1 |
+|  | `uc-069-lookthru` | What the private funds really own | 55 files: `*/fund_holdings/fund_holdings_2026-09-30.xlsx`; `*/manager_statements/*_final.pdf`; `*/ddq/cedarpoint_ddq_2026.pdf` | 1 |
+|  | `uc-070-idle` | Idle cash above what we need | 3 files: `*/administrator_cash/administrator_cash_2026-10_mtd.csv`; `*/payment_schedule/payment_schedule_2026-10-13.csv`; `reference/office_rules.csv` | 1 |
+|  | `uc-071-expdist` | Distributions we expect in the next year | 68 files: `*/manager_outlook/*_distribution_outlook_2026-27.pdf`; `*/manager_statements/*_final.pdf`; `*/notices/*_call*.pdf` | 1 |
+|  | `uc-072-cashfc` | 12 month cash forecast | 8 files: `*/administrator_cash/administrator_cash_2026-10_mtd.csv`; `*/commitments/commitments_register_2026-10-13.xlsx`; `*/payment_schedule/payment_schedule_2026-10-13.csv` ... | 1 |
+|  | `uc-073-runway` | How many months the family can spend | 2 files: `*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx`; `*/administrator_cash/administrator_cash_2026-10_mtd.csv` | 1 |
+|  | `uc-074-boardpack` | Family board pack | 7 files: `*/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf`; `*/meeting_notes/ic_note_*.md`; `*/meeting_notes/08_investment_committee_note_2026-10-08.md` | 1 |
+|  | `uc-075-yearwalk` | What happened to our worth this year | 96 files: `*/investment_reports/Evergreen_Office_Investment_Report_*.pdf`; `*/administrator_nav/administrator_export_*.xlsx`; `*/bank_statements/*.xlsx` | 1 |
+|  | `uc-076-scorecard` | Manager scorecard | 84 files: `*/manager_statements/*.pdf`; `*/meeting_notes/*.md`; `*/notices/*_call*.pdf` ... | 1 |
+|  | `uc-077-deals` | Pipeline of deals under review | 5 files: `*/deal_pipeline/deal_pipeline_2026-10-13.csv`; `*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf`; `*/deal_pipeline/teaser_DL-*.pdf` ... | 1 |
+|  | `uc-078-redemption` | Redeem from a hedge fund within notice and lock-up | 18 files: `*/fund_documents/kestrel_H*_redemption_terms.pdf`; `*/manager_statements/kestrel_H*.pdf`; `reference/kestrel_ridge_ddq_2026.pdf` | 1 |
+|  | `uc-079-rebalance` | Rebalancing proposal | 3 files: `reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf`; `*/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx`; `*/custodian_positions/positions_20261013.csv` | 1 |
+|  | `uc-080-vintage` | Spread of private commitments by year | 2 files: `*/commitments/commitments_register_2026-10-13.xlsx`; `reference/fund_terms.csv` | 1 |
+|  | `uc-081-payroll` | Household and office payroll | 3 files: `*/payroll_drafts/payroll_run_2026-10_draft.xlsx`; `*/payroll/payroll_2026-09.xlsx`; `*/bank_statements/HB_HOLD_SGD_2026-09.xlsx` | 1 |
+|  | `uc-082-covergap` | Insurance cover against what we own | 8 files: `*/insurance_schedule/insurance_schedule_2026-10-01.pdf`; `*/property_valuations/valuation_RA-*.pdf` | 1 |
+|  | `uc-083-taxcal` | Tax calendar | 2 files: `*/tax_calendar/tax_calendar_2026-27.xlsx`; `*/tax_notices/eci_notice_EG-HOLD_2026.pdf` | 1 |
+|  | `uc-084-taxest` | Estimated tax for the year | 35 files: `*/tax_calendar/tax_calendar_2026-27.xlsx`; `*/trading_export/trading_export_2026*.csv`; `*/notices/*_distribution.pdf` | 1 |
+|  | `uc-085-grants` | Philanthropy: budget used | 6 files: `*/grant_ledger/grant_ledger_2026.xlsx`; `*/bank_statements/HB_HOLD_USD_2026-0[5-9].xlsx` | 1 |
+|  | `uc-086-grantappr` | Approve a grant payment | 3 files: `*/grant_requests/grant_request_REQ-2026-06.pdf`; `*/grant_requests/2026-10-09_REQ-2026-06.eml`; `*/grant_ledger/grant_ledger_2026.xlsx` | 1 |
+|  | `uc-087-trustdist` | Trust distributions to beneficiaries | 9 files: `*/trust_deed/evergreen_family_trust_deed.pdf`; `*/administrator_cash/administrator_cash_2026-10_mtd.csv`; `*/family_allowances/allowance_schedule_2026-*.xlsx` | 1 |
+|  | `uc-088-estateliq` | Cash for an estate or transfer tax | 9 files: `*/trust_deed/evergreen_family_trust_deed.pdf`; `*/estate_planning/transfer_tax_memo_2026.pdf`; `*/property_valuations/valuation_RA-*.pdf` | 1 |
+|  | `uc-089-expapp` | Expense approval and sign-off rules | 2 files: `*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx`; `reference/office_rules.csv` | 1 |
+|  | `uc-090-offcost` | What the office costs | 36 files: `*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx`; `*/office_budget/office_budget_2026.xlsx`; `*/payroll/payroll_2026-0[4-9].xlsx` ... | 1 |
+|  | `uc-091-jml` | Joiner, mover, leaver access | 2 files: `*/access_register/access_register_2026-10-13.csv`; `*/access_register/2026-10-02_joiner_leaver.eml` | 1 |
+|  | `uc-092-accessrev` | Quarterly access review | 1 files: `*/access_register/access_register_2026-10-13.csv` | 1 |
+|  | `uc-093-onbmgr` | Onboard a new manager | 3 files: `*/onboarding/*` | 1 |
+|  | `uc-094-onbbank` | Open or change a bank or custody account | 2 files: `*/bank_forms/*` | 1 |
+|  | `uc-095-sopreview` | SOPs not reviewed in a year | 8 files: `*/sops/sop_*.md` | 1 |
+|  | `uc-096-automation` | Which processes to automate next | 10 files: `*/sops/sop_*.md`; `*/exception_log/exception_log_2026-10-13.csv`; `received_log_all.csv` | 1 |
+|  | `uc-097-kycrefresh` | Know-your-client documents expiring | 2 files: `*/kyc_register/kyc_register_2026-10-13.csv`; `*/kyc_register/kyc_pack_Evergreen_Holdings_2026.pdf` | 1 |
+|  | `uc-098-wordlist` | Keep the office words in step with the model | 3 files: `*/glossary/*` | 1 |
+|  | `uc-099-newfeed` | Bring in a new source file | 2 files: `*/new_feed/*` | 1 |
+|  | `uc-100-famaccess` | What each family member can see | 3 files: `*/family_access/*` | 1 |
 
 ## Every file
 
@@ -190,6 +302,8 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-04/emails/2026-04-15_stmt_K_2026-03-31_final.eml` | Delivery email with the Saltmarsh Renewables I final statement as at 2026-03-31 | M01 |  |
 | `2026-04/emails/2026-04-21_stmt_D_2026-03-31_final.eml` | Delivery email with the Cedarpoint Opportunities II final statement as at 2026-03-31 | M01 |  |
 | `2026-04/family_allowances/allowance_schedule_2026-04.xlsx` | Family allowance schedule for 2026-04: 4 members, USD 23,000 |  |  |
+| `2026-04/fund_documents/kestrel_H1_redemption_terms.pdf` | Redemption terms of Kestrel Ridge Macro Fund: dealing monthly, notice 45 days |  |  |
+| `2026-04/fund_documents/kestrel_H2_redemption_terms.pdf` | Redemption terms of Kestrel Ridge Equity Long/Short Fund: dealing quarterly, notice 60 days |  |  |
 | `2026-04/fx_confirmations/FXS-20260416-HOLD_confirmation.pdf` | Bank confirmation of the EG-HOLD spot conversion FXS-20260416-HOLD: USD 1,000,000.00 at 1.3374 |  |  |
 | `2026-04/fx_rates/fx_usdsgd_20260401.csv` | USD/SGD WMR 4pm fixing for 2026-04-01 |  |  |
 | `2026-04/fx_rates/fx_usdsgd_20260402.csv` | USD/SGD WMR 4pm fixing for 2026-04-02 |  |  |
@@ -235,14 +349,25 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-04/meeting_notes/ic_note_2026-04-15.md` | Investment committee note 2026-04-15 (generated) |  |  |
 | `2026-04/notices/2026-04-07_C_call5.pdf` | Capital call notice No. 5, Cedarpoint Ventures III, Evergreen Holdings, USD 1,000,000.00, due 2026-04-21, account ending 2209 |  |  |
 | `2026-04/notices/2026-04-08_B_distribution.pdf` | Distribution notice, Evergreen Income II, Evergreen Holdings, USD 120,000.00, paid 2026-04-15 |  |  |
+| `2026-04/office_budget/office_budget_2026.xlsx` | Office budget 2026 by category, set in April |  |  |
 | `2026-04/payroll/payroll_2026-04.xlsx` | Monthly payroll of Evergreen Holdings, 2026-04: 9 employees, gross 116,700.00 SGD, net 93,360.00 SGD |  |  |
 | `2026-04/property_bills/2026-04-05_PB-BV-2604.pdf` | Property bill PB-BV-2604 for Bayview Residence, SGD 8,284.38 |  |  |
 | `2026-04/property_bills/2026-04-05_PB-HC-2604.pdf` | Property bill PB-HC-2604 for Hillcrest House, SGD 6,235.85 |  |  |
+| `2026-04/property_valuations/valuation_RA-01_2024-11-20.pdf` | Valuation of Bayview Residence at 2024-11-20: SGD 9,100,000.00 |  |  |
+| `2026-04/property_valuations/valuation_RA-01_2025-11-18.pdf` | Valuation of Bayview Residence at 2025-11-18: SGD 9,600,000.00 |  |  |
+| `2026-04/property_valuations/valuation_RA-02_2026-03-02.pdf` | Valuation of Hillcrest House at 2026-03-02: SGD 6,400,000.00 |  |  |
+| `2026-04/property_valuations/valuation_RA-03_2024-08-20.pdf` | Valuation of Fine art collection at 2024-08-20: USD 2,400,000.00 | M28 |  |
+| `2026-04/property_valuations/valuation_RA-05_2025-09-30.pdf` | Valuation of Wine cellar collection at 2025-09-30: USD 650,000.00 | M28 |  |
+| `2026-04/property_valuations/valuation_RA-06_2025-10-25.pdf` | Valuation of Motor yacht Evergreen Star at 2025-10-25: USD 1,200,000.00 |  |  |
+| `2026-04/title_deeds/title_deed_RA-01.pdf` | Title deed of Bayview Residence, proprietor Evergreen Holdings |  |  |
+| `2026-04/title_deeds/title_deed_RA-02.pdf` | Title deed of Hillcrest House, proprietor Evergreen Family Trust |  |  |
+| `2026-04/title_deeds/title_deed_RA-04.pdf` | Title deed of Coastal Land Parcel Lot 14, proprietor Lin Chen | M29 |  |
 | `2026-04/trading_export/trading_export_20260406.csv` | Trading desk (OMS) export for 2026-04-06: 1 row(s) |  |  |
 | `2026-04/trading_export/trading_export_20260407.csv` | Trading desk (OMS) export for 2026-04-07: 1 row(s) |  |  |
 | `2026-04/trading_export/trading_export_20260410.csv` | Trading desk (OMS) export for 2026-04-10: 1 row(s) |  |  |
 | `2026-04/trading_export/trading_export_20260416.csv` | Trading desk (OMS) export for 2026-04-16: 1 row(s) |  |  |
 | `2026-04/trading_export/trading_export_20260427.csv` | Trading desk (OMS) export for 2026-04-27: 1 row(s) |  |  |
+| `2026-04/trust_deed/evergreen_family_trust_deed.pdf` | Deed of settlement of the Evergreen Family Trust: four beneficiaries, shares, payout cap | M47 |  |
 | `2026-05/administrator_cash/administrator_cash_2026-04.csv` | Administrator's official daily cash per entity and currency, 2026-04 |  |  |
 | `2026-05/administrator_nav/administrator_export_2026-04.xlsx` | Administrator monthly NAV pack as at 2026-04-30, released 2026-05-04 06:00 UTC: positions, status, NAV by portfolio |  |  |
 | `2026-05/administrator_trades/administrator_trades_2026-04.csv` | Trades as booked by the administrator, 2026-04 |  |  |
@@ -436,6 +561,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-06/payroll/payroll_2026-06.xlsx` | Monthly payroll of Evergreen Holdings, 2026-06: 9 employees, gross 116,700.00 SGD, net 93,360.00 SGD |  |  |
 | `2026-06/property_bills/2026-06-05_PB-BV-2606.pdf` | Property bill PB-BV-2606 for Bayview Residence, SGD 2,980.80 |  |  |
 | `2026-06/property_bills/2026-06-05_PB-HC-2606.pdf` | Property bill PB-HC-2606 for Hillcrest House, SGD 2,378.83 |  |  |
+| `2026-06/property_valuations/valuation_RA-04_2026-06-10.pdf` | Valuation of Coastal Land Parcel Lot 14 at 2026-06-10: USD 1,800,000.00 |  |  |
 | `2026-06/trading_export/cash_movements_2026-05.csv` | Trading desk cash movements as the desk booked them, 2026-05 |  |  |
 | `2026-06/trading_export/trading_export_20260602.csv` | Trading desk (OMS) export for 2026-06-02: 3 row(s) | M07 |  |
 | `2026-06/trading_export/trading_export_20260605.csv` | Trading desk (OMS) export for 2026-06-05: 1 row(s) |  |  |
@@ -642,6 +768,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-08/invoices/2026-08-03_orchard_INV-OIT-2608.pdf` | Invoice INV-OIT-2608 from Orchard IT Services, SGD 2,950.00 |  |  |
 | `2026-08/invoices/2026-08-28_lakeside_LL-2026-0828.pdf` | Invoice LL-2026-0828 from Lakeside Legal LLP, SGD 9,600.00 | M05b |  |
 | `2026-08/loan_statements/loan_statement_TL-B-01_2026-07.xlsx` | Term loan TL-B-01 statement 2026-07: closing principal shown as -2,900,000.00 | M12 |  |
+| `2026-08/manager_news/2026-08-18_saltmarsh_personnel.eml` | Saltmarsh Real Assets: Head of Infrastructure resigns | M44 |  |
 | `2026-08/manager_statements/bluewater_B_2026-07-31_final.pdf` | Evergreen Income II final statement as at 2026-07-31, value 6,008,189.00, received 2026-08-05 |  |  |
 | `2026-08/manager_statements/cedarpoint_C_2026-06-30_amended.pdf` | Cedarpoint Ventures III amended statement as at 2026-06-30, value 8,275,000.00, received 2026-08-18 | M03 |  |
 | `2026-08/manager_statements/kestrel_H1_2026-07-31_amended.pdf` | Kestrel Ridge Macro Fund amended statement as at 2026-07-31, value 7,012,500.00, received 2026-08-20 | M03 |  |
@@ -704,6 +831,8 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-09/custodian_positions/positions_20260929.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-09-29 | M17 |  |
 | `2026-09/custodian_positions/positions_20260930.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-09-30 | M17 |  |
 | `2026-09/custodian_transactions/transactions_2026-08.csv` | Custodian transactions (trades, dividends, coupons, fees) of the Evergreen Liquid portfolio, 2026-08 |  |  |
+| `2026-09/deal_pipeline/teaser_DL-02.pdf` | Fund teaser: Marlow Infrastructure Partners III |  |  |
+| `2026-09/deal_pipeline/teaser_DL-04.pdf` | Fund teaser: Ashgrove Growth Equity V |  |  |
 | `2026-09/emails/2026-09-01_call_D_5.eml` | Email delivering capital call notice No. 5 of Cedarpoint Opportunities II |  |  |
 | `2026-09/emails/2026-09-01_chase_reminder_09.eml` | Chase email: Reminder: Cedarpoint Opportunities II - 30 June statement |  |  |
 | `2026-09/emails/2026-09-01_stmt_L1_2026-08-31_final.eml` | Delivery email with the Global Equity Index Fund (synthetic) final statement as at 2026-08-31 |  |  |
@@ -749,6 +878,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-09/invoices/2026-09-03_orchard_INV-OIT-2609.pdf` | Invoice INV-OIT-2609 from Orchard IT Services, SGD 2,950.00 |  |  |
 | `2026-09/invoices/2026-09-14_summit_STA-2609.pdf` | Invoice STA-2609 from Summit Tax Advisory, SGD 5,400.00 |  |  |
 | `2026-09/loan_statements/loan_statement_TL-B-01_2026-08.xlsx` | Term loan TL-B-01 statement 2026-08: closing principal shown as -2,900,000.00 | M12 |  |
+| `2026-09/manager_news/2026-09-09_northgate_personnel.eml` | Northgate Partners: Second named key person added | M44 |  |
 | `2026-09/manager_statements/bluewater_B_2026-08-31_final.pdf` | Evergreen Income II final statement as at 2026-08-31, value 6,016,000.00, received 2026-09-02 |  |  |
 | `2026-09/manager_statements/kestrel_H1_2026-08-31_final.pdf` | Kestrel Ridge Macro Fund final statement as at 2026-08-31, value 7,210,000.00, received 2026-09-07 |  |  |
 | `2026-09/manager_statements/kestrel_H2_2026-08-31_final.pdf` | Kestrel Ridge Equity Long/Short Fund final statement as at 2026-08-31, value 5,090,000.00, received 2026-09-22 | M01 |  |
@@ -767,12 +897,16 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-09/trading_export/cash_movements_2026-08.csv` | Trading desk cash movements as the desk booked them, 2026-08 |  |  |
 | `2026-09/trading_export/trading_export_20260908.csv` | Trading desk (OMS) export for 2026-09-08: 1 row(s) |  |  |
 | `2026-09/trading_export/trading_export_20260915.csv` | Trading desk (OMS) export for 2026-09-15: 1 row(s) | M10 |  |
+| `2026-10/access_register/2026-10-02_joiner_leaver.eml` | Email from the HR manager: one joiner, one leaver | M36 |  |
+| `2026-10/access_register/access_register_2026-10-13.csv` | Access register as at 13 Oct: 38 grants of twelve people | M36 |  |
 | `2026-10/administrator_cash/administrator_cash_2026-09.csv` | Administrator's official daily cash per entity and currency, 2026-09 |  |  |
 | `2026-10/administrator_cash/administrator_cash_2026-10_mtd.csv` | Administrator's official daily cash per entity and currency, 2026-10 | M04 |  |
 | `2026-10/administrator_nav/administrator_export_2026-09.xlsx` | Administrator monthly NAV pack as at 2026-09-30, released 2026-10-02 06:00 UTC: positions, status, NAV by portfolio |  |  |
 | `2026-10/administrator_trades/administrator_trades_2026-09.csv` | Trades as booked by the administrator, 2026-09 |  |  |
 | `2026-10/administrator_trades/administrator_trades_2026-10.csv` | Trades as booked by the administrator, 2026-10 | M16 |  |
 | `2026-10/approvals/approvals_2026-10.csv` | Approval log for payments over 500,000 USD, 2026-10 |  |  |
+| `2026-10/bank_forms/account_opening_form_TCB_TRUST_EUR.pdf` | Opening form of a euro account of the Trust at Tidewater: two signatories | M38 |  |
+| `2026-10/bank_forms/signing_policy_2026.pdf` | Signing policy: two signatories, one the Head of Finance |  |  |
 | `2026-10/bank_statements/HB_B_SGD_2026-09.xlsx` | Harbour Bank (synthetic) SGD account of Entity B (HB-4421-1178), 2026-09: Transactions and Daily balances |  |  |
 | `2026-10/bank_statements/HB_B_SGD_2026-10_mtd.xlsx` | Harbour Bank (synthetic) SGD account of Entity B (HB-4421-1178), 2026-10: Transactions and Daily balances |  |  |
 | `2026-10/bank_statements/HB_B_USD_2026-09.xlsx` | Harbour Bank (synthetic) USD account of Entity B (HB-4420-1175), 2026-09: Transactions and Daily balances |  |  |
@@ -797,9 +931,22 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-10/bank_statements/TCB_TRUST_SGD_2026-10_mtd.xlsx` | Tidewater Commercial Bank (synthetic) SGD account of Evergreen Family Trust (TCB-4511-1152), 2026-10: Transactions and Daily balances |  |  |
 | `2026-10/bank_statements/TCB_TRUST_USD_2026-09.xlsx` | Tidewater Commercial Bank (synthetic) USD account of Evergreen Family Trust (TCB-4510-1149), 2026-09: Transactions and Daily balances |  |  |
 | `2026-10/bank_statements/TCB_TRUST_USD_2026-10_mtd.xlsx` | Tidewater Commercial Bank (synthetic) USD account of Evergreen Family Trust (TCB-4510-1149), 2026-10: Transactions and Daily balances |  |  |
+| `2026-10/break_register/break_register_2026-10-13.csv` | Register of open breaks as at 13 Oct: six items, none closed by anyone | M26 |  |
 | `2026-10/close_checklist/close_checklist_2026-09.csv` | Month-end report close checklist for 2026-09 (steps of the month-end process) |  |  |
 | `2026-10/commitments/commitments_register_2026-09-30.xlsx` | Commitments register as at 2026-09-30: 8 private funds; uncalled 15,850,000 |  |  |
 | `2026-10/commitments/commitments_register_2026-10-13.xlsx` | Commitments register as at 2026-10-13: 8 private funds; uncalled 15,850,000 (call 7 noticed, not yet recorded) |  |  |
+| `2026-10/corporate_actions/2026-10-02_AHS_dividend.pdf` | Corporate action notice: Atlas Harbour Shipping dividend paid 2026-10-15, USD 9,552.00 |  |  |
+| `2026-10/corporate_actions/2026-10-02_BHI_dividend.pdf` | Corporate action notice: Blue Heron Insurance dividend paid 2026-10-15, USD 8,655.00 |  |  |
+| `2026-10/corporate_actions/2026-10-02_CRH_dividend.pdf` | Corporate action notice: Coastal Rail Holdings dividend paid 2026-10-15, USD 10,413.00 |  |  |
+| `2026-10/corporate_actions/2026-10-02_GBM_dividend.pdf` | Corporate action notice: Granite Bay Materials dividend paid 2026-10-15, USD 8,645.00 |  |  |
+| `2026-10/corporate_actions/2026-10-02_HTN29_coupon.pdf` | Corporate action notice: Harbour Treasury Note 2029 (synthetic sovereign) coupon paid 2026-12-30, USD 58,500.00 |  |  |
+| `2026-10/corporate_actions/2026-10-02_NWL_dividend.pdf` | Corporate action notice: Northwind Logistics dividend paid 2026-10-15, USD 11,662.20 |  |  |
+| `2026-10/corporate_actions/2026-10-07_BSU_dividend.pdf` | Corporate action notice: Bay Street Utilities dividend paid 2026-10-20, USD 6,453.00 |  |  |
+| `2026-10/corporate_actions/2026-10-07_JCB_dividend.pdf` | Corporate action notice: Juniper Consumer Brands dividend paid 2026-10-20, USD 9,990.00 |  |  |
+| `2026-10/corporate_actions/2026-10-07_KFT_dividend.pdf` | Corporate action notice: Kingfisher Telecom dividend paid 2026-10-20, USD 8,748.00 |  |  |
+| `2026-10/corporate_actions/2026-10-07_LKH_dividend.pdf` | Corporate action notice: Larkspur Health dividend paid 2026-10-20, USD 10,152.00 |  |  |
+| `2026-10/corporate_actions/2026-10-07_OLR_dividend.pdf` | Corporate action notice: Orchard Lane Retail dividend paid 2026-10-20, USD 8,920.00 |  |  |
+| `2026-10/corporate_actions/2026-10-08_TWE_tender_offer.pdf` | Corporate action notice: voluntary tender offer on Tidewater Energy, respond by 2026-10-22 | M45 |  |
 | `2026-10/custodian_positions/positions_20261001.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-10-01 | M17 |  |
 | `2026-10/custodian_positions/positions_20261002.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-10-02 | M17 |  |
 | `2026-10/custodian_positions/positions_20261005.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-10-05 | M17 |  |
@@ -811,6 +958,9 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-10/custodian_positions/positions_20261013.csv` | Custodian end-of-day positions of the Evergreen Liquid portfolio, 2026-10-13 | M17 |  |
 | `2026-10/custodian_transactions/transactions_2026-09.csv` | Custodian transactions (trades, dividends, coupons, fees) of the Evergreen Liquid portfolio, 2026-09 |  |  |
 | `2026-10/custodian_transactions/transactions_2026-10_mtd.csv` | Custodian transactions (trades, dividends, coupons, fees) of the Evergreen Liquid portfolio, 2026-10 |  |  |
+| `2026-10/custody_statements/custody_statement_2026-09-30.pdf` | Custodian's safekeeping statement as at 30 Sep: 20 positions, two differ from the administrator pack | M24 |  |
+| `2026-10/deal_pipeline/2026-10-05_harborlight_followup.eml` | Email from Harborlight about the first close |  |  |
+| `2026-10/deal_pipeline/deal_pipeline_2026-10-13.csv` | Deal pipeline as at 13 Oct: five deals with stage and date entered | M46 |  |
 | `2026-10/emails/2026-10-01_stmt_B_2026-09-30_final.eml` | Delivery email with the Evergreen Income II final statement as at 2026-09-30 |  |  |
 | `2026-10/emails/2026-10-01_stmt_L1_2026-09-30_final.eml` | Delivery email with the Global Equity Index Fund (synthetic) final statement as at 2026-09-30 |  |  |
 | `2026-10/emails/2026-10-01_stmt_L2_2026-09-30_final.eml` | Delivery email with the Global Bond Index Fund (synthetic) final statement as at 2026-09-30 |  |  |
@@ -823,8 +973,14 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-10/emails/2026-10-12_stmt_F_2026-09-30_final.eml` | Delivery email with the Evergreen Growth II final statement as at 2026-09-30 |  |  |
 | `2026-10/emails/2026-10-13_call_C_7.eml` | Email delivering capital call notice No. 7 of Cedarpoint Ventures III | M05a |  |
 | `2026-10/emails/2026-10-13_internal_sam.eml` | Internal email: New Cedarpoint call 7, new account |  |  |
+| `2026-10/estate_planning/transfer_tax_memo_2026.pdf` | Transfer tax memo: exemption, rate, payment term |  |  |
 | `2026-10/exception_log/exception_log_2026-10-13.csv` | Office exception log up to 13 Oct 2026: cash breaks and missing statements | M04 |  |
+| `2026-10/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx` | Expense ledger 1 Apr to 30 Sep 2026: 151 payments with category and approver | M35 |  |
+| `2026-10/family_access/2026-10-09_access_request_maya.eml` | Access request from Maya Chen for the Holdings report |  |  |
+| `2026-10/family_access/family_access_policy_2026.pdf` | Family access policy: what each member may see |  |  |
+| `2026-10/family_access/family_view_grants_2026-10-13.csv` | Views granted to the four family members as at 13 Oct | M43 |  |
 | `2026-10/family_allowances/allowance_schedule_2026-10.xlsx` | Family allowance schedule for 2026-10: 4 members, USD 23,000 |  |  |
+| `2026-10/fund_holdings/fund_holdings_2026-09-30.xlsx` | Look-through holdings of the eight private funds as reported by the managers at 30 Sep | M31 |  |
 | `2026-10/fx_confirmations/FXF-2026-002_confirmation.pdf` | Bank confirmation of FX forward FXF-2026-002: sell USD 3,000,000.00, rate 1.3452 | M16 |  |
 | `2026-10/fx_rates/fx_usdsgd_20261001.csv` | USD/SGD WMR 4pm fixing for 2026-10-01 |  |  |
 | `2026-10/fx_rates/fx_usdsgd_20261002.csv` | USD/SGD WMR 4pm fixing for 2026-10-02 |  |  |
@@ -835,13 +991,33 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-10/fx_rates/fx_usdsgd_20261009.csv` | USD/SGD WMR 4pm fixing for 2026-10-09 |  |  |
 | `2026-10/fx_rates/fx_usdsgd_20261012.csv` | USD/SGD WMR 4pm fixing for 2026-10-12 |  |  |
 | `2026-10/fx_rates/fx_usdsgd_20261013.csv` | USD/SGD WMR 4pm fixing for 2026-10-13 |  |  |
+| `2026-10/glossary/2026-10-06_word_proposal.eml` | Email proposing two words | M41 |  |
+| `2026-10/glossary/office_words_2026-10-01.csv` | The office word list: 19 terms with aliases | M41 |  |
+| `2026-10/glossary/word_review_2026-10-08.md` | Meeting note proposing three words | M41 |  |
+| `2026-10/grant_ledger/grant_ledger_2026.xlsx` | Philanthropy ledger 2026: three grants paid, two pledged, budget USD 300,000 |  |  |
+| `2026-10/grant_requests/2026-10-09_REQ-2026-06.eml` | Email delivering grant request REQ-2026-06 | M34 |  |
+| `2026-10/grant_requests/grant_request_REQ-2026-06.pdf` | Grant request REQ-2026-06 from Seabird Sanctuary Trust, USD 50,000.00 | M34 |  |
+| `2026-10/inbox/IMG_2210.pdf` | Unsorted inbox file: a restaurant receipt, not office business | M27 |  |
+| `2026-10/inbox/INV-OIT-2610.pdf` | Unsorted inbox file: Orchard IT Services invoice for October, SGD 2,950.00 |  |  |
+| `2026-10/inbox/account_extract.xlsx` | Unsorted inbox file: Tidewater Trust USD bank statement, 1 to 13 Oct |  |  |
+| `2026-10/inbox/data_export.xlsx` | Unsorted inbox file: a sheet of four columns with no source, header or date | M27 |  |
+| `2026-10/inbox/scan_0412.pdf` | Unsorted inbox file: a copy of the Saltmarsh Renewables I distribution notice of 10 Sep |  |  |
+| `2026-10/income_calendar/income_calendar_2026-10-13.csv` | Coupon and dividend calendar of the liquid book for the next 12 months at the quantity held on 13 Oct |  |  |
 | `2026-10/index_levels/index_levels_2026-10.csv` | Daily levels of the two synthetic indices, 2026-10 |  |  |
+| `2026-10/insurance_schedule/insurance_schedule_2026-10-01.pdf` | Insurance schedule: four policies with sum insured, premium and next renewal | M30 |  |
 | `2026-10/investment_reports/Evergreen_Office_Investment_Report_2026-09.pdf` | Monthly investment report as at 2026-09 (PDF) |  |  |
 | `2026-10/investment_reports/Evergreen_Office_Investment_Report_2026-09.xlsx` | Monthly investment report as at 2026-09, issued 2026-10-03: total USD 57,600,000.00 |  |  |
 | `2026-10/invoices/2026-10-01_marina_MOS-2610.pdf` | Invoice MOS-2610 from Marina Office Suites, SGD 18,500.00 |  |  |
 | `2026-10/invoices/2026-10-05_admin_FEE-ADMIN-Q3.pdf` | Q3 admin fee invoice, USD 16,234.50 |  |  |
 | `2026-10/invoices/2026-10-05_cust_FEE-CUST-Q3.pdf` | Q3 cust fee invoice, USD 6,180.00 | M15 |  |
+| `2026-10/kyc_register/kyc_pack_Evergreen_Holdings_2026.pdf` | KYC pack of Evergreen Holdings | M40 |  |
+| `2026-10/kyc_register/kyc_register_2026-10-13.csv` | Know-your-client register: 12 documents held for banks and managers | M40 |  |
+| `2026-10/load_log/load_log_2026-10-13.csv` | Load log of 413 source files: on time, adds up, needed a manual fix |  |  |
 | `2026-10/loan_statements/loan_statement_TL-B-01_2026-09.xlsx` | Term loan TL-B-01 statement 2026-09: closing principal shown as -2,800,000.00 | M12 |  |
+| `2026-10/manager_outlook/bluewater_distribution_outlook_2026-27.pdf` | Bluewater Capital distribution outlook for Evergreen Income II, Evergreen Credit III |  |  |
+| `2026-10/manager_outlook/cedarpoint_distribution_outlook_2026-27.pdf` | Cedarpoint Ventures distribution outlook for Cedarpoint Ventures III, Cedarpoint Opportunities II |  |  |
+| `2026-10/manager_outlook/northgate_distribution_outlook_2026-27.pdf` | Northgate Partners distribution outlook for Evergreen Growth I, Evergreen Growth II |  |  |
+| `2026-10/manager_outlook/saltmarsh_distribution_outlook_2026-27.pdf` | Saltmarsh Real Assets distribution outlook for Saltmarsh Infrastructure Fund II, Saltmarsh Renewables I |  |  |
 | `2026-10/manager_statements/bluewater_B_2026-09-30_final.pdf` | Evergreen Income II final statement as at 2026-09-30, value 6,400,000.00, received 2026-10-01 |  |  |
 | `2026-10/manager_statements/bluewater_G_2026-09-30_final.pdf` | Evergreen Credit III final statement as at 2026-09-30, value 2,420,000.00, received 2026-10-09 |  |  |
 | `2026-10/manager_statements/kestrel_H1_2026-09-30_estimate.pdf` | Kestrel Ridge Macro Fund estimate statement as at 2026-09-30, value 7,320,000.00, received 2026-10-06 |  |  |
@@ -852,10 +1028,31 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml` (priority 1
 | `2026-10/manager_statements/northgate_A_2026-09-30_estimate.pdf` | Evergreen Growth I estimate statement as at 2026-09-30, value 10,000,000.00, received 2026-10-02 |  |  |
 | `2026-10/manager_statements/northgate_F_2026-09-30_final.pdf` | Evergreen Growth II final statement as at 2026-09-30, value 3,080,000.00, received 2026-10-12 |  |  |
 | `2026-10/manager_statements/saltmarsh_E_2026-09-30_final.pdf` | Saltmarsh Infrastructure Fund II final statement as at 2026-09-30, value 9,950,000.00, received 2026-10-08 |  |  |
+| `2026-10/market_data/second_source_prices_2026-09-30_and_2026-10-13.csv` | Second-source prices for the 20 securities on 30 Sep and 13 Oct | M25 |  |
 | `2026-10/meeting_notes/08_investment_committee_note_2026-10-08.md` | Meeting note (reused from the 10-use-case set): investment committee note |  |  |
+| `2026-10/new_feed/pinnacle_cover_note.pdf` | Cover note of the new custodian feed |  |  |
+| `2026-10/new_feed/pinnacle_custody_positions_2026-10-12.csv` | A new custodian feed (Pinnacle Trust Company): 10 columns, 3 rows | M42 |  |
 | `2026-10/notices/2026-10-13_C_call7.pdf` | Capital call notice No. 7, Cedarpoint Ventures III, Evergreen Holdings, USD 1,250,000.00, due 2026-10-23, account ending 4471 | M05a |  |
+| `2026-10/onboarding/kyc_pack_Harborlight_Capital_Partners.pdf` | KYC pack of Harborlight Capital Partners, four documents |  |  |
+| `2026-10/onboarding/onboarding_checklist_Harborlight.csv` | Onboarding checklist of Harborlight Capital Partners: five items, two missing | M37 |  |
+| `2026-10/onboarding/subscription_document_Harborlight_Ventures_IV_draft.pdf` | Draft subscription document, unsigned, bank details to be advised |  |  |
+| `2026-10/payment_schedule/payment_schedule_2026-10-13.csv` | Treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments for the next 90 days |  |  |
+| `2026-10/payroll_drafts/payroll_run_2026-10_draft.xlsx` | Draft pay file for October 2026, not yet released | M32 |  |
 | `2026-10/property_bills/2026-10-05_PB-BV-2610.pdf` | Property bill PB-BV-2610 for Bayview Residence, SGD 8,245.40 |  |  |
 | `2026-10/property_bills/2026-10-05_PB-HC-2610.pdf` | Property bill PB-HC-2610 for Hillcrest House, SGD 6,161.54 |  |  |
+| `2026-10/settlement_status/settlement_report_2026-10-13.csv` | Custodian settlement report as at 13 Oct: trades settling from 28 Sep, two failed | M23 |  |
+| `2026-10/sops/sop_access-review.md` | SOP Quarterly access review, last reviewed 2026-07-14 |  |  |
+| `2026-10/sops/sop_bank-statement-chase.md` | SOP Bank statement chase, last reviewed 2026-05-09 |  |  |
+| `2026-10/sops/sop_capital-call-payment.md` | SOP Capital call payment, last reviewed 2025-11-04 |  |  |
+| `2026-10/sops/sop_insurance-renewal.md` | SOP Insurance renewal, last reviewed 2026-02-03 |  |  |
+| `2026-10/sops/sop_month-end-report.md` | SOP Month-end investment report, last reviewed 2026-03-12 |  |  |
+| `2026-10/sops/sop_new-bank-account.md` | SOP Open or change a bank account, last reviewed 2024-12-01 | M39 |  |
+| `2026-10/sops/sop_payroll-release.md` | SOP Payroll release, last reviewed 2025-09-30 | M39 |  |
+| `2026-10/sops/sop_vendor-payment-run.md` | SOP Vendor payment run, last reviewed 2025-06-20 | M39 |  |
+| `2026-10/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx` | Proposed interim targets of the liquid book (65 equity, 30 bond, 5 convertible), not yet signed |  |  |
+| `2026-10/tax_calendar/tax_calendar_2026-27.xlsx` | Tax calendar 2026-27 of the three entities and the 2026 rates | M33 |  |
+| `2026-10/tax_lots/lot_register_2026-09-30.xlsx` | Custodian tax lot register as at 30 Sep: 66 open lots |  |  |
+| `2026-10/tax_notices/eci_notice_EG-HOLD_2026.pdf` | Notice to file the estimated chargeable income of Evergreen Holdings by 30 Nov 2026 |  |  |
 | `2026-10/trading_export/cash_movements_2026-09.csv` | Trading desk cash movements as the desk booked them, 2026-09 |  |  |
 | `2026-10/trading_export/cash_movements_2026-10_mtd.csv` | Trading desk cash movements as the desk booked them, 2026-10 | M04 |  |
 | `2026-10/trading_export/trading_export_20261001.csv` | Trading desk (OMS) export for 2026-10-01: 1 row(s) |  |  |

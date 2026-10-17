@@ -1,0 +1,15 @@
+# SUGGESTION. Card 76, the exception: a manager scores below the signed keep band (manager_score_bands). The CIO decides on the watch list and the next meeting. Read only (signs: none), so there is no hold.
+suggestion: true
+id: uc-076-scorecard-review
+title: A manager scores in the review or exit band
+pain_points: [INT-BENCH, PP-05, INT-PAY]
+trigger: {on: figure_changed, figure: manager_score}
+inputs:
+  - {kind: doc, fields: [manager, score, verdict, return_pct, on_time_share, watch_flags]}
+subject: "{doc.manager}"
+condition: doc.verdict == 'review or exit'
+severity: problem
+route_to: cio
+action: {verb: approve, options: [Put on watch, Meet early, Plan the exit]}
+message: "{doc.manager} scores {doc.score}, below the keep band: return {doc.return_pct} percent, on time {doc.on_time_share}, {doc.watch_flags} watch flags. Watch, meet early or plan the exit?"
+evidence: [doc.score, doc.return_pct, doc.on_time_share, doc.watch_flags]

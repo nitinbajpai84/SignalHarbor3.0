@@ -42,6 +42,9 @@ _TABLES = {
     "market_observations": (("series_key", "observed_at"), "supersedes_observation_id"),
     "commitments": (("legal_entity_id", "instrument_id"), "supersedes_commitment_id"),
     "fx_confirmations": (("trade_reference",), "supersedes_fx_confirmation_id"),  # v3 A1: a re-issued confirmation supersedes the one before
+    "corporate_actions": (("instrument_id", "action_type", "pay_date"), "supersedes_corporate_action_id"),  # v3 A35: a re-issued notice supersedes the one before
+    "tax_lots": (("lot_ref",), "supersedes_tax_lot_id"),  # v3 A40: the next register supersedes the lot of the same reference
+    "real_assets": (("asset_ref",), "supersedes_real_asset_id"),  # v3 A36: a newer appraisal of an asset supersedes the one before
 }
 _REQUIRED_DATE = {"position_snapshots": "position_date", "valuation_observations": "valuation_date", "cash_movements": "effective_date", "nav_snapshots": "nav_period_end", "fx_confirmations": "trade_date"}
 _NEEDS_PORTFOLIO = {"position_snapshots", "cash_movements", "nav_snapshots"}

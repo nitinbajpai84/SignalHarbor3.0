@@ -1,0 +1,23 @@
+# SUGGESTION. uc-067 row 2, exception: the largest holding that no signed rule exempts is above the signed single-name limit, so its lots are the rebalance candidates; the sale is the amount that brings it to the limit (the book unchanged by the sale). With no signed limit the signal is skipped. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-067-unrl-over-limit
+title: A holding above the single-name limit, with the sale that brings it back
+pain_points: [PP-08, INT-RISK]
+trigger: {on: figure_changed, figure: unrealised_gain}
+inputs:
+- kind: figure
+  id: unrealised_gain
+  recipe: unrealised_gain
+  as: h
+  by: {name_rank: 1, first_of_security: true}
+- {kind: rule, id: single_name_limit_pct, as: limit}
+let: {sale: (h.holding_value - limit.value / 100 * h.book_value) / (1 - limit.value / 100)}
+condition: h.holding_pct > limit.value
+subject: 'over limit {h.security} {h.holding_pct:.2f}'
+severity: needs
+route_to: cfo
+action:
+  verb: record
+  options: [Sell from the lots, Keep the holding and record why]
+message: '{h.security} is {h.holding_pct:.2f} percent of the book (USD {h.holding_value:,.2f} of {h.book_value:,.2f}) against the {limit.value} percent single-name limit. Selling USD {sale:,.2f} brings it to the limit; its lots carry a gain of USD {h.holding_gain:,.0f}.'
+evidence: [h, limit]

@@ -1,0 +1,36 @@
+# SUGGESTION: the pack's usual signal. The office may edit or replace it (<company>/v3/signals/office/<id>.yaml). Card uc8-trades-vs-admin (use cases 51 to 100, no priority): a desk trade the administrator file for its month does not list -> the break -> the Operations Clerk raises it.
+suggestion: true
+id: uc8-trades-vs-admin-missing-at-administrator
+title: The administrator has not booked a trade the desk booked
+pain_points:
+- PP-06
+- INT-DOC
+trigger:
+  on: figure_changed
+  figure: trade_breaks
+inputs:
+- kind: doc
+  fields:
+  - trade
+  - security
+  - break_kind
+  - our_quantity
+  - difference_amount
+  - currency
+subject: '{doc.trade} missing at administrator'
+condition: doc.break_kind == 'missing at administrator'
+severity: problem
+route_to: ops_clerk
+action:
+  verb: record
+  options:
+  - Raise the break and send it to the Operations Lead
+hold:
+  blocks: accept_administrator_trades
+  scope: '{doc.trade}'
+  until: the break is raised and sent to the Operations Lead
+message: '{doc.security} {doc.trade}: the desk booked {doc.our_quantity:,.0f} units ({doc.difference_amount:,.0f} {doc.currency}); the administrator file for the month does not list the trade. The administrator
+  trades are not accepted until the break is raised.'
+evidence:
+- doc.our_quantity
+- doc.difference_amount

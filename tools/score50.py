@@ -1,6 +1,7 @@
 """Score the top 50 use cases on the six-month Evergreen Office: one fast, deterministic run before the slow live runs.
 
     python tools/score50.py            -> docs/v3/SCORE50.md, totals printed, exit 0 always
+    python tools/score50.py --all      -> docs/v3/SCORE100.md, all 100 cards (cards 51 to 100 have no priority; their order number is their card number)
 
 What it does, in order:
 1. Loads tests/v1/fixtures/office6m once into a fresh test plane with the real loader (v3_office6m_loaders.load_plane), as of 13 Oct 2026.
@@ -37,7 +38,10 @@ sys.path.insert(0, str(REPO))
 OFFICE = REPO / "tests" / "v1" / "fixtures" / "office6m"
 PACK = REPO / "packs" / "family_office" / "1"
 OUT = REPO / "docs" / "v3" / "SCORE50.md"
+OUT100 = REPO / "docs" / "v3" / "SCORE100.md"  # python tools/score50.py --all: all 100 cards
+CLEAN_NOTES = False  # --all: also note each non-info signal firing on a row with no planted mess (notes only, the verdict is not changed)
 TODAY = "2026-10-13"
+HARBORLIGHT = "Harborlight Ventures IV"  # cards 34 and 41 screen this teaser; the pipeline csv (card 77) holds four other deals, one row each
 log = logging.getLogger("score50")
 
 
@@ -449,7 +453,7 @@ CHECKS: dict[str, list] = {
           for kf, col in (("exposure", "exposure"), ("total", "portfolio_total"), ("limit_pct", "limit_pct"), ("cost_to_cure", "cost_to_cure"))],
     ],
     "uc-034-prospect": [
-        *[V(0, kf, "mandate_fit", col) for kf, col in (("minimum_ticket", "ticket"), ("asset_class", "asset_class"), ("policy_limit_for_private_markets", "private_markets_limit_pct"),
+        *[V(0, kf, "mandate_fit", col, deal_name=HARBORLIGHT) for kf, col in (("minimum_ticket", "ticket"), ("asset_class", "asset_class"), ("policy_limit_for_private_markets", "private_markets_limit_pct"),
                                                        ("uncalled_before", "uncalled_before"), ("uncalled_after", "uncalled_after"), ("ticket_pct_of_current_uncalled", "ticket_pct_of_uncalled"))],
     ],
     "uc-035-ddq": [
@@ -480,7 +484,7 @@ CHECKS: dict[str, list] = {
         V(0, "statement_kind", "memo_support", "detail", fund=CV3, figure="latest_value"),
     ],
     "uc-041-commitappr": [
-        *[V(0, kf, "commit_check", col) for kf, col in (("new_commitment", "new_commitment"), ("uncalled_after", "uncalled_after"), ("cash_usd_equivalent", "cash_usd"),
+        *[V(0, kf, "commit_check", col, deal_name=HARBORLIGHT) for kf, col in (("new_commitment", "new_commitment"), ("uncalled_after", "uncalled_after"), ("cash_usd_equivalent", "cash_usd"),
                                                         ("cash_cover_of_uncalled_after_pct", "cash_cover_pct"))],
     ],
     "uc4-vs-benchmark": [
@@ -589,7 +593,7 @@ MESS: dict[str, list[tuple[dict, str]]] = {
     "uc-035-ddq": [({"topic": ["Number of investment professionals", "Assets under management (USD)", "Key person provision", "Management fee", "Chief operating officer"]},
                     "key: answers changed")],
     "uc-037-distrack": [({"fund": "Evergreen Growth I", "pay_date": "2026-07-16"}, "M19 short-paid distribution")],
-    "uc-041-commitappr": [({"deal_name": "Harborlight Ventures Iv"}, "key: no private-markets budget in the policy")],
+    "uc-041-commitappr": [({"budget_status": "not set"}, "key: no private-markets budget in the policy")],  # every deal under review: the policy signs no budget
     "uc-050-feeinv": [({"invoice_no": "FEE-CUST-Q3"}, "M15 invoice above schedule")],
     "uc-038-navroll": [({"fund": "Evergreen Growth I"}, "M19 short-paid distribution (12,500 less, in its latest roll-forward, the quarter to 30 Sep)")],
     "uc-049-feedrag": [({"manager": "Bluewater Capital"}, "M08 fee above terms (Evergreen Credit III call 3)")],
@@ -626,6 +630,444 @@ CAUSE = {
 FUNCS = {"abs": abs, "min": min, "max": max, "round": round}
 PEOPLE = {p["id"]: p["person"] for p in yaml.safe_load((PACK / "use_cases_100.yaml").read_text(encoding="utf-8"))["people"]}
 
+
+# ---- cards 51 to 100 (--all) ------------------------------------------------------------------------------------------------------------------
+# The mapping is the builders' own tests (tests/v1/test_w1b_*.py): each key value is the column the test compares it with. Recipes and columns
+# are the ones the recipe really outputs. Where a test compares a key with a recipe through a rule, the rule is written here as a row selector.
+# The planted mess is the MANIFEST's M-code (tests/v1/fixtures/office6m/MANIFEST.md) or the key's own flagged item, as in the top 50.
+
+def FIRST(q, path, rid, col):
+    """A column that repeats on every row of a recipe (a total, a flag of the run): its value on the first row."""
+    return F(q, path, [rid], lambda x: x[rid][0][col] if x[rid] else None)
+
+
+def FIRST_WHERE(q, path, rid, col, pred):
+    return F(q, path, [rid], lambda x: next((r[col] for r in x[rid] if pred(r)), None))
+
+
+def _pinnacle(r) -> bool:
+    return str(r["feed"]).startswith("pinnacle")
+
+
+def _by_fund(x) -> dict:
+    rows, out = x["expected_distributions"], {}
+    for r in rows:
+        if r["row_kind"] == "fund_total":
+            qs = sorted((q for q in rows if q["row_kind"] == "fund_quarter" and q["fund"] == r["fund"]), key=lambda q: str(q["quarter_end"]))
+            out[r["fund"]] = {"latest_value": float(r["latest_value"]), "valuation_date": str(r["valuation_date"]), "total": float(r["amount"]),
+                              "payout_pct": [round(float(q["payout_pct"]), 2) for q in qs], "amounts": [round(float(q["amount"]), 2) for q in qs]}
+    return out
+
+
+_ENT54 = ("Evergreen Holdings", "Evergreen Family Trust", "Entity B")
+_WALK = ["investment_gains", "liquid_book_gain", "private_and_hedge_fund_gain", "spending", "closing", "capital_calls_paid", "distributions_received"]
+_LOT = {"security": "security", "acquired": "acquired", "days_held": "days_held", "quantity": "quantity", "cost": "cost", "value": "value", "gain": "gain"}
+
+CHECKS.update({
+    "uc8-trades-vs-admin": [  # card 51, operate; test_w1b_operate.py test_card51_*
+        L(0, "october_trade_breaks", "trade_breaks", {"trade": "trade"}, {"kind": "break_kind", "ours": "our_quantity", "administrator": "administrator_quantity",
+                                                                          "difference_usd": "difference_amount", "amount": "difference_amount"}, breaks=True, exact=False),
+        S(0, "trade_booked_twice_in_export", "trade_breaks", "trade", lambda r: r["break_kind"] == "booked twice"),
+        V(0, "difference_sgd", "fx_confirmation_variance", "variance", trade_reference="FXF-2026-002"),
+    ],
+    "uc-052-insurance": [  # card 52, renewals_due; test_w1b_office.py test_card52_*
+        L(0, "all_policies", "renewals_due", {"policy": "policy"}, {"name": "policy_name", "next_renewal": "next_renewal_date", "days_left": "days_left",
+                                                                   "sum_insured": "sum_insured", "premium": "premium", "currency": "currency",
+                                                                   "renewal_notice_received": "renewal_notice_received"}),
+        L(0, "expiring_in_60_days", "renewals_due", {"policy": "policy"}, {"days_left": "days_left", "sum_insured": "sum_insured", "premium": "premium"}, due_in_60_days=True),
+        N(0, "count", "renewals_due", lambda r: r["due_in_60_days"]),
+    ],
+    "uc-054-ladder": [  # card 54, liquidity_ladder (+ cash_by_entity for the cash lines); test_w1b_cash.py test_54_*
+        *[V(0, f"by_entity.{e}.windows.{w}.{kf}", "liquidity_ladder", col, entity=e, window_days=w)
+          for e in _ENT54 for w in (30, 60, 90) for kf, col in (("calls", "calls"), ("approved_and_scheduled_payments", "approved_and_scheduled_payments"),
+                                                                 ("cash_after", "cash_after"), ("below_buffer", "below_buffer"))],
+        *[V(0, f"by_entity.{e}.cash_usd_equivalent", "liquidity_ladder", "cash_usd_equivalent", entity=e, window_days=30) for e in _ENT54],
+        *[V(0, f"by_entity.{e}.cash_usd", "cash_by_entity", "cash", entity=e, currency="USD", position_date=TODAY) for e in _ENT54],
+        *[V(0, f"by_entity.{e}.cash_sgd", "cash_by_entity", "cash", entity=e, currency="SGD", position_date=TODAY) for e in _ENT54],
+    ],
+    "uc-070-idle": [  # card 70, idle_cash (window: signed ladder_window_days, A50); test_w1b_cash.py test_70_*
+        *[V(0, f"by_entity.{e}.{kf}", "idle_cash", col, entity=e) for e in _ENT54
+          for kf, col in (("cash_usd_equivalent", "cash_usd_equivalent"), ("outflow_90_days", "outflow"), ("buffer", "buffer"), ("idle", "idle"), ("short", "short"))],
+        FIRST(0, "total_idle", "idle_cash", "total_idle"),
+        FIRST(0, "total_short", "idle_cash", "total_short"),
+    ],
+    "uc-055-corpact": [  # card 55, actions_next_14d; test_w1b_hold.py test_55_*
+        F(0, "window", ["actions_next_14d"], lambda x: [str(x["actions_next_14d"][0]["window_from"]), str(x["actions_next_14d"][0]["window_to"])]),
+        L(0, "to_book", "actions_next_14d", {"security": "security"}, {"event": "event", "ex_date": "ex_date", "pay_date": "pay_date", "quantity": "quantity",
+                                                                       "expected_cash": "expected_cash"}, bucket="book"),
+        FIRST_WHERE(0, "cash_to_book", "actions_next_14d", "cash_to_book", lambda r: r["cash_to_book"] is not None),
+        L(0, "to_decide", "actions_next_14d", {"security": "security"}, {"respond_by": "respond_by", "offer_price": "offer_price", "last_price": "last_price",
+                                                                         "premium_pct": "premium_pct", "quantity_held": "quantity"}, bucket="decide"),
+        L(0, "announced_outside_window", "actions_next_14d", {"security": "security"}, {"event": "event", "ex_date": "ex_date", "pay_date": "pay_date",
+                                                                                       "quantity": "quantity", "expected_cash": "expected_cash"}, bucket="later"),
+    ],
+    "uc-056-custrecon": [  # card 56, position_break; test_w1b_operate.py test_card56_*
+        N(0, "holdings_compared", "position_break", lambda r: r["administrator_quantity"] is not None and r["custodian_quantity"] is not None),
+        L(0, "breaks", "position_break", {"security": "security"}, {"administrator_qty": "administrator_quantity", "custodian_qty": "custodian_quantity",
+                                                                   "difference": "difference_quantity", "value_usd": "difference_value", "reason": "reason"}, breaks=True),
+    ],
+    "uc-058-settle": [  # card 58, unsettled_trades; test_w1b_operate.py test_card58_*
+        N(0, "count", "unsettled_trades", lambda r: r["unsettled"]),
+        L(0, "failed", "unsettled_trades", {"trade": "trade"}, {"security": "security", "side": "side", "quantity": "quantity", "amount": "amount",
+                                                                "settle_date": "settle_date", "business_days_late": "business_days_late", "chase": "chase",
+                                                                "reason": "reason", "cash_booked": "cash_booked"}, unsettled=True),
+        F(0, "chase_counterparties", ["unsettled_trades"], lambda x: sorted({r["chase"] for r in x["unsettled_trades"] if r["unsettled"]})),
+    ],
+    "uc-059-breakage": [  # card 59, break_age; test_w1b_operate.py test_card59_*
+        L(0, "all_open", "break_age", {"id": "break_id"}, {"type": "break_type", "entity": "entity", "subject": "subject", "detected": "detected",
+                                                           "age_business_days": "age_business_days"}),
+        L(0, "cash_breaks_over_5_days", "break_age", {"id": "break_id"}, {"type": "break_type"}, break_type="cash break", over_five_business_days=True),
+        N(0, "open_cash_breaks", "break_age", lambda r: r["break_type"] == "cash break"),
+    ],
+    "uc-060-docinbox": [  # card 60, unrecognised_files; test_w1b_operate.py test_card60_*
+        N(0, "files", "unrecognised_files"),
+        L(0, "recognised", "unrecognised_files", {"file": "file"}, {"belongs_in": "belongs_in"}, recognition="recognised"),
+        L(0, "unrecognised", "unrecognised_files", {"file": "file"}, {"belongs_in": "belongs_in"}, recognition="unrecognised"),
+    ],
+    "uc-061-dqscore": [  # card 61, source_quality; test_w1b_operate.py test_card61_*
+        L(0, "by_source", "source_quality", {"source": "source"}, {"loads": "loads", "passed": "passed", "late_or_missing": "late_or_missing",
+                                                                   "did_not_add_up": "did_not_add_up", "manual_fixes": "manual_fixes", "score_pct": "score_pct"}),
+        FIRST_WHERE(0, "fix_first", "source_quality", "source", lambda r: r["fix_first"]),
+    ],
+    "uc-062-fxlife": [  # card 62, fx_mtm; test_w1b_operate.py test_card62_*
+        L(0, "forwards", "fx_mtm", {"id": "trade"}, {"value_date": "value_date", "days_to_value": "days_to_value", "sell_usd": "sell_amount", "buy_sgd": "buy_amount",
+                                                     "contract_rate": "contract_rate", "spot": "spot", "mtm_usd": "mtm_usd", "confirmation_status": "confirmation_status"}),
+        F(0, "due_within_30_days", ["fx_mtm"], lambda x: [r["trade"] for r in x["fx_mtm"] if r["due_within_30_days"]]),
+        F(0, "total_usd_to_deliver", ["fx_mtm"], lambda x: round(sum(float(r["usd_to_deliver"]) for r in x["fx_mtm"]), 2)),
+        F(0, "next_value_date", ["fx_mtm"], lambda x: str(min(r["value_date"] for r in x["fx_mtm"]))),
+        V(0, "trust_usd_cash", "cash_by_entity", "cash", entity="Evergreen Family Trust", currency="USD", position_date=TODAY),
+        F(0, "trust_usd_shortfall", ["fx_mtm", "cash_by_entity"], lambda x: round(sum(float(r["usd_to_deliver"]) for r in x["fx_mtm"]) - sum(
+            float(r["cash"]) for r in x["cash_by_entity"] if r["entity"] == "Evergreen Family Trust" and r["currency"] == "USD" and str(r["position_date"]) == TODAY), 2)),
+    ],
+    "uc-057-pricecheck": [  # card 57, price_gap_pct; test_w1b_operate.py test_card57_*
+        FIRST_WHERE(0, "tolerance_pct", "price_gap_pct", "tolerance_pct", lambda r: r["tolerance_pct"] is not None),
+        N(0, "prices_compared", "price_gap_pct", lambda r: r["our_price"] is not None),
+        L(0, "over_tolerance", "price_gap_pct", {"security": "security", "date": "date"}, {"administrator_price": "our_price", "second_source_price": "second_source_price",
+                                                                                           "gap_pct": "gap_pct"}, over_tolerance=1),
+    ],
+    "uc-063-cashcode": [  # card 63, uncoded_bank_lines; test_w1b_operate.py test_card63_*
+        L(0, "uncoded", "uncoded_bank_lines", {"account": "account", "date": "date"}, {"amount": "amount", "description": "description"}),
+        N(0, "count", "uncoded_bank_lines"),
+        F(0, "net_amount", ["uncoded_bank_lines"], lambda x: tot(x["uncoded_bank_lines"], "amount")),
+    ],
+    "uc-064-fxexp": [  # card 64, currency_exposure; test_w1b_hold.py test_64_*
+        V(0, "sgd_cash", "currency_exposure", "cash", currency="SGD"),
+        V(0, "sgd_cash_usd_eq", "currency_exposure", "spot_usd_eq", currency="SGD"),
+        V(0, "sgd_bought_forward", "currency_exposure", "fwd_bought", currency="SGD"),
+        V(0, "sgd_forward_usd_eq", "currency_exposure", "fwd_bought_usd_eq", currency="SGD"),
+        V(0, "net_sgd_exposure_usd_eq", "currency_exposure", "after_usd_eq", currency="SGD"),
+        V(0, "share_of_family_pct", "currency_exposure", "share_after_pct", currency="SGD"),
+        V(0, "usd_exposure_usd_eq", "currency_exposure", "spot_usd_eq", currency="USD"),
+        V(0, "family_total_usd_eq", "currency_exposure", "family_total_usd_eq", currency="SGD"),
+    ],
+    "uc-065-realassets": [  # card 65, real_asset_value; test_w1b_hold.py test_65_*
+        L(0, "assets", "real_asset_value", {"id": "asset_ref"}, {"name": "asset_name", "type": "asset_type", "entity": "entity", "latest_value": "latest_value",
+                                                                 "currency": "currency", "value_usd": "value_usd", "appraised": "appraised_on",
+                                                                 "title_holder": "title_holder"}),
+        FIRST(0, "total_usd", "real_asset_value", "total_usd"),
+        F(0, "by_type", ["real_asset_value"], lambda x: {r["asset_type"]: float(r["type_total_usd"]) for r in x["real_asset_value"]}),
+        F(0, "by_entity", ["real_asset_value"], lambda x: {r["entity"]: float(r["entity_total_usd"]) for r in x["real_asset_value"]}),
+        S(0, "title_not_in_entity_name", "real_asset_value", "asset_name", lambda r: r["title_differs"]),
+    ],
+    "uc-066-propreval": [  # card 66, appraisal_age; test_w1b_hold.py test_66_*
+        L(0, "by_asset", "appraisal_age", {"id": "asset_ref"}, {"name": "asset_name", "appraised": "appraised_on", "age_days": "age_days", "due": "due"}),
+        F(0, "order_new", ["appraisal_age"], lambda x: x["appraisal_age"][0]["due_names"].split(", ") if x["appraisal_age"] else []),
+    ],
+    "uc-067-unrl": [  # card 67, unrealised_gain; test_w1b_hold.py test_67_*
+        FIRST(0, "lots", "unrealised_gain", "lots"),
+        FIRST(0, "total_unrealised_gain", "unrealised_gain", "total_gain"),
+        FIRST(0, "total_unrealised_loss", "unrealised_gain", "total_loss"),
+        L(0, "loss_lots", "unrealised_gain", {"lot": "lot"}, _LOT, is_loss=True),
+        L(0, "largest_gain_lots", "unrealised_gain", {"lot": "lot"}, _LOT, exact=False),
+        L(0, "harborview_lots", "unrealised_gain", {"lot": "lot"}, _LOT, exact=False),
+        F(0, "gain_by_security", ["unrealised_gain"], lambda x: {r["security"]: float(r["holding_gain"]) for r in x["unrealised_gain"]}),
+    ],
+    "uc-068-incomef": [  # card 68, income_forecast; test_w1b_hold.py test_68_*
+        F(0, "period", ["income_forecast"], lambda x: [str(next(r for r in x["income_forecast"] if r["first_row"])["period_from"]),
+                                                       str(next(r for r in x["income_forecast"] if r["first_row"])["period_to"])]),
+        FIRST_WHERE(0, "total", "income_forecast", "total", lambda r: r["first_row"]),
+        FIRST_WHERE(0, "coupons", "income_forecast", "coupons", lambda r: r["first_row"]),
+        FIRST_WHERE(0, "dividends", "income_forecast", "dividends", lambda r: r["first_row"]),
+        FIRST_WHERE(0, "events", "income_forecast", "events", lambda r: r["first_row"]),
+        F(0, "by_quarter", ["income_forecast"], lambda x: {r["quarter"]: float(r["quarter_total"]) for r in x["income_forecast"]}),
+    ],
+    "uc-069-lookthru": [  # card 69, lookthrough_exposure; test_w1b_hold.py test_69_*
+        L(0, "top_companies", "lookthrough_exposure", {"company": "company"}, {"through_funds": "through_funds", "funds": "funds", "share_of_family_pct": "share_of_family_pct"},
+          rank=lambda r: r["rank"] <= 5),
+        S(0, "companies_in_more_than_one_fund", "lookthrough_exposure", "company", lambda r: r["in_several_funds"]),
+        F(0, "by_sector", ["lookthrough_exposure"], lambda x: {r["sector"]: float(r["sector_through_funds"]) for r in x["lookthrough_exposure"]}),
+        V(0, "harborview_direct", "lookthrough_exposure", "direct_value", company="Harborview Semiconductor"),
+        V(0, "harborview_through_funds", "lookthrough_exposure", "through_funds", company="Harborview Semiconductor"),
+        V(0, "harborview_direct_pct_of_liquid_book", "lookthrough_exposure", "direct_pct_of_liquid_book", company="Harborview Semiconductor"),
+        V(0, "harborview_with_funds_pct_of_liquid_book", "lookthrough_exposure", "with_funds_pct_of_liquid_book", company="Harborview Semiconductor"),
+        FIRST(0, "family_investments", "lookthrough_exposure", "family_investments"),
+    ],
+    "uc-071-expdist": [  # card 71, expected_distributions; test_w1b_invest.py test_card71_*
+        F(0, "by_quarter", ["expected_distributions"], lambda x: {str(r["quarter_end"]): float(r["amount"]) for r in x["expected_distributions"] if r["row_kind"] == "quarter_total"}),
+        F(0, "total_next_4_quarters", ["expected_distributions"], lambda x: next(float(r["amount"]) for r in x["expected_distributions"] if r["row_kind"] == "total")),
+        F(0, "by_fund", ["expected_distributions"], _by_fund),
+    ],
+    "uc-073-runway": [  # card 73, cash_runway; test_w1b_cash.py test_73_*
+        F(0, "six_month_spend_by_category", ["cash_runway"], lambda x: {r["category"]: float(r["spend_usd"]) for r in x["cash_runway"]}),
+        FIRST(0, "cash_usd_eq", "cash_runway", "cash_usd_eq"),
+        FIRST(0, "average_monthly_spend", "cash_runway", "average_monthly_spend"),
+        FIRST(0, "months_of_cash", "cash_runway", "months_of_cash"),
+        FIRST(0, "months_of_cash_and_liquid_book", "cash_runway", "months_of_cash_and_liquid_book"),
+        FIRST(0, "liquid_book", "cash_runway", "liquid_book"),
+    ],
+    "uc-074-boardpack": [  # card 74, board_summary; test_w1b_report.py test_card_74_*
+        V(0, "net_worth_usd", "board_summary", "net_worth_usd"),
+        V(0, "net_worth_sgd", "board_summary", "net_worth_sgd"),
+        V(0, "net_worth_status", "board_summary", "estimate_note"),
+        V(0, "liquid_book_q3_return_pct", "board_summary", "last_quarter_return_pct"),
+        V(0, "benchmark_since_1_apr_pct", "board_summary", "since_start_benchmark_pct"),
+        V(0, "cash_usd_eq", "board_summary", "cash_usd_eq"),
+        V(0, "call_7_shortfall_usd", "board_summary", "call_shortfall_usd"),
+        V(0, "uncalled_commitments", "board_summary", "uncalled_commitments_usd"),
+        V(0, "statements_amended_after_last_report", "board_summary", "amendments_after_report"),
+    ],
+    "uc-075-yearwalk": [  # card 75, networth_walk; test_w1b_report.py test_card_75_*
+        *[V(0, n, "networth_walk", n) for n in _WALK + ["opening", "income", "fx_and_other"]],
+        F(0, "period", ["networth_walk"], lambda x: [str(x["networth_walk"][0]["period_from"]), str(x["networth_walk"][0]["period_to"])]),
+    ],
+    "uc-080-vintage": [  # card 80, vintage_split; test_w1b_invest.py test_card80_*
+        F(0, "by_year", ["vintage_split"], lambda x: {str(r["vintage_year"]): {"commitment": float(r["commitment"]), "share_pct": float(r["share_pct"]),
+                                                                              "funds": sorted(str(r["funds"]).split("; "))}
+                                                      for r in x["vintage_split"] if not r["is_total"]}),
+        V(0, "total", "vintage_split", "commitment", is_total=True),
+        F(0, "largest_year", ["vintage_split"], lambda x: str(next(r["vintage_year"] for r in x["vintage_split"] if r["is_largest"]))),
+        F(0, "largest_share_pct", ["vintage_split"], lambda x: float(next(r["share_pct"] for r in x["vintage_split"] if r["is_largest"]))),
+    ],
+    "uc-081-payroll": [  # card 81, payroll_total; test_w1b_office.py test_card81_*
+        FIRST(0, "draft_net", "payroll_total", "run_net"),
+        FIRST(0, "draft_employer_cpf", "payroll_total", "run_employer"),
+        FIRST(0, "draft_total_cost", "payroll_total", "run_total_cost"),
+        FIRST(0, "september_net", "payroll_total", "previous_net"),
+        FIRST(0, "september_total_cost", "payroll_total", "previous_total_cost"),
+        FIRST(0, "september_net_paid_per_bank", "payroll_total", "previous_net_paid_per_bank"),
+        FIRST(0, "change_pct", "payroll_total", "change_pct"),
+        FIRST(0, "release", "payroll_total", "release"),
+        F(0, "flags", ["payroll_total"], lambda x: sorted(r["employee_name"] for r in x["payroll_total"] if r["flagged"]),
+          kf=lambda e: sorted(f["employee"].split(" (")[0] for f in e)),
+    ],
+    "uc-082-covergap": [  # card 82, cover_gap; test_w1b_office.py test_card82_*
+        L(0, "by_asset", "cover_gap", {"asset": "asset"}, {"appraised_usd": "appraised_usd", "insured_usd": "insured_usd", "gap_usd": "gap_usd", "status": "status"}),
+        F(0, "total_gap_usd", ["cover_gap"], lambda x: round(sum(float(r["gap_usd"]) for r in x["cover_gap"]), 2)),
+        S(0, "under_insured", "cover_gap", "asset", lambda r: r["under_insured"]),
+        S(0, "no_policy", "cover_gap", "asset", lambda r: r["no_policy"]),
+    ],
+    "uc-091-jml": [  # card 91, access_review; test_w1b_office.py test_card91_*
+        L(0, "granted_without_approver", "access_review", {"person": "person", "system": "system"}, {"permission": "permission"}, no_approver=True),
+        F(0, "leaver", ["access_review"], lambda x: ", ".join(sorted({r["person"] for r in x["access_review"] if r["leaver"]}))),
+        F(0, "leaver_access_to_remove", ["access_review"], lambda x: sorted(r["system"] for r in x["access_review"] if r["leaver"])),
+        F(0, "joiner", ["access_review"], lambda x: ", ".join(sorted({r["person"] for r in x["access_review"] if r["joiner_not_requested"]}))),
+        F(0, "joiner_access_not_requested", ["access_review"], lambda x: sorted(r["system"] for r in x["access_review"] if r["joiner_not_requested"])),
+    ],
+    "uc-092-accessrev": [  # card 92, access_review; test_w1b_office.py test_card92_*
+        N(0, "grants_reviewed", "access_review"),
+        L(0, "not_used_in_90_days", "access_review", {"person": "person", "system": "system"}, {"last_used": "last_used_on", "days_unused": "days_unused"}, unused_90=True),
+        N(0, "count", "access_review", lambda r: r["unused_90"]),
+    ],
+    "uc-093-onbmgr": [  # card 93, onboarding_items; test_w1b_office.py test_card93_*
+        FIRST(0, "items", "onboarding_items", "items"),
+        FIRST(0, "complete", "onboarding_items", "complete_items"),
+        FIRST(0, "ready", "onboarding_items", "ready"),
+        S(0, "missing", "onboarding_items", "item", lambda r: not r["complete"]),
+    ],
+    "uc-095-sopreview": [  # card 95, sop_age; test_w1b_office.py test_card95_*
+        L(0, "sops", "sop_age", {"sop": "sop"}, {"owner": "owner", "last_reviewed": "last_reviewed", "age_days": "age_days", "due": "due"}),
+        F(0, "to_review", ["sop_age"], lambda x: [r["sop"] for r in sorted(x["sop_age"], key=lambda r: -r["age_days"]) if r["due"]]),
+    ],
+    "uc-097-kycrefresh": [  # card 97, kyc_expiry; test_w1b_office.py test_card97_*
+        N(0, "documents", "kyc_expiry"),
+        L(0, "expiring_in_90_days", "kyc_expiry", {"document": "document", "counterparty": "counterparty"},
+          {"entity": "entity", "expires": "expires_on", "days_left": "days_left"}, expiring_90=True),
+        L(0, "expired", "kyc_expiry", {"document": "document", "counterparty": "counterparty"},
+          {"entity": "entity", "expires": "expires_on", "days_left": "days_left"}, expired=True),
+    ],
+    "uc-098-wordlist": [  # card 98, terms_proposed; test_w1b_office.py test_card98_*
+        N(0, "distinct_terms", "terms_proposed"),
+        S(0, "proposed", "terms_proposed", "term"),
+        FIRST(0, "proposals_made", "terms_proposed", "proposals_made"),
+        FIRST(0, "list_size", "terms_proposed", "list_size"),
+        S(0, "already_in_list", "terms_proposed", "term", lambda r: r["in_list"]),
+        S(0, "to_add", "terms_proposed", "term", lambda r: r["to_add"]),
+    ],
+    "uc-099-newfeed": [  # card 99, feed_mapping (the pinnacle feed); test_w1b_operate.py test_card99_*
+        F(0, "columns", ["feed_mapping"], lambda x: next(r["columns"] for r in x["feed_mapping"] if _pinnacle(r))),
+        FIRST_WHERE(0, "mapped_with_confidence", "feed_mapping", "mapped_with_confidence", _pinnacle),
+        FIRST_WHERE(0, "share_mapped_pct", "feed_mapping", "share_mapped_pct", _pinnacle),
+        FIRST_WHERE(0, "safe_to_go_live", "feed_mapping", "safe_to_go_live", _pinnacle),
+        S(0, "in_doubt", "feed_mapping", "source_column", lambda r: bool(r["in_doubt"]) and _pinnacle(r)),
+    ],
+})
+
+MESS.update({
+    "uc8-trades-vs-admin": [({"trade": "T-20261002-003"}, "M16 buy quantity differs"), ({"trade": "T-20261006-005"}, "M16 sell missing at the administrator"),
+                            ({"trade": "T-20260602-005"}, "M07 trade booked twice"), ({"trade_reference": "FXF-2026-002"}, "M16 forward confirmed at another rate")],
+    "uc-052-insurance": [({"policy": "POL-CYB-04"}, "renewal notice not received (key)")],
+    "uc-055-corpact": [({"security": "Tidewater Energy"}, "voluntary tender offer to decide before the deadline (key)")],
+    "uc-056-custrecon": [({"security": "Bay Street Utilities"}, "M24 scrip dividend not advised to the administrator"),
+                         ({"security": "Redwood Pharma"}, "M24 transfer-out not copied to the administrator")],
+    "uc-058-settle": [({"trade": "BR2-20261002-001"}, "M23 settlement failed"), ({"trade": "BR2-20261007-002"}, "M23 settlement failed")],
+    "uc-059-breakage": [({"break_id": b}, "M26 break left open in the register") for b in ("BRK-001", "BRK-002", "BRK-003", "BRK-004", "BRK-005", "BRK-006")],
+    "uc-060-docinbox": [({"file": "IMG_2210.pdf"}, "M27 restaurant receipt, refuse"), ({"file": "data_export.xlsx"}, "M27 four-column sheet, hold and ask")],
+    "uc-061-dqscore": [({"source": "administrator_cash"}, "M04 administrator cash did not add up"), ({"source": "bank_statements"}, "M02b bank statement never arrived"),
+                       ({"source": "manager_statements"}, "M02 manager statement never arrived")],
+    "uc-062-fxlife": [({"trade": "FXF-2026-002"}, "M16 forward confirmation differs")],
+    "uc-057-pricecheck": [({"security": ["Kingfisher Telecom", "Kingfisher Telecom 4.6% 2030 bond"], "date": SEP30}, "second source differs above tolerance (key)")],
+    "uc-063-cashcode": [({"reference": ["TT-7741XQ", "ACH-55201", "CHQ-000417"]}, "three bank lines with no purpose (key)")],
+    "uc-064-fxexp": [({"currency": "SGD"}, "M16 forward confirmed at another rate")],
+    "uc-065-realassets": [({"asset_ref": "RA-04"}, "M29 title in a personal name")],
+    "uc-066-propreval": [({"asset_ref": "RA-03"}, "M28 appraisal older than a year"), ({"asset_ref": "RA-05"}, "M28 appraisal older than a year")],
+    "uc-067-unrl": [({"security": "Harborview Semiconductor"}, "M31 same company in several funds"), ({"is_loss": lambda r: bool(r["is_loss"])}, "unrealised loss lots (key)")],
+    "uc-069-lookthru": [({"company": "Harborview Semiconductor"}, "M31 same company in several funds (and held directly)"),
+                        ({"in_several_funds": lambda r: bool(r["in_several_funds"])}, "companies in more than one fund (key)")],
+    "uc-071-expdist": [({"fund": ["Cedarpoint Opportunities II", "Cedarpoint Ventures III", "Saltmarsh Renewables I"]}, "stale value, 31 Mar or 30 Jun (key)")],
+    "uc-074-boardpack": [({"estimated_lines": lambda r: bool(r["estimated_lines"])}, "Evergreen Growth I estimate in the issued report (M03)"),
+                         ({"amendments_after_report": lambda r: bool(r["amendments_after_report"])}, "M03 statements amended after the report")],
+    "uc-075-yearwalk": [({"bank_months_missing": lambda r: bool(r["bank_months_missing"])}, "M02b bank statement never arrived")],
+    "uc-081-payroll": [({"employee_name": "Grace Ong"}, "M32 gross 20 percent above September, no approval"),
+                       ({"employee_name": "Jun Tan"}, "M32 contractor not on the staff register")],
+    "uc-082-covergap": [({"no_policy": lambda r: bool(r["no_policy"])}, "M30 asset with no policy"),
+                        ({"under_insured": lambda r: bool(r["under_insured"])}, "M30 insured below its appraisal")],
+    "uc-091-jml": [({"no_approver": lambda r: bool(r["no_approver"])}, "access granted without an approver"),
+                   ({"leaver": lambda r: bool(r["leaver"])}, "leaver's access still on"),
+                   ({"joiner_not_requested": lambda r: bool(r["joiner_not_requested"])}, "joiner's access not requested")],
+    "uc-092-accessrev": [({"unused_90": lambda r: bool(r["unused_90"])}, "access not used in 90 days")],
+    "uc-093-onbmgr": [({"complete": False}, "onboarding item outstanding")],
+    "uc-095-sopreview": [({"due": lambda r: bool(r["due"])}, "SOP not reviewed in a year")],
+    "uc-097-kycrefresh": [({"expired": lambda r: bool(r["expired"])}, "KYC document expired"),
+                          ({"expiring_90": lambda r: bool(r["expiring_90"])}, "KYC document expiring within 90 days")],
+    "uc-098-wordlist": [({"to_add": lambda r: bool(r["to_add"])}, "term to add to the office list")],
+    "uc-099-newfeed": [({"in_doubt": lambda r: bool(r["in_doubt"])}, "column in doubt (key)")],
+})
+
+# The cause of one key value where a recipe row carries several (card 75: the walk's opening, income and balancing item). Keyed (card, key path).
+PATH_CAUSE: dict[tuple[str, str], str] = {}
+PATH_CAUSE.update({
+    ("uc-075-yearwalk", "opening"): "The 31 March USD/SGD fixing is in no file, so the opening is empty (the opening and balancing item wait for it)",
+    ("uc-075-yearwalk", "income"): "Bank statement TCB-B-USD 2026-07 never arrived (M02b), so the income is 44.71 short",
+    ("uc-075-yearwalk", "fx_and_other"): "The balancing item needs the opening, which needs the 31 March fixing (in no file), so it is empty",
+})
+
+BLOCKED.update({
+    "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
+                      "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
+    "uc-084-taxest": ("the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched "
+                      "first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54)"),
+    "uc-096-automation": ("the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved "
+                          "or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule"),
+})
+
+# ---- Office cards 83 to 100 (test_w1b_office.py; docs/v3/w1/build51-office.md) ----------------------------------------------------------------
+
+CHECKS.update({
+    "uc-083-taxcal": [  # card 83, tax_due
+        L(0, "due_in_60_days", "tax_due", {"id": "id"}, {k: k for k in ("entity", "obligation", "due", "days", "prepared_by", "status")}, due_in_60_days=1),
+        F(0, "count_by_entity", ["tax_due"], lambda x: dict(Counter(r["entity"] for r in x["tax_due"] if r["due_in_60_days"]))),
+        L(0, "overdue", "tax_due", {"id": "id"}, {k: k for k in ("entity", "obligation", "due", "days_overdue", "prepared_by", "status")}, overdue=1),
+    ],
+    "uc-085-grants": [  # card 85, grants_used
+        *[FIRST(0, k, "grants_used", k) for k in ("budget", "paid", "pledged", "used", "used_pct", "remaining", "paid_matches_bank")],
+    ],
+    "uc-086-grantappr": [  # card 86, grant_check
+        *[FIRST(0, k, "grant_check", c) for k, c in (("request", "request"), ("amount", "amount"), ("remaining_budget", "remaining_budget"),
+                                                    ("charity_registered_months", "charity_registered_months"), ("required_months", "required_months"),
+                                                    ("holdings_usd_cash", "cash"), ("calls_due_30_days", "calls_due_30_days"),
+                                                    ("cash_after_request_and_calls", "cash_after_request_and_calls"), ("checks.within_budget", "within_budget"),
+                                                    ("checks.charity_old_enough", "charity_old_enough"), ("checks.cash_covers", "cash_covers"), ("pay", "pay"))],
+    ],
+    "uc-087-trustdist": [  # card 87, trust_distribution_room
+        *[FIRST(0, k, "trust_distribution_room", k) for k in ("trust_year_start", "trust_income", "trust_expenses", "distributable_income", "payout_cap_pct", "distributable_cap")],
+        D(0, "by_beneficiary", "trust_distribution_room", "beneficiary", {"share_pct": "share_pct", "room": "room", "paid": "paid", "left": "left_to_pay", "over": "over"}),
+        S(0, "over_distributed", "trust_distribution_room", "beneficiary", lambda r: r["over"]),
+    ],
+    "uc-088-estateliq": [  # card 88, estate_cash_need
+        *[FIRST(0, k, "estate_cash_need", c) for k, c in (("estate_value", "estate_value"), ("investments_30_sep", "investments"), ("cash", "cash"), ("real_assets", "real_assets"),
+                                                         ("loan", "loan"), ("exemption", "exemption"), ("rate", "rate"), ("transfer_tax", "transfer_tax"),
+                                                         ("liquid_assets_after_debt", "liquid_assets_after_debt"), ("cover", "cover"), ("can_meet", "can_meet"))],
+    ],
+    "uc-089-expapp": [  # card 89, approval_exceptions (the limits themselves are the signed rules: test_card89_*)
+        N(0, "payments", "approval_exceptions"),
+        L(0, "over_limit", "approval_exceptions", {"reference": "reference"}, {"payee": "payee", "usd": "usd", "approver": "approver", "limit": "limit_usd"}, over_limit=1),
+        F(0, "approvals_by_person", ["approval_exceptions"], lambda x: dict(Counter(r["approver"] for r in x["approval_exceptions"]))),
+    ],
+    "uc-090-offcost": [  # card 90, office_cost
+        D(0, "by_category", "office_cost", "category", {"actual": "actual", "budget_half_year": "budget_period", "variance": "variance", "over": "over"}),
+        FIRST(0, "actual", "office_cost", "total_actual"),
+        FIRST(0, "budget", "office_cost", "total_budget"),
+        S(0, "over_budget", "office_cost", "category", lambda r: r["over"]),
+        FIRST(0, "uncategorised", "office_cost", "uncategorised"),
+    ],
+    "uc-094-onbbank": [  # card 94, account_setup (the six checklist steps are in no file: not compared)
+        F(0, "signatories", ["account_setup"], lambda x: str(x["account_setup"][0]["signatories"]).split(", ") if x["account_setup"] else None),
+        FIRST(0, "required_head_of_finance", "account_setup", "required_person"),
+        FIRST(0, "missing_signatory", "account_setup", "missing_signatory"),
+        FIRST(0, "meets_signing_policy", "account_setup", "meets_signing_policy"),
+        FIRST(0, "approved", "account_setup", "approved"),
+    ],
+    "uc-100-famaccess": [  # card 100, member_access
+        F(0, "by_member", ["member_access"], lambda x: {m: {"allowed": {r["entity"]: r["allowed"] for r in x["member_access"] if r["member"] == m and r["allowed"] not in (None, "none")},
+                                                             "granted": {r["entity"]: r["granted"] for r in x["member_access"] if r["member"] == m and r["granted"] != "none"},
+                                                             "over_granted": {r["entity"]: {"granted": r["granted"], "allowed": r["allowed"]} for r in x["member_access"]
+                                                                              if r["member"] == m and r["over_granted"]}}
+                                                        for m in {r["member"] for r in x["member_access"]}}),
+        F(0, "over_grants", ["member_access"], lambda x: sorted({r["member"] for r in x["member_access"] if r["over_granted"]})),
+        F(0, "request", ["member_access"], lambda x: next(({"member": r["member"], "entity": r["entity"], "level": r["requested_level"], "allowed": r["request_allowed"]}
+                                                           for r in x["member_access"] if r["has_request"]), None)),
+    ],
+})
+MESS.update({
+    "uc-083-taxcal": [({"id": "TX-04"}, "M33 overdue filing")],
+    "uc-086-grantappr": [({"request": "REQ-2026-06"}, "M34 grant request fails the policy")],
+    "uc-087-trustdist": [({"beneficiary": "Wen Chen"}, "M47 trust paid beyond its share")],
+    "uc-089-expapp": [({"reference": ["BAL-2026-051", "LL-2026-0708"]}, "M35 approved above the approver's limit")],
+    "uc-094-onbbank": [({"account_holder": "Evergreen Family Trust"}, "M38 signatory missing")],
+    "uc-100-famaccess": [({"member": "Wen Chen", "entity_code": "EG-B"}, "M43 view over-granted")],
+})
+
+
+# ---- Invest cards 53, 76 to 79 (test_w1b_invest.py; docs/v3/w1/build51-invest.md) ---------------------------------------------------------------
+
+_DATE = {"dealing_date": "dealing_date", "send_notice_by": "send_notice_by", "days_to_send": "days_to_send", "cash_date": "cash_date", "latest_value": "latest_value",
+         "cash_at_payment": "cash_at_payment", "held_back_until_audit": "held_back_until_audit"}
+CHECKS.update({
+    "uc-053-watchlist": [  # card 53, watch_flags
+        FIRST(0, "window_start", "watch_flags", "window_start"),
+        D(0, "by_manager", "watch_flags", "manager", {k: k for k in ("late", "amended", "missing", "personnel_changes", "total")}),
+        S(0, "on_watchlist", "watch_flags", "manager", lambda r: r["on_watchlist"]),
+    ],
+    "uc-076-scorecard": [  # card 76, manager_score
+        D(0, "by_manager", "manager_score", "manager", {"return_pct_since_1_apr": "return_pct", "fee_drag_pct": "fee_drag_pct", "on_time_share": "on_time_share",
+                                                        "watch_flags": "watch_flags", "score": "score", "verdict": "verdict"}),
+        *[FIRST(0, f"weights.{k}", "manager_score", f"weight_{c}") for k, c in (("returns", "returns"), ("fees", "fees"), ("timeliness", "timeliness"), ("watch", "watch"))],
+    ],
+    "uc-077-deals": [  # card 77, deal_stage
+        F(0, "by_stage", ["deal_stage"], lambda x: dict(Counter(r["stage"] for r in x["deal_stage"]))),
+        L(0, "deals", "deal_stage", {"deal": "deal_name"}, {"stage": "stage", "days_in_stage": "days_in_stage", "ticket": "ticket", "stuck": "stuck"}),
+        S(0, "stuck_over_60_days", "deal_stage", "deal_name", lambda r: r["stuck"]),
+        FIRST(0, "total_ticket", "deal_stage", "total_ticket"),
+    ],
+    "uc-078-redemption": [  # card 78, redemption_dates
+        D(0, "by_fund", "redemption_dates", "fund", _DATE),
+    ],
+    "uc-079-rebalance": [  # card 79, rebalance_trades
+        FIRST(0, "book", "rebalance_trades", "book"),
+        F(0, "targets_status", ["rebalance_trades"], lambda x: all("not signed" in str(r["targets_status"]) for r in x["rebalance_trades"] if r["target_pct"] is not None),
+          kf=lambda e: "not signed" in e),
+        D(0, "by_class", "rebalance_trades", "asset_class", {k: k for k in ("current", "current_pct", "target_pct", "target", "trade")}),
+        F(0, "net_trade", ["rebalance_trades"], lambda x: tot(x["rebalance_trades"], "trade")),
+    ],
+})
+MESS.update({
+    "uc-053-watchlist": [({"manager": ["Saltmarsh Real Assets", "Northgate Partners"], "personnel_changes": lambda r: r["personnel_changes"] > 0}, "M44 manager personnel change"),
+                         ({"manager": "Cedarpoint Ventures", "missing": lambda r: r["missing"] > 0}, "M02 statement missing (Cedarpoint Opportunities II, 30 Jun)")],
+    "uc-076-scorecard": [({"verdict": "review or exit"}, "key: managers to review or exit (Cedarpoint, Kestrel, Saltmarsh)")],
+    "uc-077-deals": [({"deal_name": ["Marlow Infrastructure Partners III", "Ashgrove Growth Equity V"]}, "M46 deals stuck in a stage")],
+    "uc-078-redemption": [({"fund": "Kestrel Ridge Equity Long/Short Fund", "locked_up": 1}, "key: the long/short fund is locked up to 31 Dec")],
+    "uc-079-rebalance": [({"targets_status": lambda r: "not signed" in str(r["targets_status"] or "")}, "key: targets proposed at the 8 Oct committee, not signed: a suggestion only")],
+})
 
 # ---- loading and running ---------------------------------------------------------------------------------------------------------------------
 
@@ -769,6 +1211,8 @@ def judge_signals(card_id: str, sigs: list[dict], res: dict) -> tuple[list[str],
                 caught.update(hits)
             elif exception and not hits:
                 problems.append(f"{s['id']} fires on a clean row ({subj})")
+            elif CLEAN_NOTES and row and s.get("severity") != "info":  # --all: a note, not a verdict; the top 50 scorecard does not carry these notes
+                notes.append(f"CLEAN {s['id']} fires on {subj}")
     for _, why in mess:
         if why not in caught:
             problems.append(f"planted mess not caught by any signal: {why}")
@@ -785,14 +1229,17 @@ def leaves(d, path=""):
         yield path
 
 
-def score() -> dict:
+def score(all_cards: bool = False) -> dict:
     t0 = time.time()
     from sh_platform.v1 import v3_recipes as R, v3_signals as S
     S.PROVIDER = None  # the recipe rows of this run are the figures; no figure store, no live warehouse lookup
     S.same_fund = lambda plane, a, b, judged: S._norm_name(a) == S._norm_name(b)  # model-free: no judge in a deterministic score
     uc = yaml.safe_load((PACK / "use_cases_100.yaml").read_text(encoding="utf-8"))
     people = {p["id"]: p["person"] for p in uc["people"]}
-    cards = sorted((u for u in uc["use_cases"] if u.get("priority") and u["priority"] <= 50), key=lambda u: u["priority"])
+    if all_cards:  # all 100 cards in their card order (the 50 with no priority carry an order number too)
+        cards = sorted(uc["use_cases"], key=lambda u: u["order"])
+    else:
+        cards = sorted((u for u in uc["use_cases"] if u.get("priority") and u["priority"] <= 50), key=lambda u: u["priority"])
     keys = yaml.safe_load((OFFICE / "answer_keys.yaml").read_text(encoding="utf-8"))["keys"]
     lib = S._read_dir(PACK / "signals", "pack")
     stubs = {r["id"] for r in R.stubs()}
@@ -812,7 +1259,7 @@ def score() -> dict:
 def score_card(c, key, rows, errors, ties, stubs, lib, plane, people) -> dict:
     cid = c["id"]
     srows = {rid: [{k: iso(v) if isinstance(v, (date, datetime)) else v for k, v in r.items()} for r in rs] for rid, rs in rows.items()}  # dates as the engine's text
-    res = {"id": cid, "priority": c["priority"], "title": c["title"], "domain": c["domain"], "person": people.get(c["owner"], c["owner"]), "checks": [],
+    res = {"id": cid, "priority": c.get("priority") or c["order"], "title": c["title"], "domain": c["domain"], "person": people.get(c["owner"], c["owner"]), "checks": [],
            "reasons": [], "causes": [], "signal_notes": [], "binding": bound(c)}
     questions = list((key or {}).get("questions", {}).values())
     specs = CHECKS.get(cid, [])
@@ -848,7 +1295,7 @@ def score_card(c, key, rows, errors, ties, stubs, lib, plane, people) -> dict:
             if not ok:
                 res["reasons"].append(f"{path}: expected {show(e)}, got {show(g)} ({'/'.join(s['recipes'])})")
                 for r in s["recipes"]:
-                    res["causes"].append(("FAIL", CAUSE.get(r, f"recipe {r} gives a wrong number"), r))
+                    res["causes"].append(("FAIL", PATH_CAUSE.get((cid, path)) or CAUSE.get(r, f"recipe {r} gives a wrong number"), r))
         checked |= {(s["q"], p) for p in s["paths"]}
     # key values nobody checked: named, so a gap in the mapping is visible
     skip = set(NOT_A_FIGURE.get(cid, []))
@@ -895,7 +1342,7 @@ def write(r: dict) -> str:
     order = ["PASS", "FAIL", "SIGNAL", "BLOCKED"]
     L_: list[str] = []
     w = L_.append
-    w("# Score of the top 50 use cases")
+    w("# Score of the 100 use cases" if r.get("all") else "# Score of the top 50 use cases")
     w("")
     w(f"Written by `python tools/score50.py` on {datetime.now():%Y-%m-%d %H:%M}. Office: tests/v1/fixtures/office6m as of {TODAY}, loaded once with the real loader "
       f"(v3_office6m_loaders.load_plane); {r['recipes']} built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. "
@@ -979,9 +1426,14 @@ def write(r: dict) -> str:
         if probs:
             w("")
             w("Signal problems: " + "; ".join(probs) + ".")
-        if c.get("signal_notes"):
+        other = [n for n in c.get("signal_notes") or [] if not n.startswith("CLEAN ")]
+        clean = [n[len("CLEAN "):] for n in c.get("signal_notes") or [] if n.startswith("CLEAN ")]
+        if other:
             w("")
-            w("Signals that cannot run on the loaded data: " + "; ".join(c["signal_notes"]) + ".")
+            w("Signals that cannot run on the loaded data: " + "; ".join(other) + ".")
+        if clean:
+            w("")
+            w("Non-info signals that fire on a row with no planted mess (a note, not a verdict): " + "; ".join(clean) + ".")
         w("")
     if r["recipe_errors"] or r["not_loaded"]:
         w("## The run itself")
@@ -998,16 +1450,21 @@ def main() -> int:
     logging.basicConfig(level=logging.WARNING, format="%(message)s")
     for noisy in ("sh_platform", "duckdb"):
         logging.getLogger(noisy).setLevel(logging.ERROR)
+    global CLEAN_NOTES
+    all_cards = "--all" in sys.argv[1:]
+    CLEAN_NOTES = all_cards
+    out = OUT100 if all_cards else OUT
     try:
-        r = score()
+        r = score(all_cards)
     except Exception:  # noqa: BLE001 - exit 0 always; say what broke
         log.exception("score50 could not run")
         print("score50: could not run (see the error above)")
         return 0
-    OUT.write_text(write(r) + "\n", encoding="utf-8")
+    r["all"] = all_cards
+    out.write_text(write(r) + "\n", encoding="utf-8")
     t = Counter(c["result"] for c in r["cards"])
     print(f"PASS {t['PASS']}  FAIL {t['FAIL']}  SIGNAL {t['SIGNAL']}  BLOCKED {t['BLOCKED']}  of {len(r['cards'])} cards  "
-          f"({r['total_s']:.0f} s)  -> {OUT.relative_to(REPO).as_posix()}")
+          f"({r['total_s']:.0f} s)  -> {out.relative_to(REPO).as_posix()}")
     return 0
 
 

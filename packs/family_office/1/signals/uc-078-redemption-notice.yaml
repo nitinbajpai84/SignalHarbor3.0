@@ -1,0 +1,15 @@
+# SUGGESTION. Card 78 row 1: the CIO decides to reduce a hedge fund; Operations drafts the redemption notice for the first dealing date the notice can still reach, with the cash date and the holdback. The CIO signs the notice.
+suggestion: true
+id: uc-078-redemption-notice
+title: Redemption notice to send by a date
+pain_points: [INT-LIQ, PP-02]
+trigger: {on: figure_changed, figure: redemption_dates}
+inputs:
+  - {kind: doc, fields: [fund, currency, latest_value, dealing_date, send_notice_by, days_to_send, cash_date, cash_at_payment, held_back_until_audit]}
+subject: "{doc.fund}"
+condition: doc.days_to_send >= 0
+severity: needs
+route_to: ops_lead
+action: {verb: approve, options: [Draft the notice for the CIO to sign, Not now]}
+message: "{doc.fund}: send the notice by {doc.send_notice_by} ({doc.days_to_send} days) for the {doc.dealing_date} dealing date. Cash {doc.currency} {doc.cash_at_payment:,.0f} on {doc.cash_date}; {doc.held_back_until_audit:,.0f} held back until the audit."
+evidence: [doc.send_notice_by, doc.dealing_date, doc.cash_date, doc.cash_at_payment]

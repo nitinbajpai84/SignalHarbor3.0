@@ -1,0 +1,15 @@
+# SUGGESTION. Card 80 row 1: the register is loaded; each vintage year's commitment, share and funds are shown to the Risk Officer, who shows the CIO. Read only, nothing to sign.
+suggestion: true
+id: uc-080-vintage-split
+title: Private commitments of one vintage year
+pain_points: [INT-RISK, INT-LIQ]
+trigger: {on: figure_changed, figure: vintage_split}
+inputs:
+  - {kind: doc, fields: [currency, vintage_year, commitment, share_pct, funds_count, funds, is_total]}
+subject: "{doc.currency} {doc.vintage_year}"
+condition: doc.is_total == 0
+severity: info
+route_to: risk_officer
+action: {verb: see, options: [Show the CIO]}
+message: "{doc.vintage_year}: {doc.currency} {doc.commitment:,.0f} committed, {doc.share_pct:,.2f} percent of all private commitments, in {doc.funds_count} fund(s): {doc.funds}."
+evidence: [doc.commitment, doc.share_pct, doc.funds]

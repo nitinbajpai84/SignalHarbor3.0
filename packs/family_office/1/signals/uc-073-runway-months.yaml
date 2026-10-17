@@ -1,0 +1,22 @@
+# SUGGESTION. uc-073 row 1: how many months of the family's spending the cash covers, from the card's recipe (cash_runway). No months threshold is signed, so there is no exception row; the office edits or switches it off.
+suggestion: true
+id: uc-073-runway-months
+title: Months of spending the cash covers
+pain_points: [INT-LIQ, PP-01]
+row: normal
+trigger: {on: figure_changed, figure: cash_runway}
+inputs:
+- kind: figure
+  id: cash_runway
+  recipe: cash_runway
+  as: run
+  by: {is_largest: true}
+condition: run.months_of_cash > 0
+subject: 'runway {run.months_of_cash} months'
+severity: info
+route_to: principal
+action:
+  verb: see
+  options: [See the spending]
+message: 'At the average spending of the last {run.months} months (USD {run.average_monthly_spend:,.2f} a month), the cash of USD {run.cash_usd_eq:,.2f} covers {run.months_of_cash} months; with the liquid book of {run.liquid_book:,.0f}, {run.months_of_cash_and_liquid_book} months. The largest item is {run.category} at {run.spend_usd:,.2f}.'
+evidence: [run]
