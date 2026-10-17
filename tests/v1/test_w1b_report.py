@@ -51,6 +51,13 @@ def test_card_74_the_headline_figures_are_the_key(office):
     assert r["amendments_after_report"] == k["statements_amended_after_last_report"]
 
 
+def test_card_74_figure_binds_to_board_summary_not_net_worth():
+    """The card's figure is named "Net worth, return, liquidity, decisions"; by name alone it bound to net_worth (scored FAIL). It must bind to board_summary."""
+    card = next(c for c in yaml.safe_load((PACK / "use_cases_100.yaml").read_text(encoding="utf-8"))["use_cases"] if c["id"] == "uc-074-boardpack")
+    assert [(R.match(f) or {}).get("id") for f in card["figures"]] == ["board_summary"]
+    assert (R.match({"name": "Net worth"}) or {}).get("id") == "net_worth"  # plain net worth still binds where it did
+
+
 def test_the_board_figures_equal_the_recipes_that_own_them(office):
     """The board recipe holds a copy of each sibling's SQL (a recipe cannot read another recipe's table). If a sibling changes and the copy does not, this fails."""
     b = office.run("board_summary")[0]

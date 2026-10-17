@@ -49,6 +49,15 @@ Honest edges:
 - The key has six months of data, not twelve; the period comes from the first balance on file, not from "this year".
 - The fund list is not typed: "has a manager valuation" is the test, so a fund added later enters the walk by itself.
 
+## Rescore, 17 Oct (after the rules A48-A52 and the last readers)
+
+| Card | Before | After | Why |
+|---|---|---|---|
+| 74 board pack | FAIL (9/9 values right, figure bound to `net_worth`) | **PASS** 9/9 | The figure's name "Net worth, return, liquidity, decisions" matched `net_worth` by its name "net worth". `board_summary` now answers to that full name, which outscores the short one. Proved by `test_card_74_figure_binds_to_board_summary_not_net_worth` (plain "Net worth" still binds to `net_worth`). |
+| 75 year walk | FAIL 8/11 | FAIL 8/11 (unchanged, reasons named) | Checked again: no file has the 31 March USD/SGD fixing. `fx_rates` starts 1 April, the first investment report is April's (1.3298 at 30 April), and the bank statements carry no rate. The opening and balancing item stay empty and the income stays 44.71 short (M02b). No rate is borrowed. |
+
+`--all`: 76 PASS, 3 FAIL, 21 BLOCKED (was 75/4/21). The top 50 is 48/50; the two fails are 34 and 41 (Invest, from the five-deal csv reader), not this domain. Tests: `test_w1b_report.py`, `test_w1_report.py`, `test_v3_recipes.py` give 69 passed.
+
 ## Needs
 
 1. **The USD/SGD fixing of 31 March** (a `fx_rates` file for that day, or a March investment report, which states the WMR rate). With it the opening and the balancing item fill in with no change to the recipe.
