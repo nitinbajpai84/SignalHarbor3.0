@@ -461,3 +461,30 @@ def test_a_run_that_met_another_run_is_tried_once_more_and_a_stuck_run_always_na
     with pytest.raises(H.Q) as e:
         H.b_run(SimpleNamespace(th={"pid": "prj-1"}, api=api))
     assert e.value.text.startswith("The run on a copy is stuck: ") and len(e.value.text) > len("The run on a copy is stuck: ") + 10
+
+
+def test_a_thread_save_never_leaves_a_half_written_file_for_a_reader(tmp_path):
+    """Round 9: a reader caught the thread file mid-write and the start route returned HTTP 500."""
+    import threading
+    from types import SimpleNamespace
+    from sh_platform.v1 import v3_harbor as H
+    plane = SimpleNamespace(path=lambda *a: tmp_path.joinpath(*a))
+    th = {"id": "t-race", "created": "2026-10-17", "stage": "drafting", "events": ["x" * 2000] * 50}
+    H.save(plane, th)
+    bad = []
+
+    def read():
+        for _ in range(200):
+            try:
+                H.load(plane, "t-race")
+            except Exception as e:  # noqa: BLE001 - any failure is the bug
+                bad.append(e)
+
+    t = threading.Thread(target=read)
+    t.start()
+    for i in range(200):
+        th["n"] = i
+        H.save(plane, th)
+    t.join()
+    assert not bad
+    assert not list(tmp_path.rglob("*.tmp"))

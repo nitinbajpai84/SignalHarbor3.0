@@ -50,17 +50,39 @@ def load(plane, tid: str) -> dict:
     p = _dir(plane) / f"{re.sub(r'[^a-z0-9-]', '', tid)}.json"
     if not p.is_file():
         raise KeyError(tid)
-    return json.loads(p.read_text(encoding="utf-8"))
+    return _read(p)
+
+
+def _read(p) -> dict:
+    # a save replaces the file whole, but Windows can refuse a read during the swap: try again briefly
+    for i in range(5):
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, PermissionError):
+            if i == 4:
+                raise
+            time.sleep(0.05 * (i + 1))
 
 
 def save(plane, th: dict) -> None:
+    # write to a side file and swap it in, so a reader never sees a half-written thread (round 9: start failed with HTTP 500)
     with LOCK:
-        (_dir(plane) / f"{th['id']}.json").write_text(json.dumps(th, default=str), encoding="utf-8")
+        p = _dir(plane) / f"{th['id']}.json"
+        tmp = p.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(th, default=str), encoding="utf-8")
+        for i in range(5):
+            try:
+                os.replace(tmp, p)
+                return
+            except PermissionError:  # a reader holds the file open on Windows
+                if i == 4:
+                    raise
+                time.sleep(0.05 * (i + 1))
 
 
 def all_threads(plane, discarded: bool = False) -> list[dict]:
     """Newest first. A discarded thread is kept on disk for the record but leaves the Desk, the lists and file recognition."""
-    ths = (json.loads(p.read_text(encoding="utf-8")) for p in _dir(plane).glob("*.json"))
+    ths = (_read(p) for p in _dir(plane).glob("*.json"))
     return sorted((t for t in ths if discarded or t.get("stage") != "discarded"), key=lambda t: t["created"], reverse=True)
 
 
