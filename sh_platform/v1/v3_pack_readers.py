@@ -1867,12 +1867,9 @@ def monthly(x) -> tuple[set[str], int, list[dict]]:
     ok, aside = _read(x, list(kinds), kinds)
     return set(kinds), len(ok), aside
 
-from sh_platform.v1 import v3_pack_readers_assets as _assets  # noqa: E402 - the assets kinds register themselves in the tables above
-_assets.register(__import__("sys").modules[__name__])
+from sh_platform.v1 import v3_pack_readers_treasury as _treasury  # noqa: E402 - the treasury kinds register themselves in the tables above
+_treasury.install(__import__('sys').modules[__name__])
 from sh_platform.v1 import v3_pack_readers_assets as _assets  # noqa: E402 - the assets kinds register themselves in the tables above
 _assets.register(__import__("sys").modules[__name__])
 from sh_platform.v1 import v3_pack_readers_controls as _controls  # noqa: E402 - the controls kinds register themselves in the tables above
 _controls.install(__import__("sys").modules[__name__])
-
-from sh_platform.v1 import v3_pack_readers_treasury as _treasury  # noqa: E402 - the treasury kinds register themselves in the tables above
-_treasury.install(__import__('sys').modules[__name__])
