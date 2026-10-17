@@ -335,6 +335,8 @@ def ctl_sops(self) -> None:
         for i, s in enumerate(steps, 1):
             fields += [("step", s[0], Decimal(s[2]) if len(s) > 2 and re.fullmatch(r"[\d.]+", s[2]) else None, None, 1, i), ("step_owner", s[1] if len(s) > 1 else None, None, None, 1, i),
                        ("step_manual", s[3].lower() if len(s) > 3 else None, None, None, 1, i)]
+        fail = re.split(r"^##\s*Failures.*$", text, maxsplit=1, flags=re.M)[1:]  # the failures logged against the procedure (card 96), one bullet each
+        fields += [("failure", f[2:].strip(), None, None, 1, i) for i, f in enumerate((x.strip() for x in fail[0].split("\n#")[0].splitlines()) if fail else [], 1) if f.startswith("- ")]
         self.doc(p, "sop", title, kind="sops", received=recv, date_=reviewed, fields=fields)
         n += 1
         self.note("sops", files=1)

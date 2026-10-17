@@ -9,3 +9,7 @@ Runs per month: 1
 | Prepare pay file | Priya Nair | 60 | yes |
 | Check against the staff register | Priya Nair | 30 | yes |
 | Approve and release | Daniel Foo | 15 | no |
+
+## Failures on record to 13 Oct 2026
+
+None on record.

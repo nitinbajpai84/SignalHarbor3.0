@@ -807,6 +807,12 @@ CHECKS.update({
         F(0, "total_next_4_quarters", ["expected_distributions"], lambda x: next(float(r["amount"]) for r in x["expected_distributions"] if r["row_kind"] == "total")),
         F(0, "by_fund", ["expected_distributions"], _by_fund),
     ],
+    "uc-072-cashfc": [  # card 72, cash_forecast; test_w1b_cash.py test_72_* (the schedule runs to 30 Sep 2027)
+        D(0, "by_month", "cash_forecast", "month", {k: k for k in ("opening", "distributions", "income", "calls", "expenses", "closing")}),
+        *[FIRST(0, k, "cash_forecast", k) for k in ("opening_cash_usd_eq", "monthly_call_assumption", "floor", "lowest_month", "lowest_closing", "cash_to_raise")],
+        FIRST(0, "closing_sep_2027", "cash_forecast", "closing_end"),
+        S(0, "months_below_floor", "cash_forecast", "month", lambda r: r["below_floor"]),
+    ],
     "uc-073-runway": [  # card 73, cash_runway; test_w1b_cash.py test_73_*
         F(0, "six_month_spend_by_category", ["cash_runway"], lambda x: {r["category"]: float(r["spend_usd"]) for r in x["cash_runway"]}),
         FIRST(0, "cash_usd_eq", "cash_runway", "cash_usd_eq"),
@@ -878,6 +884,10 @@ CHECKS.update({
         L(0, "sops", "sop_age", {"sop": "sop"}, {"owner": "owner", "last_reviewed": "last_reviewed", "age_days": "age_days", "due": "due"}),
         F(0, "to_review", ["sop_age"], lambda x: [r["sop"] for r in sorted(x["sop_age"], key=lambda r: -r["age_days"]) if r["due"]]),
     ],
+    "uc-096-automation": [  # card 96, automation_score (failures logged in each SOP, rework minutes the signed rule A51)
+        L(0, "ranking", "automation_score", {"sop": "sop"}, {k: k for k in ("runs_per_month", "manual_minutes_per_month", "total_minutes_per_month", "failures_6_months", "score", "slowest_manual_step")}),
+        F(0, "automate_next", ["automation_score"], lambda x: next((r["sop"] for r in x["automation_score"] if r["automate_next"]), None)),
+    ],
     "uc-097-kycrefresh": [  # card 97, kyc_expiry; test_w1b_office.py test_card97_*
         N(0, "documents", "kyc_expiry"),
         L(0, "expiring_in_90_days", "kyc_expiry", {"document": "document", "counterparty": "counterparty"},
@@ -926,6 +936,7 @@ MESS.update({
     "uc-071-expdist": [({"fund": ["Cedarpoint Opportunities II", "Cedarpoint Ventures III", "Saltmarsh Renewables I"]}, "stale value, 31 Mar or 30 Jun (key)")],
     "uc-074-boardpack": [({"estimated_lines": lambda r: bool(r["estimated_lines"])}, "Evergreen Growth I estimate in the issued report (M03)"),
                          ({"amendments_after_report": lambda r: bool(r["amendments_after_report"])}, "M03 statements amended after the report")],
+    "uc-072-cashfc": [({"below_floor": lambda r: bool(r["below_floor"])}, "months under the floor (key months_below_floor)")],
     "uc-075-yearwalk": [({"bank_months_missing": lambda r: bool(r["bank_months_missing"])}, "M02b bank statement never arrived")],
     "uc-081-payroll": [({"employee_name": "Grace Ong"}, "M32 gross 20 percent above September, no approval"),
                        ({"employee_name": "Jun Tan"}, "M32 contractor not on the staff register")],
@@ -946,18 +957,13 @@ MESS.update({
 # The cause of one key value where a recipe row carries several (card 75: the walk's opening, income and balancing item). Keyed (card, key path).
 PATH_CAUSE: dict[tuple[str, str], str] = {}
 PATH_CAUSE.update({
-    ("uc-075-yearwalk", "opening"): "The 31 March USD/SGD fixing is in no file, so the opening is empty (the opening and balancing item wait for it)",
     ("uc-075-yearwalk", "income"): "Bank statement TCB-B-USD 2026-07 never arrived (M02b), so the income is 44.71 short",
-    ("uc-075-yearwalk", "fx_and_other"): "The balancing item needs the opening, which needs the 31 March fixing (in no file), so it is empty",
+    ("uc-075-yearwalk", "fx_and_other"): "The balancing item takes up the income the missing TCB-B-USD 2026-07 statement (M02b) leaves out, so it is 44.71 off",
 })
 
 BLOCKED.update({
-    "uc-072-cashfc": ("the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; "
-                      "recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)"),
-    "uc-084-taxest": ("the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched "
-                      "first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54)"),
-    "uc-096-automation": ("the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved "
-                          "or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule"),
+    "uc-084-taxest": ("the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54), and no recipe tax_estimate is built; "
+                      "the lots sold since 1 Apr are on file (realised_lots_2026-10-13.csv, read as fields of the realised gains report)"),
 })
 
 # ---- Office cards 83 to 100 (test_w1b_office.py; docs/v3/w1/build51-office.md) ----------------------------------------------------------------

@@ -16,7 +16,7 @@ TODAY = END
 # the file kinds of the other 49 cards: the loader (v3_pack_readers) has no reader for them yet, the cards that use them still need their tables and recipes
 NEW_KINDS = ("access_register", "bank_forms", "break_register", "corporate_actions", "custody_statements", "deal_pipeline", "estate_planning", "expense_ledger", "family_access", "fund_documents", "fund_holdings", "glossary", "grant_ledger",
              "grant_requests", "inbox", "income_calendar", "insurance_schedule", "kyc_register", "load_log", "manager_news", "manager_outlook", "market_data", "new_feed", "office_budget", "onboarding", "payment_schedule", "payroll_drafts",
-             "property_valuations", "settlement_status", "sops", "target_allocation", "tax_calendar", "tax_lots", "tax_notices", "title_deeds", "trust_deed")
+             "property_valuations", "realised_lots", "settlement_status", "sops", "target_allocation", "tax_calendar", "tax_lots", "tax_notices", "title_deeds", "trust_deed")
 
 
 def eq(w, amt, ccy): return D(amt) if ccy == "USD" else q2(D(amt) / w.fx[END])  # USD equivalent at the 13 Oct fixing
@@ -213,9 +213,21 @@ def lot_state(w, x):
             for l in L:
                 if need <= 0: break
                 take = min(l["qty"], need)
-                if take: realised.append(dict(trade=t["id"], date=t["settle"], sec=t["sec"], lot=l["id"], qty=take, proceeds=q2(take * t["price"]), cost=q2(take * l["unit"]), gain=q2(take * (t["price"] - l["unit"])))); l["qty"] -= take; need -= take
+                if take: realised.append(dict(trade=t["id"], date=t["settle"], sec=t["sec"], lot=l["id"], acq=l["acq"], qty=take, proceeds=q2(take * t["price"]), cost=q2(take * l["unit"]), gain=q2(take * (t["price"] - l["unit"])))); l["qty"] -= take; need -= take
             assert need <= 0, t["id"]
     return [l for k in lots for l in lots[k] if l["qty"] > 0], realised
+
+
+def sop_failure_items(w):
+    """The failures each SOP owner logs against the procedure (card 96): late close steps, statements late or never received, calls paid without approval or to a changed account,
+    duplicate or changed-account invoices and fee invoices above the schedule. keys2.sop_failures counts the same items."""
+    from .files2 import close_items
+    return {"month-end-report": [f"{c['done'] or c['due']}: close step '{c['step']}' for {c['month']} {'done late' if c['done'] else 'still open after its due date'} (due {c['due']})" for c in close_items(w) if c["late"]],
+            "capital-call-payment": [f"{a['date']}: {a['ref']} to {a['payee']} paid without the required approval" for a in w.approvals if not a["approved"]] +
+                                    [f"{c['due']}: call {c['no']} of {pname(c['fund'])} asks for payment to a changed bank account" for c in w.calls if c["changed"]],
+            "bank-statement-chase": [f"{r[3]}: {r[1].replace('_', ' ')} {r[0].split('/')[-1]} for {r[2]} {r[5]}" for r in RECV if r[1] in ("bank_statement", "manager_statement") and r[5] != "received"],
+            "vendor-payment-run": [f"{i['date']}: invoice {i['no']} of {i['vendor']} {'is a duplicate' if i['dup'] else 'asks for payment to a changed bank account'}" for i in w.invoices if i["dup"] or i["changed"]] +
+                                  [f"{f['due']}: fee invoice {f['id']} of {f['vendor']} is above its fee schedule" for f in w.fee_invoices if f["amount"] != f["expected"]]}
 
 
 # ---------------------------------------------------------------------------------------------------- build every table
@@ -301,8 +313,8 @@ def generate3(w, R):
     mess("M22", "unexplained bank lines", "bank_statements/HB_HOLD_USD_2026-08.xlsx, TCB_HOLD_USD_2026-09.xlsx, HB_B_USD_2026-10_mtd.xlsx", "Three bank lines match no invoice, notice, payroll, trade or transfer: a TT in of 48,250 (19 Aug), an ACH debit of 3,980 (23 Sep) and cheque 000417 of 2,150 (6 Oct)")
     # --- payment schedule (054, 070, 072, 064)
     p = R.path("2026-10", "payment_schedule", "payment_schedule_2026-10-13.csv")
-    write_csv(p, ["ref", "entity", "payee", "due_date", "amount", "currency", "status", "basis"], [[i["ref"], i["ent"], i["payee"], i["due"].isoformat(), float(i["amount"]), i["ccy"], i["status"], i["basis"]] for i in X.sched if i["due"] <= d("2027-01-11")])
-    reg(p, "payment_schedule", "2026-10", "Treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments for the next 90 days")
+    write_csv(p, ["ref", "entity", "payee", "due_date", "amount", "currency", "status", "basis"], [[i["ref"], i["ent"], i["payee"], i["due"].isoformat(), float(i["amount"]), i["ccy"], i["status"], i["basis"]] for i in X.sched])
+    reg(p, "payment_schedule", "2026-10", "Treasury payment schedule as at 13 Oct: approved, scheduled, expected and held payments to 30 Sep 2027")
     # --- corporate actions and income calendar (055, 068)
     for n in X.caction_notices:
         s = w.sec[n["sec"]]; fn = f"{n['notice']}_{n['sec']}_{n['kind']}.pdf"; p = R.path("2026-10", "corporate_actions", fn)
@@ -385,6 +397,10 @@ def generate3(w, R):
     p = R.path("2026-10", "tax_lots", "lot_register_2026-09-30.xlsx")
     write_xlsx(p, {"Lots": [["Lot", "Security id", "Security", "Acquired", "Quantity", "Unit cost", "Cost", "As at"]] + [[l["id"], "SEC-" + l["sec"], w.sec[l["sec"]]["canonical_name"], l["acq"].isoformat(), float(l["qty"]), float(l["unit"]), float(q2(l["qty"] * l["unit"])), "2026-09-30"] for l in X.lots30]})
     reg(p, "tax_lots", "2026-10", f"Custodian tax lot register as at 30 Sep: {len(X.lots30)} open lots")
+    p = R.path("2026-10", "realised_lots", "realised_lots_2026-10-13.csv")
+    write_csv(p, ["trade_ref", "settle_date", "security_id", "security", "lot", "acquired", "quantity", "cost", "proceeds", "realised_gain"],
+              [[r["trade"], r["date"].isoformat(), "SEC-" + r["sec"], w.sec[r["sec"]]["canonical_name"], r["lot"], r["acq"].isoformat(), float(r["qty"]), float(r["cost"]), float(r["proceeds"]), float(r["gain"])] for r in X.realised])
+    reg(p, "realised_lots", "2026-10", f"Custodian realised gains report 1 Apr to 13 Oct: {len(X.realised)} lots sold, matched first-in first-out")
     # --- look-through (069)
     p = R.path("2026-10", "fund_holdings", "fund_holdings_2026-09-30.xlsx")
     write_xlsx(p, {"Holdings": [["Fund key", "Fund", "Company", "Sector", "Weight (% of fund)", "Source"]] + [[f, pname(f), c, sc, wt, "manager report as at 30 Sep 2026"] for f in PRIVATE for c, sc, wt in HOLDINGS[f]]})
@@ -490,10 +506,12 @@ def generate3(w, R):
         reg(e, "manager_news", day[:7], f"{MGR[m]['name']}: {subj}", ["M44"])
     mess("M44", "manager personnel change", "manager_news/", "Saltmarsh Real Assets announces a resignation (18 Aug) and Northgate Partners adds a key person (9 Sep)")
     # --- SOPs (095, 096)
+    fails = sop_failure_items(w)
     for s in X.sops:
         p = R.path("2026-10", "sops", f"sop_{s['id']}.md")
         p.write_text(f"# SOP: {s['name']}\n\nOwner: {s['owner']}\nLast reviewed: {s['reviewed']}\nRuns per month: {s['runs']}\n\n| Step | Owner | Minutes per run | Manual |\n|---|---|---|---|\n" +
-                     "\n".join(f"| {x['step']} | {x['owner']} | {x['minutes']} | {'yes' if x['manual'] else 'no'} |" for x in s["steps"]) + "\n", encoding="utf-8", newline="\n")
+                     "\n".join(f"| {x['step']} | {x['owner']} | {x['minutes']} | {'yes' if x['manual'] else 'no'} |" for x in s["steps"]) + "\n\n## Failures on record to 13 Oct 2026\n\n" +
+                     ("".join(f"- {f}\n" for f in fails.get(s["id"], [])) or "None on record.\n"), encoding="utf-8", newline="\n")
         reg(p, "sops", "2026-10", f"SOP {s['name']}, last reviewed {s['reviewed']}", ["M39"] if (END - s["reviewed"]).days > 365 else [])
     mess("M39", "SOP not reviewed in a year", "sops/", "Vendor payment run (20 Jun 2025), Payroll release (30 Sep 2025) and Open or change a bank account (1 Dec 2024) were last reviewed more than 365 days before 13 Oct 2026")
     # --- KYC (097), onboarding (093), bank account (094), glossary (098), new feed (099)

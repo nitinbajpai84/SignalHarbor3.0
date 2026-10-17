@@ -1,8 +1,8 @@
 """W1b cash (cards 51 to 100 of the Cash and treasury domain: 54, 70, 72, 73), proved on the real pack readers.
 
 Built: 54 (liquidity_ladder, on the payment schedule's stages, A34), 70 (idle_cash, on the signed ladder_window_days and cash_buffer, A50) and 73 (cash_runway,
-on office_expenses, A33). Card 72 has its recipe (cash_forecast, on the signed forecast_* rules, A50) but stays blocked: the payment schedule file stops at
-11 Jan 2027, and the key's expenses after it come from schedule items that are in no file. The office6m files go through the real loader (test_w2_loader.py's
+on office_expenses, A33). Card 72 has its recipe (cash_forecast, on the signed forecast_* rules, A50); the payment schedule runs to 30 Sep 2027, so every month
+agrees with the key. The office6m files go through the real loader (test_w2_loader.py's
 `office` fixture); recipes run with their table check and tie-out; signals run through the engine's own parser (test_w1_hold.fire). Expected numbers come from
 answer_keys.yaml. Cases that change the data edit the warehouse inside a transaction that is rolled back. Synthetic data only."""
 from __future__ import annotations
@@ -160,27 +160,18 @@ def test_70_signals_say_the_surplus_and_the_exception_holds_an_entity_that_is_sh
 
 # ---- card 72: the forecast (recipe built, card blocked by the schedule's end) ----------------------------------------------------------------
 
-def test_72_the_forecast_agrees_with_the_key_while_the_schedule_lasts(office):
+def test_72_the_forecast_agrees_with_the_key_every_month(office):
     k, rows = key("uc-072-cashfc"), office.run("cash_forecast")
     fc = {r["month"]: r for r in rows}
     assert list(fc) == sorted(k["by_month"]) and str(rows[0]["as_of"]) == TODAY and rows[0]["unconverted"] == 0
     assert (f2(rows[0]["opening_cash_usd_eq"]), f2(rows[0]["monthly_call_assumption"]), f2(rows[0]["floor"])) == (
         k["opening_cash_usd_eq"], k["monthly_call_assumption"], k["floor"])
-    for m, v in k["by_month"].items():  # distributions, income and calls come from the files for every month
-        assert (f2(fc[m]["distributions"]), f2(fc[m]["income"]), f2(fc[m]["calls"])) == (v["distributions"], v["income"], v["calls"]), m
-    for m in ("2026-10", "2026-11", "2026-12"):  # the schedule covers these months to their end: every line agrees
-        assert fc[m]["expenses_complete"] is True
-        assert {c: f2(fc[m][c]) for c in k["by_month"][m]} == k["by_month"][m], m
-
-
-def test_72_stays_blocked_because_the_keys_later_expenses_are_in_no_file(office):
-    """The schedule csv ends on 11 Jan 2027; the key's expenses from January to September come from schedule items the file never had."""
-    k, fc = key("uc-072-cashfc"), {r["month"]: r for r in office.run("cash_forecast")}
-    late = [m for m in sorted(k["by_month"]) if not fc[m]["expenses_complete"]]
-    assert late == [m for m in sorted(k["by_month"]) if m >= "2027-01"] and str(fc["2027-01"]["schedule_ends"]) <= "2027-01-11"
-    assert all(f2(fc[m]["expenses"]) < k["by_month"][m]["expenses"] for m in late)
-    assert not any(x["id"] == "uc-072-cashfc" for p in (PACK / "builds").glob("*.yaml") for r in (yaml.safe_load(p.read_text(encoding="utf-8")) or {}).get("roles", [])
-                   for x in r.get("builds", []))
+    for m, v in k["by_month"].items():
+        assert {c: f2(fc[m][c]) for c in v} == v, m
+    assert (rows[0]["lowest_month"], f2(rows[0]["lowest_closing"]), f2(rows[0]["cash_to_raise"]), f2(rows[0]["closing_end"])) == (
+        k["lowest_month"], k["lowest_closing"], k["cash_to_raise"], k["closing_sep_2027"])
+    assert sorted(m for m, r in fc.items() if r["below_floor"]) == k["months_below_floor"]
+    assert str(rows[0]["schedule_ends"]) > "2027-09-01"  # the schedule runs to the horizon
 
 
 def test_72_every_assumption_is_a_signed_rule_and_without_one_the_forecast_is_held(office):
@@ -211,7 +202,7 @@ def test_72_signals_name_the_low_month_the_floor_and_the_schedule_gap(office):
     msg = fire("uc-072-cashfc-below-floor", t)
     assert msg and "750,000 floor" in msg and f"{low['cash_to_raise']:,.2f} must be raised" in msg
     msg = fire("uc-072-cashfc-schedule-ends", t)
-    assert msg and "from 2027-01 to 2027-09-30" in msg
+    assert msg and "from 2027-09 to 2027-09-30" in msg  # the last listed payment is due 28 Sep; nothing is listed for the last two days
 
 
 # ---- the signals and the builds -----------------------------------------------------------------------------------------------------------------

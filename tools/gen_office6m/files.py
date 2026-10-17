@@ -283,12 +283,12 @@ def trading(w, R):
 
 def fx_files(w, R):
     for x in sorted(w.fx):
-        if x < START or not is_bd(x): continue
+        if (x < START and x != d("2026-03-31")) or not is_bd(x): continue  # the 31 Mar fixing opens the year (card 75); it is filed with April
         if x == d("2026-06-03"):
             mess("M14", "fx rate gap", "fx_rates/fx_usdsgd_20260603.csv (missing)", "No FX rate file for 3 June 2026 although it was a business day"); continue
-        p = R.path(ym(x), "fx_rates", f"fx_usdsgd_{x:%Y%m%d}.csv")
+        m = max(ym(x), "2026-04"); p = R.path(m, "fx_rates", f"fx_usdsgd_{x:%Y%m%d}.csv")
         write_csv(p, ["Date", "Pair", "Fixing", "Rate (SGD per 1 USD)", "Source"], [[x.isoformat(), "USD/SGD", "WMR 4pm", str(w.fx[x]), "Synthetic FX fixing"]])
-        R.add(p, "fx_rates", ym(x), f"USD/SGD WMR 4pm fixing for {x}", ["M14"] if x == d("2026-06-02") else [])
+        R.add(p, "fx_rates", m, f"USD/SGD WMR 4pm fixing for {x}", ["M14"] if x == d("2026-06-02") else [])
     for m in months("2026-04", "2026-09") + ["2026-10"]:
         rows = [[x, str(w.idx[x.isoformat()][0]), str(w.idx[x.isoformat()][1]), "USD", "Synthetic Index Services - end of day"] for x in DAYS if ym(x) == m]
         p = R.path(m, "index_levels", f"index_levels_{m}.csv"); write_csv(p, ["Date", "Global Equity Index (synthetic)", "Global Bond Index (synthetic)", "Currency", "Source"], [[r[0].isoformat()] + r[1:] for r in rows])

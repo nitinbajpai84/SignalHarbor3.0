@@ -9,3 +9,7 @@ Runs per month: 0.33
 | Read renewal notice | Priya Nair | 20 | yes |
 | Compare with assets and last year | Priya Nair | 60 | yes |
 | Approve premium | Daniel Foo | 10 | no |
+
+## Failures on record to 13 Oct 2026
+
+None on record.

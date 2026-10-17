@@ -394,6 +394,49 @@ recipes:
       sql: >-
         select (select count(*) from {name}), (select count(distinct lower(d.title)) from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
 
+  - id: automation_score
+    label: Time and failures per procedure
+    cards: [96]
+    names: [automation score, which process to automate, which processes to automate next, time and failures per step, manual minutes and failures by sop]
+    may_read: [documents, extracted_fields, business_rules, rule_versions]
+    never_read: [cash_movements]
+    why: The steps, their minutes, whether they are manual and the runs per month are written in each procedure, and so are the failures its owner logged against it; the rework a failure costs is the signed rule automation_rework_minutes (A51), never typed.
+    formula: 'One row per procedure (document sop, not superseded; the latest of each title). manual_minutes_per_month = the minutes of its manual steps x runs_per_month; total_minutes_per_month = all its steps x runs_per_month; failures_6_months = the failures listed in the procedure (fields failure); score = manual minutes per month x the rule''s months + failures x the rule''s minutes_per_failure. slowest_manual_step is the manual step with the most minutes (the first listed on a tie). rank orders by score, highest first (then by name); automate_next is rank 1. With no signed rule the score is empty.'
+    grain: By procedure
+    sql: >-
+      create table {name} as with s as (select d.* from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
+      qualify row_number() over (partition by lower(d.title) order by d.document_date desc nulls last, d.received_at desc, d.id desc) = 1),
+      f as (select f.* from extracted_fields as f join s on s.id = f.document_id where f.review_status is distinct from 'Rejected'),
+      st as (select document_id, line_number as n, max(case when field_name = 'step' then value_text end) as step, max(case when field_name = 'step' then value_numeric end) as minutes,
+      coalesce(max(case when field_name = 'step_manual' then value_text end) = 'yes', false) as manual from f where field_name in ('step', 'step_manual') group by all),
+      slow as (select document_id, step from st where manual qualify row_number() over (partition by document_id order by minutes desc nulls last, n) = 1),
+      rv as (select cast(json_extract_string(v.parameters, '$.minutes_per_failure') as decimal(18,2)) as mins, cast(json_extract_string(v.parameters, '$.months') as integer) as months
+      from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'automation_rework_minutes' and v.approval_status = 'approved'
+      qualify row_number() over (order by v.version_number desc) = 1),
+      p as (select s.id, s.title as sop, (select max(value_numeric) from f where f.document_id = s.id and f.field_name = 'runs_per_month') as runs,
+      (select coalesce(sum(minutes) filter (where manual), 0) from st where st.document_id = s.id) as man, (select coalesce(sum(minutes), 0) from st where st.document_id = s.id) as allm,
+      (select count(*) from f where f.document_id = s.id and f.field_name = 'failure') as fails from s),
+      r as (select p.sop, p.runs, p.man * p.runs as man_m, p.allm * p.runs as all_m, p.fails, p.man * p.runs * rv.months + p.fails * rv.mins as score, sl.step as slowest
+      from p left join slow as sl on sl.document_id = p.id left join rv on true)
+      select r.sop, r.runs as runs_per_month, cast(r.man_m as decimal(18,2)) as manual_minutes_per_month, cast(r.all_m as decimal(18,2)) as total_minutes_per_month,
+      cast(r.fails as integer) as failures_6_months, cast(r.score as decimal(18,2)) as score, r.slowest as slowest_manual_step,
+      cast(row_number() over (order by r.score desc nulls last, r.sop) as integer) as rank, r.score is not null and row_number() over (order by r.score desc nulls last, r.sop) = 1 as automate_next from r
+    measure: score
+    columns:
+      runs_per_month: How often the procedure runs, as it states.
+      manual_minutes_per_month: Minutes of its manual steps x runs per month.
+      total_minutes_per_month: Minutes of all its steps x runs per month.
+      failures_6_months: The failures logged against the procedure.
+      score: Manual minutes per month x the signed months + failures x the signed rework minutes; empty with no signed rule.
+      slowest_manual_step: The manual step with the most minutes.
+      rank: 1 for the highest score.
+      automate_next: True for the procedure to automate next.
+    tie_out:
+      label: Every failure logged in a procedure is counted once
+      sql: >-
+        select (select coalesce(sum(failures_6_months), 0) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where f.field_name = 'failure'
+        and d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+
   - id: kyc_expiry
     label: KYC documents expiring
     cards: [97]
