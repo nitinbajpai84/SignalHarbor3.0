@@ -1,0 +1,21 @@
+# SUGGESTION. uc-065 row 1: the real assets register at the latest appraisals, in USD at the fixing. Numbers come from the card's recipe (real_asset_value); the office edits or switches it off.
+suggestion: true
+id: uc-065-realassets-register
+title: Real assets register
+pain_points: [INT-SCOPE, INT-TRUST]
+trigger: {on: figure_changed, figure: real_asset_value}
+inputs:
+- kind: figure
+  id: real_asset_value
+  recipe: real_asset_value
+  as: ra
+  by: {title_differs: false, first_in_kind: true}
+condition: ra.total_usd > 0
+subject: 'real assets {ra.total_usd:,.2f}'
+severity: info
+route_to: principal
+action:
+  verb: see
+  options: [See the register]
+message: 'The real assets are worth USD {ra.total_usd:,.2f} at their latest appraisals, the largest {ra.asset_name} at USD {ra.value_usd:,.2f}; {ra.title_differs_count} asset(s) have title in another name.'
+evidence: [ra]

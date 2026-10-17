@@ -1,0 +1,21 @@
+# SUGGESTION. uc-055 row 1: the custodian's notices with an ex-date or a pay date in the next 14 days are bookings for the clerk. Numbers come from the card's recipe (actions_next_14d); the office edits or switches it off.
+suggestion: true
+id: uc-055-corpact-to-book
+title: Corporate actions to book in the next 14 days
+pain_points: [PP-06, INT-DOC]
+trigger: {on: figure_changed, figure: actions_next_14d}
+inputs:
+- kind: figure
+  id: actions_next_14d
+  recipe: actions_next_14d
+  as: ca
+  by: {bucket: book, first_in_bucket: true}
+condition: ca.book_count > 0
+subject: 'to book {ca.book_count} actions {ca.cash_to_book:,.2f}'
+severity: info
+route_to: ops_clerk
+action:
+  verb: record
+  options: [Book the actions]
+message: '{ca.book_count} corporate actions have an ex-date or a pay date between {ca.window_from} and {ca.window_to}; the notices expect USD {ca.cash_to_book:,.2f} in all, the first {ca.security} on {ca.pay_date}. Book them at the holdings the notices state.'
+evidence: [ca]

@@ -1,0 +1,21 @@
+# SUGGESTION. uc-068 row 1: the dividends and coupons the income calendar expects in the next 12 months. Numbers come from the card's recipe (income_forecast); the office edits or switches it off.
+suggestion: true
+id: uc-068-incomef-forecast
+title: Income expected over the next 12 months
+pain_points: [INT-LIQ, PP-03]
+trigger: {on: figure_changed, figure: income_forecast}
+inputs:
+- kind: figure
+  id: income_forecast
+  recipe: income_forecast
+  as: inc
+  by: {first_row: true}
+condition: inc.total > 0
+subject: 'income {inc.currency} {inc.total:,.2f}'
+severity: info
+route_to: cfo
+action:
+  verb: see
+  options: [See the forecast]
+message: 'The liquid book is expected to pay {inc.currency} {inc.total:,.2f} between {inc.period_from} and {inc.period_to}: coupons {inc.coupons:,.2f} and dividends {inc.dividends:,.2f}, in {inc.events} payments.'
+evidence: [inc]

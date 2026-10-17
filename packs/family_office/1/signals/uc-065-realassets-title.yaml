@@ -1,0 +1,22 @@
+# SUGGESTION. uc-065 row 2, exception: the title deed registers an asset to someone other than the entity that owns it, so the register cannot be confirmed as it stands. Numbers come from the card's recipe; the office edits or switches it off.
+suggestion: true
+id: uc-065-realassets-title
+title: A real asset's title is not in the owning entity's name
+pain_points: [INT-TRUST, INT-SCOPE]
+trigger: {on: figure_changed, figure: real_asset_value}
+inputs:
+- kind: figure
+  id: real_asset_value
+  recipe: real_asset_value
+  as: ra
+  by: {title_differs: true, first_in_kind: true}
+condition: ra.title_differs_count > 0
+subject: 'title {ra.asset_name}: {ra.title_holder}'
+severity: problem
+route_to: principal
+action:
+  verb: record
+  options: [Explain the title, Transfer the title]
+hold: {blocks: confirm_register, scope: '{ra.asset_name}', until: the title is explained or transferred}
+message: '{ra.asset_name} ({ra.asset_ref}, USD {ra.value_usd:,.2f}) is owned by {ra.entity} but the deed registers it to {ra.title_holder}. The register is not confirmed for it until you record why. {ra.title_differs_count} asset(s) in all.'
+evidence: [ra]

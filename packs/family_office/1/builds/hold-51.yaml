@@ -1,6 +1,6 @@
 # Runnable persona builds of the "Hold and maintain" cards of 51 to 100 that could be built on the real readers (docs/v3/w1/build51-hold.md). Merged by role id with role_builds.yaml (docs/test/uc-live/uc6-scripts/v3_persona.py).
 # files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml, by the card's id.
-# uc-064: the key's SGD payments of the next 90 days (payment schedule, no reader yet) and the SGD forward as the bank confirms it (6,715,600, not the booked 6,707,500) are not in expect.
+# uc-064: the key's SGD payments of the next 90 days (payment schedule: read since 598422e, not yet in the recipe) and the SGD forward as the bank confirms it (6,715,600, not the booked 6,707,500) are not in expect.
 template: family_office@1
 roles:
   - id: risk_officer
@@ -12,3 +12,44 @@ roles:
         skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "check.against-source", "action.detect-exception", "consume.answer-question"]
         dashboard: "Consume: holdings by currency, the open forwards and the exposure after them, with the bank's confirmation beside the booking"
         check: {ask: "Whether to hedge a currency exposure?", expect: ["5,150,694.59", "3,843,801.93", "6,707,500", "5,005,597.01", "8,849,398.94", "7.62", "112,272,239.48", "116,116,041.41"]}
+  - id: ops_clerk
+    builds:
+      - id: uc-055-corpact
+        title: "Corporate actions and income calendar"
+        say: "Every morning I want the corporate actions on the liquid book for the next two weeks: which dividends and coupons I book, at the holding and the cash the custodian's notice states, and which notices need an election, with the deadline and the offer against the last price. The custodian's notices, the security master and the day's positions are the files. An election goes to the Operations Lead before I book anything."
+        files: ["office6m:*/corporate_actions/*.pdf", "office6m:reference/EG_security_master_20261008.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "build.write-formula-table", "action.detect-exception", "action.route-owner"]
+        dashboard: "Action: the bookings of the next 14 days with their cash, the elections due with the deadline and the premium, and the notices outside the window"
+        check: {ask: "Which actions need a decision or a booking?", expect: ["93,190.2", "9,552", "11,662.2", "31.5", "29.28", "7.58", "70,000", "58,500"]}
+  - id: principal
+    builds:
+      - id: uc-065-realassets
+        title: "Real assets register"
+        say: "At year end I want the register of our property, art and other real assets: the latest appraisal of each, in USD at the fixing, by type and by the entity that owns it, and whether the title deed is in that entity's name. The appraisal reports and the title deeds are the files. If a title is in someone else's name, tell me before I confirm the register."
+        files: ["office6m:*/property_valuations/valuation_RA-*.pdf", "office6m:*/title_deeds/title_deed_RA-*.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: the real assets at their latest appraisal by type and by entity, with the title holder beside the owner"
+        check: {ask: "What real assets we own, their values and who holds them?", expect: ["17,990,298.5", "7,164,179.1", "4,776,119.4", "11,940,298.5", "10,764,179.1", "5,426,119.4", "1,800,000"]}
+      - id: uc-066-propreval
+        title: "Appraisal due on a real asset"
+        say: "Tell me which of our real assets has not been appraised for more than a year, with the date of its last appraisal and how many days ago that was, so the Fund Accountant can draft the request and I can approve the spend. The appraisal reports are the files."
+        files: ["office6m:*/property_valuations/valuation_RA-*.pdf", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "action.detect-exception", "action.draft-message", "action.route-owner"]
+        dashboard: "Action: each real asset with the age of its latest appraisal, those over 365 days first"
+        check: {ask: "Whether to order a new appraisal?", expect: ["784", "378", "353", "329", "225", "125"]}
+  - id: fund_accountant
+    builds:
+      - id: uc-067-unrl
+        title: "Unrealised gain by lot"
+        say: "At quarter end I want the gain we are sitting on in each open lot of the liquid book: what it cost, what it is worth at the quarter-end price and the gain, with the lots at a loss first for tax and the lots of a holding above the single-name limit for a rebalance, and how much to sell to bring it back. The custodian's lot register, the trades and the administrator's pack are the files."
+        files: ["office6m:*/tax_lots/lot_register_2026-09-30.xlsx", "office6m:*/trading_export/trading_export_2026*.csv", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:*/custodian_positions/positions_20260930.csv"]
+        skills: ["data.recognise-file", "build.write-formula-table", "check.against-source", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: the open lots with cost, value and gain, the loss lots and the holdings above the single-name limit"
+        check: {ask: "Which lots to sell for a tax or rebalance reason?", expect: ["66", "4,030,570", "-1,454,950", "-159,480", "504,900", "621,340", "324,210.53"]}
+      - id: uc-068-incomef
+        title: "Dividend and coupon income forecast"
+        say: "At the start of the quarter I want the income the liquid book will pay us over the next 12 months: the coupons and the dividends the income calendar expects, by quarter, so the CFO can plan for it. The income calendar, the corporate action notices and the security master are the files."
+        files: ["office6m:*/income_calendar/income_calendar_2026-10-13.csv", "office6m:*/corporate_actions/*.pdf", "office6m:reference/EG_security_master_20261008.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
+        skills: ["data.recognise-file", "build.write-formula-table", "consume.answer-question"]
+        dashboard: "Consume: the expected coupons and dividends of the next 12 months, by quarter and by security"
+        check: {ask: "How much income to plan for next year?", expect: ["811,406.6", "362,000", "449,406.6", "151,690.2", "122,500", "208,302.2", "272,302.2", "56,612", "54"]}

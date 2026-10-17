@@ -1,0 +1,21 @@
+# SUGGESTION. uc-066 row 1, exception: a real asset's latest appraisal is more than 365 days old (the card's line). The Fund Accountant drafts the request; the Principal approves the spend. Numbers come from the card's recipe (appraisal_age); the office edits or switches it off.
+suggestion: true
+id: uc-066-propreval-due
+title: A real asset is due a new appraisal
+pain_points: [INT-TRUST, INT-RISK]
+trigger: {on: figure_changed, figure: appraisal_age}
+inputs:
+- kind: figure
+  id: appraisal_age
+  recipe: appraisal_age
+  as: age
+  by: {first_due: true}
+condition: age.due_count > 0
+subject: 'appraisal due {age.due_names}'
+severity: needs
+route_to: principal
+action:
+  verb: approve
+  options: [Order new appraisals, Not now]
+message: '{age.due_count} real asset(s) were last appraised more than {age.due_after_days} days ago: {age.due_names}. The oldest, {age.asset_name}, was appraised on {age.appraised_on}, {age.age_days} days before {age.as_of}. Order new appraisals?'
+evidence: [age]

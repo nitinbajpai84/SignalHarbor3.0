@@ -1,5 +1,5 @@
-"""W1b hold: the recipe of the one "Hold and maintain" card of 51 to 100 that could be built (64, currency exposure), run on the real loader's warehouse and compared
-with answer_keys.yaml. The six others (55, 65, 66, 67, 68, 69) are unbuilt because their tables or readers do not exist yet (docs/v3/w1/build51-hold.md, Needs).
+"""W1b hold: the recipes of the "Hold and maintain" cards of 51 to 100 (55, 64, 65, 66, 67, 68), run on the real loader's warehouse and compared with
+answer_keys.yaml. Card 69 is unbuilt: the fund holdings lists have no reader yet (docs/v3/w1/build51-hold.md, Needs).
 
 Real: the office6m files copied into a company's dropbox, the platform's warehouse and the real loader (as tests/v1/test_w2_loader.py), the recipe and its tie-out,
 the signal yaml run through the engine's own parser. Nothing is stubbed. No expected number is typed here: they come from the key. The cases that change the data
@@ -25,7 +25,10 @@ OFFICE = W.OFFICE
 PACK = REPO / "packs" / "family_office" / "1"
 KEYS = W.KEYS
 CARD = "uc-064-fxexp"
-UNBUILT = ["uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl", "uc-068-incomef", "uc-069-lookthru"]
+BUILT = [CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl", "uc-068-incomef"]
+UNBUILT = ["uc-069-lookthru"]
+# cards whose story has an exception (a signal that is not info); 68 has none
+EXCEPTION = {CARD, "uc-055-corpact", "uc-065-realassets", "uc-066-propreval", "uc-067-unrl"}
 
 
 @pytest.fixture(scope="module")
@@ -158,11 +161,15 @@ def test_64_with_two_non_base_currencies_the_signals_are_skipped_not_guessed(off
     assert fire("uc-064-fxexp-exposure", {"currency_exposure": rows + [extra]}) is None
 
 
-def test_64_signals_are_well_formed():
-    mine = sorted((PACK / "signals").glob(CARD + "-*.yaml"))
+@pytest.mark.parametrize("card", BUILT)
+def test_signals_are_well_formed(card):
+    mine = sorted((PACK / "signals").glob(card + "-*.yaml"))
     docs = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in mine]
-    assert len(docs) == 3
-    assert any(s["severity"] != "info" and s.get("hold") for s in docs), "an exception signal with a hold"
+    assert docs
+    if card in EXCEPTION:
+        assert any(s["severity"] != "info" for s in docs), "an exception signal"
+    if card in (CARD, "uc-055-corpact", "uc-065-realassets"):
+        assert any(s.get("hold") for s in docs), "the story's hold"
     for p, s in zip(mine, docs):
         assert s["id"] == p.stem and s["suggestion"] is True and s["route_to"] in ROLES
         assert s["severity"] in {"info", "needs", "problem"} and s["action"]["verb"] in {"log", "record", "approve", "call_back", "see"}
@@ -171,24 +178,228 @@ def test_64_signals_are_well_formed():
                 assert R.recipe(i["recipe"])
 
 
+# ---- card 55: corporate actions in the next 14 days ----------------------------------------------------------------------------------------
+
+def by_bucket(rows, bucket):
+    return [r for r in rows if r["bucket"] == bucket]
+
+
+def test_55_the_bookings_decisions_and_later_events_equal_the_key(office):
+    k = key("uc-055-corpact")
+    rows = office.run("actions_next_14d")
+    assert [str(rows[0]["window_from"]), str(rows[0]["window_to"])] == k["window"]
+    book = {r["security"]: r for r in by_bucket(rows, "book")}
+    assert set(book) == {x["security"] for x in k["to_book"]}
+    for x in k["to_book"]:
+        r = book[x["security"]]
+        assert (r["event"], str(r["ex_date"]), str(r["pay_date"])) == (x["event"], x["ex_date"], x["pay_date"])
+        assert f2(r["quantity"]) == x["quantity"] and f2(r["expected_cash"]) == x["expected_cash"]
+    assert f2(rows[0]["cash_to_book"]) == k["cash_to_book"] and rows[0]["book_count"] == len(k["to_book"])
+    (d,) = by_bucket(rows, "decide")
+    (x,) = k["to_decide"]
+    assert (d["security"], str(d["respond_by"])) == (x["security"], x["respond_by"]) and x["event"].endswith(d["event"])  # the model's action type: "voluntary" is the election flag
+    assert (f2(d["offer_price"]), f2(d["last_price"]), f2(d["premium_pct"]), f2(d["quantity"])) == (x["offer_price"], x["last_price"], x["premium_pct"], x["quantity_held"])
+    assert d["expected_cash"] is None  # no cash until the office elects
+    (o,) = by_bucket(rows, "later")
+    (x,) = k["announced_outside_window"]
+    assert (o["security"], o["event"], str(o["ex_date"]), str(o["pay_date"]), f2(o["quantity"]), f2(o["expected_cash"])) == \
+        (x["security"], x["event"], x["ex_date"], x["pay_date"], x["quantity"], x["expected_cash"])
+
+
+def test_55_the_notices_agree_with_the_income_calendar(office):
+    """Two sources, one figure: the cash each booking's notice states equals the income calendar's expected line of the same security and pay date."""
+    cal = {(r["security"], str(r["due_date"])): f2(r["amount"]) for r in office.rows(
+        "select i.canonical_name as security, c.due_date, c.amount from cash_movements as c join instruments as i on i.id = c.instrument_id "
+        "where c.confirmation_status = 'expected' and c.movement_type in ('dividend', 'coupon')")}
+    for r in office.run("actions_next_14d"):
+        if r["expected_cash"] is not None:
+            assert cal[(r["security"], str(r["pay_date"]))] == f2(r["expected_cash"]), r["security"]
+
+
+def test_55_an_election_past_its_deadline_is_missed_not_decided(office):
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update corporate_actions set election_deadline = date '2026-10-10' where action_type = 'tender_offer'")
+        rows = office.run("actions_next_14d")
+        assert not by_bucket(rows, "decide") and [r["security"] for r in by_bucket(rows, "missed")] == ["Tidewater Energy"]
+        assert fire("uc-055-corpact-election", {"actions_next_14d": rows}) is None
+    finally:
+        con.execute("rollback")
+
+
+def test_55_the_signals_fire_with_the_key_figures(office):
+    k = key("uc-055-corpact")
+    t = {"actions_next_14d": office.run("actions_next_14d")}
+    msg = fire("uc-055-corpact-to-book", t)
+    assert msg and f"{k['cash_to_book']:,.2f}" in msg and f"{len(k['to_book'])} corporate actions" in msg
+    (x,) = k["to_decide"]
+    msg = fire("uc-055-corpact-election", t)
+    assert msg and x["security"] in msg and f"{x['premium_pct']:.2f}" in msg and x["respond_by"] in msg and f"{x['quantity_held']:,.0f}" in msg
+
+
+# ---- card 65: the real assets register --------------------------------------------------------------------------------------------------
+
+def test_65_the_register_equals_the_key(office):
+    k = key("uc-065-realassets")
+    rows = {r["asset_ref"]: r for r in office.run("real_asset_value")}
+    assert set(rows) == {a["id"] for a in k["assets"]}
+    for a in k["assets"]:
+        r = rows[a["id"]]
+        assert (r["asset_name"], r["asset_type"], r["entity"], r["currency"], str(r["appraised_on"]), r["title_holder"]) == \
+            (a["name"], a["type"], a["entity"], a["currency"], a["appraised"], a["title_holder"])
+        assert f2(r["latest_value"]) == a["latest_value"] and f2(r["value_usd"]) == a["value_usd"]
+    one = next(iter(rows.values()))
+    assert f2(one["total_usd"]) == k["total_usd"]
+    assert {r["asset_type"]: f2(r["type_total_usd"]) for r in rows.values()} == k["by_type"]
+    assert {r["entity"]: f2(r["entity_total_usd"]) for r in rows.values()} == k["by_entity"]
+    assert [r["asset_name"] for r in rows.values() if r["title_differs"]] == k["title_not_in_entity_name"]
+
+
+def test_65_the_title_exception_holds_the_register_and_clears_when_the_title_matches(office):
+    k = key("uc-065-realassets")
+    t = {"real_asset_value": office.run("real_asset_value")}
+    msg = fire("uc-065-realassets-title", t)
+    assert msg and k["title_not_in_entity_name"][0] in msg and "Lin Chen" in msg
+    assert f"{k['total_usd']:,.2f}" in fire("uc-065-realassets-register", t)
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update real_assets set title_holder_name = 'Entity B' where asset_ref = 'RA-04'")
+        assert fire("uc-065-realassets-title", {"real_asset_value": office.run("real_asset_value")}) is None
+    finally:
+        con.execute("rollback")
+
+
+# ---- card 66: appraisal due ---------------------------------------------------------------------------------------------------------------
+
+def test_66_the_ages_equal_the_key(office):
+    k = key("uc-066-propreval")
+    rows = {r["asset_ref"]: r for r in office.run("appraisal_age")}
+    for a in k["by_asset"]:
+        r = rows[a["id"]]
+        assert (r["asset_name"], str(r["appraised_on"]), r["age_days"], r["due"]) == (a["name"], a["appraised"], a["age_days"], a["due"])
+    assert next(iter(rows.values()))["due_names"].split(", ") == k["order_new"]
+
+
+def test_66_the_signal_names_the_assets_due_and_is_silent_after_new_appraisals(office):
+    k = key("uc-066-propreval")
+    msg = fire("uc-066-propreval-due", {"appraisal_age": office.run("appraisal_age")})
+    assert msg and all(n in msg for n in k["order_new"]) and str(max(a["age_days"] for a in k["by_asset"])) in msg
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update real_assets set appraised_on = date '2026-10-01' where asset_ref in ('RA-03', 'RA-05')")
+        assert fire("uc-066-propreval-due", {"appraisal_age": office.run("appraisal_age")}) is None
+    finally:
+        con.execute("rollback")
+
+
+# ---- card 67: unrealised gain by lot -------------------------------------------------------------------------------------------------------
+
+LOT_COLS = ("security", "acquired", "days_held", "quantity", "cost", "value", "gain")
+
+
+def lot_view(r):
+    return {"security": r["security"], "acquired": str(r["acquired"]), "days_held": r["days_held"],
+            **{c: f2(r[c]) for c in ("quantity", "cost", "value", "gain")}}
+
+
+def test_67_the_lots_equal_the_key(office):
+    k = key("uc-067-unrl")
+    rows = office.run("unrealised_gain")
+    lots = {r["lot"]: r for r in rows}
+    assert len(rows) == k["lots"] == rows[0]["lots"] and rows[0]["unpriced_lots"] == 0
+    assert f2(rows[0]["total_gain"]) == k["total_unrealised_gain"] and f2(rows[0]["total_loss"]) == k["total_unrealised_loss"]
+    assert [r["lot"] for r in sorted((r for r in rows if r["is_loss"]), key=lambda r: (r["gain"], r["lot"]))] == [x["lot"] for x in k["loss_lots"]]
+    for x in k["loss_lots"] + k["largest_gain_lots"] + k["harborview_lots"]:
+        assert lot_view(lots[x["lot"]]) == {c: x[c] for c in LOT_COLS}, x["lot"]
+    assert [r["lot"] for r in sorted(rows, key=lambda r: -r["gain"])[:len(k["largest_gain_lots"])]] == [x["lot"] for x in k["largest_gain_lots"]]
+    assert {r["security"]: f2(r["holding_gain"]) for r in rows} == k["gain_by_security"]
+
+
+def office_rule(name: str) -> dict:
+    """The office's own signed rule, read from its reference file (never typed here)."""
+    import csv
+    with open(OFFICE / "reference" / "office_rules.csv", encoding="utf-8") as f:
+        row = next(r for r in csv.DictReader(f) if r["rule"] == name)
+    return {"value": float(row["value"])}
+
+
+def test_67_the_sale_to_the_single_name_limit_equals_the_key(office):
+    k = key("uc-067-unrl")
+    t = {"unrealised_gain": office.run("unrealised_gain")}
+    assert fire("uc-067-unrl-over-limit", t) is None  # no signed limit given: skipped, never guessed
+    msg = fire("uc-067-unrl-over-limit", t, rules={"single_name_limit_pct": office_rule("single_name_limit_pct")})
+    assert msg and msg.startswith(k["harborview_lots"][0]["security"]) and f"{k['harborview_sale_to_reach_5_pct']:,.2f}" in msg
+    assert fire("uc-067-unrl-over-limit", t, rules={"single_name_limit_pct": {"value": 10}}) is False  # synthetic limit, only to show the condition
+
+
+def test_67_the_signed_exemption_keeps_the_sovereign_note_out_of_the_ranking(office):
+    rows = office.run("unrealised_gain")
+    htn = [r for r in rows if r["exempt"]]
+    assert htn and all(r["name_rank"] is None for r in htn) and max(r["holding_pct"] for r in htn) > max(r["holding_pct"] for r in rows if not r["exempt"])
+    con = office.con
+    con.execute("begin")
+    try:
+        con.execute("update rule_versions set approval_status = 'proposed' where parameters like '%single_name_exempt%'")
+        top = next(r for r in office.run("unrealised_gain") if r["name_rank"] == 1)
+        assert top["security"] == htn[0]["security"]  # without the signed exemption the note would be the largest name
+    finally:
+        con.execute("rollback")
+
+
+def test_67_the_losses_signal(office):
+    k = key("uc-067-unrl")
+    msg = fire("uc-067-unrl-losses", {"unrealised_gain": office.run("unrealised_gain")})
+    assert msg and f"{k['total_unrealised_gain']:,.0f}" in msg and f"{k['total_unrealised_loss']:,.0f}" in msg and k["loss_lots"][0]["lot"] in msg
+
+
+# ---- card 68: income forecast --------------------------------------------------------------------------------------------------------------
+
+def test_68_the_forecast_equals_the_key(office):
+    k = key("uc-068-incomef")
+    rows = office.run("income_forecast")
+    one = rows[0]
+    assert [str(one["period_from"]), str(one["period_to"])] == k["period"]
+    assert (f2(one["total"]), f2(one["coupons"]), f2(one["dividends"]), one["events"]) == (k["total"], k["coupons"], k["dividends"], k["events"])
+    assert {r["quarter"]: f2(r["quarter_total"]) for r in rows} == k["by_quarter"]
+    msg = fire("uc-068-incomef-forecast", {"income_forecast": rows})
+    assert msg and f"{k['total']:,.2f}" in msg
+
+
+def test_68_cash_already_received_is_not_forecast(office):
+    k = key("uc-068-incomef")
+    con = office.con
+    con.execute("begin")
+    try:
+        amt = con.execute("select amount from cash_movements where confirmation_status = 'expected' and movement_type = 'coupon' order by due_date limit 1").fetchone()[0]
+        con.execute("update cash_movements set confirmation_status = 'confirmed' where id = (select id from cash_movements where confirmation_status = 'expected' "
+                    "and movement_type = 'coupon' order by due_date limit 1)")
+        assert f2(office.run("income_forecast")[0]["total"]) == pytest.approx(k["total"] - float(amt))
+    finally:
+        con.execute("rollback")
+
+
 # ---- the build and the unbuilt cards ------------------------------------------------------------------------------------------------------
 
-def test_64_the_build_carries_the_exact_answer_keys():
+@pytest.mark.parametrize("card", BUILT)
+def test_the_build_carries_the_exact_answer_keys(card):
     b = yaml.safe_load((PACK / "builds" / "hold-51.yaml").read_text(encoding="utf-8"))
     builds = {x["id"]: (r["id"], x) for r in b["roles"] for x in r["builds"]}
-    assert set(builds) == {CARD}
-    role, x = builds[CARD]
+    assert set(builds) == set(BUILT)
+    role, x = builds[card]
     assert role in ROLES and x["say"] and x["files"] and x["check"]["ask"] and x["check"]["expect"]
     assert all(f.startswith("office6m:") and glob.glob(str(OFFICE / f[9:])) for f in x["files"])
-    have = list(leaves(KEYS[CARD]["questions"]))
+    have = list(leaves(KEYS[card]["questions"]))
     numbers = [float(v) for v in have if isinstance(v, (int, float)) and not isinstance(v, bool)]
     for e in x["check"]["expect"]:
         assert any(abs(float(e.replace(",", "")) - v) < 1e-9 for v in numbers), e
 
 
-def test_the_other_six_cards_are_honestly_unbuilt():
-    """No recipe claims them: each needs a table or a reader that is not there (build51-hold.md). The stub of the income forecast stays a stub."""
-    stub = next(r for r in yaml.safe_load((PACK / "recipes" / "hold.yaml").read_text(encoding="utf-8"))["recipes"] if r["id"] == "income_forecast")
-    assert stub["status"] == "stub" and stub["sql"] is None and R.recipe("income_forecast") is None
+def test_card_69_is_honestly_unbuilt():
+    """No recipe claims it: the fund holdings lists have no reader, so the fund_holdings table is empty (build51-hold.md)."""
+    assert R.recipe("lookthrough_exposure") is None
+    assert not [r for r in R.recipes() if 69 in (r.get("cards") or [])]
     built = {x["id"] for p in (PACK / "builds").glob("*.yaml") for r in (yaml.safe_load(p.read_text(encoding="utf-8")) or {}).get("roles", []) for x in r.get("builds", [])}
     assert not built & set(UNBUILT)
