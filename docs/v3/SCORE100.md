@@ -1,6 +1,6 @@
 # Score of the 100 use cases
 
-Written by `python tools/score50.py` on 2026-10-17 21:20. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 87 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 14 s, whole run 26 s.
+Written by `python tools/score50.py` on 2026-10-17 23:49. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 106 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 17 s, whole run 33 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -8,68 +8,47 @@ PASS: every key value matches and the signals behave. FAIL: a number is wrong, o
 
 | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|
-| 77 | 2 | 0 | 21 | 100 |
+| 96 | 1 | 0 | 3 | 100 |
 
-Key values compared: 1370, matching: 1367.
+Key values compared: 1696, matching: 1693.
 
 ## By domain
 
 | Domain | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
-| Hold and maintain | 12 | 0 | 0 | 1 | 13 |
-| Operate and control | 16 | 0 | 0 | 2 | 18 |
-| Cash and treasury | 13 | 0 | 0 | 2 | 15 |
-| Report and govern | 13 | 2 | 0 | 0 | 15 |
-| Run the office | 9 | 0 | 0 | 4 | 13 |
-| Invest | 10 | 0 | 0 | 5 | 15 |
-| Family and people | 4 | 0 | 0 | 7 | 11 |
+| Hold and maintain | 13 | 0 | 0 | 0 | 13 |
+| Invest | 15 | 0 | 0 | 0 | 15 |
+| Operate and control | 18 | 0 | 0 | 0 | 18 |
+| Cash and treasury | 14 | 0 | 0 | 1 | 15 |
+| Report and govern | 14 | 1 | 0 | 0 | 15 |
+| Run the office | 12 | 0 | 0 | 1 | 13 |
+| Family and people | 10 | 0 | 0 | 1 | 11 |
 
 ## By person (card owner)
 
 | Person | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
+| Grace Ong | 11 | 0 | 0 | 0 | 11 |
+| Helen Foo | 12 | 0 | 0 | 0 | 12 |
+| Priya Nair | 10 | 0 | 0 | 0 | 10 |
+| Raj Patel | 10 | 0 | 0 | 0 | 10 |
+| Sam Lee | 8 | 0 | 0 | 0 | 8 |
+| Sofia Reyes | 10 | 0 | 0 | 0 | 10 |
 | Tom Hale | 9 | 0 | 0 | 0 | 9 |
+| Mei Chen | 10 | 1 | 0 | 0 | 11 |
 | Anita Rao | 7 | 0 | 0 | 1 | 8 |
-| Sam Lee | 7 | 0 | 0 | 1 | 8 |
-| Helen Foo | 10 | 0 | 0 | 2 | 12 |
-| Grace Ong | 9 | 0 | 0 | 2 | 11 |
-| Priya Nair | 8 | 0 | 0 | 2 | 10 |
-| Raj Patel | 8 | 0 | 0 | 2 | 10 |
-| Sofia Reyes | 7 | 0 | 0 | 3 | 10 |
-| Daniel Foo | 6 | 0 | 0 | 5 | 11 |
-| Mei Chen | 6 | 2 | 0 | 3 | 11 |
+| Daniel Foo | 9 | 0 | 0 | 2 | 11 |
 
 ## Failures by root cause, worst first
 
 A card can sit under more than one cause. The cause is what the expected-against-got numbers of the card detail point to.
 
-1. **approver_limit_ rules are proposed, not signed (A20)**. BLOCKED, 1 card(s): 89.
-2. **family_access_ rules are proposed, not signed (A20)**. BLOCKED, 1 card(s): 100.
-3. **ladder_window_days (90) is not signed (A34)**. BLOCKED, 1 card(s): 70.
-4. **no bank line carries a reference or payee to match, and no signed purpose rule**. BLOCKED, 1 card(s): 63.
-5. **no reader for deal_pipeline beyond the one teaser; the five-deal csv is unread**. BLOCKED, 1 card(s): 77.
-6. **no reader for estate_planning and trust_deed**. BLOCKED, 1 card(s): 88.
-7. **no reader for fund_documents (redemption_terms)**. BLOCKED, 1 card(s): 78.
-8. **no reader for grant_ledger**. BLOCKED, 1 card(s): 85.
-9. **no reader for grant_ledger and grant_requests**. BLOCKED, 1 card(s): 86.
-10. **no reader for market_data, and no signed price tolerance (A46); recipe price_gap_pct is a stub**. BLOCKED, 1 card(s): 57.
-11. **no reader for target_allocation; the allocation targets are not signed**. BLOCKED, 1 card(s): 79.
-12. **no reader for tax_calendar**. BLOCKED, 1 card(s): 84.
-13. **no reader for tax_calendar and tax_notices**. BLOCKED, 1 card(s): 83.
-14. **no reader for trust_deed**. BLOCKED, 1 card(s): 87.
-15. **office_budget_ rules are proposed, not signed (A20)**. BLOCKED, 1 card(s): 90.
-16. **recipe cash_forecast is a stub; forecast_call_assumption and forecast_floor are not signed (A34)**. BLOCKED, 1 card(s): 72.
-17. **recipe manager_score is a stub; the scorecard weights and bands are not signed**. BLOCKED, 1 card(s): 76.
-18. **recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads**. BLOCKED, 1 card(s): 53.
-19. **signing_policy rules are proposed, not signed (A20)**. BLOCKED, 1 card(s): 94.
-20. **the 45 minutes of rework per failure is in the key's method only: in no file and no signed rule**. BLOCKED, 1 card(s): 96.
-21. **the fund holdings lists have no reader (fund_holdings is empty); no recipe lookthrough_exposure**. BLOCKED, 1 card(s): 69.
-22. **Bank statement TCB-B-USD 2026-07 never arrived (M02b), so the income is 44.71 short**. FAIL, 1 card(s): 75. Recipes: networth_walk.
-23. **The 31 March USD/SGD fixing is in no file, so the opening is empty (the opening and balancing item wait for it)**. FAIL, 1 card(s): 75. Recipes: networth_walk.
-24. **The balancing item needs the opening, which needs the 31 March fixing (in no file), so it is empty**. FAIL, 1 card(s): 75. Recipes: networth_walk.
-25. **figure board_summary is bound to net_worth, not to the recipe that answers its key**. FAIL, 1 card(s): 74. Recipes: net_worth.
-
-Binding gaps (scored as FAIL): 1 card(s) have a figure that is bound to no recipe, or to a recipe other than the one that answers the key (live Harbor would design a table for it, or answer from the other recipe): 74 (board_summary).
+1. **the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule**. BLOCKED, 1 card(s): 96.
+2. **the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54)**. BLOCKED, 1 card(s): 84.
+3. **the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)**. BLOCKED, 1 card(s): 72.
+4. **Bank statement TCB-B-USD 2026-07 never arrived (M02b), so the income is 44.71 short**. FAIL, 1 card(s): 75. Recipes: networth_walk.
+5. **The 31 March USD/SGD fixing is in no file, so the opening is empty (the opening and balancing item wait for it)**. FAIL, 1 card(s): 75. Recipes: networth_walk.
+6. **The balancing item needs the opening, which needs the 31 March fixing (in no file), so it is empty**. FAIL, 1 card(s): 75. Recipes: networth_walk.
 
 ## Every card
 
@@ -127,54 +106,54 @@ Binding gaps (scored as FAIL): 1 card(s) have a figure that is bound to no recip
 | 50 | uc-050-feeinv: Administrator and custodian invoices against the fee schedule | Run the office | Grace Ong | **PASS** | 17/17 | all key values match; signals behave |
 | 51 | uc8-trades-vs-admin: Trades and FX forwards against the administrator and the confirmations | Operate and control | Sam Lee | **PASS** | 8/8 | all key values match; signals behave |
 | 52 | uc-052-insurance: Insurance policies and renewals | Family and people | Priya Nair | **PASS** | 35/35 | all key values match; signals behave |
-| 53 | uc-053-watchlist: Manager watchlist: late, restated or changed | Invest | Sofia Reyes | **BLOCKED** | 0/0 | recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads |
+| 53 | uc-053-watchlist: Manager watchlist: late, restated or changed | Invest | Sofia Reyes | **PASS** | 32/32 | all key values match; signals behave |
 | 54 | uc-054-ladder: 30, 60, 90 day liquidity ladder | Cash and treasury | Daniel Foo | **PASS** | 45/45 | all key values match; signals behave |
 | 55 | uc-055-corpact: Corporate actions and income calendar | Hold and maintain | Sam Lee | **PASS** | 62/62 | all key values match; signals behave |
 | 56 | uc-056-custrecon: Custodian positions against administrator positions | Operate and control | Grace Ong | **PASS** | 11/11 | all key values match; signals behave |
-| 57 | uc-057-pricecheck: Prices against a second source | Operate and control | Grace Ong | **BLOCKED** | 0/0 | no reader for market_data, and no signed price tolerance (A46); recipe price_gap_pct is a stub |
+| 57 | uc-057-pricecheck: Prices against a second source | Operate and control | Grace Ong | **PASS** | 8/8 | all key values match; signals behave |
 | 58 | uc-058-settle: Trades not settled on time | Operate and control | Sam Lee | **PASS** | 20/20 | all key values match; signals behave |
 | 59 | uc-059-breakage: Open breaks by age | Operate and control | Grace Ong | **PASS** | 33/33 | all key values match; signals behave |
 | 60 | uc-060-docinbox: Documents the office could not recognise | Operate and control | Sam Lee | **PASS** | 6/6 | all key values match; signals behave |
 | 61 | uc-061-dqscore: Data quality score for each source | Operate and control | Anita Rao | **PASS** | 73/73 | all key values match; signals behave |
 | 62 | uc-062-fxlife: FX forwards: upcoming value dates and mark to market | Operate and control | Sam Lee | **PASS** | 21/21 | all key values match; signals behave |
-| 63 | uc-063-cashcode: Unexplained bank lines | Operate and control | Sam Lee | **BLOCKED** | 0/0 | no bank line carries a reference or payee to match, and no signed purpose rule |
+| 63 | uc-063-cashcode: Unexplained bank lines | Operate and control | Sam Lee | **PASS** | 8/8 | all key values match; signals behave |
 | 64 | uc-064-fxexp: Currency exposure of the family | Hold and maintain | Tom Hale | **PASS** | 8/8 | all key values match; signals behave |
 | 65 | uc-065-realassets: Real assets register | Hold and maintain | Mei Chen | **PASS** | 52/52 | all key values match; signals behave |
 | 66 | uc-066-propreval: Appraisal due on a real asset | Hold and maintain | Mei Chen | **PASS** | 25/25 | all key values match; signals behave |
 | 67 | uc-067-unrl: Unrealised gain by lot | Hold and maintain | Helen Foo | **PASS** | 256/256 | all key values match; signals behave |
 | 68 | uc-068-incomef: Dividend and coupon income forecast | Hold and maintain | Helen Foo | **PASS** | 6/6 | all key values match; signals behave |
-| 69 | uc-069-lookthru: What the private funds really own | Hold and maintain | Sofia Reyes | **BLOCKED** | 0/0 | the fund holdings lists have no reader (fund_holdings is empty); no recipe lookthrough_exposure |
-| 70 | uc-070-idle: Idle cash above what we need | Cash and treasury | Daniel Foo | **BLOCKED** | 0/0 | ladder_window_days (90) is not signed (A34) |
+| 69 | uc-069-lookthru: What the private funds really own | Hold and maintain | Sofia Reyes | **PASS** | 22/22 | all key values match; signals behave |
+| 70 | uc-070-idle: Idle cash above what we need | Cash and treasury | Daniel Foo | **PASS** | 17/17 | all key values match; signals behave |
 | 71 | uc-071-expdist: Distributions we expect in the next year | Invest | Sofia Reyes | **PASS** | 3/3 | all key values match; signals behave |
-| 72 | uc-072-cashfc: 12 month cash forecast | Cash and treasury | Daniel Foo | **BLOCKED** | 0/0 | recipe cash_forecast is a stub; forecast_call_assumption and forecast_floor are not signed (A34) |
+| 72 | uc-072-cashfc: 12 month cash forecast | Cash and treasury | Daniel Foo | **BLOCKED** | 0/0 | the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*) |
 | 73 | uc-073-runway: How many months the family can spend | Cash and treasury | Mei Chen | **PASS** | 6/6 | all key values match; signals behave |
-| 74 | uc-074-boardpack: Family board pack | Report and govern | Mei Chen | **FAIL** | 9/9 | figure board_summary is bound to net_worth, not to a recipe that answers the key (board_summary) |
+| 74 | uc-074-boardpack: Family board pack | Report and govern | Mei Chen | **PASS** | 9/9 | all key values match; signals behave |
 | 75 | uc-075-yearwalk: What happened to our worth this year | Report and govern | Mei Chen | **FAIL** | 8/11 | opening: expected 114,568,027.06, got None (networth_walk); income: expected 455,668.98, got 455,624.27 (networth_walk); fx_and_other: expected 94,195.23, got None (networth_walk) |
-| 76 | uc-076-scorecard: Manager scorecard | Invest | Raj Patel | **BLOCKED** | 0/0 | recipe manager_score is a stub; the scorecard weights and bands are not signed |
-| 77 | uc-077-deals: Pipeline of deals under review | Invest | Sofia Reyes | **BLOCKED** | 0/0 | no reader for deal_pipeline beyond the one teaser; the five-deal csv is unread |
-| 78 | uc-078-redemption: Redeem from a hedge fund within notice and lock-up | Invest | Grace Ong | **BLOCKED** | 0/0 | no reader for fund_documents (redemption_terms) |
-| 79 | uc-079-rebalance: Rebalancing proposal | Invest | Raj Patel | **BLOCKED** | 0/0 | no reader for target_allocation; the allocation targets are not signed |
+| 76 | uc-076-scorecard: Manager scorecard | Invest | Raj Patel | **PASS** | 34/34 | all key values match; signals behave |
+| 77 | uc-077-deals: Pipeline of deals under review | Invest | Sofia Reyes | **PASS** | 23/23 | all key values match; signals behave |
+| 78 | uc-078-redemption: Redeem from a hedge fund within notice and lock-up | Invest | Grace Ong | **PASS** | 14/14 | all key values match; signals behave |
+| 79 | uc-079-rebalance: Rebalancing proposal | Invest | Raj Patel | **PASS** | 18/18 | all key values match; signals behave |
 | 80 | uc-080-vintage: Spread of private commitments by year | Invest | Tom Hale | **PASS** | 4/4 | all key values match; signals behave |
 | 81 | uc-081-payroll: Household and office payroll | Family and people | Priya Nair | **PASS** | 9/9 | all key values match; signals behave |
 | 82 | uc-082-covergap: Insurance cover against what we own | Family and people | Priya Nair | **PASS** | 27/27 | all key values match; signals behave |
-| 83 | uc-083-taxcal: Tax calendar | Family and people | Helen Foo | **BLOCKED** | 0/0 | no reader for tax_calendar and tax_notices |
-| 84 | uc-084-taxest: Estimated tax for the year | Family and people | Daniel Foo | **BLOCKED** | 0/0 | no reader for tax_calendar |
-| 85 | uc-085-grants: Philanthropy: budget used | Family and people | Mei Chen | **BLOCKED** | 0/0 | no reader for grant_ledger |
-| 86 | uc-086-grantappr: Approve a grant payment | Family and people | Mei Chen | **BLOCKED** | 0/0 | no reader for grant_ledger and grant_requests |
-| 87 | uc-087-trustdist: Trust distributions to beneficiaries | Family and people | Helen Foo | **BLOCKED** | 0/0 | no reader for trust_deed |
-| 88 | uc-088-estateliq: Cash for an estate or transfer tax | Family and people | Mei Chen | **BLOCKED** | 0/0 | no reader for estate_planning and trust_deed |
-| 89 | uc-089-expapp: Expense approval and sign-off rules | Run the office | Priya Nair | **BLOCKED** | 0/0 | approver_limit_ rules are proposed, not signed (A20) |
-| 90 | uc-090-offcost: What the office costs | Run the office | Daniel Foo | **BLOCKED** | 0/0 | office_budget_ rules are proposed, not signed (A20) |
+| 83 | uc-083-taxcal: Tax calendar | Family and people | Helen Foo | **PASS** | 19/19 | all key values match; signals behave |
+| 84 | uc-084-taxest: Estimated tax for the year | Family and people | Daniel Foo | **BLOCKED** | 0/0 | the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54) |
+| 85 | uc-085-grants: Philanthropy: budget used | Family and people | Mei Chen | **PASS** | 7/7 | all key values match; signals behave |
+| 86 | uc-086-grantappr: Approve a grant payment | Family and people | Mei Chen | **PASS** | 12/12 | all key values match; signals behave |
+| 87 | uc-087-trustdist: Trust distributions to beneficiaries | Family and people | Helen Foo | **PASS** | 27/27 | all key values match; signals behave |
+| 88 | uc-088-estateliq: Cash for an estate or transfer tax | Family and people | Mei Chen | **PASS** | 11/11 | all key values match; signals behave |
+| 89 | uc-089-expapp: Expense approval and sign-off rules | Run the office | Priya Nair | **PASS** | 10/10 | all key values match; signals behave |
+| 90 | uc-090-offcost: What the office costs | Run the office | Daniel Foo | **PASS** | 56/56 | all key values match; signals behave |
 | 91 | uc-091-jml: Joiner, mover, leaver access | Run the office | Priya Nair | **PASS** | 6/6 | all key values match; signals behave |
 | 92 | uc-092-accessrev: Quarterly access review | Run the office | Priya Nair | **PASS** | 8/8 | all key values match; signals behave |
 | 93 | uc-093-onbmgr: Onboard a new manager | Run the office | Grace Ong | **PASS** | 4/4 | all key values match; signals behave |
-| 94 | uc-094-onbbank: Open or change a bank or custody account | Run the office | Daniel Foo | **BLOCKED** | 0/0 | signing_policy rules are proposed, not signed (A20) |
+| 94 | uc-094-onbbank: Open or change a bank or custody account | Run the office | Daniel Foo | **PASS** | 5/5 | all key values match; signals behave |
 | 95 | uc-095-sopreview: SOPs not reviewed in a year | Run the office | Priya Nair | **PASS** | 33/33 | all key values match; signals behave |
-| 96 | uc-096-automation: Which processes to automate next | Run the office | Anita Rao | **BLOCKED** | 0/0 | the 45 minutes of rework per failure is in the key's method only: in no file and no signed rule |
+| 96 | uc-096-automation: Which processes to automate next | Run the office | Anita Rao | **BLOCKED** | 0/0 | the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule |
 | 97 | uc-097-kycrefresh: Know-your-client documents expiring | Run the office | Tom Hale | **PASS** | 13/13 | all key values match; signals behave |
 | 98 | uc-098-wordlist: Keep the office words in step with the model | Run the office | Anita Rao | **PASS** | 6/6 | all key values match; signals behave |
 | 99 | uc-099-newfeed: Bring in a new source file | Operate and control | Anita Rao | **PASS** | 5/5 | all key values match; signals behave |
-| 100 | uc-100-famaccess: What each family member can see | Family and people | Priya Nair | **BLOCKED** | 0/0 | family_access_ rules are proposed, not signed (A20) |
+| 100 | uc-100-famaccess: What each family member can see | Family and people | Priya Nair | **PASS** | 3/3 | all key values match; signals behave |
 
 ## Per card detail
 
@@ -426,17 +405,17 @@ Signals fired: uc-033-breachesc-cost-to-cure x7.
 
 Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cannot run: no reader gives doc.breach_open, doc.days_past_expiry; uc-033-breachesc-waiver-recorded cannot run: no reader gives doc.committee, doc.decided_on, doc.outcome, doc.subject_id.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Atlas Harbour Shipping cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Northwind Logistics cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Larkspur Health cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Juniper Consumer Brands cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Coastal Rail Holdings cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Evermore Banking Group cost to cure.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Northwind Logistics cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Evermore Banking Group cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Atlas Harbour Shipping cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Larkspur Health cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Coastal Rail Holdings cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Juniper Consumer Brands cost to cure.
 
 ### 34. uc-034-prospect: PASS
 
 Figures bound: mandate_fit -> mandate_fit. Answered from: mandate_fit.
 
-Signals fired: uc-034-prospect-screened x1.
+Signals fired: uc-034-prospect-screened x5.
 
 Signals that cannot run on the loaded data: uc-034-prospect-class-over cannot run: doc.class_limit_pct on every row.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-034-prospect-screened fires on Harborlight Ventures Iv.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-034-prospect-screened fires on Harborlight Ventures IV; uc-034-prospect-screened fires on Marlow Infrastructure Partners III; uc-034-prospect-screened fires on Pelican Credit Opportunities II; uc-034-prospect-screened fires on Ashgrove Growth Equity V; uc-034-prospect-screened fires on Nimbus Secondaries I.
 
 ### 35. uc-035-ddq: PASS
 
@@ -480,7 +459,7 @@ Signals fired: uc-040-icmemo-figure-source x2.
 
 Figures bound: commit_check -> commit_check. Answered from: commit_check.
 
-Signals fired: uc-041-commitappr-cash-short x1; uc-041-commitappr-test-not-on-record x1.
+Signals fired: uc-041-commitappr-cash-short x5; uc-041-commitappr-test-not-on-record x5.
 
 ### 42. uc4-vs-benchmark: PASS
 
@@ -518,7 +497,7 @@ Figures bound: attribution -> attribution. Answered from: attribution.
 
 Signals fired: uc-046-attrib-effects x21; uc-046-attrib-slide x21.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide.
 
 ### 47. uc-047-icpack: PASS
 
@@ -552,7 +531,7 @@ Figures bound: invoice_variance -> invoice_variance. Answered from: invoice_vari
 
 Signals fired: uc-050-feeinv-above-schedule x1; uc-050-feeinv-arrives x3; uc-050-feeinv-matches x4.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-050-feeinv-arrives fires on FEE-ADMIN-Q3; uc-050-feeinv-arrives fires on FEE-ADMIN-Q2; uc-050-feeinv-arrives fires on FEE-CUST-Q2.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-050-feeinv-arrives fires on FEE-ADMIN-Q2; uc-050-feeinv-arrives fires on FEE-CUST-Q2; uc-050-feeinv-arrives fires on FEE-ADMIN-Q3.
 
 ### 51. uc8-trades-vs-admin: PASS
 
@@ -570,11 +549,13 @@ Signals fired: uc-052-insurance-due x1; uc-052-insurance-no-notice x1.
 
 Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-052-insurance-due fires on POL-LIAB-03 renews 2026-11-01.
 
-### 53. uc-053-watchlist: BLOCKED
+### 53. uc-053-watchlist: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: watch_flags -> watch_flags. Answered from: watch_flags.
 
-Blocked: recipe watch_flags is a stub: the personnel-change count needs the manager_news mails, which no reader loads
+Signals fired: uc-053-watchlist-flagged x4; uc-053-watchlist-missing x1.
+
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-053-watchlist-flagged fires on Kestrel Ridge Advisors.
 
 ### 54. uc-054-ladder: PASS
 
@@ -594,11 +575,11 @@ Figures bound: position_break -> position_break. Answered from: position_break.
 
 Signals fired: uc-056-custrecon-quantity-differs x2.
 
-### 57. uc-057-pricecheck: BLOCKED
+### 57. uc-057-pricecheck: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: price_gap_pct -> price_gap_pct. Answered from: price_gap_pct.
 
-Blocked: no reader for market_data, and no signed price tolerance (A46); recipe price_gap_pct is a stub
+Signals fired: uc-057-pricecheck-over-tolerance x2.
 
 ### 58. uc-058-settle: PASS
 
@@ -634,11 +615,11 @@ Figures bound: fx_mtm -> fx_mtm. Answered from: cash_by_entity, fx_mtm.
 
 Signals fired: uc-062-fxlife-confirmation-differs x1; uc-062-fxlife-marked x2.
 
-### 63. uc-063-cashcode: BLOCKED
+### 63. uc-063-cashcode: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: uncoded_bank_lines -> uncoded_bank_lines. Answered from: uncoded_bank_lines.
 
-Blocked: no bank line carries a reference or payee to match, and no signed purpose rule
+Signals fired: uc-063-cashcode-uncoded x3.
 
 ### 64. uc-064-fxexp: PASS
 
@@ -676,17 +657,17 @@ Figures bound: income_forecast -> income_forecast. Answered from: income_forecas
 
 Signals fired: uc-068-incomef-forecast x1.
 
-### 69. uc-069-lookthru: BLOCKED
+### 69. uc-069-lookthru: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: lookthrough_exposure -> lookthrough_exposure. Answered from: lookthrough_exposure.
 
-Blocked: the fund holdings lists have no reader (fund_holdings is empty); no recipe lookthrough_exposure
+Signals fired: uc-069-lookthru-overlap x1; uc-069-lookthru-top x1.
 
-### 70. uc-070-idle: BLOCKED
+### 70. uc-070-idle: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: idle_cash -> idle_cash. Answered from: idle_cash.
 
-Blocked: ladder_window_days (90) is not signed (A34)
+Signals fired: uc-070-idle-surplus x1.
 
 ### 71. uc-071-expdist: PASS
 
@@ -698,7 +679,7 @@ Signals fired: uc-071-expdist-fund x8; uc-071-expdist-stale-value x3.
 
 Figures bound: -. Answered from: -.
 
-Blocked: recipe cash_forecast is a stub; forecast_call_assumption and forecast_floor are not signed (A34)
+Blocked: the payment schedule file stops at 11 Jan 2027, and the key's expenses for January to September 2027 come from schedule items in no file; recipe cash_forecast agrees with the key to December 2026 (test_w1b_cash.py test_72_*)
 
 ### 73. uc-073-runway: PASS
 
@@ -706,9 +687,9 @@ Figures bound: cash_runway -> cash_runway. Answered from: cash_runway.
 
 Signals fired: uc-073-runway-months x1.
 
-### 74. uc-074-boardpack: FAIL
+### 74. uc-074-boardpack: PASS
 
-Figures bound: board_summary -> net_worth. Answered from: board_summary.
+Figures bound: board_summary -> board_summary. Answered from: board_summary.
 
 Key values not compared (no column answers them yet): q1.sources.
 
@@ -728,29 +709,31 @@ Key values not compared (no column answers them yet): q1.adds_up, q1.fx_and_othe
 
 Signals fired: uc-075-yearwalk-estimate x1; uc-075-yearwalk-headline x1; uc-075-yearwalk-incomplete x1.
 
-### 76. uc-076-scorecard: BLOCKED
+### 76. uc-076-scorecard: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: manager_score -> manager_score. Answered from: manager_score.
 
-Blocked: recipe manager_score is a stub; the scorecard weights and bands are not signed
+Signals fired: uc-076-scorecard-review x3; uc-076-scorecard-score x6.
 
-### 77. uc-077-deals: BLOCKED
+### 77. uc-077-deals: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: deal_stage -> deal_stage. Answered from: deal_stage.
 
-Blocked: no reader for deal_pipeline beyond the one teaser; the five-deal csv is unread
+Signals fired: uc-077-deals-stage x5; uc-077-deals-stuck x2.
 
-### 78. uc-078-redemption: BLOCKED
+### 78. uc-078-redemption: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: redemption_dates -> redemption_dates. Answered from: redemption_dates.
 
-Blocked: no reader for fund_documents (redemption_terms)
+Signals fired: uc-078-redemption-locked x1; uc-078-redemption-notice x2.
 
-### 79. uc-079-rebalance: BLOCKED
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-078-redemption-notice fires on Kestrel Ridge Macro Fund.
 
-Figures bound: -. Answered from: -.
+### 79. uc-079-rebalance: PASS
 
-Blocked: no reader for target_allocation; the allocation targets are not signed
+Figures bound: rebalance_trades -> rebalance_trades. Answered from: rebalance_trades.
+
+Signals fired: uc-079-rebalance-proposal x3; uc-079-rebalance-unsigned x3.
 
 ### 80. uc-080-vintage: PASS
 
@@ -772,53 +755,55 @@ Figures bound: cover_gap -> cover_gap. Answered from: cover_gap.
 
 Signals fired: uc-082-covergap-no-policy x4; uc-082-covergap-under-insured x2.
 
-### 83. uc-083-taxcal: BLOCKED
+### 83. uc-083-taxcal: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: tax_due -> tax_due. Answered from: tax_due.
 
-Blocked: no reader for tax_calendar and tax_notices
+Signals fired: uc-083-taxcal-due x2; uc-083-taxcal-overdue x1.
+
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-083-taxcal-due fires on TX-02 Evergreen Holdings due 2026-11-30; uc-083-taxcal-due fires on TX-01 Evergreen Holdings due 2026-11-30.
 
 ### 84. uc-084-taxest: BLOCKED
 
 Figures bound: -. Answered from: -.
 
-Blocked: no reader for tax_calendar
+Blocked: the lots sold since 1 Apr are in no file (the lot register holds only the lots still open on 30 Sep), so the realised gains cannot be matched first-in first-out; and the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54)
 
-### 85. uc-085-grants: BLOCKED
+### 85. uc-085-grants: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: grants_used -> grants_used. Answered from: grants_used.
 
-Blocked: no reader for grant_ledger
+### 86. uc-086-grantappr: PASS
 
-### 86. uc-086-grantappr: BLOCKED
+Figures bound: grant_check -> grant_check. Answered from: grant_check.
 
-Figures bound: -. Answered from: -.
+Signals fired: uc-086-grantappr-fails x1.
 
-Blocked: no reader for grant_ledger and grant_requests
+### 87. uc-087-trustdist: PASS
 
-### 87. uc-087-trustdist: BLOCKED
+Figures bound: trust_distribution_room -> trust_distribution_room. Answered from: trust_distribution_room.
 
-Figures bound: -. Answered from: -.
+Signals fired: uc-087-trustdist-over x1.
 
-Blocked: no reader for trust_deed
+### 88. uc-088-estateliq: PASS
 
-### 88. uc-088-estateliq: BLOCKED
+Figures bound: estate_cash_need -> estate_cash_need. Answered from: estate_cash_need.
 
-Figures bound: -. Answered from: -.
+### 89. uc-089-expapp: PASS
 
-Blocked: no reader for estate_planning and trust_deed
+Figures bound: approval_exceptions -> approval_exceptions. Answered from: approval_exceptions.
 
-### 89. uc-089-expapp: BLOCKED
+Key values not compared (no column answers them yet): q1.limits.Priya Nair, q1.limits.Grace Ong, q1.limits.Daniel Foo, q1.limits.Raj Patel.
 
-Figures bound: -. Answered from: -.
+Signals fired: uc-089-expapp-over-limit x2.
 
-Blocked: approver_limit_ rules are proposed, not signed (A20)
+### 90. uc-090-offcost: PASS
 
-### 90. uc-090-offcost: BLOCKED
+Figures bound: office_cost -> office_cost. Answered from: office_cost.
 
-Figures bound: -. Answered from: -.
+Signals fired: uc-090-offcost-over x2.
 
-Blocked: office_budget_ rules are proposed, not signed (A20)
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-090-offcost-over fires on Professional fees over budget; uc-090-offcost-over fires on Grants over budget.
 
 ### 91. uc-091-jml: PASS
 
@@ -838,11 +823,13 @@ Figures bound: onboarding_items -> onboarding_items. Answered from: onboarding_i
 
 Signals fired: uc-093-onbmgr-missing x2.
 
-### 94. uc-094-onbbank: BLOCKED
+### 94. uc-094-onbbank: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: account_setup -> account_setup. Answered from: account_setup.
 
-Blocked: signing_policy rules are proposed, not signed (A20)
+Key values not compared (no column answers them yet): q1.steps, q1.outstanding.
+
+Signals fired: uc-094-onbbank-signatory x1.
 
 ### 95. uc-095-sopreview: PASS
 
@@ -854,7 +841,7 @@ Signals fired: uc-095-sopreview-due x3.
 
 Figures bound: -. Answered from: -.
 
-Blocked: the 45 minutes of rework per failure is in the key's method only: in no file and no signed rule
+Blocked: the 45 minutes of rework are signed (A51), but which failures count against which SOP (late close steps, missing statements, unapproved or changed-account calls, invoice problems) is in the key's method only: in no file and no signed rule
 
 ### 97. uc-097-kycrefresh: PASS
 
@@ -876,24 +863,9 @@ Key values not compared (no column answers them yet): q1.rows_in_sample.
 
 Signals fired: uc-099-newfeed-in-doubt x2.
 
-### 100. uc-100-famaccess: BLOCKED
+### 100. uc-100-famaccess: PASS
 
-Figures bound: -. Answered from: -.
+Figures bound: member_access -> member_access. Answered from: member_access.
 
-Blocked: family_access_ rules are proposed, not signed (A20)
-
-## The run itself
-
-- Loader, deal_pipeline: no reader for this kind
-- Loader, estate_planning: no reader for this kind
-- Loader, fund_documents: no reader for this kind
-- Loader, fund_holdings: no reader for this kind
-- Loader, grant_ledger: no reader for this kind
-- Loader, grant_requests: no reader for this kind
-- Loader, manager_news: no reader for this kind
-- Loader, market_data: no reader for this kind
-- Loader, target_allocation: no reader for this kind
-- Loader, tax_calendar: no reader for this kind
-- Loader, tax_notices: no reader for this kind
-- Loader, trust_deed: no reader for this kind
+Signals fired: uc-100-famaccess-over-granted x1.
 

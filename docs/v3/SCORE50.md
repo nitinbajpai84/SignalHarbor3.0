@@ -1,6 +1,6 @@
 # Score of the top 50 use cases
 
-Written by `python tools/score50.py` on 2026-10-17 21:20. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 87 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 13 s, whole run 24 s.
+Written by `python tools/score50.py` on 2026-10-17 23:49. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 106 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 14 s, whole run 28 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -341,7 +341,7 @@ Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cann
 
 Figures bound: mandate_fit -> mandate_fit. Answered from: mandate_fit.
 
-Signals fired: uc-034-prospect-screened x1.
+Signals fired: uc-034-prospect-screened x5.
 
 Signals that cannot run on the loaded data: uc-034-prospect-class-over cannot run: doc.class_limit_pct on every row.
 
@@ -387,7 +387,7 @@ Signals fired: uc-040-icmemo-figure-source x2.
 
 Figures bound: commit_check -> commit_check. Answered from: commit_check.
 
-Signals fired: uc-041-commitappr-cash-short x1; uc-041-commitappr-test-not-on-record x1.
+Signals fired: uc-041-commitappr-cash-short x5; uc-041-commitappr-test-not-on-record x5.
 
 ### 42. uc4-vs-benchmark: PASS
 
@@ -452,19 +452,4 @@ Signals fired: uc-049-feedrag-above-terms x1; uc-049-feedrag-share x4.
 Figures bound: invoice_variance -> invoice_variance. Answered from: invoice_variance.
 
 Signals fired: uc-050-feeinv-above-schedule x1; uc-050-feeinv-arrives x3; uc-050-feeinv-matches x4.
-
-## The run itself
-
-- Loader, deal_pipeline: no reader for this kind
-- Loader, estate_planning: no reader for this kind
-- Loader, fund_documents: no reader for this kind
-- Loader, fund_holdings: no reader for this kind
-- Loader, grant_ledger: no reader for this kind
-- Loader, grant_requests: no reader for this kind
-- Loader, manager_news: no reader for this kind
-- Loader, market_data: no reader for this kind
-- Loader, target_allocation: no reader for this kind
-- Loader, tax_calendar: no reader for this kind
-- Loader, tax_notices: no reader for this kind
-- Loader, trust_deed: no reader for this kind
 
