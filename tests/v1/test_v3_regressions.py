@@ -219,11 +219,12 @@ def test_the_concentration_recipe_is_a_share_of_the_portfolio():
     from sh_platform.v1 import v3_recipes as R
     con = duckdb.connect()
     con.execute("create table portfolios (id int, portfolio_name varchar)")
-    con.execute("create table instruments (id int, canonical_name varchar)")
+    con.execute("create table instruments (id int, canonical_name varchar, instrument_type varchar)")
+    con.execute("create table bank_accounts (id int, cash_instrument_id int)")  # cash counts once (the holdings snippet reads it)
     con.execute("create table position_snapshots (id int, portfolio_id int, instrument_id int, position_date date, currency varchar, data_status varchar, "
                 "recorded_at timestamp, supersedes_position_id int, source_market_value decimal(18,2))")
     con.execute("insert into portfolios values (1, 'Liquid'), (2, 'Growth')")
-    con.execute("insert into instruments values (1, 'Harborview Semiconductor'), (2, 'Rest'), (3, 'Fund')")
+    con.execute("insert into instruments values (1, 'Harborview Semiconductor', 'listed_equity'), (2, 'Rest', 'listed_equity'), (3, 'Fund', 'private_fund')")
     con.execute("insert into position_snapshots values (1, 1, 1, '2026-09-30', 'USD', 'official', now(), null, 2368000), "
                 "(2, 1, 2, '2026-09-30', 'USD', 'official', now(), null, 38832000), (3, 2, 3, '2026-09-30', 'USD', 'official', now(), null, 26650000)")
     r = R.recipe("concentration")
@@ -405,7 +406,7 @@ def test_success_still_empty_after_the_usual_practice_is_harbors_suggestion_from
     got = SW.read(plane, "ini-1")["template_fields"]
     assert got["result"] == "A page" and got["success"] == (
         "(suggested by Harbor) Each figure (Net worth, Unmatched count) is filled on the trial copy and ties out: "
-        "Net worth equals the sum of the position snapshots for the same dates.")
+        "Net worth equals the sum of the position snapshots for the same dates, cash counted once.")
     path.write_text(json.dumps({"intent_id": "ini-1", "state": "draft", "kpis": [], "template_fields": {"success": "The person's own words"}}))
     assert SO.success_fallback(plane, "ini-1", gaps) == gaps and SW.read(plane, "ini-1")["template_fields"]["success"] == "The person's own words"
     assert SO.success_fallback(plane, "ini-1", ["What is still unclear, and who can settle it"]) == ["What is still unclear, and who can settle it"]
@@ -526,3 +527,51 @@ def test_persona_runner_says_the_usual_practice_once_per_distinct_gap_set():
     import pathlib
     src = pathlib.Path(__file__).resolve().parents[2].joinpath("docs/test/uc-live/uc6-scripts/v3_persona.py").read_text(encoding="utf-8")
     assert 'gk not in s["retried"]' in src and 'gaps_said' not in src and 's["confirms"] > 4' in src
+
+
+def test_a_gap_that_comes_back_after_a_confirm_is_one_plain_question_never_another_confirm(tmp_path, monkeypatch):
+    """r1 uc-013: Span's open question survived each Confirm (the fill could not answer it), so Decision 1 came back and the runner confirmed 4 times."""
+    import pytest
+    from sh_platform.v1 import v3_plan_guard as PG
+    from sh_platform.v1 import v3_signoff as SO
+    gap = "Master-data owner assignment: who owns each record"
+    monkeypatch.setattr(SO, "blocking", lambda plane, iid: [gap])
+    monkeypatch.setattr(PG, "figures_gap", lambda plane, th, iid: [])
+    monkeypatch.setattr(SO, "fill", lambda x, gaps: gaps)  # the usual practice cannot answer it
+    monkeypatch.setattr(H, "_no_earlier_figures", lambda *a: None)
+    monkeypatch.setattr(H, "_gaps", lambda x, iid: [gap])
+    monkeypatch.setattr(SO, "guard", lambda *a: None)
+    monkeypatch.setattr(H, "start_chain", lambda *a, **k: (_ for _ in ()).throw(AssertionError("the sign step ran again")))
+    plane = SimpleNamespace(path=lambda *a: tmp_path.joinpath(*a))
+    app = SimpleNamespace(state=SimpleNamespace(account_store={"a1": {"display_name": "Anita"}}))
+    th = {"id": "t-loop", "created": "2026-10-17", "stage": "decision1", "iid": "int-1", "started_by": "Anita", "events": [], "steps": [],
+          "decision": {"n": 1, "title": "Is this what you want?", "brief": {}, "gaps": [gap]}}
+    x = SimpleNamespace(app=app, plane=plane, th=th, account_id="a1")
+    with pytest.raises(H.Q) as first:  # the first confirm: the sign step asks with the full sign-off wording and remembers the gap
+        SO.before_sign(x)
+    assert "confirm it again" in first.value.text and th["sign_gaps"] == [gap]
+    with pytest.raises(H.Q) as again:  # a retry of the sign step with the same gap: the plain question, no "confirm it again"
+        SO.before_sign(x)
+    assert again.value.text == f"I still need {gap} before this can be signed."
+    H.save(plane, th)
+    out = H.decide(app, plane, "t-loop", 1, "confirm", {}, "a1")  # Decision 1 confirmed again with the same gap: asked, not signed
+    assert out["stage"] == "question" and out["events"][-1] == {**out["events"][-1], "kind": "question", "text": f"I still need {gap} before this can be signed."}
+    assert out["resume"]["chain"] == "A" and not any(e["kind"] == "decision_done" for e in out["events"])
+    with pytest.raises(ValueError):  # no Confirm is offered while the question is open
+        H.decide(app, plane, "t-loop", 1, "confirm", {}, "a1")
+    monkeypatch.setattr(SO, "blocking", lambda plane, iid: ["Success: how you will know it worked"])  # a different gap: the normal Decision 1 again
+    assert H.still_needs(plane, {**th, "stage": "decision1"}) is None
+
+
+def test_a_resolved_path_in_the_extended_windows_form_is_still_inside_the_plane(tmp_path, monkeypatch):
+    """test_v3_rows failed now and then with "path outside company plane": four judge threads made v3/judge at once and Path.resolve (3.11,
+    Windows) returned the extended form (prefix \\\\?\\), which is_relative_to the plain root never accepts."""
+    import pathlib
+    import pytest
+    from sh_platform.plane import CompanyPlane, CrossCompanyError
+    plane = CompanyPlane("evergreen", tmp_path)
+    real = pathlib.Path.resolve
+    monkeypatch.setattr(pathlib.Path, "resolve", lambda self, strict=False: pathlib.Path("\\\\?\\" + str(real(self))))
+    assert plane.path("v3", "judge") == tmp_path / "v3" / "judge"
+    with pytest.raises(CrossCompanyError):  # the prefix is dropped, never the check
+        plane.path("..", "other")

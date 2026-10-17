@@ -16,12 +16,14 @@ recipes:
     formula: >-
       For each fund and entity: the commitment, the capital called (the called_to_date the commitments register states at its as-at date, plus the capital
       calls logged since: every noticed call, and a confirmed one noticed after the register date; if the register states no called figure, all the
-      confirmed calls) and unfunded = commitment less called. A commitment row that a later one supersedes is out. A call notice is a call row (the
+      confirmed calls) and unfunded = commitment less called. A commitment row that a later one supersedes is out, and so is a shadow
+      row (no register source, no called figure, no call movement, in a fund whose other rows state a called figure), as called_to_date leaves it out. A call notice is a call row (the
       investment part) and a fee row (the fee part), both counted. Currencies are never added together; one row per currency adds up the funds.
     grain: By entity and fund, with one total row per currency
     sql: >-
       create table {name} as with cm as (select x.* from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id
-      = x.id)), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where
+      = x.id) and not (x.source_record_id is null and x.called_to_date is null and not exists (select 1 from cash_movements as m0 where m0.commitment_id
+      = x.id) and exists (select 1 from commitments as r where r.instrument_id = x.instrument_id and r.called_to_date is not null))), mv as (select m.commitment_id, sum(-m.amount) filter (where m.confirmation_status = 'noticed' and (c.called_to_date is null or cast(m.received_at as date) >= c.called_as_at)) as noticed, sum(-m.amount) filter (where
       m.confirmation_status = 'confirmed') as confirmed_all, sum(-m.amount) filter (where m.confirmation_status = 'confirmed' and cast(m.received_at as date) >= c.called_as_at) as confirmed_after from cash_movements as m join cm as c on c.id = m.commitment_id where m.notice_kind = 'capital_call' and
       m.movement_type in ('call', 'fee') and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id) group by
       m.commitment_id), cu as (select c.*, case when c.called_to_date is null then coalesce(v.confirmed_all, 0) else c.called_to_date +
@@ -39,10 +41,12 @@ recipes:
       unfunded: Committed less called. What the fund can still ask for.
       is_total: '1 on the row that adds up all the funds of a currency, 0 on a fund row.'
     tie_out:
-      label: Committed on the total rows equals the commitments of the register (rows nothing supersedes)
+      label: Committed on the total rows equals the commitments of the register (rows nothing supersedes, shadow rows left out)
       sql: >-
         select (select coalesce(sum(committed), 0) from {name} where is_total = 1), (select coalesce(sum(x.commitment_amount), 0) from commitments as x where
-        not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id))
+        not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) and not (x.source_record_id is null and x.called_to_date is null
+        and not exists (select 1 from cash_movements as m where m.commitment_id = x.id) and exists (select 1 from commitments as r where r.instrument_id =
+        x.instrument_id and r.called_to_date is not null)))
 
 
   - id: private_markets_budget

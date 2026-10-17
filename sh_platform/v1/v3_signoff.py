@@ -302,8 +302,11 @@ def before_sign(x) -> None:
         H._no_earlier_figures(x.app, x.plane, iid)
         gaps = blocking(x.plane, iid) + PG.figures_gap(x.plane, x.th, iid)
     if gaps:
+        again = x.th.get("sign_gaps") and set(gaps) <= set(x.th["sign_gaps"])  # the same gap after a confirm: one plain question (v3_harbor.still_needs)
+        x.th["sign_gaps"] = gaps
         me = (x.app.state.account_store.get(x.account_id) or {}).get("display_name") or "the signer"
-        raise H.Q(gap_question(x.th, me, gaps))
+        raise H.Q(H.needs_text("; ".join(gaps)) if again else gap_question(x.th, me, gaps))
+    x.th.pop("sign_gaps", None)
 
 
 def claim_files(x) -> int:

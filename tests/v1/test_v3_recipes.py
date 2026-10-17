@@ -79,7 +79,7 @@ def test_a_figure_with_a_recipe_is_placed_from_it_and_loses_its_could_not_place_
     assert [k["name"] for k in left] == ["Cash drag"]  # the model is asked only for the figure with no recipe
     t = plan["tables"][0]
     assert t["name"] == "gold_t_net_worth_by_portfolio" and t["kpis"] == ["Net worth"] and t["purpose"].startswith("Recipe net_worth:")
-    assert set(t["depends_on"]) == {"position_snapshots", "portfolios", "legal_entities"} and not notes
+    assert set(t["depends_on"]) == {"position_snapshots", "portfolios", "legal_entities", "instruments", "bank_accounts"} and not notes  # cash counted once (holdings)
 
 
 def test_a_design_that_reads_a_table_the_figure_must_never_read_is_refused_with_the_tables_it_may_read():

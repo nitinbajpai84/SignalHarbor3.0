@@ -64,7 +64,7 @@ def _snippets() -> dict[str, str]:
 
 def sql_of(rid: str, name: str | None = None) -> str:
     r, sn = _recipes()[rid], _snippets()
-    return " ".join(r["sql"].replace("{dims}", "").replace("{name}", name or f"t_{rid}").replace("{positions}", sn["positions"]).split())
+    return " ".join(r["sql"].replace("{dims}", "").replace("{name}", name or f"t_{rid}").replace("{holdings}", sn["holdings"]).replace("{positions}", sn["positions"]).split())
 
 
 def build(con, rid: str) -> str:
@@ -275,7 +275,7 @@ def con():
 
 def tie(con, rid: str) -> tuple[float, float]:
     t = _recipes()[rid]["tie_out"]["sql"]
-    t = t.replace("{name}", f"t_{rid}").replace("{positions_check}", _snippets()["positions_check"])
+    t = t.replace("{name}", f"t_{rid}").replace("{positions_check}", _snippets()["positions_check"]).replace("{holdings_check}", _snippets()["holdings_check"])
     a, b = con.execute(" ".join(t.split())).fetchone()
     return float(a or 0), float(b or 0)
 

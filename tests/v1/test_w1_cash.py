@@ -1132,3 +1132,17 @@ def test_cash_break_is_the_break_of_the_day_and_not_the_sum_since_the_period_sta
     by = {str(r["day"]): r["cash_break"] for r in o.run("cash_break")}
     assert by == {"2026-10-07": 0, "2026-10-08": wire, "2026-10-09": -wire, "2026-10-12": 0}  # the first day has no day before it
     assert R.tie_out(o.con, R.recipe("cash_break"), "t_cash_break")["ok"]
+
+
+def test_net_worth_counts_the_cash_of_a_portfolio_once():
+    """r1 morning note: the administrator's cash, the office's bank-account lines and the desk's derived cash all sat in the snapshots; net worth counted the cash three times."""
+    o = Office()
+    cash, desk, bank1, bank2 = o.instrument("Cash USD", "cash"), o.instrument("Desk cash EG-B USD", "cash"), o.instrument("HB-B-USD", "cash"), o.instrument("TCB-B-USD", "cash")
+    for b, ref in ((bank1, "B1"), (bank2, "B2")):
+        o.ins("bank_accounts", holder_kind="office", legal_entity_id=o.ent["EG-B"], cash_instrument_id=b, currency="USD", status="active", holder_name="Entity B", account_purpose="operating", bank_name="HB", account_ref=ref)
+    snap = lambda ins, v, st="Final", d="2026-09-30": o.ins("position_snapshots", portfolio_id=o.port["EG-B"], instrument_id=ins, position_date=d, source_market_value=v, currency="USD", quantity=v, data_status=st)  # noqa: E731
+    snap(cash, 880400), snap(desk, 880400, "Derived"), snap(bank1, 680400), snap(bank2, 200000)
+    snap(desk, 870000, "Derived", "2026-10-01"), snap(bank1, 670000, "Final", "2026-10-01"), snap(bank2, 200000, "Final", "2026-10-01")  # no administrator line: the bank lines count
+    by = {str(r["position_date"]): r["net_worth"] for r in o.run("net_worth")}
+    assert by == {"2026-09-30": 880400, "2026-10-01": 870000}
+    assert R.tie_out(o.con, R.recipe("net_worth"), "t_net_worth")["ok"]

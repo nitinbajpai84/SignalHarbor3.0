@@ -375,7 +375,7 @@ def render(r: dict, name: str, dims: list[str] | None = None) -> str:
     """The recipe's SQL for the ready table `name` (one line)."""
     f = _file()
     cols = "".join(f"{r['dims'][d][0]} as {r['dims'][d][1]}, " for d in dims or [])
-    sql = r["sql"].replace("{dims}", cols).replace("{name}", name).replace("{positions}", f["snippets"]["positions"])
+    sql = r["sql"].replace("{dims}", cols).replace("{name}", name).replace("{holdings}", f["snippets"]["holdings"]).replace("{positions}", f["snippets"]["positions"])
     return " ".join(sql.split())
 
 
@@ -524,7 +524,7 @@ def tie_out(con, r: dict, name: str) -> dict | None:
     if not t:
         return None
     snip = _file()["snippets"]
-    sql = t["sql"].replace("{name}", name).replace("{positions_check}", snip["positions_check"])
+    sql = t["sql"].replace("{name}", name).replace("{positions_check}", snip["positions_check"]).replace("{holdings_check}", snip["holdings_check"])
     try:
         a, b = con.execute(sql).fetchone()
     except Exception:  # noqa: BLE001 - the table was not built on the copy: the figure's own line says so

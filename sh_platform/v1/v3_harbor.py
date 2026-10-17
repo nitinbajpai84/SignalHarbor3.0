@@ -795,9 +795,33 @@ def _north(x, text, first=False):
     th["decision"] = {"n": 1, "title": "Is this what you want?", "brief": b, "gaps": gaps}
     th["stage"] = "decision1"
     ev(th, "harbor", _turns(out) or "Here is what I understood you want. Is this right?", by="North")
-    if gaps:
+    if gaps and (need := still_needs(x.plane, th)):  # the gap that stopped the sign is back: one plain question, never Confirm again
+        ask_once(th, need)
+    elif gaps:
         ev(th, "harbor", "Still open: " + "; ".join(gaps) + ". Tell me in your own words, or say \"use the usual practice\"."
            " If you can sign, Confirm fills what is left with the usual practice first.")  # Confirm with gaps works (v3_signoff.before_sign)
+
+
+def still_needs(plane, th) -> str | None:
+    """Decision 1 guard (live r1, uc-013): the gaps that stopped the sign after a confirm (th["sign_gaps"], v3_signoff.before_sign), when nothing but
+    they are still open. A confirm cannot fill them, so the person is asked, plainly, instead of being shown Confirm again."""
+    was = th.get("sign_gaps")
+    if not was or not th.get("iid"):
+        return None
+    from sh_platform.v1 import v3_plan_guard as PG
+    from sh_platform.v1 import v3_signoff as SO
+    gaps = SO.blocking(plane, th["iid"]) + PG.figures_gap(plane, th, th["iid"])
+    return "; ".join(gaps) if gaps and set(gaps) <= set(was) else None
+
+
+def needs_text(need: str) -> str:
+    return f"I still need {need} before this can be signed."
+
+
+def ask_once(th, need: str) -> None:
+    """The one plain question for a gap a confirm did not fill; a reply goes to the brief, then the sign step runs again."""
+    ev(th, "question", needs_text(need))
+    th["stage"], th["resume"] = "question", {"chain": "A", "i": 0, "q": []}
 
 
 FILL = ("Where I have not said it, propose the usual practice for an office like ours and mark each as a suggestion "
@@ -887,7 +911,7 @@ def say(app, plane, tid, text, account_id) -> dict:
             except Exception as e:  # noqa: BLE001
                 log.warning("brief reply failed: %s", e)
             if (th.get("decision") or {}).get("gaps"):  # still not signable: the brief stays open with what is missing
-                th["resume"] = None
+                th["resume"] = th["resume"] if th["stage"] == "question" else None  # still_needs asked: the next reply comes back here
                 save(plane, th)
                 return th
             th["decision"], th["stage"] = None, "working"  # already confirmed once: carry on from the sign step
@@ -926,6 +950,9 @@ def decide(app, plane, tid, n, answer, answers, account_id) -> dict:
         SO.send(app, plane, th, (answers or {}).get("to"), account_id)
         return save(plane, th) or th
     SO.guard(app, plane, th, n, answer, account_id)
+    if n == 1 and answer == "confirm" and (need := still_needs(plane, th)):  # the same gap again: a confirm would only loop, so ask
+        ask_once(th, need)
+        return save(plane, th) or th
     if answer == "not_yet":
         ev(th, "decision_done", f"Not yet. Decision {n} stays open.")
         th["stage"] = "drafting" if n == 1 else th["stage"]

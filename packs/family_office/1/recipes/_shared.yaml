@@ -4,7 +4,7 @@
 #   names / words_all  what the figure is called in a brief (a phrase, or one word from each group)
 #   may_read           the only tables the figure's SQL may read (the model's own names); never_read: tables it must not read, with the reason in `why`
 #   dims               what the figure may be split by: name -> [expression, column]; default_dims is used when the brief names none
-#   sql                'create table {name} as ...' over the company model. {positions} is the snippet below; {dims} is the chosen dimensions
+#   sql                'create table {name} as ...' over the company model. {positions} and {holdings} are the snippets below; {dims} is the chosen dimensions
 #   tie_out            one query that returns (the ready table's number, the number it must equal); label says it in words
 #   needs              inputs the figure cannot be right without: a query that counts their rows; none means the figure is held, `why` says so
 suggestion: true
@@ -19,3 +19,24 @@ snippets:
     select s.portfolio_id, s.instrument_id, s.position_date, s.currency,
     coalesce(max(s.source_market_value) filter (where s.data_status is distinct from 'Carried forward'), max(s.source_market_value)) as v
     from position_snapshots as s where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id) group by all
+  # what the family holds (net worth and the figures built on it): the positions above, with one view of the cash of a portfolio, date and currency.
+  # The office's cash is reported up to three times: the administrator's cash line, the office's bank-account lines (instruments of bank_accounts) and
+  # the desk's derived cash. Only the first view present counts, in that order (live r1, morning note: the cash was counted three times).
+  # The CTE is still called positions, so a recipe switches by writing {holdings} for {positions}; it then reads instruments and bank_accounts.
+  holdings: >-
+    positions_all as (select s.* from (select s.*, row_number() over (partition by s.portfolio_id, s.instrument_id, s.position_date, s.currency
+    order by coalesce(s.data_status = 'Carried forward', false), s.recorded_at desc, s.id) as rn from position_snapshots as s
+    where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id)) as s where s.rn = 1),
+    positions as (select * exclude (cash_view, best_view) from (select a.*, min(a.cash_view) over (partition by a.portfolio_id, a.position_date, a.currency)
+    as best_view from (select p.*, case when i.instrument_type is distinct from 'cash' then null when lower(coalesce(p.data_status, '')) = 'derived' then 2
+    when exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = p.instrument_id) then 1 else 0 end as cash_view
+    from positions_all as p left join instruments as i on i.id = p.instrument_id) as a) as a where a.cash_view is null or a.cash_view = a.best_view)
+  holdings_check: >-
+    select c.portfolio_id, c.instrument_id, c.position_date, c.currency, c.v from (select c.*, min(c.cv) over (partition by c.portfolio_id, c.position_date,
+    c.currency) as bv from (select s.portfolio_id, s.instrument_id, s.position_date, s.currency,
+    coalesce(max(s.source_market_value) filter (where s.data_status is distinct from 'Carried forward'), max(s.source_market_value)) as v,
+    case when max(i.instrument_type) is distinct from 'cash' then null when bool_or(lower(coalesce(s.data_status, '')) = 'derived') then 2
+    when exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = s.instrument_id) then 1 else 0 end as cv
+    from position_snapshots as s left join instruments as i on i.id = s.instrument_id
+    where not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id) group by s.portfolio_id, s.instrument_id, s.position_date,
+    s.currency) as c) as c where c.cv is null or c.cv = c.bv
