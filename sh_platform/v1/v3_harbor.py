@@ -170,6 +170,29 @@ def my_files(x, kind=None) -> list[dict]:
     return [f for f in fs if kind is None or (f["source"] == "benchmark") == (kind == "benchmark")]
 
 
+def serves(plane, f: dict, sources) -> str | None:
+    """The source of `sources` a file serves: the one sharing the most words with its name, the source it was read as, or the kind a pack reader knows it as."""
+    from sh_platform.v1 import v3_pack_readers as PK
+
+    def best(words):
+        n, s = max(((len(_toks(s) & words), s) for s in sources or []), default=(0, None))
+        return s if n else None
+    if not sources:
+        return None
+    k = None if (hit := best(_toks(f["name"]) | _toks(f.get("source")))) else PK.recognise(plane, f["name"])  # the name first; the content (cached) only when the name says nothing
+    return hit or (best(_toks(f"{k[0]} {PK.KINDS.get(k[0], ('',))[0]}")) if k else None)
+
+
+def office_files(x) -> dict[str, list[dict]]:
+    """A file belongs to the office, not to one build: {source of this thread: files another build (or the pack readers) already loaded into
+    the office's warehouse for it, newest first}. The second person builds on what is loaded; Harbor asks for files only when none ever came."""
+    out: dict[str, list[dict]] = {}
+    for f in sorted(read_files(x.plane), key=lambda f: f.get("loaded_at") or f.get("arrived_at") or "", reverse=True):
+        if f["status"] == "loaded" and f.get("thread") != x.th["id"] and (s := serves(x.plane, f, x.th.get("sources"))):
+            out.setdefault(s, []).append(f)
+    return out
+
+
 def blob(plane, name: str) -> bytes:
     return plane.path("dropbox", name).read_bytes()
 
@@ -296,9 +319,10 @@ def _toks(s) -> set:
 
 def a_samples(x):
     A = f"/api/v1/build/p/{x.th['pid']}/architecture"
-    fs = my_files(x, "source")
-    if not fs:
+    fs, office = my_files(x, "source"), office_files(x)
+    if not fs and not office:  # asked only when no file for any source ever arrived in the office
         raise Q("I have no files to read yet. Drop this month's files in the drop folder and say so.")
+    fs += [f for v in office.values() for f in v[:2]]  # ponytail: Span sees the two newest office files of a source as samples; they are not read again
     for f in fs:
         sys_ = max(x.th["systems"], key=lambda s: len(_toks(s["name"]) & _toks(f["name"])), default=None)
         if not sys_ or not _toks(sys_["name"]) & _toks(f["name"]):
@@ -347,7 +371,25 @@ def a_intake(x):
         mp[m["id"]] = {"name": d.get("example_file") or m["id"], "tables": sorted({c["target_table"] for c in cols if c.get("target_table")}), "confidence": conf, "unmapped": [c["source"] for c in cols if not c.get("target_field") and c.get("source")]}
     th["maps"] = mp
     x.hide = set()
-    return f"{len(th['intake']) + len(th.get('pack') or {})} files read, {len(mp)} mappings proposed"
+    th["office"] = [_in_office(x, s, v) for s, v in office_files(x).items()]  # already loaded by another build: not read again
+    return f"{len(th['intake']) + len(th.get('pack') or {})} files read, {len(mp)} mappings proposed" + (f", {len(th['office'])} sources already in the office" if th["office"] else "")
+
+
+def _in_office(x, source: str, fs: list[dict]) -> dict:
+    f, who = fs[0], "the office"
+    if f.get("thread"):
+        try:
+            t = load(x.plane, f["thread"])
+            who = f"{t.get('started_by') or 'a colleague'}'s {' '.join(str(t.get('title') or 'build').split())[:60]}"
+        except Exception:  # noqa: BLE001 - a discarded build still loaded the file
+            who = "an earlier build"
+    return {"source": source, "files": [g["name"] for g in fs], "at": (f.get("loaded_at") or f.get("arrived_at") or "")[:10], "by": who}
+
+
+def _office_list(x) -> list[dict]:
+    """The newest office file of each source this thread uses from the office (a_intake listed them)."""
+    by = {f["name"]: f for f in read_files(x.plane)}
+    return [by[o["files"][0]] for o in x.th.get("office") or [] if o.get("files") and o["files"][0] in by]
 
 
 def d2(x) -> dict:
@@ -372,6 +414,8 @@ def d2(x) -> dict:
     from sh_platform.v1 import v3_docs as D
     from sh_platform.v1 import v3_pack_readers as PK
     files += PK.d2_files(x) + V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
+    files += [{"name": o["source"], "read_as": f"Already in the office: {o['source']} (loaded {o['at']} by {o['by']})", "goes_to": "the office's warehouse, as loaded",
+               "state": "reused", "confidence": "high"} for o in th.get("office") or []]
     qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
     from sh_platform.v1 import v3_judge as J
     qs += J.pending(x.plane, th["id"])  # a small judgement two models could not agree on: both opinions as options
@@ -379,7 +423,7 @@ def d2(x) -> dict:
     qs += R.questions(x)  # r9: the columns two models could not agree are clear, in one question to the person who raised the brief
     from sh_platform.v1 import v3_figures as F
     qs += F.account_questions(x)  # "Which entity owns account X?": an account number no portfolio has holds back the whole bank statement
-    csvs = [f["name"] for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
+    csvs = [f["name"] for f in my_files(x, "source") + _office_list(x) if f["name"].lower().endswith(".csv")]
     if csvs and not my_files(x, "benchmark"):
         qs.append({"id": "check:file", "text": "Which file should I check the numbers against before going live? Pick the statement that comes from someone else, not one I load.",
                    "options": [*csvs, "No check this time"], "assumed": None})
@@ -516,7 +560,7 @@ def b_compare(x):
     # no benchmark dropped: the brief's check source is the file of this thread that shares a word with the thread's wording,
     # else any statement from another party
     words = _toks(" ".join([str(x.th.get("title") or ""), *map(str, x.th.get("rules") or []), *(str(e.get("text") or "") for e in x.th["events"])]))
-    cands = [f for f in my_files(x, "source") if f["name"].lower().endswith(".csv")]
+    cands = [f for f in my_files(x, "source") + _office_list(x) if f["name"].lower().endswith(".csv")]
     ordered = [f for n, f in sorted(((len(_toks(f["source"]) & words), f) for f in cands), key=lambda p: -p[0]) if n]
     ordered += [f for f in cands if re.search(r"\bstatements?\b", str(f["source"]).lower())]
     if x.th.get("check_file"):
@@ -1001,6 +1045,8 @@ def set_status(plane, name, status) -> None:
             if f["name"] == name:
                 first = status == "loaded" and f["status"] != "loaded"
                 f["status"] = status
+                if first:
+                    f["loaded_at"] = now()
         _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
     if first and not V.is_pdf(name):  # the common load point: a csv, xlsx or eml that loaded is a file arriving, once (a PDF does it with its layout, v3_pdf)
         try:
@@ -1035,7 +1081,9 @@ def recognise(plane, name: str, threads: list[dict]):
         pick = F.pick_source(plane, name, [h[1] for h in hits], next(t for t in threads if t["id"] == hits[0][0]))
         if pick:
             return "recognised", pick, hits[0][0]
-    if len({h[0] for h in hits}) > 1 or len({h[1] for h in hits}) > 1:  # two threads, or two sources equally likely: ask, never guess
+    if len({h[0] for h in hits}) > 1:  # two threads use it: a file belongs to the office; one build reads it, every other build it serves uses it once loaded
+        return "recognised", hits[0][1], hits[0][0]
+    if len({h[1] for h in hits}) > 1:  # one build, two sources equally likely: ask, never guess
         if len({h[0] for h in hits}) == 1:  # one build, two sources: two models of different families decide; a person gets only their disagreement
             from sh_platform.v1 import v3_judge as J
             srcs = sorted({h[1] for h in hits})
@@ -1067,11 +1115,24 @@ def scan(app, plane) -> list[dict]:
                     new.append(f)
         fs = sorted(by.values(), key=lambda f: f["arrived_at"], reverse=True)
         _fp(plane).write_text(json.dumps(fs), encoding="utf-8")
-    for f in new:  # monthly: a file for a live thread runs it and only exceptions come back
-        t = next((t for t in ths if t["id"] == f["thread"] and t["stage"] == "live"), None)
-        if t and f["source"] != "benchmark" and t.get("mode") != "process":  # a process-only thread has no monthly load
-            start_chain(app, plane, t["id"], "M", None)
+    for f in new:  # monthly: a file runs every live thread it serves (its reader first, the others on what it loaded); only exceptions come back
+        if f["source"] == "benchmark":
+            continue
+        live = [t for t in ths if t["stage"] == "live" and t.get("mode") != "process" and (t["id"] == f["thread"] or serves(plane, f, t.get("sources")))]  # a process-only thread has no monthly load
+        ids = [t["id"] for t in sorted(live, key=lambda t: t["id"] != f["thread"])]
+        if ids:
+            _in_turn(app, plane, ids)
     return fs
+
+
+def _in_turn(app, plane, ids: list[str]) -> None:
+    def go():
+        for tid in ids:
+            run_chain(app, plane, tid, "M", None)
+    if SYNC:
+        go()
+    else:
+        threading.Thread(target=go, daemon=True).start()
 
 
 def m_load(x):
