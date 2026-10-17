@@ -447,3 +447,21 @@ def test_other_cards_have_inputs_and_keys():
         for q in k[i]["questions"].values():
             assert q["expected"] is not None and q["how"], i
     assert len(k) == 100
+
+
+def test_signed_rules_of_cards_51_to_100_agree_with_the_keys():
+    """A48 onward: every rule a card 51-100 needs is signed in reference/office_rules.csv with the value its answer key already uses."""
+    import json
+    rows = list(csv.DictReader((FIX / "reference" / "office_rules.csv").open(encoding="utf-8")))
+    signed = {r["rule"]: json.loads(r["parameters"]) for r in rows if r["approval_status"] == "approved" and r["parameters"]}
+    ex = lambda cid: next(iter(keys()[cid]["questions"].values()))["expected"]  # noqa: E731
+    assert {k[len("approver_limit_"):]: v["limit"] for k, v in signed.items() if k.startswith("approver_limit_")} == {n.lower().replace(" ", "_"): v for n, v in ex("uc-089-expapp")["limits"].items()}
+    assert {k: v["annual"] for k, v in signed.items() if k.startswith("office_budget_")} == {"office_budget_" + re.sub(r"[^a-z0-9]+", "_", c.lower()).strip("_"): 2 * v["budget_half_year"] for c, v in ex("uc-090-offcost")["by_category"].items()}
+    fc = ex("uc-072-cashfc")
+    assert (signed["forecast_call_assumption"]["amount"], signed["forecast_floor"]["amount"]) == (fc["monthly_call_assumption"], fc["floor"])
+    assert signed["price_tolerance_pct"]["max_pct"] == ex("uc-057-pricecheck")["tolerance_pct"]
+    assert {k: signed["manager_score_weights"][k] for k in ("returns", "fees", "timeliness", "watch")} == ex("uc-076-scorecard")["weights"]
+    allowed = {(m, e): lv for m, v in ex("uc-100-famaccess")["by_member"].items() for e, lv in v["allowed"].items()}
+    assert sum(1 for k, v in signed.items() if k.startswith("family_access_") and v["level"] != "none") == len(allowed) and all(v["level"] in ("none", "summary", "full") for k, v in signed.items() if k.startswith("family_access_"))
+    assert signed["signing_policy"] == {"min_signatories": 2, "required_role": "Head of Finance"} and signed["ladder_window_days"] == {"days": 90} and signed["automation_rework_minutes"]["minutes_per_failure"] == 45
+    assert not any(k.startswith("allocation_") for k in signed), "the interim targets of card 79 are proposed, not signed (its key says so)"

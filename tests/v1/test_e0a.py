@@ -96,7 +96,7 @@ def test_proposer_cannot_approve_and_approval_builds_the_warehouse(plane):
     assert E.has_field(plane, "office_notes", "body") and E.describe(plane, "office_notes")["layer"] == "company"
     assert E.describe(plane, "users")["layer"] == "core"
     names = names_in(plane, "select table_name from information_schema.tables")
-    assert "office_notes" in names and "organizations" in names and len(names) == 51
+    assert "office_notes" in names and "organizations" in names and len(names) == 61  # 60 core tables (A47) plus office_notes
     assert [v["state"] for v in E.versions(plane)] == ["approved", "superseded"]
     E.propose(plane, ADMIN, add_column={"table": "office_notes", "name": "tag", "type": "varchar(20)"})   # a later column migrates add-only
     assert E.approve(plane, HEAD, 3)["state"] == "approved"

@@ -3,6 +3,7 @@ build(w, R) makes every table once (X), generate3 writes the files from X, keys2
 a number in a key is a calculation on X or w. New files go in new kinds, so no file of the first 51 cards changes (the bank statements gain the planted lines of world.UNMATCHED and GRANTS).
 Synthetic data only."""
 import datetime as dt
+import re
 import shutil
 from decimal import Decimal as D
 from types import SimpleNamespace as NS
@@ -537,3 +538,39 @@ def generate3(w, R):
     mess("M42", "ambiguous columns", "new_feed/pinnacle_custody_positions_2026-10-12.csv", "Two of ten columns cannot be mapped with confidence: Value (market or book) and Dt (valuation, trade or settle date)")
     assert {r["kind"] for r in R.rows[n0:]} == set(NEW_KINDS), {r["kind"] for r in R.rows[n0:]} ^ set(NEW_KINDS)
     return X
+
+
+def wave2_rules(w):
+    """Office rules the cards 51 to 100 need, signed in the synthetic office (docs/v3/ASSUMPTIONS.md A48 onward), in the SIGNED_RULES shape.
+    Each value is the one the card's answer key already uses. Where a reader writes the rule as proposed v1 from its source file (budget,
+    approver limits, signing policy, family access policy), the signed one here is v2, so the proposed v1 stays on record beside it."""
+    s0, s1 = d("2026-04-01"), d("2026-09-30")
+    avg = q2(sum((c["amount"] for c in w.calls if s0 <= d(c["due"]) <= s1), D(0)) / 6)
+    ladder, buffer = 90, 250000
+    slug = lambda t: re.sub(r"[^a-z0-9]+", "_", t.lower()).strip("_")  # as the readers name the rule (v3_pack_readers_controls.slug)
+    r = [(f"approver_limit_{slug(n)}", v, f"{n} approves payments up to {v:,} USD. Signed by Daniel Foo (Head of Finance) on the April expense ledger's approval limits", "policy", dict(limit=v, currency="USD"), "approved", 2)
+         for n, v in APPROVERS]
+    r += [(f"office_budget_{slug(c)}", v,
+           f"Annual office budget for {c}: {v:,} USD. Signed by Mei Chen (Principal), who set the 2026 budget in April", "policy", dict(annual=v, currency="USD"), "approved", 2) for c, v in BUDGET.items()]
+    r.append(("signing_policy", SIGNING["min_signatories"], f"Every office account has at least {SIGNING['min_signatories']} signatories, one of whom is the {SIGNING['must_include']}. Signed by Mei Chen (Principal)", "policy",
+              dict(min_signatories=SIGNING["min_signatories"], required_role=SIGNING["must_include"]), "approved", 2))
+    r += [(f"family_access_{slug(m)}_{slug(e)}", lv, f"{m} sees {ENT[e]} at the level '{lv}'. Signed by Mei Chen (Principal), who approves any change to the family access policy", "policy",
+           dict(level=lv), "approved", 2) for m, pol in FAMILY_POLICY.items() for e, lv in pol.items()]
+    r += [("ladder_window_days", ladder, f"Idle cash is cash less the calls and the approved and scheduled payments of the next {ladder} days, less the cash buffer. Signed by Daniel Foo (Head of Finance)", "policy", dict(days=ladder), "approved", 1),
+          ("forecast_call_assumption", float(avg), f"The 12 month cash forecast assumes future capital calls at the monthly average of the calls due 1 Apr to 30 Sep 2026 ({avg:,} USD a month), from the month after the noticed call. Signed by Daniel Foo (Head of Finance)", "policy",
+           dict(amount=float(avg), currency="USD", basis="average_monthly_calls", window_from="2026-04-01", window_to="2026-09-30", months=6, from_month_offset=1), "approved", 1),
+          ("forecast_floor", 3 * buffer, f"The cash forecast must not fall below three cash buffers ({3 * buffer:,} USD); below it the family raises cash. Signed by Daniel Foo (Head of Finance)", "policy", dict(amount=3 * buffer, buffers=3, currency="USD"), "approved", 1),
+          ("forecast_horizon", "2027-09-30", "The cash forecast runs month by month to 30 Sep 2027, twelve month ends after the last statement month. Signed by Daniel Foo (Head of Finance)", "policy", dict(end="2027-09-30", months=12), "approved", 1),
+          ("forecast_distribution_basis", "payout_rate", "Expected distributions are the latest statement value of each private fund times the payout rate of the manager's outlook, per quarter end. Signed by Daniel Foo (Head of Finance)", "policy",
+           dict(basis="latest_value_times_payout_rate"), "approved", 1),
+          ("forecast_held_payments", "exclude", "Payments on hold in the payment schedule are left out of the cash forecast. Signed by Daniel Foo (Head of Finance)", "policy", dict(action="exclude", payment_stage="held"), "approved", 1),
+          ("price_tolerance_pct", float(PRICE_TOL * 100), f"An administrator price that differs from the second source by more than {float(PRICE_TOL * 100):g} percent of the second-source price is flagged. Signed by Tom Hale (Risk and Compliance Officer)", "tolerance",
+           dict(max_pct=float(PRICE_TOL * 100), basis="second_source"), "approved", 1),
+          ("manager_score_weights", "0.4/0.2/0.2/0.2", "Manager scorecard: score = 100 x (0.4 x return over 10 percent, capped at 1, + 0.2 x (1 - fee drag over 50 percent) + 0.2 x on-time share + 0.2 x (1 - watch flags over 4)); fee drag counts 100 when the gross gain is not positive and the fee part 0.5 when unknown. Signed by Raj Patel (Chief Investment Officer)", "policy",
+           dict(returns=0.4, fees=0.2, timeliness=0.2, watch=0.2, return_cap_pct=10, fee_drag_cap_pct=50, watch_flags_cap=4, fee_part_when_unknown=0.5), "approved", 1),
+          ("manager_score_bands", "75/50", "Manager scorecard bands: 75 or more add, 50 to 75 keep, below 50 review or exit. Signed by Raj Patel (Chief Investment Officer)", "policy", dict(add_min=75, keep_min=50), "approved", 1),
+          ("bank_line_purpose", "match", "A bank line is explained when its reference or payee matches a payment, invoice, capital call notice, payroll, trade, transfer, grant or expense on record; the bank's own fee and interest lines explain themselves; any other line is coded by Operations. Signed by Daniel Foo (Head of Finance)", "policy",
+           dict(match_on=["reference", "payee_name"], self_explained_types=["bank_fee", "interest"]), "approved", 1),
+          ("automation_rework_minutes", SOP_FAIL_MIN, f"Each failure of a process costs {SOP_FAIL_MIN} minutes of rework when processes are ranked for automation over six months. Signed by Anita Rao (Head of Data)", "policy",
+           dict(minutes_per_failure=SOP_FAIL_MIN, months=6), "approved", 1)]
+    return r
