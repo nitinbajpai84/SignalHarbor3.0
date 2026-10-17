@@ -6,14 +6,22 @@ import { beforeEach, expect, test, vi } from "vitest";
 
 import type { SignalNeed, SignalRow } from "../api";
 import SignalsPage from "../knowledge/SignalsPage";
+import DraftCard from "./DraftCard";
 import SignalCard from "./SignalCard";
 
 const actSignal = vi.fn();
 const listSignals = vi.fn();
 const listFired = vi.fn();
-vi.mock("../api", () => ({ actSignal: (...a: unknown[]) => actSignal(...a), listSignals: () => listSignals(), listFired: () => listFired() }));
+const listDrafts = vi.fn();
+const admitDraft = vi.fn();
+const rejectDraft = vi.fn();
+const editDraft = vi.fn();
+vi.mock("../api", () => ({
+  actSignal: (...a: unknown[]) => actSignal(...a), listSignals: () => listSignals(), listFired: () => listFired(), listDrafts: () => listDrafts(),
+  admitDraft: (...a: unknown[]) => admitDraft(...a), rejectDraft: (...a: unknown[]) => rejectDraft(...a), editDraft: (...a: unknown[]) => editDraft(...a),
+}));
 vi.mock("../Frame", () => ({ default: ({ children }: { children: ReactNode }) => <div>{children}</div> }));
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); listDrafts.mockResolvedValue([]); });
 
 const held: SignalNeed = {
   kind: "signal", id: "sg-1", signal: "uc01-bank-changed", title: "Bank details changed", text: "The account for Cedarpoint changed from 2209 to 4471.", severity: "problem",
@@ -85,4 +93,48 @@ test("the signals page lists each signal with its record and what fired lately",
   expect(screen.getAllByText("Operations lead")).toHaveLength(2);
   expect(await screen.findByText(/^Done.*Grace Ong/)).toBeInTheDocument();
   expect(screen.getByText("Cedarpoint call 7")).toBeInTheDocument();
+});
+
+const draft = {
+  id: "sd-1", status: "waiting", noticed: "Harbor noticed Grace checks bank details before every payment. Watch for it automatically?", needs: [], repeats: 2, evidence: [],
+  signal: { title: "Bank details differ from the standing instructions", message: "Check the bank details first.", route_to: "ops_lead", condition: "x", trigger: { on: "file_arrived" } },
+  backtest: { count: 3, checked: 9, examples: [], line: "Would have fired 3 times in 6 months: Cedarpoint call 7." },
+};
+
+test("Suggested by Harbor shows each draft with its backtest, and Admit, Edit and Reject work", async () => {
+  listSignals.mockResolvedValue([]);
+  listFired.mockResolvedValue([]);
+  listDrafts.mockResolvedValue([draft]);
+  admitDraft.mockResolvedValue({});
+  editDraft.mockResolvedValue({});
+  rejectDraft.mockResolvedValue({});
+  render(<MemoryRouter><SignalsPage /></MemoryRouter>);
+  expect(await screen.findByText("Suggested by Harbor")).toBeInTheDocument();
+  expect(screen.getByText(/Harbor noticed Grace checks bank details/)).toBeInTheDocument();
+  expect(screen.getByText("Would have fired 3 times in 6 months: Cedarpoint call 7.")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Admit" }));
+  expect(admitDraft).toHaveBeenCalledWith("sd-1");
+  await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+  await userEvent.clear(screen.getByLabelText("What the card says"));
+  await userEvent.type(screen.getByLabelText("What the card says"), "Call the bank first.");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(editDraft).toHaveBeenCalledWith("sd-1", { title: "Bank details differ from the standing instructions", message: "Call the bank first." });
+  await userEvent.click(screen.getByRole("button", { name: "Reject" }));
+  expect(rejectDraft).toHaveBeenCalledWith("sd-1");
+});
+
+test("a draft that still needs a rule says so, and a refused admit shows the plain message", async () => {
+  listSignals.mockResolvedValue([]);
+  listFired.mockResolvedValue([]);
+  listDrafts.mockResolvedValue([{ ...draft, needs: ["I cannot tell what limit you use."] }]);
+  admitDraft.mockRejectedValue(new Error("I still need the limit signed as an office rule before I can watch for this."));
+  render(<MemoryRouter><SignalsPage /></MemoryRouter>);
+  expect(await screen.findByText("I cannot tell what limit you use.")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Admit" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("limit signed");
+});
+
+test("on the Action list the draft is a card for the decision maker", () => {
+  render(<DraftCard id="sd-1" noticed={draft.noticed} title="T" message="M" backtest={draft.backtest.line} needs={[]} onDone={onDone} />);
+  expect(screen.getByRole("article", { name: "T" })).toBeInTheDocument();
 });

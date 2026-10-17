@@ -464,7 +464,10 @@ def evaluate(plane, ev: dict) -> dict:
 def on_document(plane, file: str, kind: str, values: dict) -> dict:
     """A file was read and loaded: values = {field: {value, page, quote}}. Called by the PDF loader (v3_pdf.load_files)."""
     kind = re.sub(r"[^a-z0-9]+", "_", kind.lower()).strip("_")
-    return evaluate(plane, {"trigger": "file_arrived", "kind": kind, "file": file, "doc": {re.sub(r"[^a-z0-9]+", "_", k.lower()).strip("_"): v for k, v in values.items()}})
+    doc = {re.sub(r"[^a-z0-9]+", "_", k.lower()).strip("_"): v for k, v in values.items()}
+    from sh_platform.v1 import v3_signal_draft as SD
+    SD.arrival(plane, kind, file, doc)  # kept, so a signal Harbor drafts later can be tried on what already arrived
+    return evaluate(plane, {"trigger": "file_arrived", "kind": kind, "file": file, "doc": doc})
 
 
 def on_file(plane, file: str) -> dict:
@@ -553,6 +556,7 @@ def act(plane, fired_id: str, by: str, choice: str | None = None, note: str = ""
                 raise ValueError("Write down who you spoke to and when.")
         card.update(status="dismissed" if dismiss else "acted", by=by, done_at=now(), choice=choice, note=(note or "").strip())
         _put(plane, card)
+    _watch(plane, card, by, dismiss)
     follow = {"fired": []} if dismiss else evaluate(plane, {**card["event"], "trigger": "action_done", "signal": card["signal"], "choice": choice})
     out = {**card, "next": [r["id"] for r in follow["fired"]]}
     then = card["action"].get("then") or {}
@@ -563,6 +567,16 @@ def act(plane, fired_id: str, by: str, choice: str | None = None, note: str = ""
         except ValueError as e:  # held: the approval stands, the payment is refused with the hold's reason
             out["payment"] = {"status": "refused", "why": str(e)}
     return out
+
+
+def _watch(plane, card: dict, by: str, dismissed: bool) -> None:
+    """A dismissal, or a note written while acting, is a check a person applied by hand: Harbor watches it (v3_signal_draft)."""
+    from sh_platform.v1 import v3_signal_draft as SD
+    who = str(card["person"].get("email") or by)
+    if dismissed:
+        SD.observe(plane, "dismissal", who, "dismissed_" + card["signal"], card["subject"], text=f"Dismissed: {card['title']}")
+    elif card.get("note") and (k := SD.kind_of_note(card["note"])):
+        SD.observe(plane, "check", who, k[0], k[1] or card["subject"], file_kind=(card.get("event") or {}).get("kind"), text=card["note"])
 
 
 def prepare_payment(plane, fund: str | None, by: str, card_id: str | None = None, subject: str = "") -> dict:

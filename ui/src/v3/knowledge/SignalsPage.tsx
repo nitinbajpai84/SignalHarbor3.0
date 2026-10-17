@@ -1,4 +1,5 @@
-import { listFired, listSignals, type FiredSignal, type SignalRow } from "../api";
+import { listDrafts, listFired, listSignals, type FiredSignal, type SignalRow } from "../api";
+import DraftCard from "../action/DraftCard";
 import V3Frame from "../Frame";
 import { Failed, Waiting, useRead } from "../board/common";
 import { fmtWhen, plainName, roleName } from "../plain";
@@ -39,6 +40,7 @@ const Row = ({ s }: { s: SignalRow }) => {
 export default function SignalsPage() {
   const [lib, again] = useRead(listSignals);
   const [recent, againRecent] = useRead(() => listFired());
+  const [drafts, againDrafts] = useRead(() => listDrafts("waiting"));
   return (
     <V3Frame>
       <main className="sgl-page">
@@ -51,6 +53,16 @@ export default function SignalsPage() {
         {lib.state === "error" && <Failed message={lib.message} again={again} />}
         {lib.state === "ready" && !lib.data.length && <p className="v3-mute">Nothing is being watched yet.</p>}
         {lib.state === "ready" && lib.data.length > 0 && <ul className="sgl-list">{lib.data.map((s) => <Row key={s.id} s={s} />)}</ul>}
+        {drafts.state === "ready" && drafts.data.length > 0 && (
+          <section aria-labelledby="h-suggested" className="dr-section">
+            <h2 id="h-suggested">Suggested by Harbor</h2>
+            <p className="v3-mute">Harbor saw these done by hand more than once. Each one says how often it would have caught something in the last six months.</p>
+            {drafts.data.map((d) => (
+              <DraftCard key={d.id} id={d.id} noticed={d.noticed} title={d.signal.title} message={d.signal.message} backtest={d.backtest.line} needs={d.needs}
+                onDone={() => { againDrafts(); again(); }} />
+            ))}
+          </section>
+        )}
         <h2>Recently fired</h2>
         {recent.state === "loading" && <Waiting what="Reading what fired lately" />}
         {recent.state === "error" && <Failed message={recent.message} again={againRecent} />}

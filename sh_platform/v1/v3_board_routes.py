@@ -20,6 +20,7 @@ from sh_platform.v1 import e6_trace, k10_note as N, talk as T, teach
 from sh_platform.v1 import v3_consume as C
 from sh_platform.v1 import v3_harbor as H
 from sh_platform.v1 import v3_process as P
+from sh_platform.v1 import v3_signal_draft as SD
 from sh_platform.v1.p1_project import Refused
 from sh_platform.v1.seats import viewer_of
 
@@ -173,6 +174,11 @@ def honest(plane, text: str, th: dict | None, out: dict) -> dict:
             "trace": out.get("trace", []) + [{"kind": "guard", "label": "The reply held no figure from the data, so it says what is missing"}]}
 
 
+def _email(request: Request) -> str:
+    me = request.app.state.account_store.get(request.state.account_id) or {}
+    return str((me if isinstance(me, dict) else vars(me)).get("email") or "")
+
+
 @router.post("/api/v3/ask")
 async def post_ask(request: Request):
     plane, viewer = _plane(request), viewer_of(request)
@@ -186,7 +192,10 @@ async def post_ask(request: Request):
     th = _live(plane)
     pid = th["pid"] if th else None
     try:
-        return await run_in_threadpool(C.answer, plane, viewer, text, lambda: _ask(plane, viewer, text, pid))
+        got = await run_in_threadpool(C.answer, plane, viewer, text, lambda: _ask(plane, viewer, text, pid))
+        fig = got.get("figure") or {}
+        SD.observe(plane, "question", _email(request), fig.get("id") or fig.get("label") or "", text, figure=fig.get("id"), text=text)  # who asked what, answered by which figure
+        return got
     except Refused as e:
         raise HTTPException(e.status, e.message) from None
     except Exception:  # noqa: BLE001 - a plain message, never a trace

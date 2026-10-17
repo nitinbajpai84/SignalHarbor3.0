@@ -50,10 +50,22 @@ export const listSignals = () => apiGet<SignalRow[]>("/api/v3/signals");
 export const listFired = (status?: FiredSignal["status"]) => apiGet<FiredSignal[]>(`/api/v3/signals/fired${status ? `?status=${status}` : ""}`);
 export const actSignal = (id: string, body: { choice?: string; note?: string; dismiss?: boolean }) =>
   apiSend<FiredSignal>("POST", `/api/v3/signals/${encodeURIComponent(id)}/act`, body);
+/** A signal Harbor drafted from something people did twice. On the desk it arrives as `kind: "signal_draft"`. */
+export interface SignalDraft {
+  id: string; status: "waiting" | "admitted" | "rejected"; noticed: string; needs: string[]; repeats: number; evidence: { at: string; text: string }[];
+  signal: { title: string; message: string; route_to: string; condition: string; trigger: { on: string; [k: string]: unknown } };
+  backtest: { count: number | null; checked: number; examples: string[]; line: string };
+}
+export interface DraftNeed { kind: "signal_draft"; id: string; title: string; text: string; role: string; needs: string[]; backtest: string; draft: { title: string; message: string }; actions: CardAction[] }
+export const listDrafts = (status?: SignalDraft["status"]) => apiGet<SignalDraft[]>(`/api/v3/signals/drafts${status ? `?status=${status}` : ""}`);
+const draftUrl = (id: string, what: "admit" | "reject" | "edit") => `/api/v3/signals/drafts/${encodeURIComponent(id)}/${what}`;
+export const admitDraft = (id: string) => apiSend<SignalDraft>("POST", draftUrl(id, "admit"), {});
+export const rejectDraft = (id: string, reason = "") => apiSend<SignalDraft>("POST", draftUrl(id, "reject"), { reason });
+export const editDraft = (id: string, body: { title?: string; message?: string }) => apiSend<SignalDraft>("POST", draftUrl(id, "edit"), body);
 export interface Figure { label: string; value: string; change: string; id?: string; name?: string; v?: number }
 export interface Note { text: string; figures: Figure[] }
 export interface FilesLine { arrived: number; recognised: number; waiting: number }
-export interface Desk { needs: (Card | SignalNeed)[]; note: Note | null; threads: ThreadSummary[]; files: FilesLine }
+export interface Desk { needs: (Card | SignalNeed | DraftNeed)[]; note: Note | null; threads: ThreadSummary[]; files: FilesLine }
 export interface FileRow { name: string; arrived_at: string; status: "recognised" | "loaded" | "waiting" | "question"; source: string; thread: string }
 export interface Step { n: number; at: string; agent: string; action: string; ok: boolean; run_id?: string; detail: string }
 export interface WorkTable { layer: string; name: string; rows: number; state: "reused" | "new" }
