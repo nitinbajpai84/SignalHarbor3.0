@@ -51,3 +51,22 @@ Reports and screenshots are in `D:/Temp/sh3-cycles/c1..c4`. The runner is `docs/
    - keeping the raiser-accepts-drafts permission;
    - the cash sign convention (money in positive);
    - picking a report total by its "Total" label.
+
+# Rounds 5 to 8 (16-17 Oct): recipes, binding by meaning, guards
+
+| Person | R1 | R2 | R3 | R4 | R5 | R6 | R7 | R8 |
+|---|---|---|---|---|---|---|---|---|
+| Daniel Foo, Head of Finance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | stuck | ✅ |
+| Anita Rao, Head of Data | ✅ | ✗ | ✅ | ✗ | ✅ | ✅ | ✅ | ✅ |
+| Raj Patel, CIO | ✗ | stuck | ✗ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Mei Chen, Principal | stuck | ✗ | wrong | stuck | ✅ | ✅ | ✅ | ✅ |
+| Grace Ong, Operations Lead | wrong | stuck | ✗ | stuck | ✅ | wrong | ✅ | ✅ |
+| Sofia Reyes, Investment Analyst | stuck | ✗ | ✗ | ✅ | ✅ | ✅ | ✅ | stuck (12 mapping rows) |
+| Tom Hale, Risk and Compliance | stuck | ✗ | ✗ | ✗ | ✗ | ✅ | stuck | ✅ |
+| Helen Foo, Fund Accountant | stuck | stuck | ✗ | ✗ | ✅ | ✅ | ✅ | ✅ |
+| Sam Lee, Operations Clerk | ✗ | ✗ | ✗ | stuck | stuck | ✗ | stuck | ✅ |
+| Priya Nair, Office and HR | ✅ | stuck | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Correct** | **3** | **1** | **3** | **4** | **8** | **8** | **7** | **9** |
+
+Round 8 note: Sam's run log ends "DONE ops_clerk: live; check PASS". His saved report was overwritten afterwards by a parallel
+Step 2 test that restored an older backup of the same shared file. The runner keeps its state in shared files; give each run its own.
