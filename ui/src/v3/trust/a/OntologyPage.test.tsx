@@ -13,10 +13,10 @@ test("graph draws every object and its relation; picking one shows its columns",
   vi.stubGlobal("fetch", vi.fn(async () => json(model)));
   page();
   await userEvent.click(await screen.findByRole("button", { name: "Commitment, Added by this office" }));
-  expect(screen.getByText("commitments.amount_usd")).toBeInTheDocument();
-  expect(screen.getByText("worked out: amount_usd - called_to_date")).toBeInTheDocument();
-  expect(screen.getByText("commits to")).toBeInTheDocument();
-  expect(screen.getByText("hedge_flag")).toBeInTheDocument();
+  expect(screen.getByText("Amount (USD)")).toBeInTheDocument();
+  expect(screen.getByText("Worked out from other details")).toBeInTheDocument();
+  expect(screen.getAllByText("commits to").length).toBeGreaterThan(0);
+  expect(screen.getByText("Hedge flag")).toBeInTheDocument();
 });
 
 test("admit posts the proposal", async () => {

@@ -8,8 +8,8 @@ const KIND_LABEL: Record<Connection["kind"], string> = { folder: "Drop folder", 
 const ADD: [AddKind | "folder" | "database" | "api", string, boolean][] = [
   ["folder", "Folder", false], ["mailbox", "Mailbox", true], ["sftp", "SFTP", true], ["http", "Shared drive", true], ["database", "Database", false], ["api", "REST API", false],
 ];
-/** Reading fine is done, a failed pull is a problem, a source not built yet is just information. */
-const PILL: Record<Connection["state"], string> = { ok: "v3-pill done", failing: "v3-pill problem", coming: "v3-pill info" };
+/** Reading fine is just information (nothing is finished yet), a failed pull is a problem, a source not built yet is just information. */
+const PILL: Record<Connection["state"], string> = { ok: "v3-pill info", failing: "v3-pill problem", coming: "v3-pill info" };
 
 function AddForm({ kind, onSaved }: { kind: AddKind; onSaved: () => void }) {
   const f = FORMS[kind];

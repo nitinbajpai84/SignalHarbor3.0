@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import V3Frame from "../Frame";
 import { CENTRE, SOURCE, STATUS, getSkill, listSkills, when, type Centre, type Source, type SkillDetail, type SkillRow, type SkillStatus } from "../action/actionApi";
 import "../action/action.css";
+import { noOntology, skillLabel } from "../plain";
 import { usePhone } from "./k/usePhone";
 import "./skills.css";
 
@@ -18,8 +19,8 @@ function Pick<T extends string>({ label, all, value, onChange, names }: { label:
   );
 }
 
-/** Status colours mean one thing: in use is done, waiting needs a person, retired is just information. */
-const TONE: Record<SkillStatus, string> = { in_use: "done", waiting: "needs", retired: "info" };
+/** Status colours mean one thing: in use is information (a skill being used is not a finished check), waiting needs a person, retired is just information. */
+const TONE: Record<SkillStatus, string> = { in_use: "info", waiting: "needs", retired: "info" };
 const Status = ({ s }: { s: SkillRow }) => <span className={`v3-pill ${TONE[s.status]}`}>{STATUS[s.status]}</span>;
 const From = ({ s }: { s: SkillRow }) => (s.source === "office" ? <span className="v3-pill harbor">{SOURCE[s.source]}</span> : <>{SOURCE[s.source]}</>);
 const tested = (s: SkillRow) => (s.tested ? `${s.tested.passed} of ${s.tested.total} known answers` : "Not tested");
@@ -51,7 +52,7 @@ export default function SkillsPage() {
 
   const shown = useMemo(() => (rows ?? []).filter((s) =>
     (!centre || s.centre === centre) && (!source || s.source === source) && (!status || s.status === status) &&
-    (!q.trim() || `${s.name} ${s.goal}`.toLowerCase().includes(q.trim().toLowerCase()))), [rows, centre, source, status, q]);
+    (!q.trim() || `${skillLabel(s.name)} ${s.name} ${s.goal}`.toLowerCase().includes(q.trim().toLowerCase()))), [rows, centre, source, status, q]);
 
   if (failed) return <V3Frame><p className="v3-err act-empty" role="alert">The skill library did not load. <button type="button" onClick={load}>Try again</button></p></V3Frame>;
   if (!rows) return <V3Frame><p className="v3-mute act-empty" role="status">Loading the skill library...</p></V3Frame>;
@@ -65,14 +66,14 @@ export default function SkillsPage() {
             <>
               <div>
                 <span className="v3-kicker">Selected skill</span>
-                <h2>{row.name}</h2>
+                <h2>{skillLabel(row.name)}</h2>
                 <span className="sk-meta">{CENTRE[row.centre]} · <From s={row} /> · v{row.version} · <Status s={row} /></span>
               </div>
               {detailFailed && <p className="v3-err" role="alert">The detail did not load.</p>}
               {!detail && !detailFailed && <p className="v3-mute" role="status">Loading...</p>}
               {detail && (
                 <>
-                  <Para title="Goal" text={detail.goal} />
+                  <Para title="Goal" text={noOntology(detail.goal)} />
                   <Para title="When Harbor uses it" text={detail.when} />
                   <Para title="What it needs" text={detail.inputs} />
                   <Para title="What it gives" text={detail.output} />
@@ -109,7 +110,7 @@ export default function SkillsPage() {
           {waiting.length > 0 && (
             <div className="act-item sk-waiting">
               <span className="v3-kicker">Waiting for you: {waiting.length}</span>
-              {waiting.map((w) => <p key={w.id}><Link to={`/v3/skill/${encodeURIComponent(w.id)}`}>{w.name}</Link> <span className="v3-mute">Review and admit it before Harbor uses it.</span></p>)}
+              {waiting.map((w) => <p key={w.id}><Link to={`/v3/skill/${encodeURIComponent(w.id)}`}>{skillLabel(w.name)}</Link> <span className="v3-mute">Review and admit it before Harbor uses it.</span></p>)}
             </div>
           )}
           <h2>Skill library</h2>
@@ -119,8 +120,8 @@ export default function SkillsPage() {
               <ul className="sk-cards">{shown.map((s) => (
                 <li key={s.id} className={s.id === sel ? "on" : undefined}>
                   <button type="button" aria-pressed={s.id === sel} onClick={() => pick(s.id)}>
-                    <span className="sk-top"><b>{s.name}</b><Status s={s} /></span>
-                    <span className="sk-goal">{s.goal}</span>
+                    <span className="sk-top"><b>{skillLabel(s.name)}</b><Status s={s} /></span>
+                    <span className="sk-goal">{noOntology(s.goal)}</span>
                     <span className="sk-meta">{CENTRE[s.centre]} · <From s={s} /> · v{s.version} · {tested(s)} · used {s.used}</span>
                   </button>
                   {s.id === sel && <div ref={side}>{detailPane}</div>}
@@ -131,10 +132,10 @@ export default function SkillsPage() {
               <tbody>{shown.map((s) => (
                 <tr key={s.id} data-on={s.id === sel} className="sk-row" onClick={() => pick(s.id)}>
                   <td>
-                    <button type="button" className="lib-name" aria-pressed={s.id === sel} onClick={(e) => { e.stopPropagation(); pick(s.id); }}>{s.name}</button>
+                    <button type="button" className="lib-name" aria-pressed={s.id === sel} onClick={(e) => { e.stopPropagation(); pick(s.id); }}>{skillLabel(s.name)}</button>
                     <div><Status s={s} /></div>
                   </td>
-                  <td>{s.goal}</td><td>{CENTRE[s.centre]}</td><td><From s={s} /></td>
+                  <td>{noOntology(s.goal)}</td><td>{CENTRE[s.centre]}</td><td><From s={s} /></td>
                   <td className="num">v{s.version}</td><td>{tested(s)}</td><td className="num">{s.used}</td>
                   <td>{s.last_changed ? `${s.last_changed.by} · ${when(s.last_changed.at)}` : ""}</td>
                 </tr>

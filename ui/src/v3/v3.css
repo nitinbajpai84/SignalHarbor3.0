@@ -166,3 +166,29 @@
   --problem:#B23B32;--problem-soft:#F8E6E4;--harbor:#B08D57;--harbor-soft:#F3ECE0;--info:#5A6878;--info-soft:#EEF2F6;
   --lift:0 1px 2px color-mix(in srgb,var(--ink) 6%,transparent)}
 :root,.v3,.v3c{--on-fill:#FFFFFF;--lift-sm:0 1px 2px rgba(14,26,43,.05);--lift-lg:0 4px 16px rgba(14,26,43,.10);--print-ink:#000000;--print-line:#999999;--print-soft:#EEEEEE}
+
+/* Light only, for now (dark mode is not approved). A dark OS must not leak in: the page says it is light, and the
+   old app's dark tokens (read by its bare p, a, input rules) are re-pointed at the light values inside every v3 surface. */
+:root,.v3,.v3c{--l-ground:#F4F6F9;--l-white:#FFFFFF;--l-ink2:#3A4A59;--l-line2:#B9C4D0;--l-rule:rgba(14,26,43,.09);--l-edge:rgba(14,26,43,.22)}
+:root:has(.v3),:root:has(.lg-page){color-scheme:light}
+html:has(.v3),body:has(.v3){background:var(--paper);color:var(--ink)}
+.v3,.v3c{color-scheme:light;--bg:var(--l-ground);--bg2:var(--l-white);--ink2:var(--l-ink2);--faint:var(--info);--rule:var(--l-rule);
+  --surface:var(--paper);--surface-elevated:var(--card);--border-hairline:var(--line);--text-primary:var(--ink);--text-muted:var(--mute)}
+.v3 .v3-card,.v3 .v3-note,.v3 .v3-bubble,.v3 .v3-dec,.v3 .v3-link{background:var(--card);color:var(--ink)}
+.v3 select{background:var(--card);color:var(--ink);color-scheme:light}
+/* Sign-in: the same light page and the act navy, never teal. */
+.lg-page{color-scheme:light;--ds-ground:var(--l-ground);--ds-surface:var(--l-white);--ds-surface-2:var(--act-soft);--ds-line:var(--line);--ds-line-2:var(--l-line2);
+  --ds-ink:var(--ink);--ds-ink-soft:var(--l-ink2);--ds-ink-muted:var(--info);--ds-ink-faint:var(--info);--ds-teal:var(--act);--ds-teal-bright:var(--act);
+  --ds-link-hover:var(--act-dark);--ds-on-teal:var(--on-fill);--ds-amber:var(--needs);--ds-red:var(--problem)}
+.lg-page .lg-theme{display:none} /* the theme chips are off while dark mode is not approved */
+/* A figure never overflows its tile: it wraps or shrinks, and tiles wrap in the grid. */
+.v3-figs{grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))}
+.v3-fig{min-width:0}
+.v3-fig .num,.desk .v3-fig .num,.v3:has(.v3-tabs[aria-label="Trust"]) .v3-fig .num{font-size:clamp(20px,5.2vw,28px);overflow-wrap:anywhere;word-break:break-word;line-height:1.15}
+/* Trust tabs on a phone scroll sideways; a soft edge shows there is more. */
+@media (max-width:719px){
+  .v3 .v3-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+    background:linear-gradient(90deg,var(--paper) 30%,transparent) 0 0/36px 100% no-repeat local,linear-gradient(270deg,var(--paper) 30%,transparent) 100% 0/36px 100% no-repeat local,
+      linear-gradient(90deg,var(--l-edge),transparent) 0 0/14px 100% no-repeat scroll,linear-gradient(270deg,var(--l-edge),transparent) 100% 0/14px 100% no-repeat scroll}
+  .v3 .v3-tabs a{white-space:nowrap;flex:none}
+}

@@ -92,7 +92,7 @@ export default function LanguagePage() {
               {l.taught.length === 0 && <p className="v3-mute">Nothing taught yet.</p>}
               {l.taught.map((t) => (
                 <div key={t.name} className="v3-link">
-                  <b>{t.name}<span className="v3-mute">v{t.version} · <span className={`v3-pill ${t.on ? "done" : "info"}`}>{t.on ? "On" : "Off"}</span></span></b>
+                  <b>{t.name}<span className="v3-mute">v{t.version} · <span className="v3-pill info">{t.on ? "On" : "Off"}</span></span></b>
                   <small>Distilled from {t.books} {t.books === 1 ? "book" : "books"}</small>
                 </div>
               ))}

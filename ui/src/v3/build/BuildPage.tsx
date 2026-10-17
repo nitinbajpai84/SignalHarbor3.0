@@ -123,7 +123,7 @@ function Board() {
                 <section key={c.title} className="b3-col" aria-label={c.title}>
                   <h2>{c.title} <span className="b3-count">{mine.length}</span></h2>
                   {mine.map((r) => {
-                    const m = r.needs > 0 ? "needs" : r.stage === "live" ? "done" : "harbor";
+                    const m = r.needs > 0 ? "needs" : r.stage === "live" ? "info" : "harbor";
                     return (
                       <article key={r.id} className={`b3-card ${m}`}>
                         <b>{r.title}</b>

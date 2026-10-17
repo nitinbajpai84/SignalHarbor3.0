@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
 
 import { getRuns, type Run } from "../api";
+import { fmtWhen, hasThread, runLabel, useThreadTitles } from "../plain";
 import { TrustPage, useLoad } from "./b/Shell";
 
-const HEADS = ["Run ID", "Thread", "Kind", "Started", "Files in", "Checks passed", "Result", "Signed by"];
+const HEADS = ["Run", "Use case", "Kind", "Started", "Files in", "Checks passed", "Result", "Signed by"];
 
 export default function ProofPage() {
   const s = useLoad(getRuns, "runs");
   const runs: Run[] = s.data?.runs ?? [];
+  const title = useThreadTitles();
   return (
     <TrustPage kicker="Trust › Runs and proof · for the auditor" title="Every run, and the checks it passed" sub="Each row is one piece of work Harbor did." state={s}
       empty={s.data && !runs.length ? "No runs yet. The first run appears once a thread has worked on a copy." : false}>
@@ -17,10 +19,10 @@ export default function ProofPage() {
             <thead><tr>{HEADS.map((h) => <th key={h} style={{ textAlign: "left", padding: "0 10px 10px 0", fontSize: 12, color: "var(--mute)", fontWeight: 500 }}>{h}</th>)}</tr></thead>
             <tbody>{runs.map((r) => (
               <tr key={r.run_id} style={{ borderTop: "1px solid var(--line)" }}>
-                <td className="num" style={{ padding: "10px 10px 10px 0" }}>{r.run_id}</td>
-                <td><Link to={`/v3/thread/${encodeURIComponent(r.thread)}`}>{r.thread}</Link></td>
+                <td style={{ padding: "10px 10px 10px 0" }} title={r.run_id}>{runLabel(r.started)}</td>
+                <td>{hasThread(r.thread) ? <Link to={`/v3/thread/${encodeURIComponent(r.thread)}`} title={r.thread}>{title(r.thread)}</Link> : "No use case"}</td>
                 <td>{r.kind === "live" ? "Live" : "Copy"}</td>
-                <td>{r.started}</td>
+                <td>{fmtWhen(r.started)}</td>
                 <td className="num">{r.files}</td>
                 <td className="num"><span className={`v3-pill ${r.checks_passed < r.checks_total ? "problem" : "done"}`}>{r.checks_passed}/{r.checks_total}</span></td>
                 <td>{r.result}</td>

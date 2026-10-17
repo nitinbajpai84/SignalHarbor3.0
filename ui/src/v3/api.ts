@@ -81,7 +81,7 @@ export interface People {
   usage: { questions: number; builds: number; mode: "testing" | "real" };
 }
 export interface Run {
-  run_id: string; thread: string; kind: "copy" | "live"; started: string; files: number;
+  run_id: string; thread: string | null; kind: "copy" | "live"; started: string; files: number;
   checks_passed: number; checks_total: number; result: string; signed_by: string;
 }
 export interface Connection {

@@ -6,6 +6,7 @@ import { MicButton, combineText } from "../../v1/voice";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
 import RoleSuggest from "./RoleSuggest";
+import { fmtNum } from "../plain";
 import { when } from "../thread/ThreadPage";
 import { decide, sendForSignature, getDesk, getThread, say, startThread, type Card, type Desk, type Event, type Stage } from "../api";
 import "./desk.css";
@@ -164,7 +165,7 @@ export default function DeskPage() {
                   <p>{note.text.split(/(?<=[.!?])\s/)[0]}</p>
                   <div className="v3-figs">
                     {note.figures.filter((f) => f.value && f.value !== "None").slice(0, 2).map((f) => (
-                      <div key={f.label} className="v3-fig"><small>{f.label}</small><span className="num">{f.value}</span><small>{f.change}</small></div>
+                      <div key={f.label} className="v3-fig"><small>{f.label}</small><span className="num">{fmtNum(f.value)}</span><small>{f.change}</small></div>
                     ))}
                   </div>
                 </div>
