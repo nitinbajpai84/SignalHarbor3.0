@@ -166,7 +166,7 @@ def _b(path_or_bytes) -> str:
 def my_files(x, kind=None) -> list[dict]:
     if getattr(x, "app", None):  # files dropped before the brief existed are matched now, at the moment Harbor looks for them
         scan(x.app, x.plane)
-    fs = [f for f in read_files(x.plane) if f.get("thread") == x.th["id"] and f["status"] in ("recognised", "loaded", "question")]
+    fs = [f for f in read_files(x.plane) if f.get("thread") == x.th["id"] and f["status"] in ("recognised", "loaded", "question") and f["name"] not in getattr(x, "hide", ())]
     return [f for f in fs if kind is None or (f["source"] == "benchmark") == (kind == "benchmark")]
 
 
@@ -326,6 +326,8 @@ def a_pack(x):
 def a_intake(x):
     th, mp = x.th, {}
     th["intake"] = {}
+    from sh_platform.v1 import v3_pack_readers as PK
+    PK.intake(x)  # the pack's readers take the files they know first (bank statement, positions, notice ...); the paths below never see those
     from sh_platform.v1 import v3_docs as D
     D.intake(x)  # emails and notes: document intake, never table intake (v3_docs)
     V.intake(x)  # PDFs: document intake and reading by layout; the loop below is for spreadsheets
@@ -344,7 +346,8 @@ def a_intake(x):
         conf = round(sum(1 for c in cols if c.get("target_field")) / len(cols), 2) if cols else 0
         mp[m["id"]] = {"name": d.get("example_file") or m["id"], "tables": sorted({c["target_table"] for c in cols if c.get("target_table")}), "confidence": conf, "unmapped": [c["source"] for c in cols if not c.get("target_field") and c.get("source")]}
     th["maps"] = mp
-    return f"{len(th['intake'])} files read, {len(mp)} mappings proposed"
+    x.hide = set()
+    return f"{len(th['intake']) + len(th.get('pack') or {})} files read, {len(mp)} mappings proposed"
 
 
 def d2(x) -> dict:
@@ -367,7 +370,8 @@ def d2(x) -> dict:
             qs.append({"id": f"map:{i}", "text": f"I am not sure how to read {m['name']}.{reason} Use my reading?", "options": ["Use my reading", "Leave this file out"], "assumed": "Use my reading"})
     from sh_platform.v1 import v3_loads as L
     from sh_platform.v1 import v3_docs as D
-    files += V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
+    from sh_platform.v1 import v3_pack_readers as PK
+    files += PK.d2_files(x) + V.d2_files(x) + L.d2_files(x) + D.d2_files(x)
     qs += V.questions(x) + D.questions(x)  # one question per new PDF layout; one per document that states a value
     from sh_platform.v1 import v3_judge as J
     qs += J.pending(x.plane, th["id"])  # a small judgement two models could not agree on: both opinions as options
@@ -435,7 +439,9 @@ def b_load(x):
     n_fig, a_fig = L.load(x)  # labelled figures (report workbooks and report PDFs) go to the document's extracted fields
     from sh_platform.v1 import v3_docs as D
     n_doc, a_doc = D.load(x)  # a value an email or a note states loads only once the person confirmed its line; the rest is context
-    loaded, aside = loaded + n_pdf + n_fig + n_doc, aside + a_pdf + a_fig + a_doc
+    from sh_platform.v1 import v3_pack_readers as PK
+    n_pack, a_pack = PK.load(x)  # the files a pack reader knows: read as their kind
+    loaded, aside = loaded + n_pdf + n_fig + n_doc + n_pack, aside + a_pdf + a_fig + a_doc + a_pack
     titles = {a["title"] for a in aside}  # a retry replaces the lines of the last try, it does not repeat them
     x.th["exceptions"] = [*(e for e in x.th.get("exceptions") or [] if e.get("title") not in titles), *aside]
     if not loaded and aside:  # nothing at all loaded: each file with its reason, in one line each
@@ -1044,8 +1050,10 @@ def scan(app, plane) -> list[dict]:
 def m_load(x):
     B, pid = None, x.th["pid"]
     x.th["file_problems"], done, pdfs, docs = [], 0, [], []
+    from sh_platform.v1 import v3_pack_readers as PK
+    packed, done, x.th["file_problems"] = PK.monthly(x)  # the pack's readers first; a file one of them took never goes the generic way
     for f in my_files(x, "source"):
-        if f["status"] != "recognised":
+        if f["status"] != "recognised" or f["name"] in packed:
             continue
         if V.is_pdf(f["name"]) or f["name"].lower().endswith((".eml", ".md", ".txt", ".docx")):
             (pdfs if V.is_pdf(f["name"]) else docs).append(f["name"])

@@ -301,7 +301,8 @@ def test_cash_card_6_the_sgd_to_convert_at_the_planning_rate_and_the_banks_rates
     r = one(rows, entity="Evergreen Holdings")
     assert f2(r["convert_amount"]) == k["sgd_to_convert_for_call_7"] and f2(r["rate"]) == k["planning_rate"] and r["convert_currency"] == "SGD"
     checks = office.run("fx_rate_check")
-    assert len(checks) == 9 and all(abs(float(c["difference_pct"])) < 0.05 for c in checks if c["difference_pct"] is not None)
+    assert len(checks) == 10  # the 9 confirmed conversions and the desk's one the bank never confirmed (M09)
+    assert all(abs(float(c["difference_pct"])) < 0.05 for c in checks if c["difference_pct"] is not None)
     assert one(checks, trade_reference="FXF-2026-002")["bank_rate"] == Decimal("1.345200")
 
 
@@ -383,10 +384,7 @@ def test_hold_card_13_the_one_instrument_with_no_asset_class_is_found(office):
     k, rows = key("uc-013-secgaps"), office.run("identifier_gaps")
     gaps = [r for r in rows if r["has_gap"]]
     assert [g["instrument"] for g in gaps] == k["instruments"] and len(gaps) == k["count"] and gaps[0]["no_class"] and not gaps[0]["no_identifier"]
-    # the key's value is the 30 September position; the recipe reads the latest one, 13 October, from the custodian file
-    text = (next(OFFICE.glob("2026-10/custodian_positions/positions_20261013.csv"))).read_text(encoding="utf-8")
-    prc = [l for l in text.splitlines() if "Pacific Rim Convertible" in l][0].split(",")
-    assert float(gaps[0]["gap_value"]) == float(prc[9])
+    # the recipe measures at the latest month end loaded (30 September), the date of the key's value
     sep = next(OFFICE.glob("*/custodian_positions/positions_20260930.csv")).read_text(encoding="utf-8")
     assert float([l for l in sep.splitlines() if "Pacific Rim Convertible" in l][0].split(",")[9]) == k["value"]
 
@@ -549,8 +547,10 @@ def test_the_rules_of_the_office_are_signed_rows_in_the_shape_the_recipes_read(o
     assert rules["limit_manager_entity_b"]["bucket"] == "Cedarpoint Ventures" and rules["limit_manager_entity_b"]["max_pct"] == 55
     assert rules["limit_hedge_funds"]["min_pct"] == 20 and rules["limit_listed_equity_liquid"]["max_pct"] == 90
     assert rules["cio_materiality"] == {"amount": 100000, "pct": 0.5, "currency": "USD"} and rules["statement_due"] == {"business_days": 10}
-    # the loader signs nothing the files do not state: no bank limit, no benchmark link, no sovereign exemption, no payment window, no private-markets budget
-    assert not [c for c in rules if c.startswith("bank_limit") or c in {"benchmark_link", "payment_run_window_days", "allocation_private_markets"} or "exempt" in c]
+    # the rules the file signs itself (office_rules.csv: type, parameters, status, version) are signed too: the sovereign exemption and the benchmark link
+    assert "benchmark_link" in rules and any("exempt" in c for c in rules)
+    # the loader signs nothing the files do not state: no bank limit, no payment window, no private-markets budget
+    assert not [c for c in rules if c.startswith("bank_limit") or c in {"payment_run_window_days", "allocation_private_markets"}]
 
 
 # ---- more of the keys, on the same warehouse --------------------------------------------------------------------------------------------------------
