@@ -33,38 +33,40 @@ recipes:
     may_read: [position_snapshots, cash_movements, instruments, portfolios, legal_entities]
     never_read: [commitments, transactions]
     why: A break is the administrator's change in cash set against the movements that should explain it. It is never the plain sum of the movements.
-    formula: Break = the administrator's closing cash of the day, less the cash it started the period with, less the sum of the cash movements recorded on the same portfolios after the period start up to that day. Money in is positive. Zero means the two sources agree.
+    formula: Break of a day = the administrator's closing cash of the day, less its closing cash on the day before it (its previous snapshot date), less the sum of the cash movements recorded on the same portfolios after that earlier date up to the day. Money in is positive. Zero means the two sources agree; the break of one day is never carried into the next. The administrator's cash is its own balance, not the office's bank accounts and not a cash line the desk derived.
     grain: By entity and day
     sql: >-
       create table {name} as with {positions},
-      bal as (select p.legal_entity_id as entity_id, e.entity_name as entity, l.position_date, l.currency, sum(l.source_market_value) as closing_cash
+      bal0 as (select p.legal_entity_id as entity_id, e.entity_name as entity, l.portfolio_id, l.position_date, l.currency, l.source_market_value as v
       from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
-      join legal_entities as e on e.id = p.legal_entity_id group by all),
-      first_day as (select entity_id, currency, min(position_date) as start_date from bal group by all),
-      held as (select distinct l.portfolio_id from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash'),
+      join legal_entities as e on e.id = p.legal_entity_id where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id)
+      and coalesce(lower(l.data_status), '') <> 'derived'),
+      bal as (select entity_id, entity, position_date, currency, sum(v) as closing_cash from bal0 group by all),
+      step as (select b.*, lag(b.position_date) over w as prev_date, lag(b.closing_cash) over w as prev_cash from bal as b window w as (partition by b.entity_id, b.currency order by b.position_date)),
+      held as (select distinct portfolio_id from bal0),
       mv as (select p.legal_entity_id as entity_id, m.currency, m.effective_date, sum(m.amount) as moved from cash_movements as m
       join portfolios as p on p.id = m.portfolio_id where m.portfolio_id in (select portfolio_id from held)
       and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id) group by all),
-      moved as (select b.entity_id, b.currency, b.position_date, coalesce(sum(mv.moved), 0) as moved from bal as b
-      join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
-      left join mv on mv.entity_id = b.entity_id and mv.currency = b.currency and mv.effective_date > f.start_date and mv.effective_date <= b.position_date group by all)
-      select b.entity, b.position_date as day, b.currency, cast(b.closing_cash as decimal(18,2)) as closing_cash,
-      cast(b.closing_cash - o.closing_cash as decimal(18,2)) as cash_change, cast(m.moved as decimal(18,2)) as movements,
-      cast(b.closing_cash - o.closing_cash - m.moved as decimal(18,2)) as cash_break
-      from bal as b join first_day as f on f.entity_id = b.entity_id and f.currency = b.currency
-      join bal as o on o.entity_id = f.entity_id and o.currency = f.currency and o.position_date = f.start_date
-      join moved as m on m.entity_id = b.entity_id and m.currency = b.currency and m.position_date = b.position_date
+      moved as (select s.entity_id, s.currency, s.position_date, coalesce(sum(mv.moved), 0) as moved from step as s
+      left join mv on mv.entity_id = s.entity_id and mv.currency = s.currency and mv.effective_date > s.prev_date and mv.effective_date <= s.position_date where s.prev_date is not null group by all)
+      select s.entity, s.position_date as day, s.currency, cast(s.closing_cash as decimal(18,2)) as closing_cash,
+      cast(s.closing_cash - s.prev_cash as decimal(18,2)) as cash_change, cast(m.moved as decimal(18,2)) as movements,
+      cast(s.closing_cash - s.prev_cash - m.moved as decimal(18,2)) as cash_break
+      from step as s join moved as m on m.entity_id = s.entity_id and m.currency = s.currency and m.position_date = s.position_date
     measure: cash_break
     columns:
       closing_cash: The administrator's closing cash of the day.
-      cash_change: The administrator's closing cash less the cash at the start of the period.
-      movements: The cash movements recorded on the same portfolios after the period start, up to the day.
+      cash_change: The administrator's closing cash less its closing cash on its previous snapshot date.
+      movements: The cash movements recorded on the same portfolios after the previous snapshot date, up to the day.
       cash_break: The cash change less the movements. Zero when the two sources agree.
     tie_out:
-      label: The administrator cash in the break equals the cash positions of the position snapshots for the same days
+      label: The administrator cash in the break equals the administrator cash positions of the position snapshots for the same entities, currencies and days
       sql: >-
-        select (select coalesce(sum(closing_cash), 0) from {name}), (select coalesce(sum(c.v), 0) from ({positions_check}) as c join instruments as i on i.id = c.instrument_id
-        and i.instrument_type = 'cash' join portfolios as p on p.id = c.portfolio_id where p.legal_entity_id is not null)
+        select (select coalesce(sum(closing_cash), 0) from {name}), (select coalesce(sum(s.source_market_value), 0) from position_snapshots as s join instruments as i on i.id = s.instrument_id
+        and i.instrument_type = 'cash' join portfolios as p on p.id = s.portfolio_id join legal_entities as e on e.id = p.legal_entity_id
+        where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) and coalesce(lower(s.data_status), '') not in ('derived', 'carried forward')
+        and not exists (select 1 from position_snapshots as x where x.supersedes_position_id = s.id)
+        and exists (select 1 from {name} as t where t.entity = e.entity_name and t.currency = s.currency and t.day = s.position_date))
     needs:   # an input with no rows: the figure is held at Decision 3, never stated (c6 ops_lead: with no movements the break was the plain change in cash)
       - why: No cash movements are loaded for the portfolios whose cash the administrator reports, so the break would only be the change in that cash, not a break.
         sql: >-
@@ -111,6 +113,8 @@ recipes:
   # Where a recipe needs a signed office rule, business_rules and rule_versions are added to may_read (the stub lists did not name them); the rule is read, never typed (docs/v3/ASSUMPTIONS.md A20).
   # Wave 2 (verifier fixes): an unpaid call that is past due stays in the calls (open = noticed or expected, or recorded with a due date not yet passed); every date is the entity's own latest cash date;
   # a rule that is not signed gives an empty figure ("not on record"), never zero; the administrator's cash excludes the instruments of the office's own bank accounts (no double count).
+  # Shadow commitment rows (live r1, uc-007): a row with no register source, no called figure and no call movement, in a fund whose other rows state a called figure, is a placeholder
+  # for a commitment the register already holds (it would add its whole amount as unfunded); it is left out. ponytail: a genuinely new commitment recorded by hand in a fund with register siblings is left out until it has a call or a register line.
   - id: called_to_date
     label: Called to date and unfunded
     cards: [2, 36]
@@ -122,7 +126,7 @@ recipes:
     formula: Called before the notice = the called amount the commitment file states at its as-at date, plus the confirmed call movements after that date in the commitment's currency. A noticed call not yet recorded is added for "after the notice". Unfunded = commitment less called. A noticed call larger than the unfunded amount before it does not fit, and neither does a call in another currency than the commitment (calls_in_other_currency counts them; they are not added).
     grain: By commitment (fund and investor entity)
     sql: >-
-      create table {name} as with cur as (select c.* from commitments as c where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id)),
+      create table {name} as with cur as (select c.* from commitments as c where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id) and not (c.source_record_id is null and c.called_to_date is null and not exists (select 1 from cash_movements as m where m.commitment_id = c.id) and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
       mv as (select m.*, c.currency as commit_currency from cash_movements as m join cur as c on c.id = m.commitment_id where m.movement_type = 'call' and m.confirmation_status <> 'cancelled'
       and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
       conf as (select c.id as commitment_id, coalesce(sum(abs(m.amount)) filter (where m.confirmation_status = 'confirmed' and m.currency = c.currency
@@ -185,7 +189,7 @@ recipes:
       and f.field_name = 'management_fee_rate' and f.review_status <> 'rejected' where d.document_type = 'fund_terms'
       and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       commit as (select c.instrument_id, e.entity_name as investor, c.commitment_amount as commitment from commitments as c join legal_entities as e on e.id = c.legal_entity_id
-      where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id)),
+      where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id) and not (c.source_record_id is null and c.called_to_date is null and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
       pick as (select n.*, c.commitment, count(c.commitment) over (partition by n.document_id) as matches from notice as n left join commit as c on c.instrument_id = n.instrument_id
       and (n.investor is null or position(lower(c.investor) in lower(n.investor)) > 0) qualify row_number() over (partition by n.document_id order by c.commitment desc) = 1)
       select p.title as notice, try_cast(regexp_extract(p.title, '([0-9]+)$', 1) as integer) as call_no, i.canonical_name as fund, p.investor, p.notice_date,
@@ -714,7 +718,7 @@ recipes:
   - id: intercompany_balance
     label: Intercompany balance
     cards: [28]
-    names: [intercompany balance, transfers between entities, due to due from, intercompany loan]
+    names: [intercompany balance, transfers between entities, due to due from, intercompany loan, money between entities, lent between entities, entity lent to, inter entity loan, inter entity loans, loans between entities]
     may_read: [cash_movements, portfolios, legal_entities, source_records, approvals, users]
     never_read: [position_snapshots, commitments, transactions]
     why: A transfer between two entities is two cash movements, one on each side, each naming the other portfolio. The balance is what one side lent less what came back, never read from a bank balance.

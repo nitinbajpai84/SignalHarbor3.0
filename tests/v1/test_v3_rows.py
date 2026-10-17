@@ -76,7 +76,8 @@ def test_clear_columns_settle_through_two_agreeing_models_and_each_is_an_assumpt
     assert edits(calls, "gold_remove") == [] and R.questions(x) == []
     assert [(w, m, p) for w, m, p, _ in calls if m == "POST"] == [("leo", "POST", "/pack/submit"), ("anita", "POST", "/pack/approve")]
     assert len(J.assumptions(plane, "t-1")) == 2  # each settled column is recorded as an assumption
-    assert box.calls[0] == box.calls[1]  # the checker sees the very same system text and evidence as the worker
+    seen = [json.dumps(c, sort_keys=True) for c in box.calls]  # columns are judged 4 at a time, so the calls of two columns interleave
+    assert seen and all(seen.count(c) == 2 for c in seen)  # the checker sees the very same system text and evidence as the worker
 
 
 def test_unclear_columns_become_one_decision_2_question_to_the_raiser_and_the_pack_still_goes(plane, monkeypatch):

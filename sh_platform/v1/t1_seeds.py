@@ -74,7 +74,7 @@ _REPORTING = [
      "Which benchmark applies to the growth portfolio (the partner can settle)."),
     ("extraction", "What to take out of each kind of document", False, "long_text", "For each kind of document, the values to read out of it.",
      "From a monthly statement: account, date, closing value, fees."),
-    ("benchmarks", "For each figure, what you reported last period and what it should read after the load", True, "table",
+    ("benchmarks", "For each figure, what you reported last period and what it should read after the load", False, "table",  # optional: no prior report, or the usual practice, must never re-open Decision 1 after a confirm
      "One row per figure: last period's figure and what the load should give.", "Net worth | September | 41.2 million | within 0.1 percent"),
 ]
 _COLS = {"kpis": ["name", "definition", "formula", "unit", "period", "owner"], "inputs": ["name", "kind", "holds", "owner"],

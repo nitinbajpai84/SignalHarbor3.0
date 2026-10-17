@@ -5,13 +5,13 @@ recipes:
   - id: concentration
     label: Single-issuer concentration
     names: [single issuer concentration, single-issuer concentration, issuer concentration, single name concentration, single name limit, concentration, largest holding, largest position]
-    may_read: [position_snapshots, instruments, portfolios]
+    may_read: [position_snapshots, instruments, portfolios, bank_accounts]
     never_read: [commitments, cash_movements, transactions]
     why: Concentration is the share of what is held, so it reads the positions and the instrument that names the issuer. A single-name limit is set on a portfolio, so the share is of that portfolio.
-    formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100.
+    formula: Concentration in percent = the market value held in one issuer (the instrument's name) in a portfolio divided by the portfolio's total market value held, for the same date and currency, times 100. Cash counts once, as net_worth counts it.
     grain: By portfolio, issuer and position date
     sql: >-
-      create table {name} as with {positions}, tot as (select portfolio_id, position_date, currency, sum(source_market_value) as total from positions group by all)
+      create table {name} as with {holdings}, tot as (select portfolio_id, position_date, currency, sum(source_market_value) as total from positions group by all)
       select p.portfolio_name as portfolio, i.canonical_name as issuer, l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as exposure,
       cast(100 * sum(l.source_market_value) / nullif(max(t.total), 0) as decimal(9,2)) as concentration_pct
       from positions as l join instruments as i on i.id = l.instrument_id left join portfolios as p on p.id = l.portfolio_id
@@ -23,9 +23,9 @@ recipes:
       exposure: The market value held in the issuer.
       concentration_pct: The issuer's share of everything the portfolio holds on the date, in percent.
     tie_out:
-      label: The exposures add up to the total of the position snapshots for the same dates
+      label: The exposures add up to the total of the position snapshots for the same dates, cash counted once
       sql: >-
-        select (select coalesce(sum(exposure), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+        select (select coalesce(sum(exposure), 0) from {name}), (select coalesce(sum(v), 0) from ({holdings_check}) as c)
 
   - id: change_since_report
     label: Change since the issued report
@@ -265,7 +265,7 @@ recipes:
   - id: drift_vs_target
     label: Drift from the policy band and target
     cards: [32]
-    names: [drift from policy target, drift against policy target, policy band drift, outside the policy band, asset class outside its band, drift from the policy band]
+    names: [drift from policy target, drift against policy target, policy band drift, outside the policy band, asset class outside its band, drift from the policy band, allocation drift, policy band breach, band breach, outside its band, outside their band]
     may_read: [position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: A policy band is a share of one portfolio by asset class or by manager, so it reads the positions, the instrument's class and manager, and the signed limits.
@@ -357,7 +357,7 @@ recipes:
   - id: report_tie_out
     label: Issued report against the administrator
     cards: [23]
-    names: [report tie out, report tie-out, report total against administrator, issued report against the administrator, report agrees with the administrator]
+    names: [report tie out, report tie-out, report total against administrator, issued report against the administrator, report agrees with the administrator, issued report with the administrator, agree with the administrator, agrees with the administrator]
     may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, valuation_observations]
     never_read: [commitments, cash_movements, transactions]
     why: The issued report is a document whose lines are read as fields (assumption A3); the administrator's side is the position snapshots that came from the administrator. A report is checked against what the administrator held on the same month end, not against anything else.
@@ -468,7 +468,7 @@ recipes:
   - id: trace_coverage
     label: Share of sampled figures traced
     cards: [24]
-    names: [sampled figures traced, trace coverage, share of sampled figures traced, audit sample traced, auditor sample traced to source]
+    names: [sampled figures traced, trace coverage, share of sampled figures traced, audit sample traced, auditor sample traced to source, items traced, items traced to source, missing trace, cannot trace]
     may_read: [documents, extracted_fields]
     never_read: [commitments, cash_movements, transactions]
     why: The auditor's sample is a loaded file whose items are read as fields; an item is traced when an issued report's line has the same month, name and figure, with the file and page it was read from.

@@ -331,6 +331,20 @@ def test_card7_unfunded_across_all_funds_with_call_7_counted(office):
     assert funds["Cedarpoint Ventures III"]["noticed"] == 1_250_000  # call 7 is noticed, not recorded: the register still shows 6,000,000 called
 
 
+def test_card7_shadow_commitment_rows_are_not_counted_as_unfunded(office, data):
+    """r1 uc-007: placeholder rows (no register source, no called figure, no call) for commitments the register holds gave 98.85M committed, 58.6M unfunded."""
+    for k, f in data["funds"].items():  # one placeholder per register line, and one for an investor the register does not list in that fund
+        office.ins("commitments", id=office.i("cmt"), legal_entity_id=office.ent[f["entity"]], instrument_id=office.inst[k], commitment_amount=f["commitment"], currency="USD", recorded_at=office.ts(ASOF),
+                   committed_on=f["committed_on"])
+    k0 = next(iter(data["funds"]))
+    other = next(c for c in ENTITY_NAME if c != data["funds"][k0]["entity"])
+    office.ins("commitments", id=office.i("cmt"), legal_entity_id=office.ent[other], instrument_id=office.inst[k0], commitment_amount=6_000_000, currency="USD", committed_on="2023-09-20", recorded_at=office.ts(ASOF))
+    rows = office.build("commitments_by_fund")
+    total = next(r for r in rows if r["is_total"])
+    assert total["unfunded"] == 14_600_000 and len(rows) == len(data["funds"]) + 1
+    assert R.tie_out(office.con, R.recipe("commitments_by_fund"), "gold_commitments_by_fund")["ok"]
+
+
 def test_card7_a_call_is_counted_once_whatever_its_state_and_month(office, data):
     funds = lambda: by([r for r in office.build("commitments_by_fund") if not r["is_total"]], "fund")  # noqa: E731
     c = funds()["Cedarpoint Ventures III"]

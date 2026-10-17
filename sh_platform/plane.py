@@ -47,6 +47,15 @@ def _is_bad_part(part) -> bool:
     return any(_DRIVE.match(c) or len(c) > _NAME_MAX for c in re.split(r"[\\/]", part))
 
 
+def _plain(p: Path) -> Path:
+    """Windows: resolve() can hand back the extended form \\\\?\\D:\\... when another thread creates a folder of the path while it resolves
+    (Python 3.11 ntpath.realpath), and that form is never "under" the plain root. The same path without the prefix is checked instead."""
+    s = str(p)
+    if not s.startswith("\\\\?\\"):
+        return p
+    return Path("\\\\" + s[8:] if s[4:8].upper() == "UNC\\" else s[4:])
+
+
 @dataclass(frozen=True)
 class CompanyPlane:
     company_id: str
@@ -65,6 +74,7 @@ class CompanyPlane:
             p = self.root.joinpath(*(p.replace("\\", "/") for p in parts)).resolve()
         except (OSError, RuntimeError, ValueError):  # RuntimeError: link loop
             raise CrossCompanyError("path outside company plane") from None
+        p = _plain(p)
         if not p.is_relative_to(self.root):
             raise CrossCompanyError("path outside company plane")
         if not p.exists() and parts and str(parts[0]) in ("library", "projects"):  # L3: a library file that moved into its folder

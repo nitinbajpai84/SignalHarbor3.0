@@ -5,10 +5,10 @@ recipes:
   - id: net_worth
     label: Net worth
     names: [net worth, networth, worth, total worth, nav, net asset value, assets under management, aum]
-    may_read: [position_snapshots, valuation_observations, portfolios, legal_entities, instruments]
+    may_read: [position_snapshots, valuation_observations, portfolios, legal_entities, instruments, bank_accounts]
     never_read: [commitments, cash_movements, transactions]
     why: "Net worth is what the family holds at a date: the positions or the valuations on that date. A commitment is a promise to invest, not a holding."
-    formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Currencies are never added together.
+    formula: Net worth = the sum of the market values of the position snapshots of each date, one value for each portfolio, instrument, date and currency (a snapshot that a later one supersedes is out; a carried-forward row is out when a real row exists). Cash counts once, from the administrator's cash line, else the office's bank-account lines, else the desk's derived cash, never two of them for the same portfolio, date and currency. Currencies are never added together.
     grain: By portfolio (or entity) and position date
     always_dims: true   # one split on every build, so the table is the same whatever the brief says it is split by (an entity total is the sum of its portfolios)
     default_dims: [portfolio]
@@ -16,7 +16,7 @@ recipes:
       entity: [e.entity_name, entity]
       portfolio: [p.portfolio_name, portfolio]
     sql: >-
-      create table {name} as with {positions} select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as net_worth
+      create table {name} as with {holdings} select {dims}l.position_date, l.currency, cast(sum(l.source_market_value) as decimal(18,2)) as net_worth
       from positions as l join portfolios as p on p.id = l.portfolio_id left join legal_entities as e on e.id = p.legal_entity_id group by all
     measure: net_worth
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
@@ -25,9 +25,9 @@ recipes:
       net_worth: The market value of everything held at the position date, in the currency shown.
       position_date: The date the positions are as at.
     tie_out:
-      label: Net worth equals the sum of the position snapshots for the same dates
+      label: Net worth equals the sum of the position snapshots for the same dates, cash counted once
       sql: >-
-        select (select coalesce(sum(net_worth), 0) from {name}), (select coalesce(sum(v), 0) from ({positions_check}) as c)
+        select (select coalesce(sum(net_worth), 0) from {name}), (select coalesce(sum(v), 0) from ({holdings_check}) as c)
 
   - id: identifier_gaps
     label: Instruments with no class or identifier
@@ -80,7 +80,7 @@ recipes:
     label: Valuation age
     status: ready
     cards: [21]
-    names: [value age, stale valuations, valuation age, days since valuation]
+    names: [value age, stale valuations, valuation age, days since valuation, old value, old values]
     may_read: [valuation_observations, position_snapshots, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: "How old a value is depends on the date it is valued at, not the date it was loaded. A superseded observation is out: the amended one counts. An estimate is shown as an estimate, never passed off as a final."

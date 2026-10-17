@@ -153,8 +153,18 @@ def _overlay(ext: dict, new: dict, core_names: set[str]) -> dict:
     return out
 
 
+def slug(name) -> str:
+    """'unmatched count' / 'Allocation drift (%)' as unmatched_count / allocation_drift; a name that is already usable is returned unchanged."""
+    n = str(name or "").strip()
+    return n if _NAME.fullmatch(n) else re.sub(r"[^a-z0-9]+", "_", n.lower()).strip("_")[:63]
+
+
 def _merge(core: dict, ext: dict) -> dict:
     """Core plus company extension. Refuses any change to a core object and any name or type that cannot be built."""
+    ext = deepcopy(ext)
+    for et in ext["tables"]:
+        for c in et.get("columns") or []:
+            c["name"] = slug(c.get("name"))  # a label with spaces never blocks the plan
     tables = {t["name"]: t for t in core["tables"]}
     core_names = set(tables)
     merged = [deepcopy(t) for t in core["tables"]]
