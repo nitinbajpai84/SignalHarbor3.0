@@ -187,10 +187,22 @@ def office_files(x) -> dict[str, list[dict]]:
     """A file belongs to the office, not to one build: {source of this thread: files another build (or the pack readers) already loaded into
     the office's warehouse for it, newest first}. The second person builds on what is loaded; Harbor asks for files only when none ever came."""
     out: dict[str, list[dict]] = {}
+    srcs = x.th.get("sources") or []
+    said = [" ".join([str(x.th.get("title") or ""), str((x.th.get("brief") or {}).get("question") or "")])]  # a brief that names no source: its question's words, as claim_files
     for f in sorted(read_files(x.plane), key=lambda f: f.get("loaded_at") or f.get("arrived_at") or "", reverse=True):
-        if f["status"] == "loaded" and f.get("thread") != x.th["id"] and (s := serves(x.plane, f, x.th.get("sources"))):
+        if f["status"] != "loaded" or f.get("thread") == x.th["id"]:
+            continue
+        s = serves(x.plane, f, srcs) if srcs else serves(x.plane, f, said) and _kind_name(x.plane, f)
+        if s:
             out.setdefault(s, []).append(f)
     return out
+
+
+def _kind_name(plane, f: dict) -> str:
+    """What a file is, for a brief that names no source: the kind a pack reader knows it as, else the source it was read as."""
+    from sh_platform.v1 import v3_pack_readers as PK
+    k = PK.recognise(plane, f["name"])
+    return PK.KINDS[k[0]][0] if k and k[0] in PK.KINDS else f.get("source") or f["name"].rsplit(".", 1)[0]
 
 
 def blob(plane, name: str) -> bytes:

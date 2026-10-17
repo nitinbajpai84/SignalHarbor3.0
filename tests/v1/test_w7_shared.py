@@ -76,3 +76,8 @@ def test_a_file_for_two_open_builds_goes_to_one_reader_not_a_question(office):
     ths = [{"id": t, "stage": "decision1", "sources": ["Bank balances"]} for t in ("t-x", "t-y")]
     status, source, tid = H.recognise(office, "bank_balances_2026-10.csv", ths)
     assert status == "recognised" and source == "Bank balances" and tid in ("t-x", "t-y")
+
+
+def test_a_brief_that_names_no_source_finds_the_office_files_by_its_question(office):
+    d = thread(office, "t-d", "Every morning I check cash at the bank for each entity", [])
+    assert "bank statement" in H.office_files(d) and H.a_samples(d).endswith("given to Span as samples")
