@@ -1717,21 +1717,23 @@ def read_files(plane, items: list[tuple[str, bytes, str, str]], standing: list[t
     def recorder(kind, fn):
         return S.record(plane, thread_id, KINDS[kind][1], fn)
 
-    def attempt(batch):
+    def attempt(batch, trial=False):
         names = {b[3] for b in batch}
         with tempfile.TemporaryDirectory(prefix="pack-", ignore_cleanup_errors=True) as tmp:
             stage(Path(tmp), [*batch, *(i for i in state if i[3] not in names)], clock)
             with wh.connect(plane) as con:
                 con.execute("begin")
                 try:
-                    o = Office(con, tmp, org, clock.isoformat(), incremental=True, recorder=recorder)
+                    o = Office(con, tmp, org, clock.isoformat(), incremental=True, recorder=None if trial else recorder)
                     for b in batch:
                         o.staged[b[2]] = o.staged.get(b[2], 0) + 1
                     rep = o.load()
-                    con.execute("commit")
+                    con.execute("rollback" if trial else "commit")
                 except BaseException:
                     con.execute("rollback")
                     raise
+        if trial:
+            return
         for k, v in rep.items():
             r = report.setdefault(k, {"files": 0, "rows": 0, "not_loaded": [], "flagged": []})
             r["files"] += v["files"]
@@ -1739,6 +1741,20 @@ def read_files(plane, items: list[tuple[str, bytes, str, str]], standing: list[t
             r["not_loaded"] += v["not_loaded"]
             r["flagged"] += v["flagged"]
         done.extend(b[0] for b in batch)
+
+    def split(batch, by_kind):
+        kinds = list(dict.fromkeys(b[2] for b in batch))
+        if by_kind and len(kinds) > 1:
+            return [[b for b in batch if b[2] == k] for k in kinds]
+        return [batch[:len(batch) // 2], batch[len(batch) // 2:]]
+
+    def failing(batch, by_kind=True):
+        """The files of the batch that fail on a trial read (rolled back): [(file, error)]."""
+        try:
+            attempt(batch, trial=True)
+            return []
+        except Exception as e:  # noqa: BLE001 - narrowed down below
+            return [(batch[0], e)] if len(batch) == 1 else [f for g in split(batch, by_kind) for f in failing(g, False)]
 
     def tolerant(batch, by_kind=True):
         try:
@@ -1748,13 +1764,19 @@ def read_files(plane, items: list[tuple[str, bytes, str, str]], standing: list[t
             if len(batch) == 1:
                 aside.append((batch[0][0], f"{type(e).__name__}: {e}"[:200]))
                 return
-            kinds = list(dict.fromkeys(b[2] for b in batch))
-            if by_kind and len(kinds) > 1:
-                groups = [[b for b in batch if b[2] == k] for k in kinds]
-            else:
-                m = len(batch) // 2
-                groups = [batch[:m], batch[m:]]
-            for g in groups:
+            # live r3: one bad file split a drop by kind, so the notices were read apart from the registers and bank statements they are matched with
+            # (calls posted to a superseded commitment, paid calls left open). The readers of one batch see each other's rows: set aside only the
+            # files that fail on a trial, and read the rest together.
+            bad = failing(batch, by_kind) if by_kind else []
+            if bad and len(bad) < len(batch):
+                ids = {id(b) for b, _ in bad}
+                try:
+                    attempt([b for b in batch if id(b) not in ids])
+                    aside.extend((b[0], f"{type(x).__name__}: {x}"[:200]) for b, x in bad)
+                    return
+                except Exception:  # noqa: BLE001 - they fail only together: read them apart, as before
+                    log.warning("pack readers failed on the %d files left", len(batch) - len(bad), exc_info=True)
+            for g in split(batch, by_kind):
                 tolerant(g, by_kind=False)
     if todo:
         tolerant(todo)

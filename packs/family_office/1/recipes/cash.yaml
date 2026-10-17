@@ -123,19 +123,20 @@ recipes:
     may_read: [cash_movements, commitments, instruments, legal_entities]
     never_read: [position_snapshots, transactions]
     why: A call is a cash movement of type call linked to its commitment; the commitment file states the called amount at its own date. Cash balances say nothing about what was called.
-    formula: Called before the notice = the called amount the commitment file states at its as-at date, plus the confirmed call movements after that date in the commitment's currency. A noticed call not yet recorded is added for "after the notice". Unfunded = commitment less called. A noticed call larger than the unfunded amount before it does not fit, and neither does a call in another currency than the commitment (calls_in_other_currency counts them; they are not added).
+    formula: Called before the notice = the called amount the commitment file states at its as-at date, plus the confirmed call movements after that date in the commitment's currency. A noticed call not yet recorded (received on or after the file's as-at date; an earlier one is in the stated figure) is added for "after the notice". A call posted to a commitment row that a later row replaced counts for the row that replaced it. Unfunded = commitment less called. A noticed call larger than the unfunded amount before it does not fit, and neither does a call in another currency than the commitment (calls_in_other_currency counts them; they are not added).
     grain: By commitment (fund and investor entity)
     sql: >-
-      create table {name} as with cur as (select c.* from commitments as c where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id) and not (c.source_record_id is null and c.called_to_date is null and not exists (select 1 from cash_movements as m where m.commitment_id = c.id) and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
-      mv as (select m.*, c.currency as commit_currency from cash_movements as m join cur as c on c.id = m.commitment_id where m.movement_type = 'call' and m.confirmation_status <> 'cancelled'
-      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), cur as (select c.* from commitments as c where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id) and not (c.source_record_id is null and c.called_to_date is null and not exists (select 1 from cmv as m where m.commitment_id = c.id) and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
+      mv as (select m.*, c.currency as commit_currency, c.called_as_at as commit_as_at from cmv as m join cur as c on c.id = m.commitment_id where m.movement_type = 'call' and m.confirmation_status <> 'cancelled'
+      and not exists (select 1 from cmv as x where x.supersedes_cash_movement_id = m.id)),
       conf as (select c.id as commitment_id, coalesce(sum(abs(m.amount)) filter (where m.confirmation_status = 'confirmed' and m.currency = c.currency
       and m.effective_date > coalesce(c.called_as_at, date '1900-01-01')), 0) as since_stated,
       count(m.id) filter (where m.currency <> c.currency) as other_currency_calls from cur as c left join mv as m on m.commitment_id = c.id group by c.id),
       nt as (select m.commitment_id, sum(abs(m.amount)) filter (where m.currency = m.commit_currency) as noticed, min(m.due_date) as due_date from mv as m
-      where m.confirmation_status = 'noticed' group by m.commitment_id),
+      where m.confirmation_status = 'noticed' and cast(m.received_at as date) >= coalesce(m.commit_as_at, date '1900-01-01') group by m.commitment_id),
       base as (select c.id as commitment_id, c.legal_entity_id, e.entity_name as investor, i.canonical_name as fund, c.currency, c.commitment_amount as commitment,
-      coalesce(c.called_to_date, 0) + f.since_stated as called_before, coalesce(n.noticed, 0) as noticed, n.due_date as notice_due_date, f.other_currency_calls
+      coalesce(c.called_to_date, 0) + f.since_stated as called_before, coalesce(n.noticed, 0) as noticed, n.due_date as notice_due_date, f.other_currency_calls,
+      (select count(*) from commitments as x where x.instrument_id = c.instrument_id and not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) and x.id not in (select id from cur)) as placeholders
       from cur as c join instruments as i on i.id = c.instrument_id join legal_entities as e on e.id = c.legal_entity_id join conf as f on f.commitment_id = c.id
       left join nt as n on n.commitment_id = c.id)
       select b.commitment_id, b.legal_entity_id, b.investor, b.fund, b.currency, cast(b.commitment as decimal(18,2)) as commitment,
@@ -143,12 +144,13 @@ recipes:
       cast(b.called_before + b.noticed as decimal(18,2)) as called_after_notice,
       cast(b.commitment - b.called_before as decimal(18,2)) as unfunded_before_notice,
       cast(b.commitment - b.called_before - b.noticed as decimal(18,2)) as unfunded_after_notice,
-      b.noticed <= b.commitment - b.called_before and b.other_currency_calls = 0 as notice_fits, b.other_currency_calls as calls_in_other_currency from base as b
+      b.noticed <= b.commitment - b.called_before and b.other_currency_calls = 0 as notice_fits, b.other_currency_calls as calls_in_other_currency, b.placeholders as placeholders_left_out from base as b
     measure: unfunded_after_notice
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
       - {if: noticed_not_recorded and notice_fits, stop: true, say: "The {noticed_not_recorded} call fits {fund}: {called_before_notice} called of {commitment} committed, {called_after_notice} after it, leaving {unfunded_after_notice} unfunded"}
       - {if: noticed_not_recorded, stop: true, say: "The {noticed_not_recorded} call does not fit {fund}: only {unfunded_before_notice} of the {commitment} committed is unfunded"}
       - {once: true, say: "Uncalled across {n} commitments is {sum:unfunded_after_notice} after the noticed calls, {sum:unfunded_before_notice} before them"}
+      - {if: placeholders_left_out, lead: "Left out as placeholders (no register line, no called figure, no call):", say: "{placeholders_left_out} row of {fund}"}
     columns:
       investor: The entity that made the commitment.
       commitment: What the office committed to the fund.
@@ -159,13 +161,14 @@ recipes:
       unfunded_after_notice: Commitment less called after the notice. Negative means the call is larger than what is left.
       notice_fits: True when the noticed calls are not larger than the unfunded amount before them and no call is in another currency than the commitment.
       calls_in_other_currency: How many calls are in a different currency than the commitment. They are not added, so the amounts cannot be read until someone looks.
+      placeholders_left_out: How many commitment rows of the same fund were left out as placeholders (no register line, no called figure, no call on them or on a row they replaced). Said, never dropped silently.
     tie_out:
       label: Called before the notice equals, commitment by commitment, the called amount the commitment file states plus the confirmed calls recorded after its as-at date
       sql: >-
-        select (select count(*) from {name} as t where abs(t.called_before_notice - (coalesce((select c.called_to_date from commitments as c where c.id = t.commitment_id), 0)
-        + (select coalesce(sum(abs(m.amount)), 0) from cash_movements as m where m.commitment_id = t.commitment_id and m.movement_type = 'call' and m.confirmation_status = 'confirmed'
+        with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id) select (select count(*) from {name} as t where abs(t.called_before_notice - (coalesce((select c.called_to_date from commitments as c where c.id = t.commitment_id), 0)
+        + (select coalesce(sum(abs(m.amount)), 0) from cmv as m where m.commitment_id = t.commitment_id and m.movement_type = 'call' and m.confirmation_status = 'confirmed'
         and m.currency = t.currency and m.effective_date > coalesce((select c.called_as_at from commitments as c where c.id = t.commitment_id), date '1900-01-01')
-        and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id)))) < 0.01), (select count(*) from {name})
+        and not exists (select 1 from cmv as y where y.supersedes_cash_movement_id = m.id)))) < 0.01), (select count(*) from {name})
     needs:
       - why: No commitments are loaded, so there is nothing to compare a call with.
         sql: select count(*) from commitments
@@ -287,7 +290,8 @@ recipes:
       lastc as (select entity_id, currency, position_date, cash from lastc0 union all
       select distinct k.entity_id, k.currency, (select max(x.position_date) from cashp as x where x.entity_id = k.entity_id), 0 from calls as k
       where exists (select 1 from cashp as x where x.entity_id = k.entity_id) and not exists (select 1 from lastc0 as x where x.entity_id = k.entity_id and x.currency = k.currency)),
-      due as (select c.entity_id, c.currency, sum(k.amount) as amount, min(k.due_date) as next_due_date, sum(k.amount) filter (where k.due_date < c.position_date) as overdue
+      due as (select c.entity_id, c.currency, sum(k.amount) as amount, min(k.due_date) as next_due_date, sum(k.amount) filter (where k.due_date < c.position_date) as overdue,
+      sum(k.amount) filter (where k.due_date >= c.position_date) as ahead, min(k.due_date) filter (where k.due_date >= c.position_date) as next_ahead
       from lastc as c join calls as k on k.entity_id = c.entity_id and k.currency = c.currency and (k.status in ('noticed', 'expected') or k.due_date >= c.position_date) group by c.entity_id, c.currency),
       bufall as (select cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number, v.effective_from, v.effective_to
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status = 'approved'),
@@ -296,11 +300,18 @@ recipes:
       select e.entity_name as entity, c.currency, c.position_date as as_of, cast(c.cash as decimal(18,2)) as cash, cast(coalesce(d.amount, 0) as decimal(18,2)) as calls_due,
       cast(coalesce(d.overdue, 0) as decimal(18,2)) as overdue_calls, d.next_due_date, cast(b.amount as decimal(18,2)) as buffer,
       case when b.amount is not null then cast(c.cash - coalesce(d.amount, 0) - b.amount as decimal(18,2)) end as cash_after_calls,
-      case when b.amount is not null then cast(greatest(coalesce(d.amount, 0) + b.amount - c.cash, 0) as decimal(18,2)) end as shortfall
+      case when b.amount is not null then cast(greatest(coalesce(d.amount, 0) + b.amount - c.cash, 0) as decimal(18,2)) end as shortfall,
+      cast(coalesce(d.ahead, 0) as decimal(18,2)) as calls_ahead, d.next_ahead as next_ahead_date,
+      case when b.amount is not null then cast(c.cash - coalesce(d.ahead, 0) - b.amount as decimal(18,2)) end as cash_after_calls_ahead,
+      case when b.amount is not null then cast(greatest(coalesce(d.ahead, 0) + b.amount - c.cash, 0) as decimal(18,2)) end as shortfall_ahead
       from lastc as c join legal_entities as e on e.id = c.entity_id left join due as d on d.entity_id = c.entity_id and d.currency = c.currency
       left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency
     measure: cash_after_calls
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      # live r3: calls past due and unpaid are said apart from the calls due ahead (the named call), never folded into one total
+      - {if: overdue_calls and shortfall_ahead, say: "{entity} is short {currency} {shortfall_ahead} for the {calls_ahead} of calls due {next_ahead_date}, after keeping the {buffer} buffer from cash of {cash}; another {overdue_calls} of noticed calls is past due and unpaid, and with it the cash after calls is {cash_after_calls}"}
+      - {if: overdue_calls and calls_ahead, say: "{entity} can pay the {currency} {calls_ahead} due {next_ahead_date} from cash of {cash} and keep the {buffer} buffer, with {cash_after_calls_ahead} to spare; another {overdue_calls} of noticed calls is past due and unpaid, and with it the cash after calls is {cash_after_calls}"}
+      - {if: overdue_calls, say: "{entity} has {currency} {overdue_calls} of noticed calls past due and unpaid; with them the cash after calls and the {buffer} buffer is {cash_after_calls}"}
       - {if: shortfall, say: "{entity} is short {currency} {shortfall} for the {calls_due} of calls due {next_due_date}, after keeping the {buffer} buffer from cash of {cash}"}
       - {if: shortfall, say: "{entity} is {currency} {shortfall} below its {buffer} buffer, with cash of {cash}"}
       - {if: calls_due, say: "{entity} can pay the {currency} {calls_due} due {next_due_date} from cash of {cash} and keep the {buffer} buffer, with {cash_after_calls} to spare"}
@@ -312,6 +323,10 @@ recipes:
       buffer: The cash buffer of the signed office rule, in its currency. Empty in another currency or while no rule is signed.
       cash_after_calls: Cash less the calls due less the buffer. Negative means short. Empty while the buffer is not on record.
       shortfall: How much the entity is short, zero when it is not. Empty while the buffer is not on record.
+      calls_ahead: Of the calls due, those not yet past their due date (the call or calls the office is about to pay).
+      next_ahead_date: The earliest due date of the calls ahead.
+      cash_after_calls_ahead: Cash less the calls ahead less the buffer, leaving aside the calls past due.
+      shortfall_ahead: How much the entity is short for the calls ahead alone, zero when it is not.
     tie_out:
       label: The cash in the table equals the cash positions of the latest date for each entity and currency
       sql: >-
@@ -398,7 +413,7 @@ recipes:
       lastc as (select entity_id, currency, position_date, cash from lastc0 union all
       select distinct k.entity_id, k.currency, (select max(x.position_date) from cashp as x where x.entity_id = k.entity_id), 0 from calls as k
       where exists (select 1 from cashp as x where x.entity_id = k.entity_id) and not exists (select 1 from lastc0 as x where x.entity_id = k.entity_id and x.currency = k.currency)),
-      due as (select c.entity_id, c.currency, sum(k.amount) as amount from lastc as c join calls as k on k.entity_id = c.entity_id and k.currency = c.currency
+      due as (select c.entity_id, c.currency, sum(k.amount) as amount, sum(k.amount) filter (where k.due_date < c.position_date) as overdue from lastc as c join calls as k on k.entity_id = c.entity_id and k.currency = c.currency
       and (k.status in ('noticed', 'expected') or k.due_date >= c.position_date) group by c.entity_id, c.currency),
       bufall as (select cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number, v.effective_from, v.effective_to
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status = 'approved'),
@@ -406,17 +421,21 @@ recipes:
       and (b.effective_to is null or b.effective_to >= c.position_date) qualify row_number() over (partition by c.entity_id, c.currency order by b.version_number desc) = 1),
       fxall as (select o.base_currency, o.quote_currency, o.value as rate, o.observed_at from market_observations as o
       where o.observation_type = 'fx' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = o.id)),
-      short as (select c.entity_id, c.currency, c.position_date, c.cash, d.amount as calls_due, b.amount as buffer, d.amount + b.amount - c.cash as shortfall
+      short as (select c.entity_id, c.currency, c.position_date, c.cash, d.amount as calls_due, b.amount as buffer, d.amount + b.amount - c.cash as shortfall,
+      coalesce(d.overdue, 0) as overdue, greatest(d.amount - coalesce(d.overdue, 0) + b.amount - c.cash, 0) as shortfall_ahead
       from lastc as c join due as d on d.entity_id = c.entity_id and d.currency = c.currency join buf as b on b.entity_id = c.entity_id and b.currency = c.currency
       where d.amount + b.amount - c.cash > 0),
       fx as (select s.entity_id, s.currency, o.quote_currency, o.rate, cast(o.observed_at as date) as rate_date from short as s join fxall as o on o.base_currency = s.currency
       and cast(o.observed_at as date) <= s.position_date qualify row_number() over (partition by s.entity_id, s.currency, o.quote_currency order by o.observed_at desc) = 1)
       select e.entity_name as entity, s.currency, cast(s.shortfall as decimal(18,2)) as shortfall, f.quote_currency as convert_currency, f.rate, f.rate_date,
-      cast(ceil(s.shortfall * f.rate) as decimal(18,2)) as convert_amount, cast(coalesce(o.cash, 0) as decimal(18,2)) as other_cash, cast(coalesce(o.cash, 0) / f.rate as decimal(18,2)) as other_cash_in_call_currency, coalesce(o.cash, 0) >= ceil(s.shortfall * f.rate) as other_cash_covers
+      cast(ceil(s.shortfall * f.rate) as decimal(18,2)) as convert_amount, cast(coalesce(o.cash, 0) as decimal(18,2)) as other_cash, cast(coalesce(o.cash, 0) / f.rate as decimal(18,2)) as other_cash_in_call_currency, coalesce(o.cash, 0) >= ceil(s.shortfall * f.rate) as other_cash_covers,
+      cast(s.overdue as decimal(18,2)) as overdue_calls, cast(s.shortfall_ahead as decimal(18,2)) as shortfall_ahead, cast(ceil(s.shortfall_ahead * f.rate) as decimal(18,2)) as convert_ahead
       from short as s join legal_entities as e on e.id = s.entity_id join fx as f on f.entity_id = s.entity_id and f.currency = s.currency
       left join lastc0 as o on o.entity_id = s.entity_id and o.currency = f.quote_currency
     measure: convert_amount
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: overdue_calls and shortfall_ahead, say: "For the {currency} {shortfall_ahead} short on the calls due ahead, convert {convert_currency} {convert_ahead} at {rate}; the {overdue_calls} of noticed calls past due and unpaid would take it to {convert_currency} {convert_amount}, and {entity} holds {other_cash}"}
+      - {if: overdue_calls, say: "The calls due ahead need no conversion; the {currency} {overdue_calls} of noticed calls past due and unpaid would need {convert_currency} {convert_amount} at {rate}, and {entity} holds {other_cash}"}
       - {if: other_cash_covers, say: "Converting {convert_currency} {convert_amount} of its {other_cash} (worth {currency} {other_cash_in_call_currency}) at {rate} covers the {currency} {shortfall} short"}
       - {say: "Converting {convert_currency} {convert_amount} at {rate} would cover the {currency} {shortfall}, but {entity} holds only {convert_currency} {other_cash}"}
     columns:
@@ -428,6 +447,9 @@ recipes:
       other_cash: The cash the entity holds in the convert currency.
       other_cash_in_call_currency: That cash in the call currency at the same rate (other cash divided by the rate).
       other_cash_covers: True when that cash is enough for the conversion.
+      overdue_calls: Of the calls due, the noticed calls past their due date and unpaid.
+      shortfall_ahead: The amount short for the calls not yet past due alone, zero when there is none.
+      convert_ahead: That shortfall times the rate, rounded up to the next whole unit.
     tie_out:
       label: Every row's amount to convert equals its shortfall times its rate, rounded up to the next whole unit
       sql: >-
@@ -549,9 +571,9 @@ recipes:
       cast(sum(s.amount) filter (where not s.release_blocked) over (partition by s.currency) as decimal(18,2)) as releasable_total_in_currency from fin as s
     measure: amount
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {if: not release_blocked, lead: "Release", say: "{payee} {currency} {amount}", max: 4}
-      - {if: fee_variance, lead: "Hold", say: "{payee} {currency} {amount}, {fee_variance} above the fee schedule"}
-      - {if: release_blocked, lead: "Hold", say: "{payee} {currency} {amount}: {blocked_by}"}
+      - {if: not release_blocked, sort: due_date, all: true, lead: "Release", say: "{payee} {currency} {amount}"}
+      - {if: fee_variance, sort: due_date, all: true, lead: "Hold", say: "{payee} {currency} {amount}, {fee_variance} above the fee schedule"}
+      - {if: release_blocked, sort: due_date, all: true, lead: "Hold", say: "{payee} {currency} {amount}: {blocked_by}"}
     columns:
       payee: Who is paid, the holder of the account the payment goes to.
       amount: The payment as a positive number.
@@ -654,30 +676,31 @@ recipes:
     formula: For each open call (noticed or expected even when past due, or recorded with a due date on or after the paying entity's latest cash date) and each entity, the entity's latest cash in the call currency (zero when it holds none), less all its open calls in that currency, less the buffer of the signed office rule cash_buffer (empty when no buffer is signed). The entity named in the call's commitment is the one that pays; when the call names no commitment, the entity whose portfolio carries the call. A negative cover after calls means a transfer is needed first. Spare cover is the cover when positive. best_other_spare is the largest spare cover of the other entities.
     grain: By call and candidate entity
     sql: >-
-      create table {name} as with {positions},
+      create table {name} as with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id) union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null), cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id), {positions},
       cashp as (select p.legal_entity_id as entity_id, l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l
       join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join portfolios as p on p.id = l.portfolio_id
       where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all),
-      calls as (select m.id as call_id, p.legal_entity_id as entity_id, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount, m.commitment_id, m.instrument_id from cash_movements as m
+      calls as (select m.id as call_id, p.legal_entity_id as entity_id, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount, m.commitment_id, m.instrument_id from cmv as m
       join portfolios as p on p.id = m.portfolio_id where m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected')
-      and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id)),
+      and not exists (select 1 from cmv as x where x.supersedes_cash_movement_id = m.id)),
       lastc0 as (select c.* from cashp as c where c.position_date = (select max(x.position_date) from cashp as x where x.entity_id = c.entity_id and x.currency = c.currency)),
       lastc as (select entity_id, currency, position_date, cash from lastc0 union all
       select distinct k.entity_id, k.currency, (select max(x.position_date) from cashp as x where x.entity_id = k.entity_id), 0 from calls as k
       where exists (select 1 from cashp as x where x.entity_id = k.entity_id) and not exists (select 1 from lastc0 as x where x.entity_id = k.entity_id and x.currency = k.currency)),
-      due as (select c.entity_id, c.currency, sum(k.amount) as amount from lastc as c join calls as k on k.entity_id = c.entity_id and k.currency = c.currency
+      due as (select c.entity_id, c.currency, sum(k.amount) as amount, sum(k.amount) filter (where k.due_date < c.position_date) as overdue from lastc as c join calls as k on k.entity_id = c.entity_id and k.currency = c.currency
       and (k.status in ('noticed', 'expected') or k.due_date >= c.position_date) group by c.entity_id, c.currency),
       refd as (select e.id as entity_id, coalesce((select max(c.position_date) from cashp as c where c.entity_id = e.id), (select max(c.position_date) from cashp as c)) as d from legal_entities as e),
       bufall as (select cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number, v.effective_from, v.effective_to
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status = 'approved'),
       buf as (select a.entity_id, b.currency, b.amount from refd as a join bufall as b on b.effective_from <= a.d and (b.effective_to is null or b.effective_to >= a.d)
       qualify row_number() over (partition by a.entity_id, b.currency order by b.version_number desc) = 1),
-      open as (select k.call_id, coalesce(c.legal_entity_id, k.entity_id) as named_id, k.currency, k.due_date, k.amount, k.instrument_id
+      open as (select k.call_id, coalesce(c.legal_entity_id, k.entity_id) as named_id, k.currency, k.due_date, k.amount, k.instrument_id, k.due_date < n.position_date as past_due
       from calls as k left join commitments as c on c.id = k.commitment_id
       left join lastc as n on n.entity_id = coalesce(c.legal_entity_id, k.entity_id) and n.currency = k.currency
       where k.status in ('noticed', 'expected') or n.position_date is null or k.due_date >= n.position_date),
       plan as (select k.call_id, i.canonical_name as fund, k.amount as call_amount, k.currency, k.due_date, e.entity_name as entity, e.id = k.named_id as is_named,
-      coalesce(l.cash, 0) as cash, coalesce(d.amount, 0) as calls_due, b.amount as buffer, case when b.amount is not null then coalesce(l.cash, 0) - coalesce(d.amount, 0) - b.amount end as cover_after
+      coalesce(l.cash, 0) as cash, coalesce(d.amount, 0) as calls_due, b.amount as buffer, case when b.amount is not null then coalesce(l.cash, 0) - coalesce(d.amount, 0) - b.amount end as cover_after,
+      coalesce(d.overdue, 0) as overdue, case when b.amount is not null then coalesce(l.cash, 0) - coalesce(d.amount, 0) + coalesce(d.overdue, 0) - b.amount end as cover_ahead, coalesce(k.past_due, false) as past_due
       from open as k join instruments as i on i.id = k.instrument_id cross join legal_entities as e
       left join lastc as l on l.entity_id = e.id and l.currency = k.currency left join due as d on d.entity_id = e.id and d.currency = k.currency
       left join buf as b on b.entity_id = e.id and b.currency = k.currency),
@@ -687,10 +710,14 @@ recipes:
       cast(p.calls_due as decimal(18,2)) as calls_due, cast(p.buffer as decimal(18,2)) as buffer, cast(p.cover_after as decimal(18,2)) as cover_after_calls,
       cast(greatest(p.cover_after, 0) as decimal(18,2)) as spare_cover, p.is_named and p.cover_after < 0 as transfer_needed,
       cast(greatest(-p.cover_after, 0) as decimal(18,2)) as shortfall,
-      cast(coalesce(greatest(p.top_cover, 0), 0) as decimal(18,2)) as best_other_spare, case when p.top_cover > 0 then p.top_entity end as best_other_entity from pick as p
+      cast(coalesce(greatest(p.top_cover, 0), 0) as decimal(18,2)) as best_other_spare, case when p.top_cover > 0 then p.top_entity end as best_other_entity,
+      cast(p.overdue as decimal(18,2)) as overdue_calls, cast(p.cover_ahead as decimal(18,2)) as cover_before_overdue, p.past_due as call_past_due from pick as p
     measure: cover_after_calls
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: is_named and overdue_calls and not call_past_due, say: "For the {fund} call of {currency} {call_amount} due {due_date}, {entity} has {cover_before_overdue} after its {buffer} buffer, leaving aside {overdue_calls} of its noticed calls past due and unpaid ({cover_after_calls} with them)"}
+      - {if: not is_named and overdue_calls, lead: "Others before their calls past due:", say: "{entity} {cover_before_overdue}"}
       - {if: is_named and transfer_needed, say: "{entity} is short {currency} {shortfall} for the {fund} call of {call_amount} due {due_date}; {best_other_entity} has {best_other_spare} spare after its buffer and can transfer it"}
+      - {if: is_named and transfer_needed, say: "{entity} is short {currency} {shortfall} for the {fund} call of {call_amount} due {due_date}, and no other entity has cash to spare after its buffer"}
       - {if: is_named, say: "{entity} pays the {fund} call of {currency} {call_amount} from its own cash and keeps the {buffer} buffer"}
       - {lead: "Others after the buffer:", say: "{entity} {cover_after_calls}"}
     columns:
@@ -705,6 +732,9 @@ recipes:
       shortfall: How far below zero the cover is, zero when it is not.
       best_other_spare: The largest spare cover among the other entities for the same call.
       best_other_entity: The entity with that spare cover, empty when none has any.
+      overdue_calls: Of the entity's calls due, the noticed calls past their due date and unpaid.
+      cover_before_overdue: The cover after the calls not yet past due and the buffer, leaving aside the calls past due.
+      call_past_due: True when this call is itself past its due date.
     tie_out:
       label: Each open call appears once for every entity
       sql: >-

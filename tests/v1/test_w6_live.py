@@ -438,3 +438,63 @@ def test_r2_invoice_answer_covers_every_invoice_not_the_latest_month(r2_office, 
     text = got["answer"] + " " + " ".join(r["label"] for r in got["rows"])
     for invoice in ("FEE-ADMIN-Q2", "FEE-CUST-Q2", "FEE-ADMIN-Q3", "FEE-CUST-Q3"):
         assert invoice in text, (invoice, got["answer"])
+
+
+# ---- r3 answer class (c): the answer left out key numbers the bound table holds (docs/v3/LIVE-R3-ANALYSIS.md) ----------------------------------------
+# uc-008, uc-026, uc-033, uc-040, uc5. Each case's figures are its live brief's, bound to the recipes its thread bound them to; the question is the case's
+# check ask, answered through figures._answer on the six-month office. The persona check's numbers must stand in the SENTENCE (the live check reads that).
+
+R3_CASES = [  # card, the check ask, the case's figures (name, definition, recipe)
+    ("uc-008-payrun", "Which payments to release",
+     [("Payments processed", "", ""), ("Total value paid", "", ""), ("Payment batch by approval state", "", "payment_batch")]),
+    ("uc-026-stmtadmin", "Should we accept the administrator value or ask the administrator to correct it?",
+     [("Fund value difference", "Statement value less administrator value, by fund.", "statement_vs_admin"), ("Amendment flag", "", "")]),
+    ("uc-033-breachesc", "What is the cost to cure the single-name breach?",
+     [("Current position size", "", ""), ("Limit size", "", ""), ("Required sell amount", "", ""), ("Rationale note", "", ""),
+      ("Single-name breaches and cost to cure", "", "single_name_breach")]),
+    ("uc-040-icmemo", "What figures support recommending the Cedarpoint Ventures III commitment?",
+     [("Net worth", "Total value of all assets including private funds", "net_worth"),
+      ("Unfunded commitments", "Opening unfunded + approved changes + recallable adjustments - reductions from funded calls", "called_to_date"),
+      ("Latest NAV value", "Latest net asset value as reported by manager", "change_since_report"),
+      ("Questionnaire answer changes", "Count of answers changed since last year", "change_since_report"),
+      ("Share of sampled figures traced", "Share of sampled figures traced from the issued investment report", "trace_coverage")]),
+    ("uc5-limits", "Which holding is over its single-name limit?",
+     [("Single-issuer concentration", "Aggregate exposure to any single issuer divided by total asset value", "concentration"), ("Listed-equity allocation", "", ""),
+      ("No-asset-class count", "", "identifier_gaps"), ("Single-name breaches and cost to cure", "", "single_name_breach")]),
+]
+
+
+R3_NO_TABLE = {"uc-040-icmemo": ["350,000"]}  # the fee on call 7 is in call_notice_fields, which the live brief binds to no figure: no bound table holds it
+
+
+@pytest.fixture(scope="module")
+def r3_office(tmp_path_factory):
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+    import score50
+    plane, con, _ = score50.load(tmp_path_factory.mktemp("r3"))
+    tables = {}
+    for rid in sorted({rid for c in R3_CASES for _, _, rid in c[2] if rid}):
+        r = R.recipe(rid)
+        name = f"gold_r3_{rid}"
+        con.execute(R.render(r, name, R.dims_for(r, {})))
+        cols = con.execute("select column_name, data_type from information_schema.columns where table_name = ? order by ordinal_position", [name]).fetchall()
+        tables[rid] = {"name": name, "columns": [{"name": c, "type": t} for c, t in cols], "rows": con.execute(f"select count(*) from {name}").fetchone()[0],
+                       "purpose": f"{R.MARK}{rid}: {r['label']}",
+                       "kpis": [n for c in R3_CASES for n, _, x in c[2] if x == rid]}  # the live gold table lists the figures built from it
+    con.close()
+    return plane, list(tables.values())
+
+
+@pytest.mark.parametrize("card, ask, figs", R3_CASES, ids=[c[0] for c in R3_CASES])
+def test_r3_live_case_sentence_states_the_check_numbers(r3_office, monkeypatch, card, ask, figs):
+    import re
+    got = _r2_answer(monkeypatch, r3_office, card, ask, figs)
+    assert got and got["answer"], card
+    assert not got["answer"].startswith(("Not available", "Rules-only")), got["answer"]
+    print(card, "|", got.get("source"), "|", got["answer"])
+    vp = _persona()
+    _, build = vp.load_uc(card)
+    left = vp.missing(got["answer"], build["check"]["expect"])
+    assert left == R3_NO_TABLE.get(card, []), (left, got["answer"])
+    assert not re.search(r"and \d+ more", got["answer"]), got["answer"]  # an asked figure is said, never cut to "and N more"

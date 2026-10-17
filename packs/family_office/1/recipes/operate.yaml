@@ -193,7 +193,7 @@ recipes:
       select t.external_trade_id as trade, i.canonical_name as security, t.transaction_type as side, cast(abs(t.quantity_delta) as decimal(18,2)) as quantity,
       cast(coalesce(abs(t.cash_amount), abs(t.quantity_delta) * (select arg_max(p.price, p.position_date) from px as p where p.instrument_id = t.instrument_id
       and p.position_date <= t.trade_date)) as decimal(18,2)) as amount, t.currency, t.trade_date, t.settlement_date as settle_date,
-      cast((select count(*) from generate_series(t.settlement_date + 1, (select d from asat), interval 1 day) as g(x) where dayofweek(g.x) between 1 and 5) as integer) as business_days_late,
+      cast(greatest((5 * (date_diff('day', DATE '1970-01-05', (select d from asat)) // 7) + least(date_diff('day', DATE '1970-01-05', (select d from asat)) % 7 + 1, 5)) - (5 * (date_diff('day', DATE '1970-01-05', t.settlement_date) // 7) + least(date_diff('day', DATE '1970-01-05', t.settlement_date) % 7 + 1, 5)), 0) as integer) as business_days_late,
       t.counterparty_name as chase, t.status_reason as reason, t.status, cast(case when t.cash_amount is null then 0 else 1 end as integer) as cash_booked,
       cast(1 as integer) as unsettled
       from t left join instruments as i on i.id = t.instrument_id
@@ -432,10 +432,10 @@ recipes:
     label: Statements received late or never, in business days
     cards: [19]
     names: [statement timeliness, statements received late, late or missing statements, bank statements late or missing, business days late, statement receipt status, statement receipt]
-    may_read: [expected_statements, documents, instruments]
+    may_read: [expected_statements, documents, instruments, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: A statement is late only against what was expected (expected_statements), and the first one received counts; an amended re-issue is a correction, not a delivery.
-    formula: For each expected statement (the latest row for the instrument and period), the first statement received for that month (by the period date on the statement; a statement with no period date is not matched to a month, so its month shows missing), not counting amended re-issues (documents of type manager_statement or bank_statement). Status is on_time, late (first received after the due date) or missing (none received). Business days (Monday to Friday) late run from the day after the due date to the day it was received; business days overdue run to the latest date any document was received.
+    formula: For each expected statement (the latest row for the instrument and period), the first statement received for that month (by the period date on the statement; a statement with no period date is not matched to a month, so its month shows missing), not counting amended re-issues (documents of type manager_statement or bank_statement). The due date is the expected statement's; a manager statement with none (no fund terms on file) is due the number of business days after the period end that the signed office rule statement_due states, from the first period the office received a statement of that fund (earlier periods keep no due date). Status is on_time, late (first received after the due date) or missing (none received). Business days (Monday to Friday) late run from the day after the due date to the day it was received; business days overdue run to the latest date any document was received.
     grain: By fund or account and period
     sql: >-
       create table {name} as with due as (select e.* from expected_statements as e where not exists
@@ -444,15 +444,20 @@ recipes:
       got as (select d.instrument_id, date_trunc('month', d.valuation_date) as m,
       min(cast(d.received_at as date)) as first_received from documents as d
       where d.document_type in ('manager_statement', 'bank_statement') and d.valuation_date is not null and coalesce(d.document_status, '') <> 'amended' group by all),
-      j as (select i.canonical_name as statement_of, case when i.instrument_type = 'cash' then 'bank statement' else 'manager statement' end as kind,
-      e.period_end, e.due_date, g.first_received, (select d from asat) as as_of from due as e join instruments as i on i.id = e.instrument_id
-      left join got as g on g.instrument_id = e.instrument_id and g.m = date_trunc('month', e.period_end))
+      rule as (select v.effective_from, v.effective_to, v.version_number, try_cast(coalesce(json_extract_string(v.parameters, '$.business_days_after_month_end'),
+      json_extract_string(v.parameters, '$.business_days')) as integer) as n from business_rules as r join rule_versions as v on v.business_rule_id = r.id
+      where r.rule_code = 'statement_due' and v.approval_status = 'approved'),
+      j0 as (select i.canonical_name as statement_of, case when i.instrument_type = 'cash' then 'bank statement' else 'manager statement' end as kind,
+      e.period_end, e.due_date, g.first_received, (select d from asat) as as_of, (select min(f.m) from got as f where f.instrument_id = e.instrument_id) as first_period
+      from due as e join instruments as i on i.id = e.instrument_id
+      left join got as g on g.instrument_id = e.instrument_id and g.m = date_trunc('month', e.period_end)),
+      j as (select statement_of, kind, period_end, coalesce(due_date, case when kind = 'manager statement' and period_end >= first_period then
+      (select arg_max(j0.period_end + cast(r.n + 2 * ((least(isodow(j0.period_end), 5) - 1 + r.n) // 5) - greatest(isodow(j0.period_end) - 5, 0) as integer), r.version_number) from rule as r where r.n is not null
+      and r.effective_from <= j0.period_end and (r.effective_to is null or r.effective_to >= j0.period_end)) end) as due_date, first_received, as_of from j0)
       select statement_of, kind, period_end, due_date, first_received as received_on,
       case when first_received is null then 'missing' when due_date is not null and first_received > due_date then 'late' else 'on_time' end as status,
-      cast(case when due_date is not null and first_received > due_date then (select count(*) from generate_series(j.due_date + 1, j.first_received, interval 1 day) as t(x)
-      where dayofweek(t.x) between 1 and 5) end as integer) as business_days_late,
-      cast(case when first_received is null and due_date is not null and as_of > due_date then (select count(*) from generate_series(j.due_date + 1, j.as_of, interval 1 day) as t(x)
-      where dayofweek(t.x) between 1 and 5) end as integer) as business_days_overdue,
+      cast(case when due_date is not null and first_received > due_date then greatest((5 * (date_diff('day', DATE '1970-01-05', first_received) // 7) + least(date_diff('day', DATE '1970-01-05', first_received) % 7 + 1, 5)) - (5 * (date_diff('day', DATE '1970-01-05', due_date) // 7) + least(date_diff('day', DATE '1970-01-05', due_date) % 7 + 1, 5)), 0) end as integer) as business_days_late,
+      cast(case when first_received is null and due_date is not null and as_of > due_date then greatest((5 * (date_diff('day', DATE '1970-01-05', as_of) // 7) + least(date_diff('day', DATE '1970-01-05', as_of) % 7 + 1, 5)) - (5 * (date_diff('day', DATE '1970-01-05', due_date) // 7) + least(date_diff('day', DATE '1970-01-05', due_date) % 7 + 1, 5)), 0) end as integer) as business_days_overdue,
       cast(case when first_received is null or (due_date is not null and first_received > due_date) then 1 else 0 end as integer) as late_or_missing from j
     measure: late_or_missing
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
@@ -529,7 +534,7 @@ recipes:
       from adm as a join stm as s on s.instrument_id = a.instrument_id and s.rn = 1 join instruments as i on i.id = a.instrument_id
     measure: difference
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {if: difference, sort: difference, lead: "Differs from the administrator:", say: "{fund} statement {statement_value} ({statement_kind}) against {administrator_value} ({administrator_status}), {difference} apart"}
+      - {if: difference, sort: difference, all: true, lead: "Differs from the administrator:", say: "{fund} statement {statement_value} ({statement_kind}) against {administrator_value} ({administrator_status}), {difference} apart"}
       - {if: not difference, once: true, say: "{n} other funds agree"}
     columns:
       statement_value: The latest manager statement value the office has received.
@@ -663,8 +668,8 @@ recipes:
       create table {name} as with asat as (select cast(max(received_at) as date) as d from documents),
       b as (select e.* from exceptions as e where e.exception_type = 'break' and e.status = 'open'),
       k as (select b.external_ref as break_id, trim(split_part(b.description, ';', 1)) as break_type, l.entity_name as entity, b.title as subject,
-      cast(b.detected_at as date) as detected, cast((select count(*) from generate_series(cast(b.detected_at as date) + 1, (select d from asat), interval 1 day) as g(x)
-      where dayofweek(g.x) between 1 and 5) as integer) as age_business_days from b left join legal_entities as l on l.id = b.legal_entity_id)
+      cast(b.detected_at as date) as detected, cast(greatest((5 * (date_diff('day', DATE '1970-01-05', (select d from asat)) // 7) + least(date_diff('day', DATE '1970-01-05', (select d from asat)) % 7 + 1, 5)) - (5 * (date_diff('day', DATE '1970-01-05', cast(b.detected_at as date)) // 7) + least(date_diff('day', DATE '1970-01-05', cast(b.detected_at as date)) % 7 + 1, 5)), 0)
+      as integer) as age_business_days from b left join legal_entities as l on l.id = b.legal_entity_id)
       select break_id, break_type, entity, subject, detected, age_business_days, cast(case when age_business_days > 5 then 1 else 0 end as integer) as over_five_business_days,
       cast(1 as integer) as open_breaks from k
     measure: open_breaks

@@ -809,6 +809,8 @@ def _change_answer(plane, text: str, pid: str, th: dict, gold: list[dict], live:
             "source": plain(t["name"]), "used": [], "trace": trace}
 
 
+MEMO_Q = re.compile(r"\b(?:support\w*|recommend\w*|memo)\b", re.I)  # "what figures support recommending X": every figure that has a row for X
+BREACH_Q = re.compile(r"\b(?:over|above|exceed\w*|breach\w*|cure)\b", re.I)  # "over" is a stop word of the recipe match, so it is read here
 RELEASE_Q = re.compile(r"\bwhich\b[^.?!]*\b(?:release|pay)\b", re.I)  # "which payments to release", "which to pay": every state of the batch
 REPORT_Q = re.compile(r"\b(?:report|pack)\b", re.I)
 TOTAL_Q = re.compile(r"\b(?:worth|total|net worth|nav|value)\b", re.I)
@@ -911,6 +913,8 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return hit
     if RELEASE_Q.search(text) and (hit := recipe_rows(plane, text, pid, th, kpis, floor=2)):  # r1 uc-008: which to release is every state of the batch, release and hold
         return hit
+    if MEMO_Q.search(text) and (hit := recipe_rows(plane, text, pid, th, kpis, floor=0, wide=True)):  # r3 uc-040: a memo's figures, each said for the entity named
+        return hit
     from sh_platform.v1 import v3_consume as C, v3_rule_checks as RC
     calls = bool(C.CALLS.search(text)) and not C.OTHER.search(text)
     if calls and (hit := recipe_rows(plane, text, pid, th, kpis)):  # w6: can we pay the call, how much to convert: the recipes' rows, never the old forecast
@@ -919,6 +923,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     if k is None:
         return recipe_rows(plane, text, pid, th, kpis, floor=2)  # w6: no figure named ("which payments to release"): the recipes the question reads as
     from sh_platform.v1 import v3_recipes as R
+    k = _breach_figure(text, kpis, k) or k  # r3 uc5: "which holding is over its limit" is the breach table, not the concentration figure that shares its words
     if h := R.held(th, k["name"]):  # Decision 3 held it (a failed tie-out, a missing input): never stated as fact
         return {"answer": f"Not available yet: {k['name']}: {h['reason']}", "figure": None, "rows": [], "source": f"{k['name']} is held at Decision 3", "used": [],
                 "trace": [{"kind": "guard", "label": "A figure held at Decision 3 is not stated"}]}
@@ -946,7 +951,12 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return {"answer": say, "figure": None, "rows": [], "source": f"No rows for {k['name']}", "used": [], "trace": trace}
     meas = recipe_measures(k, gold)  # c6 ops_clerk: a recipe-built figure is read from its own table first, from the column the recipe names
     tabs = sorted(ready, key=lambda t: (t["name"] not in meas, -t["rows"]))
-    for t, how in [*((t, RC.answer) for t in tabs), *((t, None) for t in tabs)]:  # a limit or a tolerance on record, on any table, before a plain read
+    says = any(isinstance(a, dict) and a.get("all") for a in (R.bound(k) or {}).get("answer") or []) and not (parse_when(text) or (None, 0))[1]
+    for t, how in [*((t, RC.answer) for t in tabs), *([(None, "recipe")] if says else []), *((t, None) for t in tabs)]:  # a limit or a tolerance on record, on any table, before the recipe's own answer lines (r3: every key number said), before a plain read
+        if how == "recipe":  # r3 uc-026, uc-033: the recipe's answer lines say every figure the question asks for, which the plain read leaves to the rows behind
+            if (rows := recipe_rows(plane, text, pid, th, [k], floor=0)) and not rows["answer"].endswith("the figures are below."):
+                return rows
+            continue
         got = how(plane, k, t, text, th) if how else _read(plane, t, k, text, aliases(plane), th, meas.get(t["name"]))
         if got and str(got.get("answer") or "").startswith("Not available yet") and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
             return rows  # w6 (uc-001 "no split by email, when"): the figure named cannot say; the recipes the question reads as can
@@ -954,6 +964,18 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
             return {**got, "source": src, "used": [], "trace": trace, "kpi": k["name"]}
     return recipe_rows(plane, text, pid, th, kpis, floor=2)
+
+
+def _breach_figure(text: str, kpis: list[dict], k: dict) -> dict | None:
+    """The brief's figure built from a breach recipe (its names say "breach") when the question asks what is over a limit and that recipe fits it at least
+    as well as the figure chosen; None otherwise."""
+    from sh_platform.v1 import v3_recipes as R
+    if not BREACH_Q.search(text):
+        return None
+    mine = relevance(text, R.bound(k)) if R.bound(k) else 0
+    cand = [(relevance(text, r), x) for x in kpis if (r := R.bound(x)) and re.search(r"breach", " ".join(r.get("names") or []), re.I)]
+    best = max(cand, key=lambda t: t[0], default=None)
+    return best[1] if best and best[1] is not k and best[0] >= max(3, mine) else None
 
 
 def relevance(text: str, r: dict) -> int:
@@ -980,7 +1002,8 @@ def named_relevance(text: str, r: dict) -> int:
     return len(R._stems(text) & R._stems(" ".join([r["label"], *(r.get("names") or [])])))
 
 
-ROW_CAP = 25
+ROW_CAP = 100
+SAID_WIDE = 4  # a memo ("what figures support ...") speaks for up to four figures
 SAID_FIGS = 2  # the sentence speaks for the two figures the question fits best; the rest sit in the figures behind it
 FLAGS = {"first_row", "is_total", "is_latest", "latest", "is_named", "is_opening"}  # helper columns of a recipe: they pick a row, a person never reads them
 
@@ -1047,7 +1070,7 @@ def say(r: dict, rows: list[dict], names: dict | None = None, money: set | None 
     """The recipe's own answer sentence (its `answer` lines in the pack) over the rows the question named, or None when it has none or no line holds.
     A line: `say` (the template), `if` (a condition on the row), `lead` (words before the list), `max` (rows said, default 3), `once` (said once over
     every row it holds for, for {n} and {sum:..}), `latest` (only the rows of the latest value of that column), `sort` (largest first), `stop` (no
-    later line once it is said). `if`: "col", "not col", "col = text", joined by " and ". A row said by one line is not said again by a later one.
+    later line once it is said), `all` (every row said, never "and N more"; the question is then answered from these lines, not from a plain read of the table). `if`: "col", "not col", "col = text", joined by " and ". A row said by one line is not said again by a later one.
     `money`: the amount columns of the table (None: read from the values)."""
     names = names or {}
     out, used = [], set()
@@ -1056,8 +1079,8 @@ def say(r: dict, rows: list[dict], names: dict | None = None, money: set | None 
         pool = [x for x in rows if _holds(spec.get("if"), x)]
         if (c := spec.get("latest")) and (have := [x[c] for x in pool if x.get(c) is not None]):
             pool = [x for x in pool if x.get(c) == max(have)]
-        if c := spec.get("sort"):  # largest first
-            pool = sorted(pool, key=lambda x: n if (n := _num(x.get(c))) is not None else Decimal("-Infinity"), reverse=True)
+        if c := spec.get("sort"):  # largest first (a date: latest first)
+            pool = sorted(pool, key=lambda x: n if (n := _num(x.get(c)) if not isinstance(x.get(c), date) else Decimal(x[c].toordinal())) is not None else Decimal("-Infinity"), reverse=True)
         items: list[str] = []
         for x in pool[:1] if spec.get("once") else pool:
             if id(x) in used and not spec.get("once"):
@@ -1067,7 +1090,7 @@ def say(r: dict, rows: list[dict], names: dict | None = None, money: set | None 
                 used |= set() if spec.get("once") else {id(x)}
         if not items:
             continue
-        cap = int(spec.get("max", 3))
+        cap = len(items) if spec.get("all") else int(spec.get("max", 3))  # `all`: the figures the question asks for are never cut to "and N more"
         line = "; ".join(items[:cap]) + (f"; and {len(items) - cap} more" if len(items) > cap else "")
         if spec.get("lead") and (lead := _fill(spec["lead"], pool[0], pool, names, money)):
             line = f"{lead} {line}"
@@ -1096,6 +1119,7 @@ def _plain_sentence(name: str, r: dict, rows: list[dict], who, names: dict, mone
     return f"{name}{' for ' + w if w else ''}: {label} {_said(rows[0][m], names, money=m in money)}, one of {len(rows)} rows."
 
 
+STATE_COL = re.compile(r"status|state|kind|reason")  # a state of a row ("inside limit") is never the entity a question names
 RATE_COL = re.compile(r"rate|pct|percent|fixing|ratio|share|price")
 SET_Q = re.compile(r"\b(?:each|every|all|which|across|whether|per)\b", re.I)  # a question about a set of rows, not one latest figure
 
@@ -1111,15 +1135,16 @@ def _every_row(plane, text: str, pid: str, th: dict, k: dict) -> dict | None:
     return recipe_rows(plane, text, pid, th, [k], floor=0, every=True)
 
 
-def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False) -> dict | None:
+def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False, wide: bool = False) -> dict | None:
     """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
     `relevance`, at least `floor`, and within one of the best), the rows of their ready tables for what the question names. `answer` is a short
     sentence from each recipe's own `answer` lines (else the figure, its subject and its measure), in the pack's order; `rows` holds the figures behind
-    it, a line per row with its readable columns, and a total per money column. Every number is a row's own. None when no such figure has rows."""
+    it, a line per row with its readable columns, and a total per money column. Every number is a row's own. None when no such figure has rows.
+    `wide` (a memo: "what figures support ..."): every bound figure with a row that names what the question names, up to SAID_WIDE sentences."""
     from sh_platform.v1 import b10_pack as P, cx_dash as CD, v3_recipes as R
     scored = [(relevance(text, r), k) for k in kpis if (r := R.bound(k)) and not R.held(th, k["name"])]
     top = max((sc for sc, _ in scored), default=0)
-    figs = [k for sc, k in sorted(scored, key=lambda t: -t[0]) if sc >= max(floor, top - 1)]
+    figs = [k for sc, k in sorted(scored, key=lambda t: -t[0]) if wide or sc >= max(floor, top - 1)]
     if not figs:
         return None
     gold = ((P.latest_approved(plane, pid) or {}).get("target") or {}).get("gold") or []
@@ -1142,9 +1167,13 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
                 hit = [x for x in rows if str(x.get(c))[5:7] == f"{asked[1]:02d}" and (not asked[0] or str(x.get(c))[:4] == str(asked[0]))]
                 rows = hit or rows
         else:
-            for c in ([] if every else texts):  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds); a question about every row names none
+            named = False
+            for c in ([] if every else [c for c in texts if not STATE_COL.search(c)]):  # the entity, fund, account or currency the question names: every value that shares a word with it ("Cedarpoint": both funds); a question about every row names none
                 hit = [x for x in rows if x.get(c) is not None and named_in(str(x[c]), names.get(str(x[c])), q, text)]
-                rows = hit or rows
+                rows, named = hit or rows, named or bool(hit)
+            if wide and not named:
+                seen.discard(t["name"])
+                continue  # a memo is about what the question names: a figure with no row for it is left out
         money = [c for c, ty in cols.items() if ty.startswith("decimal") and ty.endswith(",2)") and c not in META and not RATE_COL.search(c)]  # never a rate
 
         def who(x, texts=texts):
@@ -1162,7 +1191,7 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         if len(body) > 1 and money and len({x.get(ccy) for x in body} if ccy else {None}) == 1:  # "the total across all funds": one currency only
             tot = [f"{c.replace('_', ' ')} {_said(sum((_num(x.get(c)) or Decimal(0) for x in body), Decimal(0)), names, money=True)}" for c in money]
             lines.append({"label": f"{k['name']} · total of {len(body)} rows", "value": "; ".join(tot)})
-        if len(said) < SAID_FIGS and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
+        if len(said) < (SAID_WIDE if wide else SAID_FIGS) and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
             said.append(((min(r.get("cards") or [999]), order.get(r["id"], 0)), s))  # the story's order: the notice before its payment, the short before the FX
     if not lines:
         return None
