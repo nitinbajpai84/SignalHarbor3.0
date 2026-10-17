@@ -134,9 +134,10 @@ def test_a_bad_file_is_set_aside_and_the_rest_is_read_together(tmp_path):
              "2026-10/inbox/scan_0412.pdf"]
     plane, x = W3.flat_thread(tmp_path, names)
     PK.intake(x)
-    assert x.th["pack"]["scan_0412.pdf"]["kind"] == "notices"  # read as a notice, and fails: it is what split the r3 drop
+    # r3: scan_0412.pdf was read as a notice and failed, which split the drop; since r3b it is read as an inbox file and loads
+    assert x.th["pack"]["scan_0412.pdf"]["kind"] == "inbox"
     n, aside = PK.load(x)
-    assert n == 3 and [a["file"] for a in aside] == ["scan_0412.pdf"]
+    assert n == 4 and aside == []
     call = W3.rows(plane, "select m.confirmation_status, e.entity_name, c.source_record_id is not null from cash_movements as m join commitments as c on c.id = m.commitment_id "
                           "join legal_entities as e on e.id = c.legal_entity_id where m.notice_kind = 'capital_call' and m.movement_type = 'call' "
                           "and not exists (select 1 from cash_movements as z where z.supersedes_cash_movement_id = m.id)")
