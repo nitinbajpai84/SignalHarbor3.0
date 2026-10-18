@@ -539,6 +539,16 @@ def b_run(x):
     return "ran on a copy"
 
 
+def _model_designed(plane, table: str) -> bool:
+    """True when the model's design replies (b10_design's design cache) name the table: Span drew it with the model while generating the pack, so
+    it is not in th["model_tables"] (r7 uc-055, uc-075, uc-099: such a table stopped the card instead of being held)."""
+    try:
+        d = plane.path("v3", "design_cache")
+        return d.is_dir() and any(f'"{table}"' in p.read_text(encoding="utf-8") for p in d.glob("*.json"))
+    except (OSError, AttributeError):
+        return False
+
+
 def _hold_failed_design(x, cur: dict) -> bool:
     """A ready table Span designed with the model (no recipe) that the warehouse cannot build comes out of the pack, and only its figures are held
     with the reason; the other figures still run (r5 uc3: a to_char in the chase-email table stopped the whole card). A recipe's table is never
@@ -547,12 +557,12 @@ def _hold_failed_design(x, cur: dict) -> bool:
     err = str((cur.get("run") or {}).get("error") or "")
     table, _, why = err.partition(" could not be built: ")
     table = table.strip()
-    if not (th.get("model_tables") or {}).get(table) or table in (th.get("held_tables") or {}):
+    if not table or table in (th.get("held_tables") or {}) or not ((th.get("model_tables") or {}).get(table) or _model_designed(x.plane, table)):
         return False
     A = f"/api/v1/build/p/{th['pid']}/architecture"
     gold = (x.api("leo", "GET", A + "/pack").get("pack") or {}).get("target", {}).get("gold") or []
     g = next((g for g in gold if g.get("name") == table), None)
-    if g is None:
+    if g is None or str(g.get("purpose") or "").startswith(("Recipe ", "Saved design ")):  # a recipe's (or a kept design's) failure is a question
         return False
     m = re.search(r"Function with name (\w+) does not exist", why)
     why = f"it calls {m[1]}, which the warehouse does not have" if m else re.sub(r"^\w+ Error:\s*", "", why).strip()[:160] or "the warehouse gave no reason"

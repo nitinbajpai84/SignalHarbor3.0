@@ -435,7 +435,7 @@ def reads_nothing_loaded(plane, plan: dict, sql: str) -> str | None:
     import sqlglot
     from sqlglot import exp
     from sh_platform.v1 import e0c_load, wh
-    loadable = {*e0c_load._TABLES, "transactions"}
+    loadable = {*e0c_load._TABLES, "transactions", "sheet_mappings", "sheet_mapping_columns", "source_batches"}  # r7 uc-099: reading a new file fills its mapping
     own = {t["name"]: t for t in plan.get("tables") or []}
     try:
         with wh.connect(plane, read_only=True) as con:
@@ -482,8 +482,8 @@ def keep_valid(plane, plan: dict, extra: list[dict], notes: list[str], drops: tu
         try:
             if t.get("layer") == "gold" and (bad := gold_name_problem(plan, t.get("name"))):
                 raise Refused(400, bad)  # NU-24: Approve would refuse it later with no cause on the screen
-            from sh_platform.v1.v3_plan_guard import rate_without_division
-            if t.get("layer") == "gold" and (bad := org_only_join(t.get("sql") or "") or reads_nothing_loaded(plane, plan, t.get("sql") or "")
+            from sh_platform.v1.v3_plan_guard import guard_mark, rate_without_division
+            if t.get("layer") == "gold" and (bad := guard_mark(t) or org_only_join(t.get("sql") or "") or reads_nothing_loaded(plane, plan, t.get("sql") or "")
                                              or rate_without_division(t)):
                 raise Refused(400, bad)
             B.validate(plane, {**plan, "tables": base + ok + [t]}, {t.get("name")})

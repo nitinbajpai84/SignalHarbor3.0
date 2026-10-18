@@ -68,3 +68,15 @@ def rate_without_division(t: dict) -> str | None:
         return None
     return (f"{rates[0]} is a rate, share, ratio or percent, but the SQL never divides: it counts or sums without dividing by the total. "
             "Divide the part by the whole (for example matched trades / all trades)")
+
+
+# ---- the plan check: a number the guard took out of the SQL (r7 uc-055) ------------------------------------------------------------------
+
+def guard_mark(t: dict) -> str | None:
+    """Why a table may not stand: the number guard replaced a number in the model's SQL ("interval 'not available yet' day"), so the run on the copy
+    would stop on it. None when the SQL has no such mark."""
+    from sh_platform.agents.guard import NOT_AVAILABLE
+    if NOT_AVAILABLE not in str(t.get("sql") or ""):
+        return None
+    return (f"its SQL reads '{NOT_AVAILABLE}' where it held a number the intent does not state, so it cannot run; write it again with only the "
+            "numbers the intent states (0 and 1 are always allowed)")

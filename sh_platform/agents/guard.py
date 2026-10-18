@@ -18,6 +18,8 @@ Rules (documented limits):
   month, a weekday or a short function word (is, was, has, as, this, his, its, us, does, thus). Otherwise it is
   checked like any figure ("grew by 2000 units", "in 1999 cases", "March 2000 orders").
 - Round 5: the value of a JSON reply's "name", "title", "label" or "code" is a label, never a stated figure ("Cash break over 5k").
+- r7: the figure names a JSON reply lists under "kpis", "figures" or "unplaced" are names; in a JSON reply's "sql", 0, 1 and a digit glued
+  to a word (an alias ps2) are code. Every other number in the SQL is checked.
 - Brackets give no exemption: "[99]" is checked.
 - AQ1: also ignored: ids made of a lowercase prefix and a hex part with a digit (prj-84d783f2), words joined by "_" that hold a digit
   (custodian_note_r1), file names (note_r1.txt), ISO date-times, column types (varchar(255)), and a day with a month but no year (9 Sep,
@@ -50,7 +52,11 @@ _ID_SKIP = (r"|(?<![\w-])[a-z]+(?:-[a-z]+)*-(?=[0-9a-f]*\d)[0-9a-f]{6,}(?:-[0-9a
             r"|(?<!\w)(?=\w*_)(?=\w*\d)\w+"                                                     # cash_2026_09, custodian_note_r1
             r"|(?<![\w.])[\w-]+\.(?i:txt|csv|pdf|xlsx?|json|docx?|md|eml|msg|pptx?)\b"            # custodian_note_r1.txt
             r"|\b[a-z]+\(\d+(?:,\s*\d+)?\)"                                                    # varchar(255), decimal(18,2)
-            r'|"(?:name|title|label|code)"\s*:\s*"(?:[^"\\]|\\.)*"')                           # a JSON reply's name or label is not a stated figure ("Cash break over 5k")
+            r'|"(?:name|title|label|code)"\s*:\s*"(?:[^"\\]|\\.)*"'                            # a JSON reply's name or label is not a stated figure ("Cash break over 5k")
+            r'|"(?:kpis?|figures?|unplaced)"\s*:\s*\[(?:\s*"(?:[^"\\]|\\.)*"\s*,?)*\s*\]')      # r7: figure names a design lists ("Calls due within 7 days")
+# r7: in a JSON reply's "sql", 0 and 1 (coalesce(x, 0), nullif(n, 0), limit 1) and a digit glued to a name (an alias ps2) are code, not figures; any
+# other number in the SQL is still checked, so a threshold the intent does not state is still blanked (and the plan check refuses that SQL)
+_SQL_VALUE = re.compile(r'"sql"\s*:\s*"((?:[^"\\]|\\.)*)"')
 _TOKEN = re.compile(
     r"(?P<skip>\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?(?!\d)"
     r"|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b"
@@ -189,7 +195,8 @@ def check_numbers(answer_text: str, facts: list[dict], question: str = "", words
     asked = {_value(m.group()) for m in _NUM.finditer(question or "")}
     asked |= {Decimal(1 if w.lower() == "a single" else _NUMBER_WORDS[w.lower()]) for w, _ in _WORD_NUM.findall(question or "")}
     result = GuardResult(answer_text)
-    listed = len(_LIST_LINE.findall(answer_text))  # a count of the items the reply lists itself ("four tables:" and four lines) is not an outside figure
+    listed = len(_LIST_LINE.findall(answer_text))
+    sql_spans = [m.span(1) for m in _SQL_VALUE.finditer(answer_text)]  # a count of the items the reply lists itself ("four tables:" and four lines) is not an outside figure
 
     def fix(m: re.Match) -> str:
         tok = m.group("num")
@@ -205,7 +212,8 @@ def check_numbers(answer_text: str, facts: list[dict], question: str = "", words
         v = _value(tok)
         operand = text[:m.start()].rstrip()[-1:] in ("×", "*", "/", "÷")  # "share = a / b × 100": a formula's constant, not a company figure
         counts_items = bool(listed) and v == listed and not _MONEY_BEFORE.search(text[:m.start()])
-        if v in asked or ordinal or year or operand or counts_items or (v in sources and _fits(text[m.end():m.end() + 40], sources[v])):
+        code = any(a <= m.start() < b for a, b in sql_spans) and (v in (0, 1) or (text[m.start() - 1:m.start()] or " ").isalnum())
+        if v in asked or ordinal or year or operand or code or counts_items or (v in sources and _fits(text[m.end():m.end() + 40], sources[v])):
             return tok
         result.replaced += 1
         if tok not in result.missing:

@@ -167,9 +167,10 @@ def _bind(name: str, sel, schema: dict[str, dict[str, str]]) -> None:
                 con.execute(f'create table "{t}" ({", ".join(chr(34) + c + chr(34) + " varchar" for c in cols)})')
         try:
             con.execute(("" if typed else "explain ") + sel.sql(dialect="duckdb"))
-        except (duckdb.BinderException, duckdb.ConversionException) as e:
+        except (duckdb.BinderException, duckdb.ConversionException, duckdb.ParserException) as e:
             msg = " ".join(str(e).split())
-            if isinstance(e, duckdb.ConversionException) or not re.search(r"No function matches|Cannot compare|cannot be cast|Cannot mix values|\btype\b", msg, re.I):
+            real = typed and not any(t.startswith("gold_") for t in schema)  # r7 uc-099: the data model's own types, not the plan check's guess
+            if isinstance(e, (duckdb.ConversionException, duckdb.ParserException)) or (real and "Cannot compare" in msg) or not re.search(r"No function matches|Cannot compare|cannot be cast|Cannot mix values|\btype\b", msg, re.I):
                 # c4 principal: "Cannot mix aggregates with non-aggregated columns" (a window over an aggregate, group by all) and a column named
                 # like observation_type were swallowed as type mismatches; only a value-type clash is the guessed types' to forgive
                 raise Refused(400, f"The SQL for {name} does not run in the warehouse (DuckDB): {msg[:300]}") from None
