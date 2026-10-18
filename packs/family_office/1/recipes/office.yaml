@@ -1052,8 +1052,8 @@ recipes:
       cast(coalesce((select missing from gaps where legal_entity_id = e.id), 0) as integer) as missing from e cross join per),
       u as (select t.*, case when unconverted = 0 then cash_income + dist_income end as income, round((case when unconverted = 0 then cash_income + dist_income end) * ri + greatest(gains, 0) * rg, 2) as tax from t)
       select u.entity_name as entity, u.entity_code, u.x0 as period_from, u.x1 as period_to, cast(u.income as decimal(18,2)) as income, cast(u.gains as decimal(18,2)) as realised_gains, u.ri as rate_on_income, u.rg as rate_on_gains,
-      cast(u.tax as decimal(18,2)) as tax_before_credits, cast(u.credits as decimal(18,2)) as credits, cast(greatest(u.tax - u.credits, 0) as decimal(18,2)) as tax_to_set_aside,
-      cast(sum(greatest(u.tax - u.credits, 0)) over () as decimal(18,2)) as total_to_set_aside, u.missing as bank_months_missing, cast(u.unconverted as integer) as unconverted
+      cast(u.tax as decimal(18,2)) as tax_before_credits, cast(u.credits as decimal(18,2)) as credits, cast(case when u.tax is not null then greatest(u.tax - u.credits, 0) end as decimal(18,2)) as tax_to_set_aside,
+      cast(sum(case when u.tax is not null then greatest(u.tax - u.credits, 0) end) over () as decimal(18,2)) as total_to_set_aside, u.missing as bank_months_missing, cast(u.unconverted as integer) as unconverted
       from u where u.income is not null or u.unconverted > 0 or u.gains <> 0 or u.missing > 0
     measure: tax_to_set_aside
     answer:

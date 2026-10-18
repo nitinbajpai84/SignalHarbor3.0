@@ -1,6 +1,6 @@
 # Score of the 100 use cases
 
-Written by `python tools/score50.py` on 2026-10-18 08:21. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 108 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 13 s, whole run 27 s.
+Written by `python tools/score50.py` on 2026-10-18 08:28. Office: tests/v1/fixtures/office6m as of 2026-10-13, loaded once with the real loader (v3_office6m_loaders.load_plane); 108 built recipes run once; keys from answer_keys.yaml; signals from packs/family_office/1/signals. Deterministic: no model is called. Load 16 s, whole run 33 s.
 
 PASS: every key value matches and the signals behave. FAIL: a number is wrong, or a recipe the card needs does not run or tie out. SIGNAL: the numbers are right but the planted mess is not caught, or an exception signal fires on a clean row. BLOCKED: needs something that does not exist yet.
 
@@ -8,27 +8,28 @@ PASS: every key value matches and the signals behave. FAIL: a number is wrong, o
 
 | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|
-| 99 | 1 | 0 | 0 | 100 |
+| 100 | 0 | 0 | 0 | 100 |
 
-Key values compared: 1847, matching: 1843.
+Key values compared: 1847, matching: 1847.
 
 ## By domain
 
 | Domain | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
 | Cash and treasury | 15 | 0 | 0 | 0 | 15 |
+| Family and people | 11 | 0 | 0 | 0 | 11 |
 | Hold and maintain | 13 | 0 | 0 | 0 | 13 |
 | Invest | 15 | 0 | 0 | 0 | 15 |
 | Operate and control | 18 | 0 | 0 | 0 | 18 |
 | Report and govern | 15 | 0 | 0 | 0 | 15 |
 | Run the office | 13 | 0 | 0 | 0 | 13 |
-| Family and people | 10 | 1 | 0 | 0 | 11 |
 
 ## By person (card owner)
 
 | Person | PASS | FAIL | SIGNAL | BLOCKED | Cards |
 |---|---|---|---|---|---|
 | Anita Rao | 8 | 0 | 0 | 0 | 8 |
+| Daniel Foo | 11 | 0 | 0 | 0 | 11 |
 | Grace Ong | 11 | 0 | 0 | 0 | 11 |
 | Helen Foo | 12 | 0 | 0 | 0 | 12 |
 | Mei Chen | 11 | 0 | 0 | 0 | 11 |
@@ -37,13 +38,11 @@ Key values compared: 1847, matching: 1843.
 | Sam Lee | 8 | 0 | 0 | 0 | 8 |
 | Sofia Reyes | 10 | 0 | 0 | 0 | 10 |
 | Tom Hale | 9 | 0 | 0 | 0 | 9 |
-| Daniel Foo | 10 | 1 | 0 | 0 | 11 |
 
 ## Failures by root cause, worst first
 
 A card can sit under more than one cause. The cause is what the expected-against-got numbers of the card detail point to.
 
-1. **Bank statement TCB-B-USD 2026-07 never arrived (M02b), so Entity B's income is 44.71 short; the key of card 84 still counts that interest (A58)**. FAIL, 1 card(s): 84. Recipes: tax_estimate.
 
 ## Every card
 
@@ -132,7 +131,7 @@ A card can sit under more than one cause. The cause is what the expected-against
 | 81 | uc-081-payroll: Household and office payroll | Family and people | Priya Nair | **PASS** | 9/9 | all key values match; signals behave |
 | 82 | uc-082-covergap: Insurance cover against what we own | Family and people | Priya Nair | **PASS** | 27/27 | all key values match; signals behave |
 | 83 | uc-083-taxcal: Tax calendar | Family and people | Helen Foo | **PASS** | 19/19 | all key values match; signals behave |
-| 84 | uc-084-taxest: Estimated tax for the year | Family and people | Daniel Foo | **FAIL** | 18/22 | by_entity.Entity B.income: expected 89,709.31, got 89,664.6 (tax_estimate); by_entity.Entity B.tax_before_credits: expected 15,250.58, got 15,242.98 (tax_estimate); by_entity.Entity B.tax_to_set_aside: expected 15,250.58, got 15,242.98 (tax_estimate); total_to_set_aside: expected 159,164.11, got 159,156.51 (tax_estimate) |
+| 84 | uc-084-taxest: Estimated tax for the year | Family and people | Daniel Foo | **PASS** | 22/22 | all key values match; signals behave |
 | 85 | uc-085-grants: Philanthropy: budget used | Family and people | Mei Chen | **PASS** | 7/7 | all key values match; signals behave |
 | 86 | uc-086-grantappr: Approve a grant payment | Family and people | Mei Chen | **PASS** | 12/12 | all key values match; signals behave |
 | 87 | uc-087-trustdist: Trust distributions to beneficiaries | Family and people | Helen Foo | **PASS** | 27/27 | all key values match; signals behave |
@@ -400,7 +399,7 @@ Signals fired: uc-033-breachesc-cost-to-cure x7.
 
 Signals that cannot run on the loaded data: uc-033-breachesc-waiver-expired cannot run: no reader gives doc.breach_open, doc.days_past_expiry; uc-033-breachesc-waiver-recorded cannot run: no reader gives doc.committee, doc.decided_on, doc.outcome, doc.subject_id.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Northwind Logistics cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Juniper Consumer Brands cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Coastal Rail Holdings cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Evermore Banking Group cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Larkspur Health cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Atlas Harbour Shipping cost to cure.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Larkspur Health cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Northwind Logistics cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Atlas Harbour Shipping cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Coastal Rail Holdings cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Evermore Banking Group cost to cure; uc-033-breachesc-cost-to-cure fires on Evergreen Liquid Book Juniper Consumer Brands cost to cure.
 
 ### 34. uc-034-prospect: PASS
 
@@ -492,7 +491,7 @@ Figures bound: attribution -> attribution. Answered from: attribution.
 
 Signals fired: uc-046-attrib-effects x21; uc-046-attrib-slide x21.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-10-13 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-05-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-04-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-09-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-07-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-08-31 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide; uc-046-attrib-slide fires on Evergreen Liquid Book 2026-06-30 slide.
 
 ### 47. uc-047-icpack: PASS
 
@@ -526,7 +525,7 @@ Figures bound: invoice_variance -> invoice_variance. Answered from: invoice_vari
 
 Signals fired: uc-050-feeinv-above-schedule x1; uc-050-feeinv-arrives x3; uc-050-feeinv-matches x4.
 
-Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-050-feeinv-arrives fires on FEE-CUST-Q2; uc-050-feeinv-arrives fires on FEE-ADMIN-Q3; uc-050-feeinv-arrives fires on FEE-ADMIN-Q2.
+Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-050-feeinv-arrives fires on FEE-CUST-Q2; uc-050-feeinv-arrives fires on FEE-ADMIN-Q2; uc-050-feeinv-arrives fires on FEE-ADMIN-Q3.
 
 ### 51. uc8-trades-vs-admin: PASS
 
@@ -752,18 +751,11 @@ Signals fired: uc-083-taxcal-due x2; uc-083-taxcal-overdue x1.
 
 Non-info signals that fire on a row with no planted mess (a note, not a verdict): uc-083-taxcal-due fires on TX-02 Evergreen Holdings due 2026-11-30; uc-083-taxcal-due fires on TX-01 Evergreen Holdings due 2026-11-30.
 
-### 84. uc-084-taxest: FAIL
+### 84. uc-084-taxest: PASS
 
 Figures bound: tax_estimate -> tax_estimate. Answered from: tax_estimate.
 
-| Key value | Expected | Got | Recipe |
-|---|---|---|---|
-| q1 by_entity.Entity B.income | 89,709.31 | 89,664.6 | tax_estimate |
-| q1 by_entity.Entity B.tax_before_credits | 15,250.58 | 15,242.98 | tax_estimate |
-| q1 by_entity.Entity B.tax_to_set_aside | 15,250.58 | 15,242.98 | tax_estimate |
-| q1 total_to_set_aside | 159,164.11 | 159,156.51 | tax_estimate |
-
-Key values not compared (no column answers them yet): q1.period.
+Key values not compared (no column answers them yet): q1.period, q1.statements_missing.
 
 Signals fired: uc-084-taxest-income-gap x1; uc-084-taxest-set-aside x3.
 

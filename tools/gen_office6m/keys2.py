@@ -392,14 +392,14 @@ def k083(w):
 def k084(w):
     out = {}
     for e in ENT:
-        inc = ssum((t["amt"] if ACCT[t["acct"]]["ccy"] == "USD" else q2(t["amt"] / w.fx[t["date"]])) for t in w.tx if t["typ"] in ("coupon", "dividend", "interest") and ACCT[t["acct"]]["ent"] == e and S0 <= t["date"] <= END)
+        inc = ssum((t["amt"] if ACCT[t["acct"]]["ccy"] == "USD" else q2(t["amt"] / w.fx[t["date"]])) for t in w.tx if t["typ"] in ("coupon", "dividend", "interest") and ACCT[t["acct"]]["ent"] == e and S0 <= t["date"] <= END and (t["acct"], t["date"].isoformat()[:7]) not in MISSING_BANK)  # only statements that arrived (M02b, A56, A58)
         inc += ssum(x["paid"] for x in w.dists if x["ent"] == e and x["kind"] == "income" and d(x["pay"]) <= END)
         gains = ssum(r["gain"] for r in w.X.realised) if e == "EG-TRUST" else ZERO
         credit = ssum(x["amount"] - x["paid"] for x in w.dists if x["ent"] == e and d(x["pay"]) <= END)
         ri, rg = TAX_RATES[e]; tax = inc * ri + max(gains, ZERO) * rg
         out[ENT[e]] = dict(income=inc, realised_gains=gains, rate_on_income=ri, rate_on_gains=rg, tax_before_credits=q2(tax), credits=credit, tax_to_set_aside=max(ZERO, q2(tax) - credit))
-    return Q("How much cash to set aside for tax", dict(period=[S0, END], by_entity=out, total_to_set_aside=ssum(v["tax_to_set_aside"] for v in out.values())),
-             "income = coupons, dividends, bank interest and income distributions received 1 Apr to 13 Oct; realised gains from the sells matched first-in first-out to the lots; times the 2026 rates of the tax calendar; credit = tax withheld on fund distributions (the 12,500 on Fund A)")
+    return Q("How much cash to set aside for tax", dict(period=[S0, END], by_entity=out, statements_missing=[f"{a} {m}" for a, m in sorted(MISSING_BANK)], total_to_set_aside=ssum(v["tax_to_set_aside"] for v in out.values())),
+             "income = coupons, dividends, bank interest (only from the statements that arrived: the July TCB-B-USD statement never did, M02b, A58) and income distributions received 1 Apr to 13 Oct; realised gains from the sells matched first-in first-out to the lots; times the 2026 rates of the tax calendar; credit = tax withheld on fund distributions (the 12,500 on Fund A)")
 
 
 @uc("uc-085-grants", ["*/grant_ledger/grant_ledger_2026.xlsx", "*/bank_statements/HB_HOLD_USD_2026-0[5-9].xlsx"])

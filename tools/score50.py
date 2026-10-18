@@ -956,8 +956,6 @@ MESS.update({
 
 # The cause of one key value where a recipe row carries several (card 75: the walk's opening, income and balancing item). Keyed (card, key path).
 PATH_CAUSE: dict[tuple[str, str], str] = {}
-_B_GAP = "Bank statement TCB-B-USD 2026-07 never arrived (M02b), so Entity B's income is 44.71 short; the key of card 84 still counts that interest (A58)"
-PATH_CAUSE.update({("uc-084-taxest", p): _B_GAP for p in ("by_entity.Entity B.income", "by_entity.Entity B.tax_before_credits", "by_entity.Entity B.tax_to_set_aside", "total_to_set_aside")})
 
 
 # ---- Office cards 83 to 100 (test_w1b_office.py; docs/v3/w1/build51-office.md) ----------------------------------------------------------------

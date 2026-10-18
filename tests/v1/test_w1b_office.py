@@ -272,25 +272,20 @@ def test_card100_views_against_the_signed_family_policy_match_the_key(office):
 
 # ---- the cards that are not built: proof of the reason ------------------------------------------------------------------------------------
 
-def test_card84_the_tax_estimate_is_the_key_less_the_interest_of_the_missing_statement(office):
-    """A57: the rates are signed. Every number is the key's except Entity B's income, short by the July TCB-B-USD interest (M02b), which the row says (bank_months_missing)."""
-    exp, rows = key("uc-084-taxest")["by_entity"], office.run("tax_estimate")
+def test_card84_the_tax_estimate_is_the_key_and_says_the_missing_statement(office):
+    """A57, A58: the rates are signed; the key counts only the statements that arrived, and Entity B's row says one never did (M02b)."""
+    k, rows = key("uc-084-taxest"), office.run("tax_estimate")
     assert len(rows) == 3
-    for name, k in exp.items():
+    for name, e in k["by_entity"].items():
         r = one(rows, entity=name)
-        assert f2(r["rate_on_income"]) == k["rate_on_income"] and f2(r["rate_on_gains"]) == k["rate_on_gains"]
-        assert f2(r["realised_gains"]) == k["realised_gains"] and f2(r["credits"]) == k["credits"]
-        if name != "Entity B":
-            assert (f2(r["income"]), f2(r["tax_before_credits"]), f2(r["tax_to_set_aside"])) == (k["income"], k["tax_before_credits"], k["tax_to_set_aside"]) and r["bank_months_missing"] == 0
-    b = one(rows, entity="Entity B")
-    assert b["bank_months_missing"] == 1 and f2(exp["Entity B"]["income"] - float(b["income"])) == 44.71
-    assert f2(b["tax_to_set_aside"]) == f2(round(float(b["income"]) * 0.17, 2))
-    assert f2(rows[0]["total_to_set_aside"]) == f2(sum(r["tax_to_set_aside"] for r in rows))
+        assert {c: f2(r[c]) for c in e} == e, name
+        assert r["bank_months_missing"] == (1 if name == "Entity B" else 0)
+    assert k["statements_missing"] == ["TCB-B-USD 2026-07"] and f2(rows[0]["total_to_set_aside"]) == k["total_to_set_aside"]
     con = office.con
     con.execute("begin")
     try:  # without the signed rates there is no tax, never a guess
         con.execute("update rule_versions set approval_status = 'proposed' where business_rule_id in (select id from business_rules where starts_with(rule_code, 'tax_rate_'))")
-        assert all(r["tax_to_set_aside"] is None or r["tax_to_set_aside"] == 0 for r in office.run("tax_estimate")) or all(r["rate_on_income"] is None for r in office.run("tax_estimate"))
+        assert all(r["rate_on_income"] is None and r["tax_to_set_aside"] is None for r in office.run("tax_estimate"))
     finally:
         con.execute("rollback")
 
