@@ -108,3 +108,29 @@
 @media (min-width:720px){.tp-map{order:1}.tp-lists{order:2}}
 .tp-morefacts{align-self:flex-start}
 @media (max-width:719px){.tp-map .kg-flow{min-width:640px}.tp-head h1{font-size:26px}.tp-tools button{min-height:44px}.tp-group li{min-height:32px}}
+
+/* Expand map: the map layer fills the whole window; Esc or Collapse map brings it back. */
+.kg-maptools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.kg-sizers{display:flex;gap:8px;margin-left:auto}
+.v3 .kg-expand{display:inline-flex;align-items:center;gap:6px;min-height:36px;border-radius:999px;border:1px solid var(--act);background:var(--card);color:var(--act);font-weight:600;white-space:nowrap}
+.v3 .kg-expand:hover{background:var(--act-soft)}
+.v3 .kg-expand:focus-visible{outline:2px solid var(--act);outline-offset:2px}
+.kg-big{position:fixed;inset:0;z-index:1000;width:100vw;height:100vh;height:100dvh;box-sizing:border-box;margin:0;padding:12px 16px;gap:12px;flex-wrap:nowrap;align-items:stretch;overflow:hidden;background:var(--paper)}
+.kg-big .kg-main{flex:1 1 auto;min-height:0;overflow:auto;gap:10px}
+.kg-big .kg-main>.v3-card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.kg-big .kg-atlas,.kg-big .kg-3dwrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.kg-big .kg-3d{flex:1 1 auto;height:auto;min-height:240px}
+.kg-big .kg-net,.kg-big .kg-radial{max-height:calc(100dvh - 210px)}
+.kg-big .kg-side{position:static;flex:0 0 280px;max-height:100%;overflow:auto;box-sizing:border-box}
+.kg-big .kg-sub{flex:1 1 auto}
+.v3 .kg-big .kg-search{flex:0 1 320px!important;width:auto}
+.kg-big .kg-atlas-head p{display:none}  /* the drawing gets the room; the hint is on the collapsed page */
+@media (prefers-reduced-motion:no-preference){.kg-big{animation:kg-fade .15s ease-out}}
+@keyframes kg-fade{from{opacity:0}}
+@media (max-width:719px){
+  .kg-big{flex-direction:column;padding:8px}
+  .kg-big .kg-main{flex:1 1 auto}
+  .kg-big .kg-search{width:100%}
+  .kg-sizers{margin-left:0}
+  .v3 .kg-expand{min-height:44px}
+}
