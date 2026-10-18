@@ -529,12 +529,43 @@ def b_run(x):
     x.th["run_id"] = (cur.get("run") or {}).get("run_id")
     from sh_platform.v1.b11_builder import run_trouble
     if why := run_trouble(cur):  # the failing step in plain words, here, not a generic refusal at go-live
+        if _hold_failed_design(x, cur):
+            return b_run(x)  # the pack without that table runs again; each try takes one table out, so this ends
         raise Q(why)
     if cur.get("state") == "blocked" or not cur:  # never an empty reason: the needs, else the sources not connected, else what the builder waits for
         why = "; ".join(str(n.get("text") or n) for n in v.get("needs") or []) or "; ".join(
             f"{c.get('name') or c.get('code')}: {c.get('detail') or c.get('status')}" for c in cur.get("connections") or [] if c.get("status") not in ("connected", "not_needed"))
         raise Q("The run on a copy is stuck: " + (why or v.get("waiting") or "the builder did not start a round on the copy for the approved design pack")[:300])
     return "ran on a copy"
+
+
+def _hold_failed_design(x, cur: dict) -> bool:
+    """A ready table Span designed with the model (no recipe) that the warehouse cannot build comes out of the pack, and only its figures are held
+    with the reason; the other figures still run (r5 uc3: a to_char in the chase-email table stopped the whole card). A recipe's table is never
+    dropped here: its failure is a question. -> True when a table came out."""
+    th = x.th
+    err = str((cur.get("run") or {}).get("error") or "")
+    table, _, why = err.partition(" could not be built: ")
+    table = table.strip()
+    if not (th.get("model_tables") or {}).get(table) or table in (th.get("held_tables") or {}):
+        return False
+    A = f"/api/v1/build/p/{th['pid']}/architecture"
+    gold = (x.api("leo", "GET", A + "/pack").get("pack") or {}).get("target", {}).get("gold") or []
+    g = next((g for g in gold if g.get("name") == table), None)
+    if g is None:
+        return False
+    m = re.search(r"Function with name (\w+) does not exist", why)
+    why = f"it calls {m[1]}, which the warehouse does not have" if m else re.sub(r"^\w+ Error:\s*", "", why).strip()[:160] or "the warehouse gave no reason"
+    kpis = list(dict.fromkeys([*(g.get("kpis") or []), *(f["kpi"] for f in th.get("figures") or [] if f.get("table") == table)]))
+    x.api("leo", "PUT", A + "/pack/edit", {"section": "gold_remove", "key": table, "changes": {"remove": True},
+                                           "note": f"Held: Span's design could not be built on the copy ({why})."[:300]})
+    th.setdefault("held_tables", {})[table] = {"kpis": kpis, "answered": "left out", "reason": why}  # not designed again, not asked at Decision 2
+    notes = th.setdefault("figure_notes", {})
+    for k in kpis:
+        notes[k] = f"Held: Span's design for it could not be built on the copy: {why}."
+    from sh_platform.v1 import v3_rows as R
+    R.send(x)  # the pack without the table: submitted and approved as the first pack was
+    return True
 
 
 def b_compare(x):

@@ -1861,10 +1861,47 @@ def intake(x) -> None:
     paths (mapping, PDFs, documents) never see it: `x.hide` takes it out of H.my_files until a_intake has run them."""
     from sh_platform.v1 import v3_harbor as H
     x.th["pack"] = {}
+    claim(x)
+    inbox = any(b.get("recipe") == "unrecognised_files" for b in x.th.get("bindings") or [])
     for f in H.my_files(x, "source"):
         if r := recognise(x.plane, f["name"]):
             x.th["pack"][f["name"]] = {"kind": r[0], "as": r[1]}  # not in th["intake"]: v3_pdf's load reads every PDF listed there
+        elif inbox and f["name"].lower().endswith((".pdf", ".xlsx", ".xlsm")):  # r5 uc-060: a brief about the inbox reads every unknown file as an inbox file
+            x.th["pack"][f["name"]] = {"kind": "inbox", "as": f["name"]}
     x.hide = set(x.th["pack"])
+
+
+def _kind_serves(kind: str, sources) -> bool:
+    """A kind serves a source when every word of the kind's name is in the source's name (manager_statements serves "Manager statements", not
+    "Capital call notices")."""
+    from sh_platform.v1 import v3_harbor as H
+    want = H._toks(kind)
+    return bool(want) and any(want <= H._toks(s) for s in sources or [])
+
+
+def claim(x) -> int:
+    """Files no thread has claimed whose content a reader knows as a kind the brief's sources name are this thread's (r5 uc-039: the manager
+    statements, named bluewater_B_2026-03-31_final.pdf, share no word with "Manager statements", so neither sign-off nor the scan gave them to the
+    thread and the IRR read no values). -> how many were claimed."""
+    from sh_platform.v1 import v3_harbor as H
+    srcs = x.th.get("sources") or []
+    if not any(_kind_serves(k, srcs) for k in KINDS):
+        return 0
+    got = {}
+    for f in H.read_files(x.plane):
+        if f["status"] in ("waiting", "question") and not f.get("thread") and (r := recognise(x.plane, f["name"])) and _kind_serves(r[0], srcs):
+            got[f["name"]] = r[0]
+    if not got:
+        return 0
+    with H.LOCK:  # what changed meanwhile stands: only a file still unclaimed is taken
+        fs = H.read_files(x.plane)
+        n = 0
+        for f in fs:
+            if f["name"] in got and f["status"] in ("waiting", "question") and not f.get("thread"):
+                f["status"], f["thread"], f["source"] = "recognised", x.th["id"], KINDS[got[f["name"]]][0]
+                n += 1
+        H._fp(x.plane).write_text(json.dumps(fs), encoding="utf-8")
+    return n
 
 
 def d2_files(x) -> list[dict]:

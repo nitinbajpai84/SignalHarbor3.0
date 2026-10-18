@@ -81,7 +81,15 @@ def kind_of(name: str, data: bytes) -> tuple[str, str] | None:
         if low.endswith(".csv"):
             head = data[:4000].decode("utf-8-sig", errors="replace").splitlines()[:1]
             cols = {c.strip().lower() for c in next(csv.reader(head), [])}
+            if len(cols) >= 5 and all(re.sub(r"[^a-z]", "", c) in FEED_FIELDS for c in cols):  # r5 uc-099: a feed whose every header is a known word, none a model field
+                return "new_feed", name
             return next(((k, name) for k, need in CSV_HEADS if need <= cols), None)
+        if low.endswith(".eml"):  # r5 uc-098: a mail proposing words for the word list ('dry powder' ...) is read by the glossary reader, not kept as context
+            msg = email.message_from_bytes(data, policy=email_policy.default)
+            body = msg.get_body(preferencelist=("plain",))
+            text = f"{msg['subject'] or ''}\n{body.get_content() if body else ''}"
+            quoted = re.search(r"'([^']{2,60})'|“([^”]{2,60})”", text)
+            return ("glossary", name) if quoted and re.search(r"\bwords?\b", text, re.I) and re.search(r"\blist\b", text, re.I) else None
         if low.endswith((".xlsx", ".xlsm")):
             wb = P.openpyxl.load_workbook(io.BytesIO(data), read_only=True)
             try:
@@ -103,6 +111,8 @@ def kind_of(name: str, data: bytes) -> tuple[str, str] | None:
         if low.endswith(".pdf"):
             t = P._pdf_head(data)
             up = t.upper()[:400]
+            if "COVER NOTE" in up and "POSITION FILE" in up:  # the new custodian's note on its first position file (uc-099)
+                return "new_feed", name
             if "KYC PACK" in up:
                 return ("kyc_register" if re.search(r"\|\s*expires \d{4}-\d{2}-\d{2}", t) else "onboarding"), name
             return next(((k, name) for mark, k in PDF_MARKS if mark in up), None)
