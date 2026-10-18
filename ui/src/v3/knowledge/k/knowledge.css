@@ -89,3 +89,48 @@
 .kg-more summary{cursor:pointer}
 .kg-more ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .kg-more button{font:inherit;border:1px solid var(--line-2);border-radius:999px;background:var(--card);color:var(--ink);padding:2px 10px;cursor:pointer}
+
+/* One thing's page: facts and chains first on a phone, the map below. */
+.tp-page{gap:16px}
+.tp-head{display:flex;flex-direction:column;gap:6px;width:100%}
+.tp-head h1{margin:0;font-family:var(--font-head);font-size:32px;font-weight:500}
+.tp-h{margin:8px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--info);font-weight:600}
+.tp-facts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+.tp-impact{margin:8px 0 0;padding:10px 14px;border-radius:8px;background:var(--harbor-soft);color:var(--ink);font-size:15px}
+.tp-body{display:flex;flex-direction:column;gap:16px;width:100%}
+.tp-map{order:2}
+.tp-lists{order:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.tp-map h2,.tp-chain h2{margin:0 0 8px;font-family:var(--font-head);font-size:20px;font-weight:500}
+.tp-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.tp-group h3{margin:10px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--info);font-weight:600}
+.tp-group ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.tp-said{margin:8px 0 0;font-size:13px}
+@media (min-width:720px){.tp-map{order:1}.tp-lists{order:2}}
+.tp-morefacts{align-self:flex-start}
+@media (max-width:719px){.tp-map .kg-flow{min-width:640px}.tp-head h1{font-size:26px}.tp-tools button{min-height:44px}.tp-group li{min-height:32px}}
+
+/* Expand map: the map layer fills the whole window; Esc or Collapse map brings it back. */
+.kg-maptools{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.kg-sizers{display:flex;gap:8px;margin-left:auto}
+.v3 .kg-expand{display:inline-flex;align-items:center;gap:6px;min-height:36px;border-radius:999px;border:1px solid var(--act);background:var(--card);color:var(--act);font-weight:600;white-space:nowrap}
+.v3 .kg-expand:hover{background:var(--act-soft)}
+.v3 .kg-expand:focus-visible{outline:2px solid var(--act);outline-offset:2px}
+.kg-big{position:fixed;inset:0;z-index:1000;width:100vw;height:100vh;height:100dvh;box-sizing:border-box;margin:0;padding:12px 16px;gap:12px;flex-wrap:nowrap;align-items:stretch;overflow:hidden;background:var(--paper)}
+.kg-big .kg-main{flex:1 1 auto;min-height:0;overflow:auto;gap:10px}
+.kg-big .kg-main>.v3-card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:auto}
+.kg-big .kg-atlas,.kg-big .kg-3dwrap{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.kg-big .kg-3d{flex:1 1 auto;height:auto;min-height:240px}
+.kg-big .kg-net,.kg-big .kg-radial{max-height:calc(100dvh - 210px)}
+.kg-big .kg-side{position:static;flex:0 0 280px;max-height:100%;overflow:auto;box-sizing:border-box}
+.kg-big .kg-sub{flex:1 1 auto}
+.v3 .kg-big .kg-search{flex:0 1 320px!important;width:auto}
+.kg-big .kg-atlas-head p{display:none}  /* the drawing gets the room; the hint is on the collapsed page */
+@media (prefers-reduced-motion:no-preference){.kg-big{animation:kg-fade .15s ease-out}}
+@keyframes kg-fade{from{opacity:0}}
+@media (max-width:719px){
+  .kg-big{flex-direction:column;padding:8px}
+  .kg-big .kg-main{flex:1 1 auto}
+  .kg-big .kg-search{width:100%}
+  .kg-sizers{margin-left:0}
+  .v3 .kg-expand{min-height:44px}
+}

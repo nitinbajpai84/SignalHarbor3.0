@@ -177,3 +177,34 @@ def test_ranked_use_cases_appear_only_with_a_figure_the_office_has(env):
     assert card and card["stage"] == "suggested" and card["facts"][0]["source"] == "Use case library"
     labels = {e["label"] for e in k["edges"] if card["id"] in (e["from"], e["to"])}
     assert "answers with" in labels
+
+
+# ---- one thing and its neighbourhood: GET /api/v3/knowledge/thing/{id}?up=N&down=M --------------------------------------------------------------------
+
+def test_thing_hops_and_chains(env):
+    c, plane = env
+    seed(plane)
+    ids = {n["label"]: n["id"] for n in c.get("/api/v3/knowledge").json()["nodes"]}
+    cash = ids["Cash"]
+    one = c.get(f"/api/v3/knowledge/thing/{cash}").json()  # default: one step each way
+    assert one["node"]["label"] == "Cash" and one["node"]["facts"]
+    hops = {n["label"]: n["hop"] for n in one["nodes"]}
+    assert hops["Cash"] == 0 and hops["Bank statements"] == -1 and hops["Capital calls"] == 1 and "Anita Rao" not in hops  # people are two steps down
+    assert {(e["from"], e["to"]) for e in one["edges"]} == {(ids["Bank statements"], cash), (ids["Capital calls"], cash)}
+    assert [r["label"] for r in one["feeds"] if r["label"] == "Anita Rao"] == ["Anita Rao"]  # the whole chain is listed whatever the hops asked for
+    assert one["down_steps"] >= 2 and one["up_steps"] == 1
+    two = c.get(f"/api/v3/knowledge/thing/{cash}?up=0&down=2").json()
+    h2 = {n["label"]: n["hop"] for n in two["nodes"]}
+    assert "Bank statements" not in h2 and h2["Anita Rao"] == 2 and h2["Capital calls"] == 1
+    assert all(r["hop"] > 0 for r in two["feeds"])
+    blob = json.dumps(one)
+    assert "position_snapshots" not in blob
+
+
+def test_thing_unknown_and_other_company_and_permissions(env, tmp_path):
+    c, plane = env
+    seed(plane)
+    assert c.get("/api/v3/knowledge/thing/figure:nope").status_code == 404
+    assert c.get("/api/v3/knowledge/thing/figure:cash?up=99").status_code == 422
+    anon = TestClient(c.app)
+    assert anon.get("/api/v3/knowledge/thing/figure:cash").status_code in (401, 403)
