@@ -176,20 +176,46 @@ def null_columns(sql: str) -> set[str]:
     return out
 
 
+AVG = re.compile(r"\bavg\s*\(", re.I)
+
+
+def _close(text: str, i: int) -> int:
+    """The index of the ")" that closes the "(" at i, or -1."""
+    depth = 0
+    for j in range(i, len(text)):
+        if text[j] == "(":
+            depth += 1
+        elif text[j] == ")":
+            depth -= 1
+            if depth == 0:
+                return j
+    return -1
+
+
 def avg_numbers(sql: str) -> str:
     """Every avg in a designed select reads its argument as a number. The warehouse has no avg of yes/no values: "avg(signatory_compliance) * 100" over
     a boolean column stopped the run on the copy (r3b uc-094, 'avg(BOOLEAN)'); a number's avg is the same either way. The text is unchanged when no
-    avg needs it or it cannot be read."""
-    import sqlglot
-    from sqlglot import exp
-    try:
-        q = sqlglot.parse_one(sql, read="duckdb")
-        bare = [a for a in q.find_all(exp.Avg) if not isinstance(a.this, exp.Cast)]
-        for a in bare:
-            a.this.replace(exp.cast(a.this.copy(), "double"))
-        return q.sql(dialect="duckdb") if bare else sql
-    except Exception:  # noqa: BLE001 - the plan check reads it and says what is wrong
+    avg needs it or it cannot be read. r5 fix: the SQL is edited where the avg is, never parsed and written out again: a parse-and-write round trip
+    rewrote to_char(d, 'YYYY-MM') as CAST(d AS TEXT), which changes the result (the monthly keys of the tables)."""
+    out, pos = [], 0
+    for m in AVG.finditer(sql):
+        if m.start() < pos:  # an avg inside the argument of an avg just read
+            continue
+        open_i = m.end() - 1
+        close = _close(sql, open_i)
+        if close < 0:
+            return sql  # cannot be read: the plan check reads it and says what is wrong
+        arg = sql[open_i + 1:close].strip()
+        if re.match(r"(?i)cast\s*\(", arg) and _close(arg, arg.index("(")) == len(arg) - 1:
+            continue  # already a cast of its argument
+        prefix = "DISTINCT " if re.match(r"(?i)distinct\s", arg) else ""
+        if prefix:
+            arg = arg[8:].strip()
+        out += [sql[pos:m.start()], "avg(", prefix, f"CAST({arg} AS DOUBLE)", ")"]
+        pos = close + 1
+    if pos == 0:
         return sql
+    return "".join(out) + sql[pos:]
 
 
 def has_column(kpi_name: str, cols: list[str]) -> bool:
@@ -1021,6 +1047,7 @@ def named_relevance(text: str, r: dict) -> int:
 ROW_CAP = 100
 SAID_WIDE = 4  # a memo ("what figures support ...") speaks for up to four figures
 SAID_FIGS = 2  # the sentence speaks for the two figures the question fits best; the rest sit in the figures behind it
+PERIOD_COLS = {"period_label", "period_name", "period", "quarter_label"}  # a table's own name for its period (r5 uc-044)
 FLAGS = {"first_row", "is_total", "is_latest", "latest", "is_named", "is_opening"}  # helper columns of a recipe: they pick a row, a person never reads them
 
 
@@ -1280,6 +1307,14 @@ def _shares(k: dict, rows: list[dict], texts: list[str], meas: str, got, names: 
             "rows": [{"label": f"{k['name']} · by {d}", "value": "; ".join(f"{a} {v:,.2f}%" for a, v in sums)} for d, sums in parts]}
 
 
+def _period_said(got: date | None, on_day: bool, month_words: str, labels: set[str]) -> str:
+    """The period a plain read names: the month of its as-at date, or, when the table names its own period in one value ("2026Q3"), that name
+    (r5 uc-044: "for 2026Q3 in June 2026" said the quarter by its date's month). A day is always said by its date."""
+    if got and len(labels) == 1 and not on_day:
+        return next(iter(labels))
+    return month_words
+
+
 def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | None = None, measure: str | None = None) -> dict | None:
     from sh_platform.v1 import cx_dash as CD
     cols = {c["name"]: str(c["type"]).lower() for c in t["columns"]}
@@ -1351,6 +1386,9 @@ def _read(plane, t: dict, k: dict, text: str, names: dict[str, str], th: dict | 
     unit = next(iter(ccys)) if len(ccys) == 1 and not re.search(rf"\b{re.escape(next(iter(ccys)))}\b", k["name"], re.I) else ""
     on_day = bool(got and asked and asked[2])  # a question about a day is answered for that day, not the month
     period = (f"{got.day} {_month_words(got)}" if on_day else _month_words(got)) if got else ""
+    plab = next((c for c in texts if c in PERIOD_COLS), None)
+    period = _period_said(got, on_day, period, {str(r[plab]) for r, _ in vals if r.get(plab) is not None} if plab else set())
+    texts = [c for c in texts if c != plab]
     label = k["name"] + (f" · {period}" if got else "")
     split = [c for c in texts if len({str(r.get(c)) for r, _ in vals}) > 1] + ([ccy] if len(ccys) > 1 else [])  # never add one currency to another
     part = "" if named else coverage(plane, {str(r[c]) for r, _ in vals for c in texts if r.get(c) is not None})

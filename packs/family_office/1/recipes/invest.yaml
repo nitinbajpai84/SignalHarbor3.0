@@ -457,6 +457,7 @@ recipes:
       as_at, detail, source, cast(traced as integer) as traced from rows_
     measure: value
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {if: "figure = fee_in_call and traced", all: true, lead: "Fee in the latest call:", say: "{fund} {value} {currency}"}  # r5 uc-040: the memo keeps the fee part of the latest call
       - {if: not traced, lead: "Not traced:", say: "{fund} {figure_label} {value}"}
       - {once: true, say: "{n} memo figures, {sum:traced} traced to a source"}
     columns:
