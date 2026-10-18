@@ -8,9 +8,10 @@ from fastapi.testclient import TestClient
 from sh_platform.app import create_app
 from sh_platform.jsonfile import read_json_strict, write_json_atomic
 from sh_platform.settings import Settings
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-ACCOUNTS = ROOT / "data" / "_control" / "accounts.json"
+ACCOUNTS = SEED / "_control" / "accounts.json"
 pytestmark = pytest.mark.skipif(not ACCOUNTS.is_file(), reason="no seeded demo data")
 PW = "b2-test-only-password"  # set on the tmp copy, never the real control plane
 PEOPLE = ("arjun.mehta.neera@example.test", "leela.raman.neera@example.test")
@@ -37,7 +38,7 @@ SOW = {"id": "sow-b2", "intent_id": IID, "title": "Portfolio returns", "state": 
 def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
+    shutil.copytree(SEED / "_control", data / "_control")
     for c in ("neera", "fresh"):
         (data / c).mkdir()
     neera = data / "neera"

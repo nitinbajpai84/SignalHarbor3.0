@@ -17,9 +17,10 @@ from sh_platform.v1 import c4_library as L
 from sh_platform.v1 import catalogue_scan
 from sh_platform.v1 import i2_north as N
 from sh_platform.v1 import i6_chat
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 ARJUN, LEELA = "arjun.mehta.neera@example.test", "leela.raman.neera@example.test"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 CSV = b"as_of,portfolio,market_value\n2026-08-31,Core,100\n"
@@ -30,7 +31,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("c4") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}
     accounts = json.loads((data / "_control" / "accounts.json").read_text(encoding="utf-8"))

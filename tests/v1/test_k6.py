@@ -80,7 +80,9 @@ def test_core_reload_adds_commitments_to_a_company_made_before(tmp_path, monkeyp
     old = tmp_path / "old.dbml"
     text = E.CORE_FILE.read_text(encoding="utf-8")
     text = re.sub(r"Table commitments \{.*?\n\}\n", "", text, flags=re.S)
-    text = re.sub(r"  (due_date|notice_kind|commitment_id) .*\n", "", text)
+    # only cash_movements' three columns: later tables (expected_statements, tax_obligations) keep their own due_date and its index
+    text = re.sub(r"Table cash_movements \{.*?\n\}\n", lambda m: re.sub(r"  (due_date|notice_kind|commitment_id) .*\n", "", m.group(0)),
+                  text, flags=re.S)
     text = text.replace("  commitments\n", "")
     old.write_text(text, encoding="utf-8")
     plane = PlaneStore(tmp_path / "data").create("old")

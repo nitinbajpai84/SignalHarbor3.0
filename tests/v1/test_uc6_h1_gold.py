@@ -9,6 +9,7 @@ from decimal import Decimal
 import duckdb
 import pytest
 
+from sh_platform.v1 import b10_design as D
 from sh_platform.v1 import b10_pack as K
 from sh_platform.v1 import b6_run as R
 from sh_platform.v1 import e1_write, k6_liquidity as K6, wh
@@ -57,20 +58,25 @@ def _gold(pack, kpi):
 def test_rules_count_30_and_60_day_windows_from_the_month_end_and_list_balances(uc6):
     plane, pid = uc6
     pack = draft(plane, pid)
-    g = _gold(pack, "Calls due within 30 days")
-    assert g is _gold(pack, "Calls due in 31 to 60 days")
+    due = _gold(pack, "Calls due within 30 days")  # A7, live r3b/r5: both call windows are bound by meaning to the pack's calls_due recipe
+    assert due is _gold(pack, "Calls due in 31 to 60 days") and due["purpose"].startswith("Recipe calls_due:") and "commitments" not in due["depends_on"]
+    # The rules still draft the windows for an office whose pack has no calls recipe: ask them directly, as design() does after the recipes.
+    calls = [k for k in KPIS if k["name"] in ("Calls due within 30 days", "Calls due in 31 to 60 days")]
+    g = next(x for x in D._rules_design(plane, slug_of(plane, pid), calls, K._grain({"kpis": KPIS})[0], [])["gold"]
+             if "Calls due within 30 days" in x["kpis"])
+    assert "Calls due in 31 to 60 days" in g["kpis"]
     assert "f.due_date between a.as_at + 0 and a.as_at + 30" in g["sql"] and "f.due_date between a.as_at + 31 and a.as_at + 60" in g["sql"]
     assert "not exists (select 1 from cash_movements as s where s.supersedes_cash_movement_id = f.id)" in g["sql"]  # a confirmed notice counts once
     n = _gold(pack, "Calls not yet confirmed")["sql"]
     assert "confirmation_status = 'noticed'" in n and "'confirmed'" not in n  # "not confirmed" leaves confirmed out
     placed = {k for x in pack["target"]["gold"] for k in x.get("kpis") or []}
-    assert "Cash after calls by entity" not in placed  # no sum of movements under a cash name
+    after = _gold(pack, "Cash after calls by entity")  # the pack's cash_after_calls recipe: a balance on positions, never a sum of movements under a cash name
+    assert after["purpose"].startswith("Recipe cash_after_calls:") and "position_snapshots" in after["depends_on"]
     cash = _gold(pack, "Available cash by entity")  # c6 (A7): the closing balance is built from the pack's cash_by_entity recipe, on positions, never movements
     assert cash["purpose"].startswith("Recipe cash_by_entity:") and "cash_movements" not in cash["depends_on"]
     assert "Uncalled commitment by fund" in placed  # UC6 G: commitments now hold called_to_date, so the rules draft it
     rows = " ".join(m["needs_person"] for m in K.open_rows(pack))
-    assert "Define Cash after calls by entity: it is a closing balance" in rows
-    assert "Define Uncalled commitment by fund" not in rows  # closing cash stays listed (no decision on it)
+    assert "Define Cash after calls by entity" not in rows and "Define Uncalled commitment by fund" not in rows  # both placed: nothing left to define
 
     con = duckdb.connect()
     con.execute("create table legal_entities (id varchar, entity_code varchar)")

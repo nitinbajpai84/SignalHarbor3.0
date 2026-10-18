@@ -11,9 +11,10 @@ from fastapi.testclient import TestClient
 from sh_platform.app import create_app
 from sh_platform.settings import Settings
 from sh_platform.v1 import p5_handover
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 PID = "prj-0000abcd"
 
@@ -22,8 +23,8 @@ PID = "prj-0000abcd"
 def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
-    shutil.copytree(ROOT / "data" / "neera", data / "neera")
+    shutil.copytree(SEED / "_control", data / "_control")
+    shutil.copytree(SEED / "neera", data / "neera")
     from tools.reset_v1 import reset as _reset_v1
     from sh_platform.plane import PlaneStore as _PS
     _reset_v1(_PS(data).plane_for("neera"))

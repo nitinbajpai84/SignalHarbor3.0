@@ -15,9 +15,10 @@ from sh_platform.profile.view import Viewer
 from sh_platform.settings import Settings
 from sh_platform.v1 import e0a_catalogue as E
 from sh_platform.v1.i2_north import Refused
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 ENG = Viewer("Leela Raman", frozenset({"analyst"}), False, "acc-leela")
 HEAD = Viewer("Ravi Head", frozenset({"analyst", "head_of_data"}), False, "acc-ravi")
 ADMIN = Viewer("Arjun Mehta", frozenset({"company_admin"}), False, "acc-arjun")
@@ -134,8 +135,8 @@ def test_removing_a_column_a_sheet_mapping_uses_is_flagged_as_breaking(plane):
 def test_routes_check_the_seats(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
-    shutil.copytree(ROOT / "data" / "neera", data / "neera")
+    shutil.copytree(SEED / "_control", data / "_control")
+    shutil.copytree(SEED / "neera", data / "neera")
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     pw = {l.split()[0]: l.split()[1] for l in CREDS.read_text().splitlines() if l.strip() and not l.startswith("#")}
 

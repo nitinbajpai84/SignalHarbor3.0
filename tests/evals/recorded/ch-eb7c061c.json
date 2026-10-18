@@ -1,0 +1,17 @@
+{
+ "id": "ch-eb7c061c",
+ "from": "docs/test-evidence/agents/new-uc/B-transcript.json (synthetic recorded run; that folder is not in git)",
+ "tables": [
+  {
+   "name": "gold_exposure_by_manager_across_ent_summary",
+   "purpose": "Exposure by manager, portfolio, and legal entity, showing manager's share of total portfolio exposure.",
+   "sql": "create table gold_exposure_by_manager_across_ent_summary as SELECT i.manager_name, p.portfolio_code, le.entity_name, SUM(lv.value_amount) AS total_exposure_by_manager_portfolio_entity, SUM(SUM(lv.value_amount)) OVER (PARTITION BY p.portfolio_code, le.entity_name) AS portfolio_entity_total_exposure, (SUM(lv.value_amount) * 100.0 / SUM(SUM(lv.value_amount)) OVER (PARTITION BY p.portfolio_code, le.entity_name)) AS manager_share_of_portfolio_entity_exposure_percent FROM valuation_observations lv JOIN instruments i ON lv.instrument_id = i.id JOIN portfolios p ON lv.portfolio_id = p.id JOIN legal_entities le ON p.legal_entity_id = le.id WHERE lv.valuation_date <= '2026-09-30' QUALIFY ROW_NUMBER() OVER (PARTITION BY lv.instrument_id, lv.portfolio_id ORDER BY lv.valuation_date DESC, lv.received_at DESC) = 1 GROUP BY i.manager_name, p.portfolio_code, le.entity_name",
+   "depends_on": [
+    "valuation_observations",
+    "instruments",
+    "portfolios",
+    "legal_entities"
+   ]
+  }
+ ]
+}

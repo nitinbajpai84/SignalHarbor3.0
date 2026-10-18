@@ -15,9 +15,10 @@ from sh_platform.egress.providers import build_model_client, select_provider, us
 from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
 from sh_platform.v1 import router as R
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-pytestmark = pytest.mark.skipif(not (ROOT / "data" / "neera").is_dir(), reason="no seeded demo data")
+pytestmark = pytest.mark.skipif(not (SEED / "neera").is_dir(), reason="no seeded demo data")
 FAKE = "fake-key-not-real"
 BASE = {"SH_MODEL_PROVIDER": "openrouter", "OPENROUTER_API_KEY": FAKE, "GOOGLE_API_KEY": FAKE,
         "SH_MODEL_FAST": "anthropic/claude-haiku-5.5", "SH_MODEL_SPECIALIST": "anthropic/claude-sonnet-5.5",
@@ -29,7 +30,7 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")  # the real .env holds keys: never a live model call
     data = tmp_path / "data"
     for part in ("_control", "neera"):
-        shutil.copytree(ROOT / "data" / part, data / part)
+        shutil.copytree(SEED / part, data / part)
     (data / "neera" / "settings" / "model_mode.json").unlink(missing_ok=True)  # the live company may have flipped; tests start from the default
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}

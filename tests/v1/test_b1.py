@@ -9,9 +9,10 @@ from fastapi.testclient import TestClient
 
 from sh_platform.app import create_app
 from sh_platform.settings import Settings
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 IID = "b1-fixture"
 SOW = {
@@ -38,7 +39,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("b1") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     from tools.reset_v1 import reset as _reset_v1  # the live Neera may hold a walk's records; the test starts from the company's files
     from sh_platform.plane import PlaneStore as _PS
     _reset_v1(_PS(data).plane_for("neera"))

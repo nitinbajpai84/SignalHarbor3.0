@@ -11,6 +11,7 @@ from sh_platform.app import create_app
 from sh_platform.settings import Settings
 from tests.v1.team import on_team
 from sh_platform.v1 import p1_project as P
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -20,7 +21,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("p1") / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
+    shutil.copytree(SEED / "_control", data / "_control")
     (data / "neera").mkdir()
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}

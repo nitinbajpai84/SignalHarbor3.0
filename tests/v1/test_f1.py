@@ -15,6 +15,7 @@ from sh_platform.app import create_app
 from sh_platform.egress.rows import json_findings
 from sh_platform.settings import Settings
 from tests.v1.team import on_team
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 PW = "f1-test-only-password"  # set on the tmp copy's accounts; the seeded passwords are never read
@@ -46,7 +47,7 @@ class Stub:
 def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     co = data / "neera"
     (co / "build" / "mapping").mkdir(parents=True, exist_ok=True)
     (co / "build" / "mapping" / f"{IID}.json").write_text(json.dumps({"intent_id": IID, "version": 1, "rows": ROWS}), encoding="utf-8")

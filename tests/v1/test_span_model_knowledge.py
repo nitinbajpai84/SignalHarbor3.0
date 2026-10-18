@@ -52,8 +52,9 @@ def test_describe_layers_lists_real_silver_with_purpose_and_the_projects_gold(bu
     got = clean(tool(plane, ENG, pid, "describe_layers", project=""))
     assert "shared company data model" in got["meaning"]
     silver = {l.split(":")[0]: l for l in got["silver"]}
-    assert "valuation_observations" in silver and "instruments" in silver
-    assert "rows" in silver["valuation_observations"]  # an aggregate, not a row
+    # A47: the core has 60 silver tables; 45 are listed (those holding rows first) and the rest are named in silver_more, none hidden
+    assert "instruments" in silver and "valuation_observations" in silver.keys() | set(got["silver_more"].replace(".", ",").split(", "))
+    assert all("rows" in l for l in silver.values())  # an aggregate, not a row
     assert any(l.startswith(GOLD + ":") and "not built yet" not in l for l in got["gold"])
     assert any(l.startswith("bronze_administrator_export_valuations:") for l in got["bronze"])
 
@@ -90,7 +91,7 @@ def test_someone_without_the_project_sees_none_of_its_gold(built):
     plane, pid = built
     P._update(plane, pid, lambda r: r.update(sensitivity="restricted", team=[]))
     got = clean(AT.AgentTools(plane, OUTSIDER, "lumen").describe_layers(project=""))
-    assert not any(GOLD in l for l in got["gold"]) and "valuation_observations" in " ".join(got["silver"])
+    assert not any(GOLD in l for l in got["gold"]) and "valuation_observations" in " ".join(got["silver"]) + got.get("silver_more", "")
     with pytest.raises(ToolRefused):
         AT.AgentTools(plane, OUTSIDER, "lumen").describe_table(table=GOLD)
     with pytest.raises(ToolRefused):

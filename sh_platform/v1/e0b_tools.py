@@ -379,7 +379,8 @@ def registry(gate, module_id: str, plane, viewer, model=None):
         raise ToolRefused("That file is not in the landing folder.")
 
     def list_tables() -> dict:
-        return {"tables": [t["name"] for t in e0a_catalogue.tables(plane)]}
+        # One line of names: the core alone has 60 tables (A47), and a list over the registry's MAX_LIST reads as raw rows and is refused.
+        return {"tables": ", ".join(t["name"] for t in e0a_catalogue.tables(plane))}
 
     def describe_table(table) -> dict:
         d = e0a_catalogue.describe(plane, str(table))

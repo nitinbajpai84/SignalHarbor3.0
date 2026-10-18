@@ -17,9 +17,10 @@ from sh_platform.settings import Settings
 from sh_platform.v1 import p1_project as P1
 from sh_platform.v1 import p5_handover as P5
 from sh_platform.v1 import t2_tickets as T
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 PID = "prj-0000abcd"
 LEELA = Viewer("Leela Raman", frozenset({"analyst"}), False, "acc-l")
@@ -32,8 +33,8 @@ ARJUN = Viewer("Arjun Mehta", frozenset({"company_admin"}), False, "acc-a")
 def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
-    shutil.copytree(ROOT / "data" / "neera", data / "neera")
+    shutil.copytree(SEED / "_control", data / "_control")
+    shutil.copytree(SEED / "neera", data / "neera")
     neera = data / "neera"
     (neera / "tickets" / "_migrated.json").unlink(missing_ok=True)  # the live company may already have migrated; the test starts before that
     (neera / "intents" / "i-test").mkdir(parents=True, exist_ok=True)

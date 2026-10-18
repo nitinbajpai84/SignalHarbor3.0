@@ -12,9 +12,10 @@ from sh_platform.app import create_app
 from sh_platform.settings import Settings
 from sh_platform.speech import SpeechUnavailable
 from sh_platform.v1.file_context import CANT, added_line, preview_for_agent
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 DEV = "dev.sharma.neera@example.test"  # a participant: the least of the company roles
 IID_SPAN = "ini-" + "5" * 32
 WAV = b"RIFF\x24\x00\x00\x00WAVEfmt " + b"\x00" * 32
@@ -41,7 +42,7 @@ class Stub:
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
     data = tmp_path_factory.mktemp("voice") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.speech_env = {"SH_SPEECH_PROVIDER": "off"}
     return app, data

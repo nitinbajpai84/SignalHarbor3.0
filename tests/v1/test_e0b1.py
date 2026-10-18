@@ -50,17 +50,16 @@ def test_worked_mappings_present():
 
 
 def test_skill_files_exist():
-    """Verify all four required files exist."""
-    from pathlib import Path
+    """Verify all four required files exist. Since G1 the data skill is an alias of Span's (skills/span/), so the files are found
+    through the loader rather than under a skills/data folder."""
+    from sh_platform.v1.skill_loader import skill_files
 
-    skill_dir = Path(__file__).resolve().parents[2] / "skills" / "data"
-    assert skill_dir.exists(), "skills/data directory does not exist"
-
+    files = skill_files("data")
     required_files = ["playbook.md", "questions.md", "traps.md", "examples.md"]
     for fname in required_files:
-        fpath = skill_dir / fname
-        assert fpath.exists(), f"{fname} does not exist"
-        assert fpath.stat().st_size > 0, f"{fname} is empty"
+        assert fname in files and files[fname].is_file(), f"{fname} does not exist"
+        assert files[fname].parent.name == "span"
+        assert files[fname].stat().st_size > 0, f"{fname} is empty"
 
 
 if __name__ == "__main__":

@@ -11,9 +11,10 @@ from sh_platform.app import create_app
 from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
 from sh_platform.v1 import p2_pulse
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 PID = "prj-0a1b2c3d"
 
@@ -23,7 +24,7 @@ def app(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("p2") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     from tools.reset_v1 import reset as _reset_v1
     _reset_v1(PlaneStore(data).plane_for("neera"))
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))

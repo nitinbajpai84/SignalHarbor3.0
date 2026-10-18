@@ -9,9 +9,10 @@ from fastapi.testclient import TestClient
 
 from sh_platform.app import create_app
 from sh_platform.settings import Settings
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 IID = "int-c1test"
 
@@ -25,7 +26,7 @@ def _put(path: Path, obj) -> None:
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     neera = data / "neera"
     _put(neera / "intents" / IID / "sow.json", {
         "id": "sow-1", "intent_id": IID, "title": "Monthly portfolio pack", "state": "signed", "version": 1,

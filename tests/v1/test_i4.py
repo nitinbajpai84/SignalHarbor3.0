@@ -13,6 +13,7 @@ from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
 from tests.v1.team import on_team
 from sh_platform.v1 import i4_sow
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 IID = "i4test01"
@@ -40,7 +41,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("i4") / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
+    shutil.copytree(SEED / "_control", data / "_control")
     (data / "neera").mkdir()
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}

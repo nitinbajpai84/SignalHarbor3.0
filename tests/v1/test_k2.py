@@ -16,6 +16,7 @@ from sh_platform.profile.view import Viewer
 from sh_platform.v1 import k2_map as K
 from sh_platform.v1 import m1_map
 from sh_platform.v1 import p1_project as P
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 FIN = Viewer("Fiona", frozenset({"analyst"}), False, "acc-f")
@@ -401,7 +402,7 @@ def test_a_choice_needs_a_real_intent_and_a_named_kpi(plane):
     assert all(len(k) <= 200 for k in read_json_strict(plane.path("graph", "k2.json"), dict)["choices"]["fin1"])
 
 
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 
 
 @pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
@@ -412,7 +413,7 @@ def test_routes_ask_suggest_and_answer_on_a_copy_of_the_demo(tmp_path, monkeypat
     from sh_platform.settings import Settings
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     plane = PlaneStore(str(data)).plane_for("neera")
     sign(plane, "k2-a", "Finance pack", [("NW", "Net worth", "Assets minus liabilities", "Arjun Mehta")])
     sign(plane, "k2-b", "Performance pack", [("NW", "Net worth", "Assets minus liabilities, funds excluded", "Priya Nair")], AT5)

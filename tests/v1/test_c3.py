@@ -14,9 +14,10 @@ from sh_platform.app import create_app
 from sh_platform.egress.rows import json_findings
 from sh_platform.settings import Settings
 from sh_platform.v1 import c3_chat
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 LEELA, DEV = "leela.raman.neera@example.test", "dev.sharma.neera@example.test"
 IID = "int_c3test"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
@@ -32,7 +33,7 @@ def app(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("c3") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     d = data / "neera" / "intents" / IID
     d.mkdir(parents=True)
     (d / "sow.json").write_text(json.dumps(SOW))

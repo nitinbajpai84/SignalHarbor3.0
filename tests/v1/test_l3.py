@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sh_platform.app import create_app
 from sh_platform.jsonfile import lock_for, write_json_atomic
 from sh_platform.plane import PlaneStore
+from sh_platform.profile.view import Viewer
 from sh_platform.settings import Settings
 from sh_platform.v1 import c4_library as L
 from sh_platform.v1 import catalogue_scan
@@ -19,9 +20,10 @@ from sh_platform.v1 import i2_north as N
 from sh_platform.v1 import k1_classify as C
 from sh_platform.v1 import l3_library as F
 from sh_platform.v1 import x5_extract as X
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 ARJUN, LEELA = "arjun.mehta.neera@example.test", "leela.raman.neera@example.test"
 CSV = b"as_of,portfolio,market_value\n2026-08-31,Core,100\n"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
@@ -32,10 +34,13 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("l3") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}
-    yield app, PlaneStore(data).plane_for("neera")
+    plane = PlaneStore(data).plane_for("neera")
+    acc = app.state.account_store.get_by_email(ARJUN)  # the seed starts with no intents: Arjun raises one for the readers below
+    N.create(plane, Viewer(acc["display_name"], frozenset(acc.get("roles") or ["company_admin"]), False, acc["account_id"]), "Monthly committee pack")
+    yield app, plane
     mp.undo()
 
 

@@ -10,9 +10,10 @@ from fastapi.testclient import TestClient
 from sh_platform.app import create_app
 from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 IID = "m1-perf"
 
@@ -30,7 +31,7 @@ def app(tmp_path_factory):
             m1_map.add_company_map_nodes(g, plane, people)
         mp.setattr(i5_graph, "add_sow_nodes", both)
     data = tmp_path_factory.mktemp("m1") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     plane = PlaneStore(str(data)).plane_for("neera")
 
     def put(rel: str, obj) -> None:
@@ -60,6 +61,9 @@ def app(tmp_path_factory):
         "governance": [{"rule": "Only the committee sees returns", "kind": "access", "applies_to": ["TWR"], "stated_by": "Priya Nair"}],
         "unclear": [{"id": "u1", "question": "Gross or net of fees?", "about": "TWR", "who_can_settle": "Priya Nair", "settled": True, "answer": "Net"}],
         "signature": None, "signatures": [sig(1), sig(2)]})
+    # a second intent whose K01 means something else (the seed has no intents of its own; the old live data happened to hold one)
+    put("intents/m1-cash/sow.json", {"id": "sow-m1-cash", "intent_id": "m1-cash", "title": "Cash watch", "state": "draft", "version": 1,
+                                     "goal": {"line": "Cash watch"}, "kpis": [{"code": "K01", "name": "Idle cash", "definition": "Cash above the buffer"}]})
     put(f"intents/{IID}/thread.json", {"intent_id": IID, "turns": [{"id": "t1", "by": "person", "name": "Arjun Mehta", "text": "Monthly pack",
                                                                      "at": "2026-10-01T09:00:00+00:00"}], "needs_done": [], "state": "sow_ready"})
     put(f"build/scan/{IID}.json", {"intent_id": IID, "kpis": [{"code": "CD", "status": "not", "sources_used": [],

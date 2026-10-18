@@ -12,9 +12,10 @@ from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
 from sh_platform.v1 import e0c_landing as L
 from sh_platform.v1 import wh
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 CSV = b"fund,nav\nA,10\n"
 
 
@@ -104,8 +105,8 @@ def test_bad_ids_and_empty_files_refused(plane):
 def test_routes_upload_scan_and_seats(tmp_path, monkeypatch, stubs):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
-    shutil.copytree(ROOT / "data" / "neera", data / "neera")
+    shutil.copytree(SEED / "_control", data / "_control")
+    shutil.copytree(SEED / "neera", data / "neera")
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     pw = {l.split()[0]: l.split()[1] for l in CREDS.read_text().splitlines() if l.strip() and not l.startswith("#")}
 

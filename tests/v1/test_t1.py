@@ -14,9 +14,10 @@ from sh_platform.settings import Settings
 from sh_platform.v1 import i2_north as N
 from sh_platform.v1 import skill_loader as SL
 from sh_platform.v1 import t1_templates as T
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 ARJUN, LEELA = "arjun.mehta.neera@example.test", "leela.raman.neera@example.test"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 
@@ -26,7 +27,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("t1") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}
     yield app, PlaneStore(data)
@@ -45,7 +46,11 @@ def test_seeds_goals_and_the_sample_company_examples(world):
     _, store = world
     t = T.template_for(store.plane_for("neera"), "intent_of_work")
     must = T.required_keys(t)
-    assert t["version"] == 1 and len(t["fields"]) == 16 and "benchmarks" in must and "strategic" not in must
+    # 16 sections plus the access choice the seed adds after the goal; last period's figures are optional since cfd3606 (no prior report
+    # must never re-open Decision 1 after a confirm)
+    keys = [f["key"] for f in t["fields"]]
+    assert t["version"] == 1 and len(keys) == 17 and keys[:2] == ["goal", "access"] and "benchmarks" in keys
+    assert "benchmarks" not in must and "access" not in must and "strategic" not in must and "kpis" in must
     goals = T.goals_from(t)
     assert list(goals)[:len(must)] == must and list(goals)[-1] == T.FREE_KEY      # must-fill first, free text last
     assert len(goals["goal"]) == 4 and goals["goal"][2] == "goal"                  # i6_chat's GOALS shape

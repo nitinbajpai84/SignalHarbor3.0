@@ -18,6 +18,7 @@ from sh_platform.v1 import g3_sheet as G3
 from sh_platform.v1 import g4_deviations as G4
 from sh_platform.v1 import p1_project as P1
 from sh_platform.v1 import p4_benchmarks as P4
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 PW = "g3g4-test-only-password"
@@ -28,7 +29,7 @@ IID = "g3test"
 def world(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     app.state.model_env = {"SH_MODEL_PROVIDER": "off"}
     for who in ("arjun.mehta", "leela.raman", "priya.nair"):

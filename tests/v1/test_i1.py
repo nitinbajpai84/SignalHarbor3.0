@@ -10,9 +10,10 @@ from sh_platform.app import create_app
 from sh_platform.plane import PlaneStore
 from sh_platform.settings import Settings
 from sh_platform.v1 import i1_company
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 
 
 @pytest.fixture(scope="module")
@@ -20,7 +21,7 @@ def app(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("i1") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     yield create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     mp.undo()
 
@@ -98,7 +99,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("i1b") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     a = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     a.state.model_env = {"SH_MODEL_PROVIDER": "off"}
     yield a

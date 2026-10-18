@@ -375,7 +375,8 @@ class AgentTools:
         out["counts"] = "; ".join(f"{layer}: {n_of(layer)} tables" + (f" read by this project's plan, of {shared} in the shared model"
                                                                        if pid and layer == "silver" else "") for layer in LAYERS[1:])
         for layer in LAYERS[1:]:
-            names = sorted(n for n, t in keep.items() if t["layer"] == layer)
+            # the tables that hold rows first: the core alone has 60 silver tables (A47), and a plain A-Z cut hid valuation_observations and transactions
+            names = sorted((n for n, t in keep.items() if t["layer"] == layer), key=lambda n: (not (counts.get(n) or (0,))[0], n))
             lines = []
             for n in names[:LAYER_ITEMS]:
                 c = counts.get(n)
@@ -386,7 +387,8 @@ class AgentTools:
                                                 + (f", last load {c[1]}" if c[1] else "") if c else "not built yet"))
             out[layer] = lines or ["none registered yet"]
             if len(names) > LAYER_ITEMS:
-                out[f"{layer}_more"] = f"{len(names) - LAYER_ITEMS} more {layer} tables: use list_tables with starts_with"
+                out[f"{layer}_more"] = (f"{len(names) - LAYER_ITEMS} more {layer} tables: {', '.join(names[LAYER_ITEMS:])}. "
+                                        "describe_table or list_tables with starts_with gives their purpose")
         return out  # names and sentences only, already plain; _plain would cut a long list at MAX_ITEMS
 
     def list_tables(self, **a) -> dict:

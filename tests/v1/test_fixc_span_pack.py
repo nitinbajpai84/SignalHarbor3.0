@@ -96,15 +96,17 @@ def test_uc6_rules_reuse_cash_movements_and_list_what_needs_a_definition(uc6):
     golds = pack["target"]["gold"]
     assert golds and all("cash_movements" in g["depends_on"] for g in golds)  # its own gold tables, on the silver that holds calls and distributions
     assert not any(g["name"].endswith(("holdings_monthly", "net_worth_entity_monthly")) for g in golds)  # not the investment-report template
-    g = golds[0]
+    due = next(g for g in golds if "Calls due within 30 days" in g["kpis"])  # A7, live r3b/r5: the call windows are bound to the pack's calls_due recipe
+    assert due["purpose"].startswith("Recipe calls_due:") and "Calls due in 31 to 60 days" in due["kpis"] and due["keys"][:1] == ["entity"]
+    g = next(g for g in golds if "Distributions incoming cash" in g["kpis"])  # the figure with no recipe: drafted by the rules, month by entity
     assert g["keys"][0] == "month" and "entity" in g["keys"] and g["grain"].startswith("Month by entity")
-    sql = " ".join(x["sql"] for x in golds)  # UC6 H1: calls due in a window sit in their own month-end table, apart from the plain totals
-    assert "f.movement_type = 'call'" in sql and "movement_type = 'distribution'" in sql
+    sql = " ".join(x["sql"] for x in golds)  # UC6 H1: calls due in a window sit in their own table, apart from the plain totals
+    assert "m.movement_type = 'call'" in sql and "movement_type = 'distribution'" in sql
     silver = {s["name"]: s for s in pack["target"]["silver"]}
     assert silver["cash_movements"]["status"] == "reused" and not [s for s in silver.values() if s["status"] == "proposed"]
     assert pack["model_change"] is None
     every_kpi_is_placed_or_listed(pack, UC6["kpis"])
-    assert any("Calls due in 31 to 60 days" in m["needs_person"] for m in K.open_rows(pack))  # no definition: listed, not silent
+    assert not any("Calls due in 31 to 60 days" in m["needs_person"] for m in K.open_rows(pack))  # no definition of its own: the recipe defines it
 
 
 def test_uc8_rules_reuse_transactions_and_add_no_silver(uc8):
@@ -122,7 +124,7 @@ def uc6_design(slug):
            "cast(max(f.amount) as decimal(18,2)) as calls_due_in_31_to_60_days "
            "from cash_movements as f left join portfolios as p on p.id = f.portfolio_id left join legal_entities as le on le.id = p.legal_entity_id group by all")
     return json.dumps({"gold": [{"name": f"gold_{slug}_liquidity_next_30_days", "purpose": "Cash and calls by entity", "grain": "Month by entity", "keys": ["month", "entity"],
-                                 "kpis": ["Calls due within 30 days", "Distributions incoming cash", "Calls due in 31 to 60 days"], "sql": sql,
+                                 "kpis": ["Distributions incoming cash"], "sql": sql,  # A7: the model is asked only for the figure no recipe places
                                  "depends_on": ["cash_movements", "portfolios", "legal_entities"],
                                  "columns": [{"name": "calls_due_within_30_days", "definition": "Confirmed calls due within 30 days"}]}],
                        "silver": [{"table": "cash_movements", "purpose": "Keep the manager's own reference of a call notice", "looked_for": "a column for the manager notice reference",
@@ -133,7 +135,8 @@ def uc6_design(slug):
 def test_uc6_model_design_proposes_a_justified_extension_and_one_approval_starts_the_builder(uc6, monkeypatch):
     plane, pid = uc6
     pack = draft(plane, pid, Script(uc6_design(slug_of(plane, uc6[1]))), monkeypatch)
-    assert pack["target"]["gold"][0]["name"].endswith("liquidity_next_30_days") and pack["target"]["gold"][0]["grain"] == "Month by entity"
+    liq = next(g for g in pack["target"]["gold"] if g["name"].endswith("liquidity_next_30_days"))  # the recipe's calls_due table is placed first (A7)
+    assert liq["grain"] == "Month by entity" and liq["kpis"] == ["Distributions incoming cash"]
     prop = next(s for s in pack["target"]["silver"] if s["status"] == "proposed")
     assert prop["name"] == "cash_movements" and prop["extends"] and prop["columns"] == ["notice_reference"]  # a column on an existing table, not a new table
     assert prop["looked_for"] and prop["considered"][0]["table"] == "commitments"

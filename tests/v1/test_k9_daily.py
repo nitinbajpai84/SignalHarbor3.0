@@ -1,7 +1,7 @@
 """CS1 Daily key numbers: every figure of the band is checked against docs/test/10UC-ANSWER-KEY.md (P01-P07, P14, P16, P21-P22), on the
 seeded Evergreen universe (synthetic). Access, the six roles and the route are checked too."""
 import json
-from datetime import date
+from datetime import date, timezone
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -43,7 +43,8 @@ def test_nav_total_and_by_entity(world):
 def test_issued_against_known_now_in_both_currencies(world):
     u, s = world["usd"]["issued"], world["sgd"]["issued"]
     assert (u["issued"], u["known_now"], u["difference"], u["status"]) == (D("57600000"), D("57780000"), D("180000"), "Revised")   # P01, P02
-    assert u["issued_at"].isoformat().startswith("2026-10-03T18:30") and "CASE-0001" in u["banner"]
+    # the same instant on any machine: DuckDB hands TIMESTAMPTZ back in the host's zone (18:30 in Singapore, 17:30 in Bangkok)
+    assert u["issued_at"].astimezone(timezone.utc).isoformat().startswith("2026-10-03T10:30") and "CASE-0001" in u["banner"]
     assert (s["issued"], s["known_now"]) == (D("77253120.00"), D("77494536.00"))                  # P01, P02, P16
     assert u["brief_link"].startswith("/centre/consume/brief/")
 

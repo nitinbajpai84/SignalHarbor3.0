@@ -13,9 +13,10 @@ from sh_platform.app import create_app
 from sh_platform.egress.rows import json_findings
 from sh_platform.settings import Settings
 from tests.v1.team import on_team
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 pytestmark = pytest.mark.skipif(not CREDS.is_file(), reason="no seeded demo data")
 ARJUN, LEELA = "arjun.mehta.neera@example.test", "leela.raman.neera@example.test"
 SOW = {  # b1's fixture, with a landing file for the custodian so one measure scans as available
@@ -42,7 +43,7 @@ def world(tmp_path_factory):
     mp = pytest.MonkeyPatch()
     mp.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path_factory.mktemp("a1") / "data"
-    shutil.copytree(ROOT / "data", data)
+    shutil.copytree(SEED, data)
     from sh_platform.plane import PlaneStore
     from tools.reset_v1 import reset
     reset(PlaneStore(data).plane_for("neera"))

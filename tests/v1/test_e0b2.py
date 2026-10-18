@@ -14,10 +14,11 @@ from sh_platform.profile.view import Viewer
 from sh_platform.settings import Settings
 from sh_platform.v1 import e0a_catalogue, e0b_mappings as M, e0b_tools as T
 from sh_platform.v1.i2_north import Refused
+from tests.v1.seeded import SEED
 
 ROOT = Path(__file__).resolve().parents[2]
 FIX = ROOT / "tests" / "v1" / "fixtures" / "e0d"
-CREDS = ROOT / "data" / "_control" / "seed_credentials.txt"
+CREDS = SEED / "_control" / "seed_credentials.txt"
 ENG = Viewer("Leela Raman", frozenset({"analyst"}), False, "acc-leela")
 HEAD = Viewer("Ravi Head", frozenset({"analyst"}), False, "acc-ravi")
 READER = Viewer("Priya Nair", frozenset({"sponsor"}), False, "acc-priya")
@@ -174,8 +175,8 @@ def test_the_evaluation_set_scores_clean(plane, monkeypatch):
 def test_routes_check_the_seats(tmp_path, monkeypatch):
     monkeypatch.setenv("SH_MODEL_PROVIDER", "off")
     data = tmp_path / "data"
-    shutil.copytree(ROOT / "data" / "_control", data / "_control")
-    shutil.copytree(ROOT / "data" / "neera", data / "neera")
+    shutil.copytree(SEED / "_control", data / "_control")
+    shutil.copytree(SEED / "neera", data / "neera")
     app = create_app(Settings(mode="dev", data_root=str(data), session_secret="fake-test-secret-not-real"))
     pw = {l.split()[0]: l.split()[1] for l in CREDS.read_text().splitlines() if l.strip() and not l.startswith("#")}
 

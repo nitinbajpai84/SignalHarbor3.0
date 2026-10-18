@@ -48,7 +48,9 @@ def _recorded_change(change_id: str, transcript: str = "new-uc/B-transcript.json
         if isinstance(o, list):
             return next((x for v in o if (x := walk(v))), None)
         return None
-    ch = walk(json.loads((EVIDENCE / transcript).read_text(encoding="utf-8")))
+    full = EVIDENCE / transcript  # docs/test-evidence/ is not in git: a checkout without it reads the committed copy of the change
+    src = full if full.is_file() else Path(__file__).resolve().parent / "recorded" / f"{change_id}.json"
+    ch = walk(json.loads(src.read_text(encoding="utf-8")))
     if not ch:
         raise LookupError(f"{change_id} is not in {transcript}")
     t = ch["tables"][0]
