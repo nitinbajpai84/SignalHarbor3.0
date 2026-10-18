@@ -39,3 +39,6 @@ export function flowLinks(nodes: KNode[], edges: KEdge[]): { from: string; to: s
   for (const e of edges) { add(e.from, e.to); add(e.to, e.from); }
   return [...out.values()];
 }
+
+/** The page of one thing; ":" is a legal character in a path, so ids read plainly. */
+export const thingPath = (id: string) => "/v3/knowledge/thing/" + encodeURIComponent(id).replace(/%3A/gi, ":");

@@ -1,5 +1,8 @@
+import { Link } from "react-router-dom";
+
 import type { KEdge, KNode, Process, Thing } from "./api";
 import { KIND_LABEL, KIND_ONE, look } from "./Graph";
+import { thingPath } from "./kinds";
 
 export function Side({ node, nodes, edges, onSelect }: { node: KNode | null; nodes: KNode[]; edges: KEdge[]; onSelect: (id: string) => void }) {
   if (!node) return <aside className="v3-card kg-side" aria-label="Selected"><p className="v3-mute">Click a box to see what is known about it and what it connects to.</p></aside>;
@@ -9,6 +12,7 @@ export function Side({ node, nodes, edges, onSelect }: { node: KNode | null; nod
     <aside className="v3-card kg-side" aria-label="Selected">
       <span className="kg-kind">{KIND_ONE[node.kind]}<Tag n={node} /></span>
       <h2>{node.label}</h2>
+      <p><Link className="kg-link" to={thingPath(node.id)}>Open full page</Link></p>
       <h3>What we know</h3>
       <Facts n={node} />
       <h3>Connected to</h3>
@@ -41,7 +45,7 @@ export function PhoneList({ nodes, query, selected, onSelect }: { nodes: KNode[]
         return (
           <li key={n.id} className={open ? "on" : undefined}>
             <button type="button" aria-expanded={open} onClick={() => onSelect(open ? null : n.id)}><span>{n.label}</span><Tag n={n} /></button>
-            {open && <div className="kg-facts"><Facts n={n} /></div>}
+            {open && <div className="kg-facts"><Facts n={n} /><Link className="kg-link" to={thingPath(n.id)}>Open full page</Link></div>}
           </li>);
       })}</ul>
     </section>))}</>;

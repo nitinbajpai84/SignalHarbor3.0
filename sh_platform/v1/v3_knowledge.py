@@ -216,3 +216,40 @@ def build(plane, accounts: list[dict], today: date | None = None) -> dict:
     nodes = [{k: v for k, v in n.items() if k != "since"} for n in g.nodes.values()]
     return {"nodes": nodes, "edges": list(g.edges.values()), "processes": processes, "things": [t for t in things if t["count"]],
             "empty": not any(n["kind"] != "person" for n in nodes)}
+
+
+def _reach(adj: dict[str, list[str]], start: str, hops: int | None = None) -> dict[str, int]:
+    """Breadth-first from start along adj -> {id: hops}, start left out; hops=None walks the whole chain."""
+    seen, front, d = {start: 0}, [start], 0
+    while front and (hops is None or d < hops):
+        d += 1
+        nxt = []
+        for x in front:
+            for y in adj.get(x, ()):
+                if y not in seen:
+                    seen[y] = d
+                    nxt.append(y)
+        front = nxt
+    seen.pop(start)
+    return seen
+
+
+def thing(plane, accounts: list[dict], tid: str, up: int = 1, down: int = 1, today: date | None = None) -> dict | None:
+    """One thing and its neighbourhood: `up` steps of what it rests on and `down` steps of what it feeds (nodes and edges, with the hop of each),
+    plus the whole chain each way as short lines (kind, name, hop) for the lists and the impact count. None when no such thing."""
+    k = build(plane, accounts, today)
+    by = {n["id"]: n for n in k["nodes"]}
+    if tid not in by:
+        return None
+    ups, downs = {}, {}
+    for e in k["edges"]:
+        top = e.get("up") or e["from"]
+        low = e["to"] if top == e["from"] else e["from"]
+        downs.setdefault(top, []).append(low)  # top feeds low
+        ups.setdefault(low, []).append(top)  # low rests on top
+    full_up, full_down = _reach(ups, tid), _reach(downs, tid)
+    hop = {tid: 0} | {i: -h for i, h in full_up.items() if h <= up} | {i: h for i, h in full_down.items() if h <= down}
+    short = lambda d: sorted(({"id": i, "kind": by[i]["kind"], "label": by[i]["label"], "hop": h} for i, h in d.items()), key=lambda r: (r["hop"], r["kind"], r["label"].lower()))  # noqa: E731
+    return {"node": by[tid], "nodes": [by[i] | {"hop": h} for i, h in hop.items()],
+            "edges": [e for e in k["edges"] if e["from"] in hop and e["to"] in hop and not (hop[e["from"]] * hop[e["to"]] < 0)],
+            "rests_on": short(full_up), "feeds": short(full_down), "up_steps": max(full_up.values(), default=0), "down_steps": max(full_down.values(), default=0)}

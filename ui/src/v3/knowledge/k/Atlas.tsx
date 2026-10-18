@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 
 import type { KEdge, KNode, Kind } from "./api";
-import { KIND_LABEL, KIND_ONE, KINDS, KIND_VAR, lines, neighbours, receipt } from "./kinds";
+import { KIND_LABEL, KIND_ONE, KINDS, KIND_VAR, lines, neighbours, receipt, thingPath } from "./kinds";
 import Network from "./Network";
 
 /** The few calls this view makes on 3d-force-graph; the library itself is loaded only when the Atlas opens. */
@@ -93,7 +94,7 @@ export default function Atlas({ nodes, edges, company, query, selected, phone, o
         <h2>Everything {company} knows</h2>
         <p>{total.toLocaleString("en")} things and {links.toLocaleString("en")} links, each saying what it rests on and why. {phone || mode === "flat" ? "Tap" : "Drag to spin, scroll to zoom, tap"} any dot to see everything it rests on and everything it feeds.</p>
       </div>
-      {hits.length > 0 && <ul className="kg-hits" aria-label="Matches">{hits.map((n) => <li key={n.id}><button type="button" onClick={() => onSelect(n.id)}>{KIND_ONE[n.kind]}: {n.label}</button></li>)}</ul>}
+      {hits.length > 0 && <ul className="kg-hits" aria-label="Matches">{hits.map((n) => <li key={n.id}><button type="button" onClick={() => onSelect(n.id)}>{KIND_ONE[n.kind]}: {n.label}</button> <Link className="kg-link" to={thingPath(n.id)} aria-label={`Open full page: ${n.label}`}>Open full page</Link></li>)}</ul>}
       <ul className="kg-key kg-toggle" aria-label="Kinds of thing">
         {KINDS.filter((k) => nodes.some((n) => n.kind === k)).map((k) => (
           <li key={k}><button type="button" aria-pressed={!off.has(k)} onClick={() => setOff((o) => { const s = new Set(o); if (!s.delete(k)) s.add(k); return s; })}>
@@ -123,6 +124,7 @@ export function AtlasPanel({ node, nodes, edges, onSelect }: { node: KNode | nul
     <aside className="v3-card kg-side" aria-label="Selected">
       <span className="kg-kind"><i className="kg-dot" style={{ background: `var(${KIND_VAR[node.kind]})` }} />{KIND_ONE[node.kind]}</span>
       <h2>{node.label}</h2>
+      <p><Link className="kg-link" to={thingPath(node.id)}>Open full page</Link></p>
       <p className="v3-mute">Rests on {rests.length} thing{rests.length === 1 ? "" : "s"}</p>
       <h3>Rests on</h3>
       {list(rests, "Nothing is recorded upstream of this.")}
