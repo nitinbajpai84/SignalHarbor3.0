@@ -4,7 +4,7 @@
 recipes:
   - id: missing_statements
     label: Missing statements
-    names: [missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements]
+    names: [missing statements, missing statement, late statements, statements expected, statements received, statement tracker, overdue statements, chase email drafts, chase email drafts prepared, chase drafts, draft chase email]
     words_all: [[statement, statements], [missing, late, overdue, expected, received, outstanding]]
     may_read: [expected_statements, documents, instruments]
     never_read: [commitments, cash_movements, transactions]
@@ -78,7 +78,7 @@ recipes:
     cards: [56]
     names: [position break, position breaks, custodian positions against administrator, custodian against administrator, holdings that differ between custodian and administrator]
     answer: [{if: "breaks", all: true, say: "{security} in {portfolio} on {position_date}: the administrator holds {administrator_quantity} and the custodian {custodian_quantity}, a difference of {difference_quantity} units worth {difference_value} {currency}. Reason: {reason}"}, {if: "breaks", all: true, say: "{security} in {portfolio} on {position_date}: a difference of {difference_quantity} units worth {difference_value} {currency}"}]
-    words_all: [[custodian, custody], [administrator, admin], [position, positions, holding, holdings, quantity, quantities], [differ, differs, difference, break, breaks]]
+    words_all: [[custodian, custody], [administrator, admin], [position, positions, holding, holdings, quantity, quantities], [differ, differs, difference, break, breaks, another]]
     may_read: [documents, extracted_fields, position_snapshots, portfolios, instruments]
     never_read: [transactions, cash_movements, commitments]
     why: The custodian's own count is its safekeeping statement (A46), read as one field per holding with the custodian's note beside it; the custodian's daily file is not that statement. The administrator's count is its accounting position of the same day.
@@ -514,7 +514,7 @@ recipes:
   - id: statement_vs_admin
     label: Latest manager statement against the administrator value
     cards: [26]
-    names: [statement against administrator, statement less administrator value, statement vs admin, manager statement against administrator, statement variance, administrator value minus manager statement, variance against administrator]
+    names: [statement against administrator, statement less administrator value, statement vs admin, manager statement against administrator, statement variance, administrator value minus manager statement, variance against administrator, accept the administrator value, ask the administrator to correct, manager statement for each fund with what the administrator shows]
     may_read: [valuation_observations, documents, position_snapshots, instruments, source_records, source_batches, source_systems]
     never_read: [commitments, cash_movements, transactions]
     why: The administrator may still carry a value from an earlier date. The comparison is the latest statement the office knows against the latest administrator position of the same fund, and the administrator row's own status says why they differ.

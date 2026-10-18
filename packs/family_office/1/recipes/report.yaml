@@ -57,7 +57,7 @@ recipes:
   - id: time_weighted_return
     label: Time weighted return and active return
     cards: [42, 44]
-    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark, quarter return, year to date return, ytd return, benchmark return]
+    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark, quarter return, year to date return, ytd return, benchmark return, quarter to date return, quarter to date performance, benchmark relative return, return for the quarter, performance for the quarter, performance for the quarter and the year]
     may_read: [position_snapshots, transactions, market_observations, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements]
     why: A return is the change in value of what is held, less what was put in or taken out. It reads the position snapshots at each month end, the buys and sells that moved value into or out of the portfolio, and the index levels of the approved benchmark the office has linked to the portfolio (the signed rule benchmark_link). Commitments and cash calls are not returns.
@@ -147,7 +147,7 @@ recipes:
   - id: attribution
     label: Return attribution
     cards: [46]
-    names: [attribution, brinson, where did the return come from, allocation and selection effect, return attribution]
+    names: [attribution, brinson, where did the return come from, allocation and selection effect, return attribution, allocation or selection decision, allocation or selection, selection decision, beat its benchmark, beat the benchmark]
     may_read: [position_snapshots, instruments, transactions, benchmark_definitions, benchmark_components, market_observations, portfolios]
     never_read: [commitments, cash_movements]
     why: Attribution splits the active return by asset class from what was held at the start of the month, the class returns and the benchmark's class returns. It reads positions, the buys and sells, the instrument's asset class and the benchmark; nothing about commitments.
@@ -573,7 +573,7 @@ recipes:
     label: Board pack headline figures
     cards: [74]
     names: [board pack headline figures, board headline figures, headline figures for the family board, what to tell the board of the family, "net worth, return, liquidity, decisions"]
-    words_all: [[board], [tell, headline, headlines, pack, figures, family]]
+    words_all: [[board], [tell, headline, headlines, pack, page]]
     answer: [{once: true, say: "Net worth is {net_worth_usd} USD and {net_worth_sgd} SGD at the fixing of {usd_sgd_fixing}, from the issued report of {report_date}"}, {once: true, say: "{estimate_note}"}, {once: true, say: "The liquid book returned {last_quarter_return_pct}% in {last_quarter} against {last_quarter_benchmark_pct}% for its benchmark; since {performance_from} it returned {since_start_return_pct}% against {since_start_benchmark_pct}%"}, {once: true, say: "Cash is {cash_usd_eq} USD at {cash_as_of}"}, {once: true, say: "The call shortfall is {call_shortfall_usd} USD after the calls due, against the signed buffer"}, {once: true, say: "Uncalled commitments are {uncalled_commitments_usd} USD"}, {once: true, say: "Statements amended after the report: {amendments_after_report}"}]
     may_read: [documents, extracted_fields, market_observations, position_snapshots, transactions, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions, bank_accounts, instruments, cash_movements, commitments, legal_entities, valuation_observations]
     never_read: [deal_pipeline, committee_decisions]

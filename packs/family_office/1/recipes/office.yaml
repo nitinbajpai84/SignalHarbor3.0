@@ -98,7 +98,7 @@ recipes:
   - id: invoice_variance
     label: Invoice less expected fee
     cards: [50]
-    names: [invoice variance, fee invoice variance, invoice against fee schedule, invoice less expected fee]
+    names: [invoice variance, fee invoice variance, invoice against fee schedule, invoice less expected fee, pay the invoice as billed, pay the invoice, invoice as billed, the administrator and the custodian bill us]
     may_read: [documents, extracted_fields]
     never_read: [cash_movements, vendor_contracts]
     why: The expected fee is the fee base times the rate of the fee schedule in force; what was paid or what a contract says is not the schedule.
@@ -163,7 +163,7 @@ recipes:
   - id: renewals_due
     label: Insurance policies expiring
     cards: [52]
-    names: [insurance renewals, policies expiring, insurance policies due, policy renewals]
+    names: [insurance renewals, policies expiring, insurance policies due, policy renewals, which policies expire, policies expire, policies renew, our policies renew, policies expiring]
     may_read: [vendor_contracts, documents, extracted_fields]
     never_read: [cash_movements, real_assets]
     why: A policy, its sum insured, premium and renewal date come from the broker's schedule of policies (vendor contracts of kind insurance); a premium paid is not the policy. The renewal notices only say whether the insurer has written.
@@ -682,7 +682,7 @@ recipes:
     label: Trust distribution room per beneficiary
     cards: [87]
     names: [trust distribution room, distribution room per beneficiary, trust distributions, trust payout room, what the deed allows]
-    words_all: [[trust, trusts, beneficiary, beneficiaries, deed, distribution, distributions], [room, pay, paid, payout, allows, allowed, distributable, distribute, left]]
+    words_all: [[trust, trusts, beneficiary, beneficiaries, deed], [room, pay, paid, payout, allows, allowed, distributable, distribute, left]]
     may_read: [documents, extracted_fields, cash_movements, portfolios, legal_entities, market_observations, family_members]
     never_read: [office_expenses, position_snapshots]
     why: The shares, the payout cap and the trust year are fields of the trust deed (a signed legal document, A44); the income, costs and allowances are the trust's confirmed bank lines; allowances count as distributions when the deed says so.

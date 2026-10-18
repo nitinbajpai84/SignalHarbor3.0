@@ -80,7 +80,7 @@ recipes:
     label: Valuation age
     status: ready
     cards: [21]
-    names: [value age, stale valuations, valuation age, days since valuation, old value, old values]
+    names: [value age, stale valuations, valuation age, days since valuation, old value, old values, stale valuation, stale valuation share, fund values older than, values older than, older than 90 days, more than 90 days old, fund values that are more than 90 days old]
     may_read: [valuation_observations, position_snapshots, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: "How old a value is depends on the date it is valued at, not the date it was loaded. A superseded observation is out: the amended one counts. An estimate is shown as an estimate, never passed off as a final."
@@ -177,7 +177,7 @@ recipes:
     label: Private fund value roll-forward
     status: ready
     cards: [38]
-    names: [nav rollforward, value roll-forward, nav roll-forward, private fund valuation reconciliation, valuation reconciliation, latest reported nav, private fund value]
+    names: [nav rollforward, value roll-forward, nav roll-forward, private fund valuation reconciliation, valuation reconciliation, latest reported nav, private fund value, quarter end fund value, new value of each private fund, explained by calls, manager reported new value, unexplained items, the calls less the distributions and the gain]
     may_read: [valuation_observations, cash_movements, instruments, extracted_fields]
     never_read: [position_snapshots, commitments, transactions]
     why: "The change in a fund's value between two quarter ends is explained by the calls paid in, the distributions paid out and the gain. Calls and distributions are the confirmed cash movements of the fund; the manager's own gain is the net gain or loss line of its statement."
@@ -249,7 +249,7 @@ recipes:
     label: Liquid book gain or loss this month
     status: ready
     cards: [43]
-    names: [liquid pnl, gain or loss this month, month to date gain, liquid book profit and loss, daily liquid book profit and loss, liquid book gain or loss]
+    names: [liquid pnl, gain or loss this month, month to date gain, liquid book profit and loss, daily liquid book profit and loss, liquid book gain or loss, daily p l, liquid book made or lost, made or lost so far this month, liquid book p l]
     may_read: [position_snapshots, transactions, instruments, portfolios]
     never_read: [commitments, cash_movements]
     why: "The gain is the change in value less what was put in or taken out by trading, so it reads the positions of the listed instruments and their trades. Dividends and coupons are income, not part of this figure."
@@ -347,7 +347,7 @@ recipes:
     label: Net worth after debt
     status: ready
     cards: [17]
-    names: [net worth after debt, net of debt, net worth less loans]
+    names: [net worth after debt, net of debt, net worth less loans, net family worth after debt, worth after debt, family worth after debt]
     may_read: [position_snapshots, credit_facilities, portfolios, legal_entities, instruments]
     never_read: [commitments, cash_movements, transactions]
     why: "Net worth is what is held at a date; what is owed is the drawn amount of each facility as its latest statement at or before that date says. A loan statement may show the balance as a negative number: the drawn amount here is always the positive amount owed."
