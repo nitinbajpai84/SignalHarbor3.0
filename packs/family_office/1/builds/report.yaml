@@ -11,7 +11,7 @@ roles:
         files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_*.xlsx", "office6m:*/administrator_nav/administrator_export_*.xlsx"]
         skills: ["data.recognise-file", "data.match-identity", "check.against-source", "check.adds-up", "check.explain-difference", "consume.answer-question"]
         dashboard: "Consume: report line against administrator, by month, with the difference"
-        check: {ask: "Does each number on the report agree with the administrator?", expect: ["4,581", "110,866", "289,043"]}
+        check: {ask: "Does each number on the report agree with the administrator?", expect: ["4,581", "110,866", "289,043"], must_have_verdict: true}
 
   - id: head_of_data
     builds:
@@ -21,7 +21,7 @@ roles:
         files: ["office6m:*/audit/audit_request_2026-09-22.xlsx", "office6m:*/investment_reports/Evergreen_Office_Investment_Report_*.pdf"]
         skills: ["data.recognise-file", "data.read-pdf-fields", "check.against-source", "consume.explain-number", "consume.answer-question"]
         dashboard: "Consume: sampled figures with their report file and page, untraced items listed"
-        check: {ask: "Does every figure the auditor sampled trace to a source?", expect: ["87.5", "9,500,000"]}
+        check: {ask: "Does every figure the auditor sampled trace to a source?", expect: ["87.5", "9,500,000"], must_have_verdict: true}
 
   - id: risk_officer
     builds:
@@ -31,7 +31,7 @@ roles:
         files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
         skills: ["intent.read-company-doc", "data.recognise-file", "build.write-formula-table", "action.detect-exception", "action.size-impact", "consume.answer-question"]
         dashboard: "Consume: allocation against policy bands, outside-band items, stale values marked"
-        check: {ask: "Which asset classes are outside their policy band?", expect: ["80.61", "54.55", "26.73"]}
+        check: {ask: "Which asset classes are outside their policy band?", expect: ["80.61", "54.55", "26.73"], must_not: ["Inside the band"]}
 
       - id: uc-033-breachesc
         title: "A real breach goes to the committee"
@@ -65,7 +65,7 @@ roles:
         files: ["office6m:*/investment_reports/Evergreen_Office_Investment_Report_2026-09.xlsx", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
         skills: ["data.recognise-file", "check.against-source", "check.adds-up", "action.route-owner", "consume.answer-question"]
         dashboard: "Consume: report sections, ready or not, with the reason"
-        check: {ask: "Whether to sign off and issue the report: which sections are ready?", expect: ["60"]}
+        check: {ask: "Whether to sign off and issue the report: which sections are ready?", expect: ["60"], must_have_verdict: true}
 
       - id: uc-047-icpack
         title: "Investment committee pack"

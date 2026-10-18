@@ -21,6 +21,7 @@ roles:
     - consume.answer-question
     dashboard: 'Consume: cash after calls due, by entity, with the shortfall and the amount to convert'
     check:
+      must_have_verdict: true
       ask: Can Holdings pay the Cedarpoint call on the 23rd?
       expect:
       - 1,230,000
@@ -87,6 +88,8 @@ roles:
     - action.close-with-reason
     dashboard: 'Consume: payee bank details on the notice against the account on file, payments on hold'
     check:
+      must_not: ["Net worth"]
+      must_have_verdict: ["Not confirmed", "No"]
       ask: Cedarpoint now says to wire to an account ending 4471. Is that really them?
       expect:
       - '2209'
@@ -150,6 +153,7 @@ roles:
     - consume.answer-question
     dashboard: 'Consume: commitment, called and unfunded for the fund, with the notice added'
     check:
+      must_have_verdict: true
       ask: Does call 7 fit what we committed to Cedarpoint Ventures III, and what is left after it?
       expect:
       - 10,000,000
@@ -170,6 +174,7 @@ roles:
     - consume.answer-question
     dashboard: 'Consume: cash by bank in USD with share of total and the limit if one is signed'
     check:
+      must_have_verdict: true
       ask: Whether too much cash sits at one bank
       expect:
       - 5,172,998.31
@@ -193,6 +198,7 @@ roles:
     - consume.answer-question
     dashboard: 'Consume: distributions promised against received, by fund and pay date'
     check:
+      must_have_verdict: true
       ask: Whether money promised by a fund has arrived
       expect:
       - 120,000

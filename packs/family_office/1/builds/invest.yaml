@@ -18,7 +18,7 @@ roles:
         files: ["office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf", "office6m:*/notices/2026-10-13_C_call7.pdf", "office6m:*/bank_statements/*_2026-10_mtd.xlsx", "office6m:*/fx_rates/fx_usdsgd_20261013.csv"]
         skills: ["action.size-impact", "action.route-owner", "check.adds-up", "consume.answer-question", "consume.explain-number"]
         dashboard: "Action: budget, limit and cash tests of the new commitment, green or red"
-        check: {ask: "Does the Harborlight commitment fit our budget, limits and cash?", expect: ["2,000,000", "16,600,000", "6,156,041.41", "37.08"]}
+        check: {ask: "Does the Harborlight commitment fit our budget, limits and cash?", expect: ["2,000,000", "16,600,000", "6,156,041.41", "37.08"], must_have_verdict: true}
 
   - id: investment_analyst
     builds:
@@ -28,7 +28,7 @@ roles:
         files: ["office6m:*/prospects/fund_teaser_Harborlight_Ventures_IV.pdf", "office6m:reference/Evergreen_Investment_Allocation_Policy_v2026.1.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/2026-10-13_C_call7.pdf"]
         skills: ["intent.read-company-doc", "data.read-pdf-fields", "action.size-impact", "consume.answer-question"]
         dashboard: "Action: mandate fit of the fund under review, ticket against uncalled and policy limits"
-        check: {ask: "Does the Harborlight fund fit our mandate, and what is its ticket against what we still have uncalled?", expect: ["2,000,000", "14,600,000", "16,600,000", "13.7"]}
+        check: {ask: "Does the Harborlight fund fit our mandate, and what is its ticket against what we still have uncalled?", expect: ["2,000,000", "14,600,000", "16,600,000", "13.7"], must_have_verdict: true}
 
       - id: uc-035-ddq
         title: "Compare manager questionnaires"
@@ -62,4 +62,4 @@ roles:
         files: ["office6m:*/notices/*_call*.pdf", "office6m:reference/fee_schedule.pdf", "office6m:reference/fund_terms.csv", "office6m:*/manager_statements/*_final.pdf", "office6m:*/manager_statements/*_amended.pdf", "office6m:*/commitments/commitments_register_2026-10-13.xlsx", "office6m:*/notices/*_distribution.pdf", "office6m:*/bank_statements/*_USD_*.xlsx"]
         skills: ["data.read-pdf-fields", "build.write-formula-table", "check.adds-up", "consume.answer-question"]
         dashboard: "Consume: fees paid, gross gain and fee drag by manager, fees above terms listed"
-        check: {ask: "Does each manager earn its fees?", expect: ["46,875", "368,750", "105,000", "44,750", "1,078,912", "-2,445,000", "1,204,204", "-655,000", "1,125,787", "-2,076,250", "1,309,204", "-610,250", "4.16", "8.02"]}
+        check: {ask: "Does each manager earn its fees?", expect: ["46,875", "368,750", "105,000", "44,750", "1,078,912", "-2,445,000", "1,204,204", "-655,000", "1,125,787", "-2,076,250", "1,309,204", "-610,250", "4.16", "8.02"], must_have_verdict: true}

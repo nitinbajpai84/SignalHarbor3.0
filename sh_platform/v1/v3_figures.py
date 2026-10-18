@@ -985,7 +985,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
         return rows  # r1 uc-029: a month named, over a table kept by month: the figure's own lines say it, for that month (not the flag's first row)
     run = next((s["run_id"] for s in reversed(th.get("steps") or []) if s.get("run_id")), None)
     trace = [{"kind": "tool", "label": f"Read the ready table for {k['name']}"}, {"kind": "guard", "label": "Every figure comes from the table's rows"}]
-    if not ready and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+    if not ready and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2, lead=k["name"])):
         return rows
     if not ready:
         why =next((f["reason"] for f in th.get("figures") or [] if f.get("kpi") == k["name"] and f.get("reason")), "") if tabs or gold else ""
@@ -1000,12 +1000,12 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
                 return rows
             continue
         got = how(plane, k, t, text, th) if how else _read(plane, t, k, text, aliases(plane), th, meas.get(t["name"]))
-        if got and str(got.get("answer") or "").startswith("Not available yet") and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
+        if got and str(got.get("answer") or "").startswith("Not available yet") and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2, lead=k["name"])):
             return rows  # w6 (uc-001 "no split by email, when"): the figure named cannot say; the recipes the question reads as can
         if got:
             src = f"{plain(t['name'])}" + (f" · run {run}" if run else "")
             return {**got, "source": src, "used": [], "trace": trace, "kpi": k["name"]}
-    return recipe_rows(plane, text, pid, th, kpis, floor=2) or recipe_rows(plane, text, pid, th, kpis, floor=1)
+    return recipe_rows(plane, text, pid, th, kpis, floor=2, lead=k["name"]) or recipe_rows(plane, text, pid, th, kpis, floor=1, lead=k["name"])
 
 
 def _breach_figure(text: str, kpis: list[dict], k: dict) -> dict | None:
@@ -1181,15 +1181,22 @@ def _every_row(plane, text: str, pid: str, th: dict, k: dict) -> dict | None:
     return recipe_rows(plane, text, pid, th, [k], floor=0, every=True)
 
 
-def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False, wide: bool = False) -> dict | None:
+TWO_ASKS = re.compile(r",? and (?:what|which|how|did|does|do|is|are|can|who|when|whether)\b|\?.+\?", re.I)  # "how much do we convert, and did the bank ..."
+
+
+def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False, wide: bool = False,
+                lead: str | None = None) -> dict | None:
     """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
     `relevance`, at least `floor`, and within one of the best), the rows of their ready tables for what the question names. `answer` is a short
     sentence from each recipe's own `answer` lines (else the figure, its subject and its measure), in the pack's order; `rows` holds the figures behind
     it, a line per row with its readable columns, and a total per money column. Every number is a row's own. None when no such figure has rows.
-    `wide` (a memo: "what figures support ..."): every bound figure with a row that names what the question names, up to SAID_WIDE sentences."""
+    `wide` (a memo: "what figures support ..."): every bound figure with a row that names what the question names, up to SAID_WIDE sentences.
+    Say only what was asked (r7 uc-005: the call notice, then net worth): the sentence speaks for `lead`, the figure the question binds to, when it has
+    rows; else for the best-fitting figures only (the next best too when the question asks two things). The others stay in the figures behind it."""
     from sh_platform.v1 import b10_pack as P, cx_dash as CD, v3_recipes as R
     scored = [(relevance(text, r), k) for k in kpis if (r := R.bound(k)) and not R.held(th, k["name"])]
     top = max((sc for sc, _ in scored), default=0)
+    score = {k["name"]: sc for sc, k in scored}
     figs = [k for sc, k in sorted(scored, key=lambda t: -t[0]) if wide or sc >= max(floor, top - 1)]
     if not figs:
         return None
@@ -1240,11 +1247,17 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
         if len(body) > 1 and parts and len({x.get(ccy) for x in body} if ccy else {None}) == 1:  # "the total across all funds": one currency only
             tot = [f"{c.replace('_', ' ')} {_said(sum((_num(x.get(c)) or Decimal(0) for x in body), Decimal(0)), names, money=True)}" for c in parts]
             lines.append({"label": f"{k['name']} · total of {len(body)} rows", "value": "; ".join(tot)})
-        if len(said) < (SAID_WIDE if wide else SAID_FIGS) and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
-            said.append(((min(r.get("cards") or [999]), order.get(r["id"], 0)), s))  # the story's order: the notice before its payment, the short before the FX
+        if len(said) < (SAID_WIDE if wide else len(figs)) and (s := say(r, rows, names, set(money)) or _plain_sentence(k["name"], r, rows, who, names, set(money))):
+            said.append(((min(r.get("cards") or [999]), order.get(r["id"], 0)), s, k["name"]))  # the story's order: the notice before its payment, the short before the FX
     if not lines:
         return None
-    sentence = " ".join(s for _, s in sorted(said, key=lambda t: t[0])) or f"{first}: the figures are below."
+    if not wide and said:
+        best = max(score[n] for _, _, n in said)
+        two = bool(TWO_ASKS.search(text))
+        near = [x for x in said if score[x[2]] >= best - int(two)]
+        mine = [x for x in said if x[2] == lead]
+        said = (mine + [x for x in near if two and x not in mine] if mine else near)[:SAID_FIGS]
+    sentence = " ".join(s for _, s, _ in sorted(said, key=lambda t: t[0])) or f"{first}: the figures are below."
     return {"answer": sentence, "figure": {"label": lines[0]["label"], "value": lines[0]["value"].split("; ")[0], "change": ""},
             "rows": lines, "source": ", ".join(plain(n) for n in sorted(seen)), "used": [], "kpi": first,
             "trace": [{"kind": "tool", "label": "Read the ready tables of the figures the question is about"},

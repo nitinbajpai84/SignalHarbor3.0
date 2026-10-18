@@ -7,7 +7,7 @@ Plan comes from packs/family_office/1/role_builds.yaml. Resumable: state in $UC6
 give each parallel run its own pair so no run overwrites another's.
 Steps: drop the build's files -> say the build's words -> wait out drafting -> "use the usual practice" once if Decision 1 shows gaps -> confirm
 -> on a question try "retry" once, else STUCK -> Decision 2 (assumed answers; the administrator/custodian file as the check) -> Decision 3 go live
--> POST /api/v3/ask with check.ask and test every expect value appears. Long waits poll with time.sleep: run it as a background shell.
+-> POST /api/v3/ask with check.ask and run the strict check (strict(): every expect value in the answer text itself, no must_not or plain-word ban, a verdict first when must_have_verdict). Long waits poll with time.sleep: run it as a background shell.
 Needs the environment from v3_team_env.py (the three extra accounts and settings.jobs).
 """
 import argparse
@@ -59,6 +59,45 @@ def said(out: dict) -> str:
 def missing(answer: str, expect: list[str]) -> list[str]:
     a = norm(answer)
     return [e for e in expect if norm(e) not in a and norm(e).removesuffix(".00") not in a]
+
+
+import re  # noqa: E402
+
+SNAKE = re.compile(r"(?<![\w\\/-])[a-z]+(?:_[a-z]+)+(?!\w|[\\/-]|\.[a-z]{2,4}\b)")  # listed_equity, a table.column; never a file name
+# A user's reading, not a number hunt: words no family answer may hold, on every build (internal names, answer-key wording, test tags, unknowns said as 0).
+PLAIN_BANS = [(re.compile(r"\bgold_\w+"), "an internal build name"), (re.compile(r"answer key", re.I), "answer-key wording"),
+              (SNAKE, "an underscored name"), (re.compile(r"\(synthetic\)", re.I), "a test tag"),
+              (re.compile(r"\bdue 0\b"), "an unknown said as 0")]
+VERDICT = re.compile(r"^\W*(?:yes|no|not(?!\s+available)|none|hold|release|pay|do not|don't|approve|reject|refuse|accept|ask|keep|add|exit|sell|buy|fix|order|escalate|"
+                     r"waive|cure|raise|lower|renew|all|only)\b", re.I)
+
+
+def said_as(e) -> list[str]:
+    """The plain ways an expected value may be said: a key's administrator_cash as "administrator cash", 2026-08-05 as "5 Aug 2026" or "5 August 2026"."""
+    e = str(e)
+    out = [e.replace("_", " ")]
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", e):
+        from datetime import date
+        d = date.fromisoformat(e)
+        out += [f"{d.day} {d:%b %Y}", f"{d.day} {d:%B %Y}"]
+    return out
+
+
+def strict(answer: str, check: dict) -> dict:
+    """The strict live check of one answer: {missing, banned, verdict, pass}. Expected values are read from the answer text alone (never the figures
+    behind it or the thread); an empty `expect` fails; `must_not` phrases and the plain-word bans must be absent; `must_have_verdict` (true, or the
+    opening words allowed) needs the answer to open with a verdict."""
+    answer = str(answer or "")
+    expect = list(check.get("expect") or [])
+    gone = [e for e in expect if all(missing(answer, [f]) for f in said_as(e))] if expect else ["<no expect: an empty expect never passes>"]
+    banned = [p for p in check.get("must_not") or [] if norm(str(p)) in norm(answer)]
+    banned += [why for rx, why in PLAIN_BANS if rx.search(answer)]
+    want = check.get("must_have_verdict")
+    verdict = True
+    if want:
+        opens = [want] if isinstance(want, str) else want if isinstance(want, list) else None
+        verdict = bool(VERDICT.match(answer)) if opens is None else any(answer.lstrip().lower().startswith(str(o).lower()) for o in opens)
+    return {"missing": gone, "banned": banned, "verdict": verdict, "pass": bool(answer.strip()) and not gone and not banned and verdict}
 
 
 OFFICE6M = REPO / "tests" / "v1" / "fixtures" / "office6m"
@@ -249,9 +288,9 @@ def run(role: dict, build: dict, n: int) -> None:
                 break
             time.sleep(15)
         answer = out.get("answer", "") if isinstance(out, dict) and st < 400 else f"HTTP {st}: {out}"
-        gone = missing(said(out), expect) if st < 400 else expect
-        ok = st < 400 and bool(answer.strip()) and not gone
-        s["answer"], s["check"] = answer, {"ask": ask, "expect": expect, "missing": gone, "pass": ok, "http": st}
+        got = strict(answer if st < 400 else "", build["check"])  # the answer text only, never the figures behind it
+        gone, ok = got["missing"], st < 400 and got["pass"]
+        s["answer"], s["check"] = answer, {"ask": ask, "expect": expect, "missing": gone, "banned": got["banned"], "verdict": got["verdict"], "pass": ok, "http": st}
         for name, url in (("desk", "/v3/desk"), ("build", f"/v3/thread/{tid}"), ("consume", "/v3/board")):
             s["shots"][name] = str(p.shot(url, f"team-{rid}-{name}"))
         save()
