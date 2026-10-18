@@ -1,0 +1,16 @@
+# SUGGESTION. Card 84 row 2. EXCEPTION. A bank statement of the entity never arrived (M02b): its interest is not in the income, so the estimate is short by the tax on it.
+suggestion: true
+id: uc-084-taxest-income-gap
+title: The tax estimate is short of an entity's bank interest
+pain_points: [PP-08, INT-LIQ]
+trigger: {on: figure_changed, figure: tax_estimate}
+inputs:
+  - {kind: doc, fields: [entity, period_from, period_to, bank_months_missing, tax_to_set_aside]}
+subject: "{doc.entity} tax estimate, bank statement missing"
+condition: "doc.bank_months_missing > 0"
+severity: problem
+route_to: cfo
+action: {verb: approve, options: [Chase the missing bank statement, Set the cash aside with the gap named]}
+hold: {blocks: set_tax_cash_aside, scope: "{doc.entity}", until: the missing bank statement is loaded or the estimate names the gap}
+message: "{doc.entity}: {doc.bank_months_missing:,.0f} account month(s) have no bank statement on file from {doc.period_from} to {doc.period_to}, so their interest is not in the income and the USD {doc.tax_to_set_aside:,.2f} to set aside is short by the tax on it."
+evidence: [doc.entity, doc.period_from, doc.period_to, doc.bank_months_missing, doc.tax_to_set_aside]

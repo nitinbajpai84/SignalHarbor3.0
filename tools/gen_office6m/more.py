@@ -599,4 +599,6 @@ def wave2_rules(w):
     ex, rt = ESTATE["exemption"], float(ESTATE["rate"])  # card 88 (A54): signed v2 beside the proposed v1 the transfer tax memo reader writes
     r += [("estate_tax_exemption", ex, f"The transfer tax exemption is {ex:,} USD, as the adviser's transfer tax memo states. Signed by Mei Chen (Principal)", "policy", dict(amount=ex, currency="USD"), "approved", 2),
           ("estate_tax_rate", rt, f"Transfer tax is {rt * 100:g} percent of the estate above the exemption, as the adviser's transfer tax memo states. Signed by Mei Chen (Principal)", "policy", dict(rate=rt), "approved", 2)]
+    r += [(f"tax_rate_{slug(e)}", float(ri), f"{ENT[e]}: tax on income {ri:.0%}, on realised gains {rg:.0%} (2026 rates of the tax calendar 2026-27). Signed by Mei Chen (Principal)", "policy",
+           dict(income=float(ri), realised_gain=float(rg)), "approved", 2) for e, (ri, rg) in TAX_RATES.items()]  # card 84 (A57): signed v2 beside the proposed v1 the tax calendar reader writes
     return r

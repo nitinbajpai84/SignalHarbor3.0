@@ -23,7 +23,7 @@ _SPEC.loader.exec_module(W2)
 key, f2, one, TODAY, KEYS = W2.key, W2.f2, W2.one, W2.TODAY, W2.KEYS
 office = W2.office  # the module fixture: the office files loaded through the real readers
 PACK = Path(__file__).resolve().parents[2] / "packs" / "family_office" / "1"
-BUILT, UNBUILT = ["uc-054-ladder", "uc-070-idle", "uc-073-runway"], ["uc-072-cashfc"]
+BUILT, UNBUILT = ["uc-054-ladder", "uc-070-idle", "uc-073-runway", "uc-072-cashfc"], []
 FORECAST_RULES = ["forecast_call_assumption", "forecast_floor", "forecast_horizon", "forecast_held_payments", "forecast_distribution_basis"]
 
 

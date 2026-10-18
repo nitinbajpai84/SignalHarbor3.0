@@ -1009,3 +1009,72 @@ recipes:
       label: The estate is investments, cash and real assets less the loan
       sql: >-
         select (select estate_value from {name}), (select investments + cash + real_assets - loan from {name})
+
+  - id: tax_estimate
+    label: Estimated tax to set aside, by entity
+    cards: [84]
+    names: [tax estimate, estimated tax, tax to set aside, cash to set aside for tax, how much cash to set aside for tax, estimated tax for the year]
+    words_all: [[tax], [set, aside, estimate, estimated, owe, expect, provision, reserve]]
+    may_read: [position_snapshots, instruments, portfolios, bank_accounts, cash_movements, transactions, legal_entities, documents, extracted_fields, market_observations, business_rules, rule_versions]
+    never_read: [office_expenses, deal_pipeline]
+    why: The tax to set aside is each entity's income and realised gains of the year so far times its signed 2026 rates (tax_rate_<entity>, A57), less the tax the managers withheld on distributions. Income, the sold lots and the withholding are tables of the model; the rates are signed office rules, never typed. Where a bank statement never arrived (M02b) the entity's income is short by that month's interest, and the answer says so.
+    formula: 'Period = the day after the last month end before the first office bank balance on file, to the latest day a document was received. Income of an entity = its confirmed coupons, dividends and bank interest in the period (SGD at the latest fixing on or before the day, rounded to the cent) + the confirmed payment of each income distribution notice whose pay date falls in the period (a notice is tied to the payment by fund, pay date and investor). Realised gains = the realised_gain of each sold lot of the custodian''s realised gains report dated in the period, to the entity that holds the trade (transactions.external_trade_id). Credits = the notice amount less the confirmed payment of every distribution notice paid by the as-at day (tax withheld). Tax before credits = income x the signed rate on income + realised gains (when positive) x the signed rate on realised gains, rounded to the cent. Tax to set aside = tax before credits less credits, not below 0. total_to_set_aside = the sum over the entities. With no signed rule for an entity its tax is empty; a movement in a currency with no fixing leaves the income empty. bank_months_missing = the account months between the first and the last balance of the entity''s bank accounts with no statement on file: their interest is not in the income, so the tax on it is not in the estimate.'
+    grain: One row per legal entity
+    sql: >-
+      create table {name} as with {positions},
+      asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      fxr as (select cast(observed_at at time zone 'UTC' as date) as rate_date, arg_max(value, observed_at) as rate from market_observations where observation_type = 'fx' and base_currency = 'USD' and quote_currency = 'SGD' and not exists (select 1 from market_observations as x where x.supersedes_observation_id = market_observations.id) group by 1),
+      acct as (select b.id as account_id, b.cash_instrument_id from bank_accounts as b where b.holder_kind = 'office' and b.cash_instrument_id is not null and b.status <> 'closed' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id)),
+      bal as (select a.account_id, p.legal_entity_id, l.position_date from acct as a join positions as l on l.instrument_id = a.cash_instrument_id join portfolios as p on p.id = l.portfolio_id),
+      per as (select (select min(position_date) from bal) - cast(day((select min(position_date) from bal)) as integer) + 1 as x0, (select d from asat) as x1),
+      gaps as (select legal_entity_id, sum(date_diff('month', date_trunc('month', f), date_trunc('month', l)) + 1 - n) as missing from (select account_id, legal_entity_id, min(position_date) as f, max(position_date) as l, count(distinct date_trunc('month', position_date)) as n from bal group by all) as q group by 1),
+      mv as (select p.legal_entity_id, m.instrument_id, m.movement_type, m.effective_date, m.amount, m.currency from cash_movements as m join portfolios as p on p.id = m.portfolio_id where m.confirmation_status = 'confirmed'
+      and not exists (select 1 from cash_movements as y where y.supersedes_cash_movement_id = m.id)),
+      inc0 as (select m.legal_entity_id, case when m.currency = 'USD' then m.amount else round(m.amount / (select f.rate from fxr as f where f.rate_date <= m.effective_date order by f.rate_date desc limit 1), 2) end as usd,
+      m.currency <> 'USD' and (select f.rate from fxr as f where f.rate_date <= m.effective_date order by f.rate_date desc limit 1) is null as unconverted
+      from mv as m, per where m.movement_type in ('coupon', 'dividend', 'interest') and m.effective_date >= per.x0 and m.effective_date <= per.x1),
+      dn as (select d.instrument_id, max(case when f.field_name = 'investor' then f.value_text end) as investor, max(case when f.field_name = 'amount' then f.value_numeric end) as amt,
+      max(case when f.field_name = 'pay_date' then cast(f.value_text as date) end) as pay, max(case when f.field_name = 'nature' then f.value_text end) as nature
+      from documents as d join extracted_fields as f on f.document_id = d.id where d.document_type = 'distribution_notice' group by d.id, d.instrument_id),
+      dp as (select e.id as legal_entity_id, dn.nature, dn.pay, dn.amt, (select sum(m.amount) from mv as m where m.movement_type = 'distribution' and m.instrument_id = dn.instrument_id and m.effective_date = dn.pay and m.legal_entity_id = e.id) as paid
+      from dn join legal_entities as e on e.entity_name = dn.investor),
+      lots as (select split_part(f.value_text, ' ', 2) as trade_id, cast(split_part(f.value_text, ' ', 3) as date) as sold_on, f.value_numeric as gain from extracted_fields as f join documents as d on d.id = f.document_id
+      where d.document_type = 'realised_gains_report' and f.field_name = 'realised_gain'),
+      lg as (select p.legal_entity_id, l.gain from lots as l cross join per join (select distinct external_trade_id, portfolio_id from transactions where status = 'settled') as t on t.external_trade_id = l.trade_id join portfolios as p on p.id = t.portfolio_id where l.sold_on >= per.x0 and l.sold_on <= per.x1),
+      rule as (select r.rule_code, v.parameters from business_rules as r join rule_versions as v on v.business_rule_id = r.id where v.approval_status = 'approved' and starts_with(r.rule_code, 'tax_rate_')
+      qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
+      e as (select le.id, le.entity_name, le.entity_code, (select cast(json_extract_string(parameters, '$.income') as decimal(9,4)) from rule where rule_code = 'tax_rate_' || lower(replace(le.entity_code, '-', '_'))) as ri,
+      (select cast(json_extract_string(parameters, '$.realised_gain') as decimal(9,4)) from rule where rule_code = 'tax_rate_' || lower(replace(le.entity_code, '-', '_'))) as rg from legal_entities as le),
+      t as (select e.*, per.x0, per.x1, coalesce((select sum(usd) from inc0 where legal_entity_id = e.id), 0) as cash_income, (select count(*) from inc0 where legal_entity_id = e.id and unconverted) as unconverted,
+      coalesce((select sum(paid) from dp where dp.legal_entity_id = e.id and dp.nature = 'income distribution' and dp.pay >= per.x0 and dp.pay <= per.x1), 0) as dist_income,
+      coalesce((select sum(gain) from lg where legal_entity_id = e.id), 0) as gains,
+      coalesce((select sum(amt - paid) from dp where dp.legal_entity_id = e.id and dp.pay <= per.x1), 0) as credits,
+      cast(coalesce((select missing from gaps where legal_entity_id = e.id), 0) as integer) as missing from e cross join per),
+      u as (select t.*, case when unconverted = 0 then cash_income + dist_income end as income, round((case when unconverted = 0 then cash_income + dist_income end) * ri + greatest(gains, 0) * rg, 2) as tax from t)
+      select u.entity_name as entity, u.entity_code, u.x0 as period_from, u.x1 as period_to, cast(u.income as decimal(18,2)) as income, cast(u.gains as decimal(18,2)) as realised_gains, u.ri as rate_on_income, u.rg as rate_on_gains,
+      cast(u.tax as decimal(18,2)) as tax_before_credits, cast(u.credits as decimal(18,2)) as credits, cast(greatest(u.tax - u.credits, 0) as decimal(18,2)) as tax_to_set_aside,
+      cast(sum(greatest(u.tax - u.credits, 0)) over () as decimal(18,2)) as total_to_set_aside, u.missing as bank_months_missing, cast(u.unconverted as integer) as unconverted
+      from u where u.income is not null or u.unconverted > 0 or u.gains <> 0 or u.missing > 0
+    measure: tax_to_set_aside
+    answer:
+      - {once: true, say: "Cash to set aside for tax from {period_from} to {period_to}: {total_to_set_aside}"}
+      - {all: true, say: "{entity}: income {income}, realised gains {realised_gains}, tax {tax_before_credits} less credits {credits}, {tax_to_set_aside} to set aside"}
+      - {once: true, if: bank_months_missing, say: "{entity}'s income is short: {bank_months_missing} bank statement month(s) never arrived (M02b), so their interest is not in it and the tax on that interest is not in the estimate"}
+    columns:
+      entity: The legal entity.
+      period_from: The day after the last month end before the first office bank balance.
+      period_to: The latest day a document was received.
+      income: Confirmed coupons, dividends, bank interest (USD) and income distributions received in the period.
+      realised_gains: The realised_gain of the lots sold in the period, to the entity that holds the trade.
+      rate_on_income: The signed rate on income (tax_rate_<entity>).
+      rate_on_gains: The signed rate on realised gains.
+      tax_before_credits: Income x rate on income + realised gains x rate on gains.
+      credits: Tax withheld on distributions (the notice amount less the payment).
+      tax_to_set_aside: Tax before credits less credits, not below 0.
+      total_to_set_aside: The sum over the entities.
+      bank_months_missing: Account months with no bank statement on file; their interest is not in the income.
+      unconverted: Movements in a currency with no fixing; the income is empty while any is.
+    tie_out:
+      label: The total is the sum of the entities
+      sql: >-
+        select (select max(total_to_set_aside) from {name}), (select sum(tax_to_set_aside) from {name})

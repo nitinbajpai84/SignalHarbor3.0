@@ -1,0 +1,15 @@
+# SUGGESTION. Card 84 row 1. The cash to set aside for tax by entity: income and realised gains times the signed rates, less the tax withheld.
+suggestion: true
+id: uc-084-taxest-set-aside
+title: Cash to set aside for tax
+pain_points: [PP-08, INT-LIQ]
+trigger: {on: figure_changed, figure: tax_estimate}
+inputs:
+  - {kind: doc, fields: [entity, period_from, period_to, income, realised_gains, tax_before_credits, credits, tax_to_set_aside]}
+subject: "{doc.entity} tax to set aside, {doc.period_from} to {doc.period_to}"
+condition: "doc.tax_to_set_aside > 0"
+severity: info
+route_to: cfo
+action: {verb: record, options: [Set the cash aside, Ask the tax adviser to confirm]}
+message: "{doc.entity}: income USD {doc.income:,.2f} and realised gains USD {doc.realised_gains:,.2f} from {doc.period_from} to {doc.period_to} give tax of USD {doc.tax_before_credits:,.2f} at the signed rates; less USD {doc.credits:,.2f} withheld, set aside USD {doc.tax_to_set_aside:,.2f}."
+evidence: [doc.entity, doc.income, doc.realised_gains, doc.tax_before_credits, doc.credits, doc.tax_to_set_aside]

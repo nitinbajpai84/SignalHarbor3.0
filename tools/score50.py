@@ -956,15 +956,9 @@ MESS.update({
 
 # The cause of one key value where a recipe row carries several (card 75: the walk's opening, income and balancing item). Keyed (card, key path).
 PATH_CAUSE: dict[tuple[str, str], str] = {}
-PATH_CAUSE.update({
-    ("uc-075-yearwalk", "income"): "Bank statement TCB-B-USD 2026-07 never arrived (M02b), so the income is 44.71 short",
-    ("uc-075-yearwalk", "fx_and_other"): "The balancing item takes up the income the missing TCB-B-USD 2026-07 statement (M02b) leaves out, so it is 44.71 off",
-})
+_B_GAP = "Bank statement TCB-B-USD 2026-07 never arrived (M02b), so Entity B's income is 44.71 short; the key of card 84 still counts that interest (A58)"
+PATH_CAUSE.update({("uc-084-taxest", p): _B_GAP for p in ("by_entity.Entity B.income", "by_entity.Entity B.tax_before_credits", "by_entity.Entity B.tax_to_set_aside", "total_to_set_aside")})
 
-BLOCKED.update({
-    "uc-084-taxest": ("the 2026 tax rates (tax_rate_<entity>) are proposed by the tax calendar reader, not signed (A20, A54), and no recipe tax_estimate is built; "
-                      "the lots sold since 1 Apr are on file (realised_lots_2026-10-13.csv, read as fields of the realised gains report)"),
-})
 
 # ---- Office cards 83 to 100 (test_w1b_office.py; docs/v3/w1/build51-office.md) ----------------------------------------------------------------
 
@@ -988,6 +982,10 @@ CHECKS.update({
         *[FIRST(0, k, "trust_distribution_room", k) for k in ("trust_year_start", "trust_income", "trust_expenses", "distributable_income", "payout_cap_pct", "distributable_cap")],
         D(0, "by_beneficiary", "trust_distribution_room", "beneficiary", {"share_pct": "share_pct", "room": "room", "paid": "paid", "left": "left_to_pay", "over": "over"}),
         S(0, "over_distributed", "trust_distribution_room", "beneficiary", lambda r: r["over"]),
+    ],
+    "uc-084-taxest": [  # card 84, tax_estimate (signed tax_rate_<entity>, A57)
+        D(0, "by_entity", "tax_estimate", "entity", {k: k for k in ("income", "realised_gains", "rate_on_income", "rate_on_gains", "tax_before_credits", "credits", "tax_to_set_aside")}),
+        FIRST(0, "total_to_set_aside", "tax_estimate", "total_to_set_aside"),
     ],
     "uc-088-estateliq": [  # card 88, estate_cash_need
         *[FIRST(0, k, "estate_cash_need", c) for k, c in (("estate_value", "estate_value"), ("investments_30_sep", "investments"), ("cash", "cash"), ("real_assets", "real_assets"),
@@ -1026,6 +1024,7 @@ CHECKS.update({
 })
 MESS.update({
     "uc-083-taxcal": [({"id": "TX-04"}, "M33 overdue filing")],
+    "uc-084-taxest": [({"bank_months_missing": lambda r: bool(r["bank_months_missing"])}, "M02b Entity B bank statement never arrived (its income is short)")],
     "uc-086-grantappr": [({"request": "REQ-2026-06"}, "M34 grant request fails the policy")],
     "uc-087-trustdist": [({"beneficiary": "Wen Chen"}, "M47 trust paid beyond its share")],
     "uc-089-expapp": [({"reference": ["BAL-2026-051", "LL-2026-0708"]}, "M35 approved above the approver's limit")],

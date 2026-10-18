@@ -1,5 +1,4 @@
-# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md): the eighteen cards built on the real pack readers. The other two (84, 96)
-# wait for what the build note names. Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
+# Persona builds of the office domain for use cases 51 to 100 (docs/v3/w1/build51-office.md): the twenty cards built on the real pack readers (84 on the rates signed in A57, 96 on the rework minutes signed in A51). Merged with role_builds.yaml by role id (docs/test/uc-live/uc6-scripts/v3_persona.py).
 # files: "office6m:<glob under tests/v1/fixtures/office6m>". check.expect: copied from tests/v1/fixtures/office6m/answer_keys.yaml, never computed.
 # uc-082 also lists the 13 Oct fixing file: the key puts SGD into USD at 1.3400, which is that day's fixing.
 template: family_office@1
@@ -100,6 +99,14 @@ roles:
         dashboard: "Words proposed, already on the list and to add"
         check: {ask: "Whether to add a word to the language list", expect: ["side letter", "stub period", "capital account", "dry powder"]}
 
+      - id: uc-096-automation
+        title: "Which processes to automate next"
+        say: "Each quarter I rank our written procedures by the time they take and how often they fail. Put every procedure's manual minutes a month, its runs, and the failures of the last six months (at 45 minutes of rework each) side by side, and tell me which to automate next."
+        files: ["office6m:*/sops/sop_*.md", "office6m:*/exception_log/exception_log_2026-10-13.csv", "office6m:received_log_all.csv"]
+        skills: ["intent.draw-process-steps", "action.detect-exception", "consume.build-board"]
+        dashboard: "Procedures ranked by score, with minutes, runs, failures and the slowest manual step"
+        check: {ask: "Which process to automate", expect: ["Bank statement chase", "2,040", "1,935", "1,395", "Chase late or missing ones", "Collect manager statements"]}
+
   - id: fund_accountant
     builds:
       - id: uc-083-taxcal
@@ -117,6 +124,14 @@ roles:
         skills: ["data.read-pdf-fields", "check.adds-up", "action.detect-exception"]
         dashboard: "Room, paid and left per beneficiary under the deed"
         check: {ask: "Whether the trust pays what its deed allows", expect: ["504,980.42", "46,001.31", "321,285.38", "25,702.83", "-2,297.17", "Wen Chen"]}
+
+      - id: uc-084-taxest
+        title: "Estimated tax for the year"
+        say: "Each quarter I set cash aside for tax. For each entity take the income received since 1 April (coupons, dividends, bank interest and income distributions) and the gains on the lots sold, times the signed 2026 rates, less the tax the managers withheld on distributions, and tell me how much to set aside. Say where an entity's income is short because a bank statement never arrived."
+        files: ["office6m:*/tax_calendar/tax_calendar_2026-27.xlsx", "office6m:*/realised_lots/realised_lots_2026-10-13.csv", "office6m:*/notices/*_distribution.pdf"]
+        skills: ["build.write-formula-table", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Income, realised gains, rates, credits and the cash to set aside by entity"
+        check: {ask: "How much cash to set aside for tax", expect: ["244,440.48", "504,980.42", "361,740", "41,554.88", "114,858.65", "29,054.88", "89,709.31", "15,250.58", "159,164.11"]}
 
   - id: principal
     builds:

@@ -477,4 +477,6 @@ def test_signed_family_rules_of_cards_86_and_88_agree_with_the_keys():
     ex = lambda cid: next(iter(keys()[cid]["questions"].values()))["expected"]  # noqa: E731
     assert signed["grant_min_charity_months"] == {"months": ex("uc-086-grantappr")["required_months"]}
     assert signed["estate_tax_exemption"] == {"amount": ex("uc-088-estateliq")["exemption"], "currency": "USD"} and signed["estate_tax_rate"] == {"rate": ex("uc-088-estateliq")["rate"]}
-    assert not any(k.startswith("tax_rate_") for k in signed), "card 84: the tax rates stay proposed (A54)"
+    by = ex("uc-084-taxest")["by_entity"]  # A57: the 2026 tax rates of card 84, signed v2 with the values its key uses
+    for code, name in (("eg_hold", "Evergreen Holdings"), ("eg_trust", "Evergreen Family Trust"), ("eg_b", "Entity B")):
+        assert signed[f"tax_rate_{code}"] == {"income": by[name]["rate_on_income"], "realised_gain": by[name]["rate_on_gains"]}

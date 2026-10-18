@@ -1,5 +1,5 @@
 # W1b cash, cards 51 to 100: the persona builds of the cash and treasury cards that could be built on the real readers (54 ladder, 70 idle cash, 73 runway). Merged by role id with role_builds.yaml.
-# Card 72 (12 month forecast) has its recipe but no build: the payment schedule file stops at 11 Jan 2027, so the key's expenses after it are in no file; see docs/v3/w1/build51-cash.md.
+# Card 72 (12 month forecast) is built on the signed forecast_* rules (A50); the payment schedule runs to 30 Sep 2027.
 # files: office6m:<glob under tests/v1/fixtures/office6m>. check.expect: numbers copied exactly from tests/v1/fixtures/office6m/answer_keys.yaml.
 template: family_office@1
 roles:
@@ -50,6 +50,28 @@ roles:
       - 1,572,351.67
       - 1,486,127.24
       - 3,588,706.99
+  - id: uc-072-cashfc
+    title: 12 month cash forecast
+    say: At each quarter start I want cash month by month to 30 Sep 2027, with the capital calls at the signed monthly average from the month after the noticed call, the scheduled payments left out when held, the expected distributions and the income, against the signed floor. Tell me whether the family needs to raise cash, how much and from which month.
+    files:
+    - office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv
+    - office6m:*/commitments/commitments_register_2026-10-13.xlsx
+    - office6m:*/payment_schedule/payment_schedule_2026-10-13.csv
+    - office6m:*/income_calendar/income_calendar_2026-10-13.csv
+    - office6m:*/manager_outlook/*_distribution_outlook_2026-27.pdf
+    skills:
+    - build.write-formula-table
+    - action.detect-exception
+    - consume.answer-question
+    dashboard: 'Consume: cash in, cash out and the closing balance by month to Sep 2027, against the floor'
+    check:
+      ask: Whether the family needs to raise cash
+      expect:
+      - 6,156,041.41
+      - 991,666.67
+      - 750,000
+      - 5,654,705.37
+      - -4,904,705.37
 - id: principal
   builds:
   - id: uc-073-runway

@@ -2,7 +2,7 @@
 import datetime as dt
 from decimal import Decimal as D
 
-from .files import RECV, month_end, months, pname
+from .files import MISSING_BANK, RECV, month_end, months, pname
 from .files2 import close_items
 from .keys import KEYS, Q, cash, latest, pct, uc
 from .more import (ACCOUNT_FORM, ACCOUNT_STEPS, APPROVERS, BUDGET, ESTATE, FAMILY_GRANTED, FAMILY_POLICY, FAMILY_REQUEST, FEED, GLOSSARY, GLOSSARY_PROPOSED, GRANT_POLICY, GRANT_REQUEST, HF_TERMS, HOLDINGS, INSURED,
@@ -294,12 +294,12 @@ def k075(w):
     calls = ssum(c["amount"] for c in w.calls if x0 < d(c["due"]) <= S1); dist = ssum(x["paid"] for x in w.dists if x0 < d(x["pay"]) <= S1)
     fund_gain = ssum(fund_value(w, f, S1) - fund_value(w, f, x0) for f in FUND) - calls + dist
     fxd = lambda t: eq(w, t["amt"], ACCT[t["acct"]]["ccy"]) if ACCT[t["acct"]]["ccy"] == "USD" else q2(t["amt"] / w.fx[t["date"]])
-    income = ssum(fxd(t) for t in w.tx if t["typ"] in ("coupon", "dividend", "interest") and S0 <= t["date"] <= S1)
+    income = ssum(fxd(t) for t in w.tx if t["typ"] in ("coupon", "dividend", "interest") and S0 <= t["date"] <= S1 and (t["acct"], t["date"].isoformat()[:7]) not in MISSING_BANK)  # only statements that arrived (M02b, A56)
     spend = ssum(l["usd"] for l in w.X.ledger if l["cat"] != "Debt service") + ssum(r["interest"] for r in w.loan)
     gains = book_gain + fund_gain; other = cl - op - (gains + income - spend)
     return Q("What to tell the family about the year", dict(period=[S0, S1], opening=op, investment_gains=gains, liquid_book_gain=book_gain, private_and_hedge_fund_gain=fund_gain, income=income, spending=spend, fx_and_other=other, closing=cl, adds_up=op + gains + income - spend + other == cl, fx_and_other_pct_of_closing=pct(other, cl, 3),
-                                                            capital_calls_paid=calls, distributions_received=dist),
-             "net worth = fund values as known on 13 Oct + liquid book + bank cash (SGD at the day's fixing) - term loan; gains = book value change less net purchases, plus fund value change less calls plus distributions; income = coupons, dividends and bank interest; spending = expense ledger without debt service, plus loan interest; fx and other is the balancing item. Six months of data (1 Apr to 30 Sep), not twelve")
+                                                            capital_calls_paid=calls, distributions_received=dist, statements_missing=[f"{a} {m}" for a, m in sorted(MISSING_BANK)]),
+             "net worth = fund values as known on 13 Oct + liquid book + bank cash (SGD at the day's fixing) - term loan; gains = book value change less net purchases, plus fund value change less calls plus distributions; income = coupons, dividends and bank interest from the statements that arrived (the July TCB-B-USD statement never did, M02b, so its interest is not counted and fx and other takes it up); spending = expense ledger without debt service, plus loan interest; fx and other is the balancing item. Six months of data (1 Apr to 30 Sep), not twelve")
 
 
 @uc("uc-076-scorecard", ["*/manager_statements/*.pdf", "*/meeting_notes/*.md", "*/notices/*_call*.pdf", "*/manager_news/*.eml"])

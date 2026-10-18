@@ -199,16 +199,16 @@ def test_card_75_the_31_march_fixing_is_on_file_so_the_opening_is_the_key_and_th
     assert f2(r["opening"]) == k["opening"] and r["opening_fixing_missing"] == 0 and r["adds_up"] is True
     assert (f2(r["opening_funds"]), f2(r["opening_book"]), f2(r["opening_loan"])) == (64551403.0, 39672360.0, 3000000.0)
     assert f2(r["opening"]) + f2(r["investment_gains"]) + f2(r["income"]) - f2(r["spending"]) + f2(r["fx_and_other"]) == pytest.approx(f2(r["closing"]), abs=0.01)
-    # the only gap left is the bank statement that never arrived: the key's income is 44.71 larger and its balancing item 44.71 smaller
-    assert round(f2(r["income"]) + 44.71, 2) == k["income"] and f2(r["fx_and_other"]) - 44.71 == pytest.approx(k["fx_and_other"], abs=0.01)
+    # A56: the key counts only the statements that arrived, so income and the balancing item are the key's
+    assert f2(r["income"]) == k["income"] and f2(r["fx_and_other"]) == pytest.approx(k["fx_and_other"], abs=0.01)
 
 
 def test_card_75_the_income_is_short_by_the_statement_that_never_arrived(office):
-    """M02b: the July statement of TCB-B-USD (expected 6 August) is not in the files. The key's income includes its 44.71 interest. The recipe counts the missing month."""
+    """M02b: the July statement of TCB-B-USD (expected 6 August) is not in the files. The key (A56) leaves its 44.71 interest out and names the statement. The recipe counts the missing month."""
     r, k = office.run("networth_walk")[0], key("uc-075-yearwalk")
     assert r["bank_months_missing"] == 1
     assert office.one("select count(*) from source_batches where coalesce(storage_uri, '') like '%TCB_B_USD_2026-07%'") == 0
-    assert round(k["income"] - f2(r["income"]), 2) == 44.71
+    assert f2(r["income"]) == k["income"] and k["statements_missing"] == ["TCB-B-USD 2026-07"] and len(k["statements_missing"]) == r["bank_months_missing"]
 
 
 def test_card_75_the_expense_ledger_is_read_and_the_loan_interest_comes_from_the_loan_statements(office):

@@ -1,14 +1,13 @@
 """W1b, domain office ("Run the office" and "Family and people"), cards 51 to 100 (docs/v3/w1/build51-office.md), proved on the real pack readers.
 
-Built (18): uc-052-insurance (renewals_due), uc-081-payroll (payroll_total), uc-082-covergap (cover_gap), uc-091-jml and uc-092-accessrev (access_review), uc-093-onbmgr
+Built (20, with the two below): uc-052-insurance (renewals_due), uc-081-payroll (payroll_total), uc-082-covergap (cover_gap), uc-091-jml and uc-092-accessrev (access_review), uc-093-onbmgr
 (onboarding_items), uc-095-sopreview (sop_age), uc-097-kycrefresh (kyc_expiry), uc-098-wordlist (terms_proposed), and on the family and controls readers with the signed office
 rules (A48, A49, A54): uc-083-taxcal (tax_due), uc-085-grants (grants_used), uc-086-grantappr (grant_check), uc-087-trustdist (trust_distribution_room), uc-088-estateliq
 (estate_cash_need), uc-089-expapp (approval_exceptions), uc-090-offcost (office_cost), uc-094-onbbank (account_setup), uc-100-famaccess (member_access). Their numbers come from
 the recipes' output on the office loaded by sh_platform/v1/v3_pack_readers (the `office` fixture of test_w2_loader.py) and are compared with answer_keys.yaml, read from the
 file, never typed.
-Recipe only (1): uc-096-automation (automation_score, on the failures each SOP lists and the signed rework minutes, A51); no signals or build yet.
-Not built (1): uc-084-taxest (the sold lots are on file now, in the custodian's realised gains report; the tax rates are proposed); the test below proves why and fails the
-day that changes. Synthetic data only."""
+uc-096-automation (automation_score, on the failures each SOP lists and the signed rework minutes, A51) and uc-084-taxest (tax_estimate, on the 2026 rates signed in A57,
+the sold lots and the income on file) are built too: a build each, 84 with two signals. Synthetic data only."""
 from __future__ import annotations
 
 import ast
@@ -37,13 +36,13 @@ CARDS = [c["id"] for c in yaml.safe_load((PACK / "use_cases_100.yaml").read_text
          if c.get("domain") in ("Run the office", "Family and people") and c["order"] > 50 and c["id"] in KEYS]
 
 BUILT = ["uc-052-insurance", "uc-081-payroll", "uc-082-covergap", "uc-091-jml", "uc-092-accessrev", "uc-093-onbmgr", "uc-095-sopreview", "uc-097-kycrefresh", "uc-098-wordlist",
-         "uc-083-taxcal", "uc-085-grants", "uc-086-grantappr", "uc-087-trustdist", "uc-088-estateliq", "uc-089-expapp", "uc-090-offcost", "uc-094-onbbank", "uc-100-famaccess"]
-NOT_BUILT = {"uc-084-taxest"}  # the reason is proved below
-RECIPE_ONLY = {"uc-096-automation"}  # recipe automation_score agrees with the key; no signals or build yet
+         "uc-083-taxcal", "uc-084-taxest", "uc-085-grants", "uc-086-grantappr", "uc-087-trustdist", "uc-088-estateliq", "uc-089-expapp", "uc-090-offcost", "uc-094-onbbank", "uc-100-famaccess", "uc-096-automation"]
+NOT_BUILT: set[str] = set()  # every card of the domain is built (84 on the rates signed in A57)
+RECIPE_ONLY: set[str] = set()
 OWN = ["renewals_due", "payroll_total", "cover_gap", "access_review", "onboarding_items", "sop_age", "kyc_expiry", "terms_proposed"]
 RULED = {  # recipe -> the signed rule codes (prefix) it reads; never a number typed in
     "grants_used": ("office_budget_grants",), "grant_check": ("office_budget_grants", "grant_min_charity_months", "cash_buffer"),
-    "estate_cash_need": ("estate_tax_exemption", "estate_tax_rate"), "approval_exceptions": ("approver_limit_",), "office_cost": ("office_budget_",),
+    "estate_cash_need": ("estate_tax_exemption", "estate_tax_rate"), "tax_estimate": ("tax_rate_",), "approval_exceptions": ("approver_limit_",), "office_cost": ("office_budget_",),
     "account_setup": ("signing_policy",), "member_access": ("family_access_",)}
 NEW = ["tax_due", "trust_distribution_room", *RULED]
 
@@ -273,14 +272,27 @@ def test_card100_views_against_the_signed_family_policy_match_the_key(office):
 
 # ---- the cards that are not built: proof of the reason ------------------------------------------------------------------------------------
 
-def test_card84_has_the_sold_lots_but_waits_for_signed_tax_rates(office):
-    from tools.gen_office6m.keys2 import S0
-    gains = office.rows("select f.value_text, f.value_numeric from extracted_fields as f join documents as d on d.id = f.document_id "
-                        "where d.document_type = 'realised_gains_report' and f.field_name = 'realised_gain'")
-    exp = KEYS["uc-084-taxest"]["questions"]["How much cash to set aside for tax"]["expected"]["by_entity"]["Evergreen Family Trust"]["realised_gains"]
-    assert len(gains) == 12 and f2(sum(r["value_numeric"] for r in gains)) == exp and all(str(S0) <= r["value_text"].split()[-1] for r in gains)  # the sells since 1 Apr, first-in first-out
-    rows = office.rows("select r.rule_code, v.approval_status from business_rules as r join rule_versions as v on v.business_rule_id = r.id where starts_with(r.rule_code, 'tax_rate_')")
-    assert len(rows) == 3 and {r["approval_status"] for r in rows} == {"proposed"}, f"a tax rate is signed now ({rows}); build the card (docs/v3/w1/build51-office.md)"
+def test_card84_the_tax_estimate_is_the_key_less_the_interest_of_the_missing_statement(office):
+    """A57: the rates are signed. Every number is the key's except Entity B's income, short by the July TCB-B-USD interest (M02b), which the row says (bank_months_missing)."""
+    exp, rows = key("uc-084-taxest")["by_entity"], office.run("tax_estimate")
+    assert len(rows) == 3
+    for name, k in exp.items():
+        r = one(rows, entity=name)
+        assert f2(r["rate_on_income"]) == k["rate_on_income"] and f2(r["rate_on_gains"]) == k["rate_on_gains"]
+        assert f2(r["realised_gains"]) == k["realised_gains"] and f2(r["credits"]) == k["credits"]
+        if name != "Entity B":
+            assert (f2(r["income"]), f2(r["tax_before_credits"]), f2(r["tax_to_set_aside"])) == (k["income"], k["tax_before_credits"], k["tax_to_set_aside"]) and r["bank_months_missing"] == 0
+    b = one(rows, entity="Entity B")
+    assert b["bank_months_missing"] == 1 and f2(exp["Entity B"]["income"] - float(b["income"])) == 44.71
+    assert f2(b["tax_to_set_aside"]) == f2(round(float(b["income"]) * 0.17, 2))
+    assert f2(rows[0]["total_to_set_aside"]) == f2(sum(r["tax_to_set_aside"] for r in rows))
+    con = office.con
+    con.execute("begin")
+    try:  # without the signed rates there is no tax, never a guess
+        con.execute("update rule_versions set approval_status = 'proposed' where business_rule_id in (select id from business_rules where starts_with(rule_code, 'tax_rate_'))")
+        assert all(r["tax_to_set_aside"] is None or r["tax_to_set_aside"] == 0 for r in office.run("tax_estimate")) or all(r["rate_on_income"] is None for r in office.run("tax_estimate"))
+    finally:
+        con.execute("rollback")
 
 
 def test_card96_the_automation_score_is_the_key(office):
@@ -316,7 +328,7 @@ def test_new_recipes_bind_the_cards_figures_and_leave_the_others_alone():
                    ("Access given but not approved", "access_review"), ("Access not used in 90 days", "access_review"), ("Items complete and outstanding", "onboarding_items"),
                    ("SOPs by last review", "sop_age"), ("Documents expiring in 90 days", "kyc_expiry"), ("Terms proposed and accepted", "terms_proposed"),
                    ("Tax items due in 60 days", "tax_due"), ("Paid and pledged against budget", "grants_used"), ("Budget, charity check, cash", "grant_check"),
-                   ("Distribution room per beneficiary", "trust_distribution_room"), ("Tax need against liquid assets", "estate_cash_need"),
+                   ("Distribution room per beneficiary", "trust_distribution_room"), ("Tax need against liquid assets", "estate_cash_need"), ("Estimated tax", "tax_estimate"),
                    ("Payments over their approval limit", "approval_exceptions"), ("Cost by type against budget", "office_cost"),
                    ("Setup steps and signatories", "account_setup"), ("Access per family member", "member_access")]:
         assert (R.match({"name": n}) or {}).get("id") == rid, n
@@ -361,6 +373,8 @@ EXPECTED = {  # id -> (figure, severity, route, hold)
     "uc-098-wordlist-to-add": ("terms_proposed", "needs", "head_of_data", None),
     "uc-083-taxcal-overdue": ("tax_due", "problem", "fund_accountant", None),
     "uc-083-taxcal-due": ("tax_due", "needs", "fund_accountant", None),
+    "uc-084-taxest-set-aside": ("tax_estimate", "info", "cfo", None),
+    "uc-084-taxest-income-gap": ("tax_estimate", "problem", "cfo", "set_tax_cash_aside"),
     "uc-086-grantappr-fails": ("grant_check", "problem", "principal", "prepare_payment"),
     "uc-087-trustdist-over": ("trust_distribution_room", "problem", "fund_accountant", "prepare_payment"),
     "uc-089-expapp-over-limit": ("approval_exceptions", "problem", "cfo", None),
@@ -398,7 +412,7 @@ def test_signals_follow_the_engine_format_have_a_role_and_an_exception():
         tree = ast.parse(str(s["condition"]), mode="eval")
         assert all(n.func.id in {"abs", "min", "max", "round", "last4", "num"} for n in ast.walk(tree) if isinstance(n, ast.Call))
     for card in BUILT:
-        assert any(sid.startswith(card + "-") and EXPECTED[sid][1] == "problem" for sid in EXPECTED) or card in ("uc-092-accessrev", "uc-095-sopreview", "uc-098-wordlist", "uc-085-grants", "uc-088-estateliq", "uc-090-offcost"), card
+        assert any(sid.startswith(card + "-") and EXPECTED[sid][1] == "problem" for sid in EXPECTED) or card in ("uc-092-accessrev", "uc-095-sopreview", "uc-098-wordlist", "uc-085-grants", "uc-088-estateliq", "uc-090-offcost", "uc-096-automation"), card
 
 
 @pytest.fixture(scope="module")
@@ -438,6 +452,8 @@ def test_each_signal_fires_on_exactly_the_rows_of_the_key(figs):
     assert who("uc-098-wordlist-to-add", "term") == key("uc-098-wordlist")["to_add"]
     assert who("uc-083-taxcal-overdue", "id") == [k["id"] for k in key("uc-083-taxcal")["overdue"]]
     assert who("uc-083-taxcal-due", "id") == [k["id"] for k in key("uc-083-taxcal")["due_in_60_days"]]
+    assert who("uc-084-taxest-income-gap", "entity") == ["Entity B"]  # M02b: the entity whose bank statement never arrived
+    assert who("uc-084-taxest-set-aside", "entity") == sorted(key("uc-084-taxest")["by_entity"])
     assert who("uc-086-grantappr-fails", "request") == [key("uc-086-grantappr")["request"]]
     assert who("uc-087-trustdist-over", "beneficiary") == key("uc-087-trustdist")["over_distributed"]
     assert who("uc-089-expapp-over-limit", "reference") == sorted(k["reference"] for k in key("uc-089-expapp")["over_limit"])
