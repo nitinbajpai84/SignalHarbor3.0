@@ -76,7 +76,7 @@ def test_the_ask_route_guards_lumens_reply(plane, monkeypatch):
     monkeypatch.setattr(R.P, "answer", lambda plane, text: None)
     monkeypatch.setattr(R.C, "liquidity_answer", lambda *a: None)
     monkeypatch.setattr(F, "figure_answer", lambda *a: None)
-    monkeypatch.setattr(R, "_live", lambda plane: TH)
+    monkeypatch.setattr(R, "_live", lambda plane, text="": TH)
     monkeypatch.setattr(R.T, "ask", lambda *a: {"reply": "Could you share the previous status?", "rules_only": False, "trace_id": None})
     got = R._ask(plane, SimpleNamespace(), "What was the Evergreen Liquid portfolio worth at 30 September 2026?", "prj-1")
     assert got["answer"].startswith("Not available yet: Net worth by portfolio")

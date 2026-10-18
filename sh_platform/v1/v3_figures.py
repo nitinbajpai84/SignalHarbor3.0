@@ -1164,7 +1164,7 @@ def _plain_sentence(name: str, r: dict, rows: list[dict], who, names: dict, mone
     return f"{name}, {label}: {'; '.join(said)}."  # r3b: a set is said row by row, never "one of N rows"
 
 
-STATE_COL = re.compile(r"status|state|kind|reason|bucket")  # a state of a row ("inside limit") is never the entity a question names
+STATE_COL = re.compile(r"status|state|kind|reason|bucket|^(?:figure|figure_label|detail|source|note)$")  # a state of a row ("inside limit") is never the entity a question names; nor is the figure a line holds, its detail or its source (r6 uc-040: "commitment" and "Cedarpoint" in a document title kept only the memo's commitment lines)
 RATE_COL = re.compile(r"rate|pct|percent|fixing|ratio|share|price")
 ASKS_ALL = re.compile(r"\b(?:which|each|every|all)\b", re.I)  # "which filings ... are due": the rows of the set, never only those whose words the question shares (r3b uc-083)
 SET_Q = re.compile(r"\b(?:each|every|all|which|across|whether|per)\b", re.I)  # a question about a set of rows, not one latest figure

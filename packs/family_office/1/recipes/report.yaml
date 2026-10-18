@@ -57,7 +57,8 @@ recipes:
   - id: time_weighted_return
     label: Time weighted return and active return
     cards: [42, 44]
-    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark, quarter return, year to date return, ytd return, benchmark return, quarter to date return, quarter to date performance, benchmark relative return, return for the quarter, performance for the quarter, performance for the quarter and the year]
+    names: [time weighted return, twr, return against benchmark, active return, twr periods, return for the year, portfolio against blended benchmark, return against the blended benchmark, quarter return, year to date return, ytd return, benchmark return, quarter to date return, quarter to date performance, benchmark relative return, return for the quarter, performance for the quarter, performance for the quarter and the year, performance vs blended benchmark, performance vs benchmark]
+    words_all: [[performance, performed, return, returns, did, do, does], [benchmark, benchmarks]]  # r6 uc4: "Performance vs blended benchmark (one-line)", "how did the portfolio do against the benchmark"
     may_read: [position_snapshots, transactions, market_observations, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements]
     why: A return is the change in value of what is held, less what was put in or taken out. It reads the position snapshots at each month end, the buys and sells that moved value into or out of the portfolio, and the index levels of the approved benchmark the office has linked to the portfolio (the signed rule benchmark_link). Commitments and cash calls are not returns.
@@ -118,7 +119,7 @@ recipes:
       from p join portfolios as g on g.id = p.portfolio_id
     measure: portfolio_return_pct
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {latest: to_date, say: "{portfolio} {portfolio_return_pct}% for {period_label} against {benchmark_return_pct}% for the benchmark"}
+      - {latest: to_date, all: true, say: "{portfolio} {portfolio_return_pct}% for {period_label} against {benchmark_return_pct}% for the benchmark"}  # r6 uc-044: the quarter and the year said together, never one period by a plain read
     columns:
       portfolio_return_pct: The portfolio's return over the period in percent, monthly returns chain-linked; empty when a month of the period has no return (data_note says why).
       benchmark_return_pct: The approved benchmark's return over the same months in percent; empty when an index level is missing for a month (months_without_benchmark says how many).

@@ -30,8 +30,16 @@ EMPTY = {"title": "", "as_at": "", "figures": [], "tiles": [], "empty": True}
 STEP = {"model": "Wrote the answer", "rules": "Answered by fixed rules from the data", "context": "Looked at what the project holds"}
 
 
-def _live(plane) -> dict | None:
-    return next((t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid") and t.get("mode") != "process"), None)  # a procedure has no board
+def _live(plane, text: str = "") -> dict | None:
+    """The live build a question is about: of the live builds (a procedure has no board), the one whose request in the person's own words shares the
+    most words with the question, the newest on a tie. r6: with uc-001 and uc-002 both live, uc-001's question got uc-002's answer (the newest build)."""
+    live = [t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid") and t.get("mode") != "process"]
+    if len(live) < 2 or not text:
+        return live[0] if live else None
+    from sh_platform.v1 import v3_recipes as R
+    q = R._stems(text)
+    asked = lambda t: next((str(e.get("text") or "") for e in t.get("events") or [] if e.get("kind") == "person"), t.get("title") or "")  # noqa: E731
+    return max(live, key=lambda t: len(q & R._stems(asked(t))))  # max keeps the first (newest) of equals
 
 
 def _source(th: dict) -> str | None:
@@ -98,7 +106,7 @@ def _trace(plane, trace_id: str | None) -> list[dict]:
 
 
 def _ask(plane, viewer, text: str, pid: str | None) -> dict:
-    fast = P.answer(plane, text) or C.verified_answer(plane, viewer, text, pid, _live(plane))  # the live procedure (the SOP); the verified figures, then the cash tool; ahead of Lumen
+    fast = P.answer(plane, text) or C.verified_answer(plane, viewer, text, pid, _live(plane, text))  # the live procedure (the SOP); the verified figures, then the cash tool; ahead of Lumen
     if fast:
         return fast
     if not _live(plane) and asks_figure(text, []):
@@ -113,7 +121,7 @@ def _ask(plane, viewer, text: str, pid: str | None) -> dict:
         teach.close_scope(token)
     used = [] if got.get("rules_only") else [u["line"] for u in s.used]  # a reply worded by the fixed rules used no taught passage
     out = {"answer": got["reply"], "trace": _trace(plane, got.get("trace_id")), "used": used}
-    return honest(plane, text, _live(plane), out)
+    return honest(plane, text, _live(plane, text), out)
 
 
 # ---- the last guard on Lumen's reply (c2: "could you share the previous status", "the variance is minimal", "the data may still be loading") ------------
@@ -189,7 +197,7 @@ async def post_ask(request: Request):
     text = str(body.get("text") or "").strip()[:2000] if isinstance(body, dict) else ""
     if not text:
         raise HTTPException(400, "Write your question first.")
-    th = _live(plane)
+    th = _live(plane, text)
     pid = th["pid"] if th else None
     try:
         got = await run_in_threadpool(C.answer, plane, viewer, text, lambda: _ask(plane, viewer, text, pid))

@@ -161,3 +161,24 @@ def test_note_with_nothing_yet_is_empty_not_an_error(env, monkeypatch):
     monkeypatch.setattr(B, "_from_k10", lambda p, v: None)
     n = c.get("/api/v3/note").json()
     assert n["text"] == "" and n["figures"] == [] and n["history"] == []
+
+
+def test_ask_with_two_builds_live_answers_from_the_build_the_question_is_about(env, monkeypatch):
+    # r6 check office: uc-001 (call notice) and uc-002 (call record) both live; uc-001's own question was answered from uc-002, the newest build
+    c, plane = env
+    uc001 = {**LIVE, "id": "th-uc001", "pid": "EV-0001", "created": "2026-10-18T08:30:45Z", "title": "A Cedarpoint call notice just came in by email",
+             "events": [{"kind": "person", "text": "A Cedarpoint call notice just came in by email. Tell me which fund it is for, how much, by when, what the "
+                                                    "money is for and which account it is to be paid into, so I can log it and hand it to Helen."}]}
+    uc002 = {**LIVE, "id": "th-uc002", "pid": "EV-0002", "created": "2026-10-18T08:39:50Z", "title": "Daniel's team just handed me",
+             "events": [{"kind": "person", "text": "Daniel's team just handed me the Cedarpoint call 7 notice. Before I record it, tell me whether it fits what "
+                                                    "we committed to Cedarpoint Ventures III, what is left after it, and whether the fee part is what the fund terms say."}]}
+    H.save(plane, uc001)
+    H.save(plane, uc002)
+    seen = []
+    monkeypatch.setattr(B.P, "answer", lambda *a, **k: None)
+    monkeypatch.setattr(B.C, "verified_answer", lambda plane_, viewer, text, pid, th: seen.append((pid, th["id"])) or {"answer": th["id"], "rows": []})
+    one = c.post("/api/v3/ask", json={"text": "A Cedarpoint call notice just came in by email. Which fund, how much and by when?"}).json()
+    two = c.post("/api/v3/ask", json={"text": "Does the Cedarpoint call 7 fit what we committed, what is left after it, and is the fee right?"}).json()
+    assert one["answer"] == "th-uc001" and two["answer"] == "th-uc002"
+    assert seen == [("EV-0001", "th-uc001"), ("EV-0002", "th-uc002")]  # the pid and the thread of the same build
+    assert B._live(plane)["id"] == "th-uc002"  # with no question (the board), the newest live build as before

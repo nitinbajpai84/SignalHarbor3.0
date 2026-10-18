@@ -338,6 +338,7 @@ recipes:
     label: Mandate fit of a fund under review
     cards: [34]
     names: [mandate fit, fit against the mandate, fit against class size and liquidity limits, screen a new fund, minimum ticket, minimum ticket vs policy limit, ticket against policy limit]
+    words_all: [[mandate], [fit, fits, fitting, suit, suits]]  # r6 uc-034: "does the Harborlight fund fit our mandate"
     may_read: [deal_pipeline, commitments, cash_movements, instruments, business_rules, rule_versions, position_snapshots, market_observations]
     never_read: [transactions]
     why: >-
@@ -394,7 +395,7 @@ recipes:
       class_status, gaps + tgap as conversion_gaps from y
     measure: ticket
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {say: "{deal_name}: the {currency} {ticket} ticket is {ticket_pct_of_uncalled}% of the {uncalled_before} uncalled, taking it to {uncalled_after}; budget {budget_status}"}
+      - {all: true, say: "{deal_name}: the {currency} {ticket} ticket is {ticket_pct_of_uncalled}% of the {uncalled_before} uncalled, taking it to {uncalled_after}; budget {budget_status}"}  # r6 uc-034: the ticket, the uncalled before and after, never a plain read of the ticket alone
     columns:
       conversion_gaps: 'How many amounts have no fixing to convert them to USD; not zero means the figures that need them are empty.'
       ticket: 'The commitment the office would make (the deal''s target commitment).'
