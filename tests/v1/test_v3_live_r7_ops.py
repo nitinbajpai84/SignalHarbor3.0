@@ -15,8 +15,8 @@ Root causes, one per case (each replayed against a copy of its r7 office with ve
 - uc-097: the person's "ask the owner for a new one" with "bank" and "account" added the payee-bank-change recipe, whose figure took the question;
   "new" is no longer a word of that recipe.
 - uc-052, uc-062: no answer lines, so the answer was a plain read of a 0/1 flag ("USD 0") or of the marks alone; each now says its key figures.
-- uc-053 is not fixed here: the 90-day window starts a day late for the same as-at cause as uc-095, in watch_flags (invest.yaml, another fixer's file).
-  The one-line fix (cast(received_at at time zone 'UTC' as date)) was replayed on the r7 copy and passes; the office test below is xfail until it lands.
+- uc-053: the 90-day window started a day late for the same as-at cause as uc-095, in watch_flags (invest.yaml).
+  The as-at is read as a UTC day (cast(received_at at time zone 'UTC' as date)), so the window starts on the office's day.
 
 Expected values come from tests/v1/fixtures/office6m/answer_keys.yaml and the builds' check.expect (packs/family_office/1/builds), never typed here.
 The office tests load the six-month office (tools/score50.load), build the bound recipes' tables, and ask through verified_answer; the pack and the
@@ -224,8 +224,6 @@ def test_r7_uc095_the_age_of_a_procedure_runs_to_the_offices_day_not_the_next(of
             assert f"{s['sop']} ({s['owner']}), last reviewed" in got["answer"] and f"{s['age_days']} days ago" in got["answer"], got["answer"]
 
 
-@pytest.mark.xfail(reason="watch_flags (invest.yaml, another fixer's file) still reads its as-at in the server's zone; the fix is "
-                          "cast(received_at at time zone 'UTC' as date), replayed on the r7 copy", strict=False)
 def test_r7_uc053_the_window_starts_90_days_before_the_offices_day(office, monkeypatch):
     got = _ask(office, monkeypatch, "uc-053-watchlist")
     assert not _missing(got, _expect("uc-053-watchlist")), got.get("answer")

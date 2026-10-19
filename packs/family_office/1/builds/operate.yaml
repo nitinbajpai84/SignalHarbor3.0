@@ -45,7 +45,7 @@ roles:
         files: ["office6m:*/manager_statements/*_2026-09-30_*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
         skills: ["data.read-pdf-fields", "check.against-source", "check.explain-difference"]
         dashboard: "Consume: statement value, administrator value and difference by fund"
-        check: {ask: "Should we accept the administrator value or ask the administrator to correct it?", expect: ["10,180,000", "10,000,000", "180,000", "9,950,000", "9,600,000", "350,000", "7,320,000", "7,210,000", "110,000", "5,180,000", "5,090,000", "90,000", "3,080,000", "2,410,000", "670,000", "2,420,000", "2,090,000", "330,000"]}
+        check: {ask: "Should we accept the administrator value or ask the administrator to correct it?", expect: ["10,180,000", "10,000,000", "180,000", "9,950,000", "9,600,000", "350,000", "7,320,000", "7,210,000", "110,000", "5,180,000", "5,090,000", "90,000", "3,080,000", "2,410,000", "670,000", "2,420,000", "2,090,000", "330,000"], must_have_verdict: true}
 
   - id: ops_lead
     title: Operations Lead
@@ -57,4 +57,4 @@ roles:
         files: ["office6m:*/close_checklist/close_checklist_2026-09.csv", "office6m:reference/month_end_process_narrative.md"]
         skills: ["intent.write-sop", "action.detect-exception", "action.route-owner"]
         dashboard: "Consume: close steps done, open and late, by owner"
-        check: {ask: "Is the September close complete and can the report start?", expect: ["Collect manager statements", "Read the report", "Review and approve the report"]}
+        check: {ask: "Is the September close complete and can the report start?", expect: ["Collect manager statements", "Read the report", "Review and approve the report"], must_have_verdict: true}

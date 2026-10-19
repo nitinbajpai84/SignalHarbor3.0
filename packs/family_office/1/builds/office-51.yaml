@@ -19,7 +19,7 @@ roles:
         files: ["office6m:*/payroll_drafts/payroll_run_2026-10_draft.xlsx", "office6m:*/payroll/payroll_2026-09.xlsx", "office6m:*/bank_statements/HB_HOLD_SGD_2026-09.xlsx"]
         skills: ["data.recognise-file", "check.against-source", "action.detect-exception", "action.route-owner"]
         dashboard: "Draft run against last month, flagged lines and the release decision"
-        check: {ask: "Whether to release the pay file", expect: ["100,224", "21,297.6", "121,521.6", "113,199", "93,360", "7.35", "Jun Tan"]}
+        check: {ask: "Whether to release the pay file", expect: ["100,224", "21,297.6", "121,521.6", "113,199", "93,360", "7.35", "Jun Tan"], must_have_verdict: true}
 
       - id: uc-082-covergap
         title: "Insurance cover against what we own"
@@ -27,7 +27,7 @@ roles:
         files: ["office6m:*/insurance_schedule/insurance_schedule_2026-10-01.pdf", "office6m:*/property_valuations/valuation_RA-*.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv"]
         skills: ["data.read-pdf-fields", "check.against-source", "consume.answer-question"]
         dashboard: "Assets with appraisal, sum insured and the gap in USD"
-        check: {ask: "Whether to raise or lower cover", expect: ["-9,647,014.92", "-820,895.52", "-4,776,119.4", "Hillcrest House", "Fine art collection"]}
+        check: {ask: "Whether to raise or lower cover", expect: ["-9,647,014.92", "-820,895.52", "-4,776,119.4", "Hillcrest House", "Fine art collection"], must_have_verdict: true}
 
       - id: uc-091-jml
         title: "Joiner, mover, leaver access"
@@ -77,7 +77,7 @@ roles:
         files: ["office6m:*/onboarding/*"]
         skills: ["action.detect-exception", "action.route-owner"]
         dashboard: "Checklist items of the new manager, complete and missing"
-        check: {ask: "Whether every document and feed is in place before the first call", expect: ["Bank details confirmed by call-back", "Statement schedule"]}
+        check: {ask: "Whether every document and feed is in place before the first call", expect: ["Bank details confirmed by call-back", "Statement schedule"], must_have_verdict: true}
 
   - id: risk_officer
     builds:
@@ -97,7 +97,7 @@ roles:
         files: ["office6m:*/glossary/*"]
         skills: ["consume.understand-words", "knowledge.learn-word"]
         dashboard: "Words proposed, already on the list and to add"
-        check: {ask: "Whether to add a word to the language list", expect: ["side letter", "stub period", "capital account", "dry powder"]}
+        check: {ask: "Whether to add a word to the language list", expect: ["side letter", "stub period", "capital account", "dry powder"], must_have_verdict: true}
 
       - id: uc-096-automation
         title: "Which processes to automate next"
@@ -123,7 +123,7 @@ roles:
         files: ["office6m:*/trust_deed/evergreen_family_trust_deed.pdf", "office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv", "office6m:*/family_allowances/allowance_schedule_2026-*.xlsx"]
         skills: ["data.read-pdf-fields", "check.adds-up", "action.detect-exception"]
         dashboard: "Room, paid and left per beneficiary under the deed"
-        check: {ask: "Whether the trust pays what its deed allows", expect: ["504,980.42", "46,001.31", "321,285.38", "25,702.83", "-2,297.17", "Wen Chen"]}
+        check: {ask: "Whether the trust pays what its deed allows", expect: ["504,980.42", "46,001.31", "321,285.38", "25,702.83", "-2,297.17", "Wen Chen"], must_have_verdict: true}
 
       - id: uc-084-taxest
         title: "Estimated tax for the year"
@@ -141,7 +141,7 @@ roles:
         files: ["office6m:*/grant_ledger/grant_ledger_2026.xlsx", "office6m:*/bank_statements/HB_HOLD_USD_2026-0[5-9].xlsx"]
         skills: ["check.against-source", "consume.answer-question"]
         dashboard: "Paid and pledged grants against the budget"
-        check: {ask: "Whether to approve more grants this year", expect: ["300,000", "175,000", "90,000", "265,000", "88.3", "35,000"]}
+        check: {ask: "Whether to approve more grants this year", expect: ["300,000", "175,000", "90,000", "265,000", "88.3", "35,000"], must_have_verdict: true}
 
       - id: uc-086-grantappr
         title: "Approve a grant payment"
@@ -149,7 +149,7 @@ roles:
         files: ["office6m:*/grant_requests/grant_request_REQ-2026-06.pdf", "office6m:*/grant_requests/2026-10-09_REQ-2026-06.eml", "office6m:*/grant_ledger/grant_ledger_2026.xlsx"]
         skills: ["check.against-source", "action.detect-exception", "action.suggest-next-step"]
         dashboard: "The request against budget, charity age and cash"
-        check: {ask: "Whether to pay the grant", expect: ["REQ-2026-06", "50,000", "35,000", "1,230,000", "1,250,000", "-70,000"]}
+        check: {ask: "Whether to pay the grant", expect: ["REQ-2026-06", "50,000", "35,000", "1,230,000", "1,250,000", "-70,000"], must_have_verdict: true}
 
       - id: uc-088-estateliq
         title: "Cash for an estate or transfer tax"
@@ -157,7 +157,7 @@ roles:
         files: ["office6m:*/trust_deed/evergreen_family_trust_deed.pdf", "office6m:*/estate_planning/transfer_tax_memo_2026.pdf", "office6m:*/property_valuations/valuation_RA-*.pdf"]
         skills: ["data.read-pdf-fields", "check.adds-up", "consume.answer-question"]
         dashboard: "Estate, transfer tax and the liquid assets that cover it"
-        check: {ask: "Whether the family could meet a transfer tax from liquid assets", expect: ["131,306,339.91", "109,960,000", "18,945,950.99", "55,879,741.41", "2.95"]}
+        check: {ask: "Whether the family could meet a transfer tax from liquid assets", expect: ["131,306,339.91", "109,960,000", "18,945,950.99", "55,879,741.41", "2.95"], must_have_verdict: true}
 
   - id: cfo
     builds:
@@ -167,7 +167,7 @@ roles:
         files: ["office6m:*/expense_ledger/expense_ledger_2026-04_to_2026-09.xlsx", "office6m:*/office_budget/office_budget_2026.xlsx"]
         skills: ["check.against-source", "check.explain-difference", "consume.answer-question"]
         dashboard: "Cost by category against the budget for the half year"
-        check: {ask: "Whether the office costs more than planned", expect: ["1,463,862.76", "1,455,850", "78,252.48", "35,752.48", "Professional fees", "Grants"]}
+        check: {ask: "Whether the office costs more than planned", expect: ["1,463,862.76", "1,455,850", "78,252.48", "35,752.48", "Professional fees", "Grants"], must_have_verdict: true}
 
       - id: uc-094-onbbank
         title: "Open or change a bank or custody account"
@@ -175,4 +175,4 @@ roles:
         files: ["office6m:*/bank_forms/*"]
         skills: ["data.read-pdf-fields", "check.against-source", "action.detect-exception"]
         dashboard: "Signatories on the form against the signing policy"
-        check: {ask: "Whether the account and its signatories are approved", expect: ["Raj Patel", "Grace Ong", "Daniel Foo"]}
+        check: {ask: "Whether the account and its signatories are approved", expect: ["Raj Patel", "Grace Ong", "Daniel Foo"], must_have_verdict: true}

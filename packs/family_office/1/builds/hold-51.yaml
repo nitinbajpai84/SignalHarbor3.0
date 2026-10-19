@@ -11,7 +11,7 @@ roles:
         files: ["office6m:*/administrator_cash/administrator_cash_2026-10_mtd.csv", "office6m:*/fx_confirmations/FXF-*_confirmation.pdf", "office6m:*/fx_rates/fx_usdsgd_20261013.csv", "office6m:*/trading_export/trading_export_20260915.csv", "office6m:*/trading_export/trading_export_20261005.csv", "office6m:*/custodian_positions/positions_20260930.csv", "office6m:*/manager_statements/*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx"]
         skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "check.against-source", "action.detect-exception", "consume.answer-question"]
         dashboard: "Consume: holdings by currency, the open forwards and the exposure after them, with the bank's confirmation beside the booking"
-        check: {ask: "Whether to hedge a currency exposure?", expect: ["5,150,694.59", "3,843,801.93", "6,707,500", "5,005,597.01", "8,849,398.94", "7.62", "112,272,239.48", "116,116,041.41"]}
+        check: {ask: "Whether to hedge a currency exposure?", expect: ["5,150,694.59", "3,843,801.93", "6,707,500", "5,005,597.01", "8,849,398.94", "7.62", "112,272,239.48", "116,116,041.41"], must_have_verdict: true}
   - id: ops_clerk
     builds:
       - id: uc-055-corpact
@@ -36,7 +36,7 @@ roles:
         files: ["office6m:*/property_valuations/valuation_RA-*.pdf", "office6m:*/custodian_positions/positions_20261013.csv"]
         skills: ["data.recognise-file", "data.read-pdf-fields", "action.detect-exception", "action.draft-message", "action.route-owner"]
         dashboard: "Action: each real asset with the age of its latest appraisal, those over 365 days first"
-        check: {ask: "Whether to order a new appraisal?", expect: ["784", "378", "353", "329", "225", "125"]}
+        check: {ask: "Whether to order a new appraisal?", expect: ["784", "378", "353", "329", "225", "125"], must_have_verdict: true}
   - id: fund_accountant
     builds:
       - id: uc-067-unrl
@@ -61,4 +61,4 @@ roles:
         files: ["office6m:*/fund_holdings/fund_holdings_2026-09-30.xlsx", "office6m:*/manager_statements/*.pdf", "office6m:*/administrator_nav/administrator_export_2026-09.xlsx", "office6m:reference/EG_security_master_20261008.xlsx", "office6m:*/custodian_positions/positions_20261013.csv"]
         skills: ["data.recognise-file", "data.read-pdf-fields", "data.match-identity", "build.write-formula-table", "action.detect-exception", "consume.answer-question"]
         dashboard: "Consume: each company and sector through the funds, the companies in several funds, and Harborview direct and through the funds against the liquid book"
-        check: {ask: "Whether the family is over-exposed to one company or sector through funds?", expect: ["2,740,050", "2,378,900", "1,393,000", "1,381,200", "1,374,600", "4,114,650", "1,779,300", "4.21", "7.46", "111,033,700"]}
+        check: {ask: "Whether the family is over-exposed to one company or sector through funds?", expect: ["2,740,050", "2,378,900", "1,393,000", "1,381,200", "1,374,600", "4,114,650", "1,779,300", "4.21", "7.46", "111,033,700"], must_have_verdict: true}

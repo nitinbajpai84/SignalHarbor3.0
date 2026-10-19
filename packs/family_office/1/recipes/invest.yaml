@@ -633,7 +633,7 @@ recipes:
       on_watchlist = 1 when the total is above 0.
     grain: By manager
     sql: >-
-      create table {name} as with asat as (select max(cast(received_at as date)) as d from documents), lo as (select d - 90 as d from asat),
+      create table {name} as with asat as (select max(cast(received_at at time zone 'UTC' as date)) as d from documents), lo as (select d - 90 as d from asat),
       due as (select e.* from expected_statements as e where not exists (select 1 from expected_statements as x where x.supersedes_expected_statement_id = e.id)),
       st as (select i.manager_name as m, o.evidence_document_id as doc, o.valuation_type as t, cast(o.received_at as date) as r, d.due_date from valuation_observations as o
       join instruments as i on i.id = o.instrument_id left join due as d on d.instrument_id = o.instrument_id and d.period_end = o.valuation_date

@@ -254,6 +254,118 @@ def verified_answer(plane, viewer, text: str, pid=None, th: dict | None = None) 
     return got
 
 
+# ---- the answer as a person reads it (r7 review: docs/v3/LIVE-R7-ANSWERS.md) ----------------------------------------------------------
+# The last pass over every answer's text, whoever worded it: plain words, the polarity the question asks for, and a verdict first on a yes/no question.
+# It only rewords and adds a currency or a verdict the text itself supports; it never drops or changes a figure.
+
+CCY = r"(?:USD|SGD|EUR|GBP|HKD|CHF|JPY|AUD|CNY)"
+SNAKE = re.compile(r"(?<![\w\\/-])[a-z]+(?:_[a-z]+)+(?!\w|[\\/-]|\.[a-z]{2,4}\b)")  # listed_equity, a table.column; never a file name
+AMOUNT = re.compile(r"(?<![\w.,/-])-?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d%x]|\.\d|,\d)")
+NOT_MONEY = re.compile(r"^\s*(?:units?|shares|days?|business days|months?|minutes|lots?|payments?|rows|times|people|guests)\b", re.I)
+QUANTITY = re.compile(r"\b(?:units?|shares|quantity|(?:buy|sell|bought|sold) of|holds? \d)", re.I)
+UNKNOWN_CCY = re.compile(rf"(?<=· ){CCY} [01](?=\s*(?:[;.]|$))")  # a flag read as an amount ("· USD 0;"): the value is not stated
+
+
+def _money_units(text: str, hint: str | None) -> str:
+    """Every amount carries its currency: the nearest currency named before it in its clause, else after it; else, for the whole answer, the one
+    currency it names (or the rows' one currency, `hint`). A clause about units or shares is left alone, so is a score or a count."""
+    named = {c for p in re.findall(rf"\b({CCY})\s?-?\d|\d\s({CCY})\b", text) for c in p if c}  # a unit of an amount, not "SGD exposure"
+    whole = next(iter(named)) if len(named) == 1 else (hint if not named else None)
+    if QUANTITY.search(text):
+        whole = None
+    out = []
+    for clause in re.split(r"(;\s|\.\s)", text):
+        if QUANTITY.search(clause):
+            out.append(clause)
+            continue
+        cur = [(m.start(), m.group(0)) for m in re.finditer(rf"\b{CCY}\b", clause)]
+        pieces, last = [], 0
+        for m in AMOUNT.finditer(clause):
+            before, after = clause[:m.start()], clause[m.end():]
+            if re.search(rf"\b{CCY}(?:\s+[a-z]+)?\s*:?\s*$", before) or re.match(rf"\s*{CCY}\b", after) or NOT_MONEY.match(after) or re.search(r"\b(?:score|rank)\s*(?:of\s*)?$", before, re.I):
+                continue
+            unit = next((c for p, c in reversed(cur) if p < m.start()), None) or next((c for p, c in cur if p > m.end()), None) or whole
+            if unit:
+                pieces += [clause[last:m.start()], f"{unit} "]
+                last = m.start()
+        out.append("".join(pieces) + clause[last:])
+    return "".join(out)
+
+
+def _plain(text: str, hint: str | None = None) -> str:
+    t = re.sub(r"\bgold_\w+", "a ready table", text)
+    t = re.sub(r"\s*\((?:synthetic|SYNTHETIC|Synthetic)\b[^)]*\)", "", t)  # a test tag on a fixture name
+    t = re.sub(r";?\s*[^;:()]*\banswer key\b[^;:()]*", "", t)  # test wording ("the assumption of the answer key")
+    t = re.sub(r"(?<![\w\\/-])[a-z]+(?:_[a-z]+)+\.([a-z]+(?:_[a-z]+)+)\b", r"\1", t)  # a table.column: the column
+    t = SNAKE.sub(lambda m: m.group(0).replace("_", " "), t)
+    t = re.sub(r"\b(\d[\d,]*) ((?:[a-z]+ ){0,2}[a-z]+)\((e?s)\)", lambda m: f"{m[1]} {m[2]}{'' if m[1] == '1' else m[3]}", t)  # "1 fund(s)"
+    t = re.sub(r"\b1 ([a-z]{2,})ies\b", r"1 \1y", t)
+    t = re.sub(r"\b1 ([a-z]{2,}[^ius\W])s\b", r"1 \1", t)  # "1 portfolios"
+    t = re.sub(r"\bdue 0\b(?![.,]\d)", "due date not stated", t)
+    t = UNKNOWN_CCY.sub("value not stated", t)
+    return _money_units(t, hint)
+
+
+YES_NO = re.compile(r"^\s*(?:is|are|can|could|does|do|did|will|has|have)\b|^\s*whether\b(?!\s+to\b)", re.I)  # "whether to pay" is a decision, not a fact
+OPENS_WITH_VERDICT = re.compile(r"^\W*(?:yes|no|not(?!\s+available)|none|hold|release|pay|do not|don't|approve|reject|refuse|accept|ask|keep|add|exit|sell|buy|fix|order|"
+                                r"escalate|waive|cure|raise|lower|renew|all|only)\b", re.I)
+PROBLEM_Q = re.compile(r"\b(?:outside|over|above|exceed\w*|breach\w*|short\w*|late|missing|overdue|too|more than|differ\w*|fail\w*)\b", re.I)
+PROBLEM_A = re.compile(r"\b(?:short|shortfall|not (?:yet|confirmed|ready|explained|traced|complete|covered|approved|matched)|outside|over (?:the |its )?(?:limit|budget|band|room|tolerance|threshold)|"
+                       r"above the|breach\w*|missing|overdue|differs?|apart|on hold|pending|open:)", re.I)
+SIGN_OFF_Q = re.compile(r"^\s*whether to (?:sign|issue|send|publish|approve)\b", re.I)
+NOT_READY_A = re.compile(r"\bnot (?:yet )?(?:ready|complete|signed|approved)\b|\b(?:missing|pending|outstanding)\b", re.I)
+FINE_A = re.compile(r"\b(?:fits?|covers?|covered|agrees?|within|complete|in full|can (?:meet|pay|cover)|approved|on time)\b", re.I)
+
+
+def _verdict(question: str, text: str) -> str:
+    """A yes/no question gets its verdict first, read from what the answer itself says (a shortfall, a gap, "not confirmed"); none is guessed."""
+    if OPENS_WITH_VERDICT.match(text) or " or " in question.lower() or text.startswith("Not available"):  # no figure: no verdict either
+        return text
+    if (m := re.match(r"\s*whether to (\w+)", question, re.I)) and text.lower().startswith(f"to {m[1].lower()} "):  # "To add to the list: ..." says it: "Add ..."
+        return text[3].upper() + text[4:]
+    if SIGN_OFF_Q.search(question):  # "whether to sign off and issue the report": something not ready is a "not yet", nothing else is guessed
+        return f"Not yet. {text}" if NOT_READY_A.search(text) or any(int(a) < int(b) for a, b in re.findall(r"\b(\d+) of (\d+)\b(?![,.]\d)", text)) else text
+    if not YES_NO.search(question):
+        return text
+    for s in re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", text):  # the first sentence that says either way decides; a problem outweighs a fit in it
+        bad = bool(PROBLEM_A.search(s)) or any(int(a) < int(b) for a, b in re.findall(r"\b(\d+) of (\d+)\b(?![,.]\d)", s))  # "3 of 5 items complete"
+        fine = bool(FINE_A.search(s))
+        if bad or fine:
+            if PROBLEM_Q.search(question):  # "is anything outside its band?": a problem found is a yes
+                return f"Yes. {text}" if bad else f"No. {text}"
+            return f"No. {text}" if bad else f"Yes. {text}"
+    return text
+
+
+def _polarity(question: str, text: str) -> str:
+    """Asked what is outside, told what is inside (r7 uc-032): say plainly that nothing is outside."""
+    if re.search(r"\boutside\b", question, re.I) and not re.search(r"\boutside\b", text, re.I):
+        return re.sub(r"\bInside (?:the|their|its) (band|limits?|range|tolerance)\b:?", r"None is outside its \1; all are within it:", text, count=1)
+    return text
+
+
+def polish(question: str, out: dict) -> dict:
+    """The answer as the person reads it: plain words, what the question asks for (outside, not inside), a verdict first on a yes/no question."""
+    text = str(out.get("answer") or "")
+    if not text:
+        return out
+    ccy = {c for r in out.get("rows") or [] if isinstance(r, dict) for c in re.findall(rf"\b{CCY}\b", f"{r.get('label', '')} {r.get('value', '')}")}
+    text = _verdict(question, _polarity(question, _plain(text, next(iter(ccy)) if len(ccy) == 1 else None)))
+    return out | {"answer": text}
+
+
+STEPS_Q = re.compile(r"\bsteps?\b|\bwho does (?:each|what)\b|\bstandard operating procedure\b|\bSOP\b", re.I)
+
+
+def no_steps(question: str) -> dict | None:
+    """A "steps / who does each" question is answered from the process map; with no map live, say so, never another figure (r7 uc9-sop)."""
+    if not STEPS_Q.search(question):
+        return None
+    return {"answer": "Not available yet: no process map is live, so the steps and who does each one are not on record. Start one in Build: "
+                      "say which process and drop its notes.", "figure": None, "rows": [], "source": "The office's process maps", "used": [],
+            "trace": [{"kind": "guard", "label": "A steps question is answered from a live process map only"}]}
+
+
 # ---- GET /consume ------------------------------------------------------------------------------------------------------------------
 
 def _fig(label: str, value: str) -> dict:
@@ -310,7 +422,8 @@ def consume(plane, viewer, boards: list[dict], note: dict | None = None) -> dict
         note = {"headline": f"Cash is {by['Total cash']} USD across {n} entit{'ies' if n != 1 else 'y'}; "
                             + ("no capital calls are due in the next 30 days." if c30 == "None" else f"calls due in 30 days are {c30} USD.")}
         try:
-            first = answer(plane, viewer, g[0], lambda: verified_answer(plane, viewer, g[0], None, live) or (_ for _ in ()).throw(LookupError()), count=False) | {"q": g[0]}
+            first = answer(plane, viewer, g[0], lambda: polish(g[0], verified_answer(plane, viewer, g[0], None, live) or (_ for _ in ()).throw(LookupError())),
+                           count=False) | {"q": g[0]}  # polished as /api/v3/ask is: both share the kept answer
         except LookupError:
             first = None
     return {"office": office_name(plane), "as_of": day.isoformat() if day else None, "figures": figs, "watchlist": watch, "boards": boards, "note": note,

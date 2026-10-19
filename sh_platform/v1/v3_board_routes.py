@@ -105,10 +105,20 @@ def _trace(plane, trace_id: str | None) -> list[dict]:
     return [{"kind": str(s.get("kind") or "step"), "label": _label(s)} for r in e6_trace.steps_for(plane, trace_id) for s in r.get("steps") or [] if isinstance(s, dict)]
 
 
+def fast(plane, viewer, text: str, pid: str | None) -> dict | None:
+    """The answer without the model, as the person reads it (C.polish), or None: the live procedure (the SOP), else for a steps question the plain
+    "no process map" line, else the verified figures, then the cash tool."""
+    got = P.answer(plane, text) or C.no_steps(text) or C.verified_answer(plane, viewer, text, pid, _live(plane, text))
+    return C.polish(text, got) if got else None
+
+
 def _ask(plane, viewer, text: str, pid: str | None) -> dict:
-    fast = P.answer(plane, text) or C.verified_answer(plane, viewer, text, pid, _live(plane, text))  # the live procedure (the SOP); the verified figures, then the cash tool; ahead of Lumen
-    if fast:
-        return fast
+    if got := fast(plane, viewer, text, pid):
+        return got
+    return C.polish(text, _model(plane, viewer, text, pid))
+
+
+def _model(plane, viewer, text: str, pid: str | None) -> dict:
     if not _live(plane) and asks_figure(text, []):
         # nothing is live, so no figure can be on record: say so at once instead of a 40-second model call that ends in the same place
         return {"answer": "Not available yet: no build is live, so there is no figure on record for that. Start one in Build: say what you need and drop your files.",
