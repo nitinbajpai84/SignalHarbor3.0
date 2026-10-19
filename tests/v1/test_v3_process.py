@@ -159,7 +159,7 @@ def test_from_documents_to_a_live_procedure_with_no_data_load(office):
     a = c.post("/api/v3/ask", json={"text": "What are the steps of the month-end report process and who does each one?"}).json()
     assert a["answer"].count(";") == 5 and "1. Collect the exports (Mei Chen, File drop)" in a["answer"] and "6. Read the report (Daniel Foo, Report pack)" in a["answer"]
     assert a.get("figure") is None and a["trace"][0]["label"] == "Read the standard operating procedure"
-    assert "Control: Difference per entity per day inside cash_tolerance (5,000 USD)" in c.post("/api/v3/ask", json={"text": "Tell me about step 2 of the process"}).json()["answer"]
+    assert "Control: Difference per entity per day inside cash tolerance (5,000 USD)" in c.post("/api/v3/ask", json={"text": "Tell me about step 2 of the process"}).json()["answer"]  # plain words: v3_consume.polish
     manual = c.post("/api/v3/ask", json={"text": "Which steps of the process are manual?"}).json()["answer"]
     assert manual.count(";") == 3 and "Read the report" not in manual
 
