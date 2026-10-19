@@ -5,7 +5,7 @@ import V3Frame from "../Frame";
 import { Failed, Waiting } from "../board/common";
 import { getThing, type Hop, type KEdge, type KNode, type Kind, type Thing1 } from "./k/api";
 import { look } from "./k/Graph";
-import { KIND_LABEL, KIND_ONE, KINDS, kindColour, thingPath } from "./k/kinds";
+import { KIND_LABEL, KIND_ONE, KINDS, figurePath, kindColour, thingPath } from "./k/kinds";
 import "./k/knowledge.css";
 
 const SHOW = 10, COL_MAX = 12, CW = 170, GAP = 64, NH = 28, NG = 8, TOP = 26, PAD = 10;
@@ -16,7 +16,8 @@ const STATUS: Record<string, string> = { verified: "Checked", held: "Held back",
 /** The thing's own detail page, if it has one: a figure with a record, a use case thread, a signal, a person. */
 function detail(n: KNode): [string, string] | null {
   const key = n.id.slice(n.id.indexOf(":") + 1);
-  if (n.kind === "figure" && n.versions) return [`/v3/knowledge/figures/fig-${key}`, "Open the figure page"];
+  const fig = figurePath(n);
+  if (fig) return [fig, "Open the figure page"];
   if (n.kind === "usecase" && n.stage && n.stage !== "suggested" && key.startsWith("th-")) return [`/v3/thread/${key}`, "Open the use case thread"];
   if (n.kind === "signal") return ["/v3/knowledge/signals", "See the signals Harbor watches"];
   if (n.kind === "person") return ["/v3/trust/people", "See the people"];

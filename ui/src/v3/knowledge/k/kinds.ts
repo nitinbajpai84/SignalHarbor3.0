@@ -42,3 +42,6 @@ export function flowLinks(nodes: KNode[], edges: KEdge[]): { from: string; to: s
 
 /** The page of one thing; ":" is a legal character in a path, so ids read plainly. */
 export const thingPath = (id: string) => "/v3/knowledge/thing/" + encodeURIComponent(id).replace(/%3A/gi, ":");
+/** A figure with a record has its own page (/v3/knowledge/figures/fig-<key>); its recipe is linked from there. Anything else opens its thing page. */
+export const figurePath = (n: Pick<KNode, "id" | "kind" | "versions">) => (n.kind === "figure" && n.versions ? `/v3/knowledge/figures/fig-${n.id.slice(n.id.indexOf(":") + 1)}` : null);
+export const fullPath = (n: Pick<KNode, "id" | "kind" | "versions">) => figurePath(n) ?? thingPath(n.id);

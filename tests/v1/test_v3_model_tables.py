@@ -155,7 +155,7 @@ def test_sell_one_buy_other_is_a_valid_side():
     assert TI._signed("fund", "hold", Decimal(5), Decimal(7)) is None
 
 
-def add_fund(plane, name, statements=(), terms=None):
+def add_fund(plane, name, statements=(), terms=None, status="confirmed"):
     """A fund with a commitment, its statements received (documents with a valuation date) and, optionally, confirmed terms {field: (text, number)}."""
     org, iid = org_id(plane), wh.new_id()
     with wh.connect(plane) as con:
@@ -168,7 +168,7 @@ def add_fund(plane, name, statements=(), terms=None):
             did = doc(con, org, iid, f"{name} LPA", None)
             for field, (text, num) in terms.items():
                 con.execute("insert into extracted_fields (id, organization_id, document_id, field_name, value_text, value_numeric, page_number, confidence, review_status) "
-                            "values (?,?,?,?,?,?,3,'high','confirmed')", [wh.new_id(), org, did, field, text, num])
+                            "values (?,?,?,?,?,?,3,'high',?)", [wh.new_id(), org, did, field, text, num, status])
     return iid
 
 
@@ -218,6 +218,25 @@ def test_a_fund_nothing_can_tell_is_asked_once_and_the_answer_sets_the_schedule(
     assert rows and {r[2] for r in rows} == {"quarterly"} and rows[0][3] == "confirmed by Helen Foo" and rows[0][1] is None and rows[0][4] == "no terms on file"
     assert not any("Silent Fund I" in q["text"] for q in EX.questions(x))  # asked once
     assert EX.fill(x)["written"] == 0 and x.th["exceptions"] == []  # a person's schedule is never overridden
+
+
+def test_the_question_suggests_the_known_cadence_and_the_person_still_confirms(office):
+    x = ctx(office, "t-s")
+    termed = add_fund(x.plane, "Pending Terms Fund", [date(2026, 6, 30)], terms={"reporting_frequency": ("Quarterly", None)}, status="pending")
+    uneven = add_fund(x.plane, "Uneven Fund", [date(2025, 12, 31), date(2026, 3, 31), date(2026, 6, 30), date(2026, 7, 31), date(2026, 10, 31)])  # gaps 3, 3, 1, 3 ... majority
+    lean_only = add_fund(x.plane, "Lean Fund", [date(2025, 9, 30), date(2025, 12, 31), date(2026, 1, 31), date(2026, 7, 31), date(2026, 10, 31)])  # gaps 3, 1, 6, 3
+    silent = add_fund(x.plane, "Quiet Fund", [date(2026, 6, 30)])
+    assert EX.lean([date(2026, 3, 31), date(2026, 4, 30), date(2026, 7, 31)]) is None  # a tie suggests nothing
+    EX.fill(x)
+    qs = {q["id"]: q for q in EX.questions(x)}
+    q = qs[f"pdf:freq-{termed}"]
+    assert q["assumed"] == "Quarterly" and q["options"] == ["Monthly", "Quarterly"] and "fund terms say quarterly (Pending Terms Fund LPA, page 3, not confirmed yet)" in q["text"]
+    assert f"pdf:freq-{uneven}" not in qs  # a clear cadence was written by fill: nothing to ask
+    assert qs[f"pdf:freq-{lean_only}"]["assumed"] == "Quarterly" and "5 statements received so far are quarterly" in qs[f"pdf:freq-{lean_only}"]["text"]
+    assert qs[f"pdf:freq-{silent}"]["assumed"] is None  # nothing known: nothing suggested
+    assert schedule(x.plane, termed) == []  # a suggestion writes nothing until the person confirms
+    V.answer(x, f"freq-{termed}", q["assumed"])
+    assert {r[2] for r in schedule(x.plane, termed)} == {"quarterly"} and schedule(x.plane, termed)[0][3] == "confirmed by Helen Foo"
 
 
 def test_fund_terms_give_the_frequency_and_the_due_date(office):

@@ -59,6 +59,12 @@ function csv(turn: Turn) {
   URL.revokeObjectURL(url);
 }
 
+/** "Commitment for Cedarpoint Ventures III: 10,000,000": the name in body size, the number big. */
+function Headline({ value }: { value: string }) {
+  const i = value.lastIndexOf(": ");
+  return i < 0 ? <span className="v3c-big">{value}</span> : <span className="v3c-head"><span className="v3c-name">{value.slice(0, i + 1)}</span> <span className="v3c-big">{value.slice(i + 2)}</span></span>;
+}
+
 function Answer({ turn, golden, ask }: { turn: Turn; golden: string[]; ask: (q: string) => void }) {
   const a = turn.a;
   if (turn.error) return <div className="v3c-card" role="alert"><p className="err">{turn.error}</p><button type="button" className="again" onClick={() => ask(turn.q)}>Try again</button></div>;
@@ -72,7 +78,7 @@ function Answer({ turn, golden, ask }: { turn: Turn; golden: string[]; ask: (q: 
     <section className="v3c-card v3c-print" aria-labelledby="v3c-ans">
       <div className="v3c-q">{turn.q}</div>
       <h2 id="v3c-ans">{a.figure?.label ?? "Answer"}</h2>
-      {a.figure ? <div className="v3c-figrow"><span className="v3c-big">{a.figure.value}</span>{a.figure.change ? <span className={`v3c-chg ${tone(a.figure.change)}`}>{a.figure.change}</span> : null}</div> : null}
+      {a.figure ? <div className="v3c-figrow"><Headline value={a.figure.value} />{a.figure.change ? <span className={`v3c-chg ${tone(a.figure.change)}`}>{a.figure.change}</span> : null}</div> : null}
       <p className="v3c-sentence">{a.answer}</p>
       <Chart series={a.series} rows={rows} />
       <ShowFigures rows={rows.map((r, i) => ({ label: `${r.label}${nums[i] != null && sum > 0 ? ` · ${(((nums[i] as number) / sum) * 100).toFixed(1)}%` : ""}`, value: r.value }))} />

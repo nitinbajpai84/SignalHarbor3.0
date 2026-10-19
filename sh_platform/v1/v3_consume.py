@@ -79,6 +79,21 @@ def figure_of(answer: str, question: str) -> dict | None:
     return {"label": " ".join(question.split())[:60], "value": m, "change": ""} if m else None
 
 
+BARE = re.compile(r"^([a-z][a-z _]*?)\s+(-?[$]?\d[\d,]*(?:\.\d+)?%?)$")  # "commitment 10,000,000": a column word, then its number
+CCY = re.compile(r"^[A-Z]{3}$")
+
+
+def named(fig: dict | None) -> dict | None:
+    """A headline that is a column word and a number ("commitment 10,000,000") is said plainly: "Commitment for Cedarpoint Ventures III: 10,000,000",
+    the subject being the most specific thing the label names (its last part that is not the figure itself or a currency). Every answer passes here."""
+    if not fig or not (hit := BARE.match(str(fig.get("value") or "").strip())):
+        return fig
+    word, number = hit.group(1).replace("_", " ").strip(), hit.group(2)
+    parts = [p.strip() for p in str(fig.get("label") or "").split("·")][1:]
+    subject = next((p for p in reversed(parts) if p and not CCY.match(p) and not p.lower().startswith("total")), "")
+    return fig | {"value": f"{word[:1].upper()}{word[1:]}{f' for {subject}' if subject else ''}: {number}"}
+
+
 def _key(plane, viewer, text: str, ver) -> tuple:
     return (str(plane.path("v3")), _who(viewer), norm(text), ver[0] if ver else "")
 
@@ -96,6 +111,7 @@ def answer(plane, viewer, text: str, compute, count: bool = True) -> dict:
         return hit | {"cached": True, "ms": int((time.perf_counter() - t0) * 1000), "as_of": as_of}
     got = compute()
     got = got | ({"figure": f} if "figure" not in got and (f := figure_of(got["answer"], text)) else {})
+    got = got | ({"figure": named(got["figure"])} if got.get("figure") else {})
     with LOCK:
         if len(KEPT) >= MAX:
             KEPT.clear()

@@ -52,7 +52,8 @@ async def new_thread(request: Request):
     text = str((await _json(request)).get("text") or "").strip()
     if not text:
         raise HTTPException(400, "Say what you want to know first.")
-    return SO.decorate(app, plane, H.view(await run_in_threadpool(H.create, app, plane, text, acct)), acct)
+    th = await run_in_threadpool(H.create, app, plane, text, acct)
+    return await run_in_threadpool(lambda: SO.decorate(app, plane, H.view(th), acct))  # file and figure reads: never on the event loop
 
 
 @router.get("/api/v3/threads/{tid}")
@@ -68,7 +69,8 @@ async def say(tid: str, request: Request):
     text = str((await _json(request)).get("text") or "").strip()
     if not text:
         raise HTTPException(400, "Say something first.")
-    return SO.decorate(app, plane, H.view(await run_in_threadpool(H.say, app, plane, tid, text, acct)), acct)
+    th = await run_in_threadpool(H.say, app, plane, tid, text, acct)
+    return await run_in_threadpool(lambda: SO.decorate(app, plane, H.view(th), acct))
 
 
 @router.post("/api/v3/threads/{tid}/decide")
@@ -87,7 +89,7 @@ async def decide(tid: str, request: Request):
         th = await run_in_threadpool(H.decide, app, plane, tid, b["n"], b["answer"], answers, acct)
     except ValueError as e:
         raise HTTPException(409, str(e)) from None
-    return SO.decorate(app, plane, H.view(th), acct)
+    return await run_in_threadpool(lambda: SO.decorate(app, plane, H.view(th), acct))
 
 
 @router.post("/api/v3/threads/{tid}/discard")
@@ -141,6 +143,9 @@ async def post_file(request: Request):
             got = [(str(b["name"]), base64.b64decode(b["data"], validate=True))]
         except (KeyError, binascii.Error, ValueError):
             raise HTTPException(400, "Send the file as a name and its data.") from None
-    for name, data in got:
-        H.drop(plane, name, data)
-    return {"files": H.scan(app, plane)}
+
+    def drop_and_scan():  # scan judges each waiting file with the model (about 20 s each): off the event loop, so every other request still answers
+        for name, data in got:
+            H.drop(plane, name, data)
+        return {"files": H.scan(app, plane)}
+    return await run_in_threadpool(drop_and_scan)

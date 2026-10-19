@@ -67,3 +67,10 @@ test("a refused roll back shows the reason", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Yes, roll back" }));
   expect(await screen.findByText("Only an admin can do that.")).toBeInTheDocument();
 });
+
+test("the figure page links to its recipe and its place on the knowledge map", async () => {
+  getFigure.mockResolvedValue(rec(2));
+  page();
+  expect(await screen.findByRole("link", { name: "The recipe it follows" })).toHaveAttribute("href", "/v3/knowledge/thing/recipe:cash_break");
+  expect(screen.getByRole("link", { name: "See it on the knowledge map" })).toHaveAttribute("href", "/v3/knowledge/thing/figure:cash");
+});

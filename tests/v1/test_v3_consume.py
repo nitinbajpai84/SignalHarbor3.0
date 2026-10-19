@@ -145,3 +145,12 @@ def test_consume_on_a_seeded_company(july):
     assert "worth" not in got["note"]["headline"] and "4,463,398.82" in got["note"]["headline"] and got["reports"][0]["href"].startswith("/api/v1/projects/EV-0003/")
     assert got["golden"][0]["q"] == "What is our cash by entity today?" and got["answer"]["q"] == got["golden"][0]["q"] and got["answer"]["rows"]
     assert "uncalled" not in str(got).lower()
+
+
+def test_a_bare_column_headline_names_the_figure():
+    from sh_platform.v1.v3_consume import named
+    f = {"label": "Called to date and unfunded · Evergreen Holdings · Cedarpoint Ventures III · USD", "value": "commitment 10,000,000", "change": ""}
+    assert named(f)["value"] == "Commitment for Cedarpoint Ventures III: 10,000,000"
+    assert named({"label": "Calls · USD", "value": "called_to_date 6,000,000"})["value"] == "Called to date: 6,000,000"
+    for plain in ({"label": "Cash · all entities · USD", "value": "4,463,398.82"}, {"label": "x", "value": "None"}, {"label": "x", "value": "3 business days overdue"}):
+        assert named(plain) == plain  # a number, or words that are not a column and a number, stay as they are

@@ -29,8 +29,8 @@ def main() -> None:
     print(f"serving {a.data_root} on port {a.port}; log in {log}", flush=True)
     sys.stdout = sys.stderr = open(log, "a", encoding="utf-8", buffering=1)  # noqa: SIM115 - lives as long as the server
     import uvicorn
-    from sh_platform.app import create_app
-    uvicorn.run(create_app(dist_dir=Path(a.dist).resolve() if a.dist else ROOT / "ui" / "dist"), host="127.0.0.1", port=a.port, log_level="warning")
+    from sh_platform.app import KEEP_ALIVE_S, create_app
+    uvicorn.run(create_app(dist_dir=Path(a.dist).resolve() if a.dist else ROOT / "ui" / "dist"), host="127.0.0.1", port=a.port, log_level="warning", timeout_keep_alive=KEEP_ALIVE_S)
 
 
 if __name__ == "__main__":

@@ -12,4 +12,4 @@ if [ -n "$DATABASE_URL" ] && [ -n "$REDIS_URL" ]; then
   python tools/migrate_to_postgres.py "$SH_DATA_ROOT"
   python tools/worker.py &
 fi
-exec uvicorn sh_platform.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8200}" --proxy-headers --forwarded-allow-ips="*"
+exec uvicorn sh_platform.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8200}" --proxy-headers --forwarded-allow-ips="*" --timeout-keep-alive 75  # = sh_platform.app.KEEP_ALIVE_S

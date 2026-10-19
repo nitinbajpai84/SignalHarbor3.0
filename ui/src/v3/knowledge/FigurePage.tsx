@@ -5,6 +5,7 @@ import { getFigure, rollbackFigure, type FigureRecord } from "../api";
 import V3Frame from "../Frame";
 import { Failed, Waiting, useRead } from "../board/common";
 import { Pill, day } from "./FiguresPage";
+import { thingPath } from "./k/kinds";
 import "./figures.css";
 
 const Box = ({ name, rows, out }: { name?: string; rows?: number; out?: boolean }) => (
@@ -37,6 +38,10 @@ export default function FigurePage() {
           <Link to="/v3/knowledge/figures">All figures</Link>
           <h1>{f.name} {cur && <Pill s={cur.status} />}</h1>
           <p className="v3-mute">{f.definition}{f.grain.length ? ` Per ${f.grain.join(" and ")}.` : ""}</p>
+          <p>
+            <Link to={thingPath(`figure:${f.id.replace(/^fig-/, "")}`)}>See it on the knowledge map</Link>
+            {cur?.built_from?.kind === "recipe" ? <> · <Link to={thingPath(`recipe:${cur.built_from.id}`)}>The recipe it follows</Link></> : null}
+          </p>
         </div>
         <section aria-labelledby="fg-lin">
           <h2 id="fg-lin">Where this number comes from</h2>
