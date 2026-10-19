@@ -545,7 +545,7 @@ recipes:
       when y.class_room_after >= 0 then 'within' else 'over' end as class_status, y.gaps + y.tgap as conversion_gaps from y cross join cash as c
     measure: cash_usd
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {say: "{deal_name}: {new_commitment} takes uncalled to {uncalled_after}; cash of {cash_usd} covers {cash_cover_pct}% of it ({cash_status}); budget {budget_status}"}
+      - {all: true, say: "{deal_name}: {new_commitment} takes uncalled to {uncalled_after}; cash of {cash_usd} covers {cash_cover_pct}% of it ({cash_status}); budget {budget_status}"}
     columns:
       cash_oldest_on: 'The oldest position date among the cash accounts counted.'
       conversion_gaps: 'How many amounts have no fixing to convert them to USD.'
@@ -705,7 +705,7 @@ recipes:
       q as (select o.instrument_id, cast(f.value_text as date) as quarter_end, f.value_numeric as rate from od as o join extracted_fields as f on f.document_id = o.id and f.field_name = 'projected_payout_rate'),
       fq as (select l.currency, i.canonical_name as fund, l.valuation_date, l.value_amount as latest_value, q.quarter_end, q.rate, round(l.value_amount * q.rate, 2) as amount,
       max(l.valuation_date) over (partition by l.currency) as newest from q join lv as l on l.instrument_id = q.instrument_id join instruments as i on i.id = q.instrument_id)
-      select currency, fund, valuation_date, cast(latest_value as decimal(18,2)) as latest_value, quarter_end, cast(round(100 * rate, 4) as decimal(9,4)) as payout_pct,
+      select currency, fund, valuation_date, cast(latest_value as decimal(18,2)) as latest_value, quarter_end, cast(round(100 * (latest_value * rate) / nullif(latest_value, 0), 4) as decimal(9,4)) as payout_pct,
       cast(amount as decimal(18,2)) as amount, cast(case when valuation_date < newest then 1 else 0 end as integer) as is_stale, 'fund_quarter' as row_kind from fq
       union all select currency, fund, max(valuation_date), cast(max(latest_value) as decimal(18,2)), cast(null as date), cast(null as decimal(9,4)), cast(sum(amount) as decimal(18,2)),
       cast(max(case when valuation_date < newest then 1 else 0 end) as integer), 'fund_total' from fq group by currency, fund

@@ -290,7 +290,7 @@ recipes:
       from r window w as (partition by r.currency)
     measure: gain_loss
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {say: "{portfolio} {gain_loss} ({gain_pct}%) this month: {value_today} today against {value_month_end} on {month_end_date}, after net trades of {net_trades}"}
+      - {all: true, say: "{portfolio} {gain_loss} ({gain_pct}%) this month: {value_today} today against {value_month_end} on {month_end_date}, after net trades of {net_trades}"}
     columns:
       value_today: The listed instruments' value at the latest position date.
       value_month_end: Their value at the last position date on or before the previous month end.
