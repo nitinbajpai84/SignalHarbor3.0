@@ -1592,11 +1592,18 @@ def _pdf_head(data: bytes) -> str:
         return ""
 
 
+TEAM_CHANGE = re.compile(r"\b(resign|join|leav|depart|appoint|hire|retire|key person|personnel|steps? down)", re.I)  # a manager news mail's subject
+
+
 def kind_of(name: str, data: bytes) -> tuple[str, str] | None:
     """(kind, the name to read it under) when a reader of the pack knows this file, else None. Content decides; the name only tells apart what the
     content cannot (the reference documents) and stays for the readers that take an account or a fund from it. Emails, notes and Word files are not
-    here: they are documents, read as context (v3_docs)."""
+    here: they are documents, read as context (v3_docs). One mail is: a manager's plain note to investors announcing a team change (manager_news)."""
     low = name.lower()
+    if low.endswith(".eml"):
+        msg = email.message_from_bytes(data)
+        who, colon, change = str(msg["Subject"] or "").partition(":")
+        return ("manager_news", name) if colon and who.strip() and not msg.is_multipart() and TEAM_CHANGE.search(change) else None
     if name == "master_data.json":
         return "reference", name
     if low.endswith(".csv"):

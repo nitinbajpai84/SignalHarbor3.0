@@ -178,3 +178,13 @@ def test_every_recipe_table_passes_the_rate_guard(rid):
 
 def test_uc071_the_payout_percent_is_worked_out_by_a_division():
     assert "/" in R.recipe("expected_distributions")["sql"]
+
+
+def test_r7_uc076_a_managers_team_change_mail_dropped_flat_is_manager_news():
+    """uc-076: in a flat dropbox the personnel mails were never read, so Northgate scored 91.8 instead of 86.8. Only the two team-change mails are."""
+    from pathlib import Path
+
+    from sh_platform.v1.v3_pack_readers import kind_of
+    root = Path(__file__).parent / "fixtures" / "office6m"
+    news = sorted(p.name for p in root.rglob("*.eml") if (k := kind_of(p.name, p.read_bytes())) and k[0] == "manager_news")
+    assert news == ["2026-08-18_saltmarsh_personnel.eml", "2026-09-09_northgate_personnel.eml"]
