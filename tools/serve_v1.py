@@ -6,7 +6,7 @@ import uvicorn
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from sh_platform.app import create_app  # noqa: E402
+from sh_platform.app import KEEP_ALIVE_S, create_app  # noqa: E402
 
 if __name__ == "__main__":
-    uvicorn.run(create_app(dist_dir=ROOT / "ui" / "dist"), host="127.0.0.1", port=8400, log_level="warning")
+    uvicorn.run(create_app(dist_dir=ROOT / "ui" / "dist"), host="127.0.0.1", port=8400, log_level="warning", timeout_keep_alive=KEEP_ALIVE_S)

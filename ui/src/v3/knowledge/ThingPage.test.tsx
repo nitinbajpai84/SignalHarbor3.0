@@ -98,14 +98,16 @@ test("a failed read offers another try", async () => {
   expect(await screen.findByRole("heading", { name: /Cash after calls/ })).toBeInTheDocument();
 });
 
-test("Open full page: from search results, the Atlas panel and another view's selection", async () => {
-  m.getKnowledge.mockResolvedValue({ nodes: [cash, uc], edges: [edge(uc, cash, "uses", cash)], processes: [], things: [], empty: false });
+test("Open full page: a figure opens its own figure page, from search results, the Atlas panel and another view's selection; a recipe opens its thing page", async () => {
+  const recipe = node("recipe:cash_after_calls", "recipe", "Cash after calls recipe");
+  m.getKnowledge.mockResolvedValue({ nodes: [cash, uc, recipe], edges: [edge(uc, cash, "uses", cash), edge(cash, recipe, "built from", recipe)], processes: [], things: [], empty: false });
   render(<MemoryRouter><KnowledgePage /></MemoryRouter>);
   fireEvent.change(await screen.findByRole("searchbox", { name: "Search knowledge" }), { target: { value: "cash" } });
-  expect(screen.getByRole("link", { name: "Open full page: Cash after calls" })).toHaveAttribute("href", "/v3/knowledge/thing/figure:cash");
+  expect(screen.getByRole("link", { name: "Open full page: Cash after calls" })).toHaveAttribute("href", "/v3/knowledge/figures/fig-cash");
+  expect(screen.getByRole("link", { name: "Open full page: Cash after calls recipe" })).toHaveAttribute("href", "/v3/knowledge/thing/recipe:cash_after_calls");
   fireEvent.click(screen.getByRole("button", { name: "Figure: Cash after calls" }));  // the search hit selects the dot
-  expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute("href", "/v3/knowledge/thing/figure:cash");  // the panel
+  expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute("href", "/v3/knowledge/figures/fig-cash");  // the panel
   fireEvent.click(screen.getByRole("button", { name: "Columns" }));
   fireEvent.click(screen.getByRole("button", { name: "Figure: Cash after calls" }));
-  expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute("href", "/v3/knowledge/thing/figure:cash");
+  expect(screen.getByRole("link", { name: "Open full page" })).toHaveAttribute("href", "/v3/knowledge/figures/fig-cash");
 });

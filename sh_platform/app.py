@@ -75,6 +75,10 @@ from sh_platform.settings import Settings, load_settings
 from sh_platform.webui import install_webui
 
 DEFAULT_PACKS = Path(__file__).resolve().parent.parent / "packs"
+# Seconds uvicorn keeps an idle connection open. Its default (5 s) equals the 5 s poll of a thread that is working: the server closed the
+# kept-alive socket just as the next poll went out on it, and the poller got a connection reset on every poll (r7, uc-002 working stage).
+# Longer than any client's poll; every launcher passes it (tools/serve_test.py, tools/serve_v1.py, tools/start.sh).
+KEEP_ALIVE_S = 75
 
 
 def create_app(settings: Settings | None = None, dist_dir: Path | str | None = None,

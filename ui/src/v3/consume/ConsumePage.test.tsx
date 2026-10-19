@@ -77,3 +77,10 @@ test("no figure id, no link", async () => {
   await screen.findByText("Evergreen Office");
   expect(screen.queryByRole("link", { name: "Where this number comes from" })).toBeNull();
 });
+
+test("a named headline shows what the number is, with the number big", async () => {
+  m.getConsume.mockResolvedValue(data({ answer: { q: "q", ...answer({ figure: { label: "Called to date and unfunded · Evergreen Holdings · Cedarpoint Ventures III · USD", value: "Commitment for Cedarpoint Ventures III: 10,000,000", change: "" } }) } }));
+  open();
+  expect(await screen.findByText("Commitment for Cedarpoint Ventures III:")).toHaveClass("v3c-name");
+  expect(screen.getByText("10,000,000")).toHaveClass("v3c-big");
+});

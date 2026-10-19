@@ -5,7 +5,8 @@ After a load, `fill(x)` takes every fund (an instrument whose type says fund) th
   2. the fund's terms state it: a confirmed extracted field `reporting_frequency` (monthly, quarterly, semi-annual, annual) on a document of the fund;
   3. the cadence of statements already received: two or more past statements (a manager valuation, or a document with a valuation date)
      that are one, three, six or twelve months apart, most of the time;
-  4. otherwise nothing is written and Decision 2 asks one question, "How often does <fund> send statements?" (monthly / quarterly).
+  4. otherwise nothing is written and Decision 2 asks one question, "How often does <fund> send statements?" (monthly / quarterly), with the known
+     cadence suggested when there is one (`suggest`: fund terms not yet confirmed, or the gap most of the received statements share); the person confirms.
 Every row says how it was decided in `source`. Due date = period end + the days the fund terms state (confirmed extracted field
 `statement_due_days`), else empty with the reason "no terms on file": a due date is never invented.
 Periods run from the first statement received (at most 36 months back; else the commitment, at most 13 months back) to the first period end after today.
@@ -20,7 +21,9 @@ log = logging.getLogger(__name__)
 SKILL = "action.detect-exception"
 FREQ_N = {"monthly": 1, "quarterly": 3, "semi_annual": 6, "annual": 12}
 WORDS = (("semi", "semi_annual"), ("half", "semi_annual"), ("month", "monthly"), ("quarter", "quarterly"), ("annual", "annual"), ("year", "annual"))
-ASK = {"Monthly": "monthly", "Quarterly": "quarterly"}
+ASK = {"Monthly": "monthly", "Quarterly": "quarterly", "Semi-annual": "semi_annual", "Annual": "annual"}
+SHOWN = ["Monthly", "Quarterly"]  # always offered; a suggested semi-annual or annual is added
+LABEL = {v: k for k, v in ASK.items()}
 NO_TERMS = "no terms on file"
 MAX_PERIODS = 40
 
@@ -47,6 +50,15 @@ def cadence(days: list[date]) -> str | None:
         return None
     gap, n = Counter(gaps).most_common(1)[0]
     return next((f for f, k in FREQ_N.items() if k == gap), None) if n * 2 > len(gaps) else None
+
+
+def lean(days: list[date]) -> str | None:
+    """The gap the received statements share most often, when it is clearly the most common (more than any other gap); a hint, not a schedule."""
+    ds = sorted(set(days))
+    top = Counter(round((b - a).days / 30.44) for a, b in zip(ds, ds[1:])).most_common(2)
+    if not top or (len(top) > 1 and top[0][1] == top[1][1]):
+        return None
+    return next((f for f, k in FREQ_N.items() if k == top[0][0]), None)
 
 
 def periods(freq: str, today: date, received: list[date], committed: date | None) -> list[date]:
@@ -83,6 +95,21 @@ def _terms(con, iid) -> tuple[str | None, int | None, str]:
     days = next((int(n if n is not None else re.search(r"\d+", str(t)).group()) for d, f, t, n, p in rows
                  if f == "statement_due_days" and (n is not None or re.search(r"\d+", str(t or "")))), None)
     return (freq[0], days, freq[1]) if freq else (None, days, "")
+
+
+def suggest(con, iid) -> tuple[str, str] | None:
+    """(frequency, why) to suggest when nothing confirmed tells: the fund terms' `reporting_frequency` a person has not confirmed yet (A21), else the
+    cadence of the statements already received. None when neither says."""
+    rows = con.execute(
+        "select d.title, coalesce(e.corrected_value_text, e.value_text), e.page_number from extracted_fields e join documents d on d.id = e.document_id "
+        "where d.instrument_id = ? and e.field_name = 'reporting_frequency' and coalesce(e.review_status, '') not in ('rejected') "
+        "order by d.document_date desc nulls last, e.id", [iid]).fetchall()
+    if hit := next(((f, d, p) for d, t, p in rows if (f := freq_of(t))), None):
+        return hit[0], f"the fund terms say {LABEL[hit[0]].lower()} ({hit[1]}{f', page {hit[2]}' if hit[2] else ''}, not confirmed yet)"
+    got = _received(con, iid)
+    if f := cadence(got) or lean(got):
+        return f, f"the {len(set(got))} statements received so far are {LABEL[f].lower()}"
+    return None
 
 
 def _received(con, iid) -> list[date]:
@@ -164,7 +191,10 @@ def questions(x) -> list[dict]:
             for iid, name in _funds(con, org_id(x.plane)):
                 if _current(con, iid) or _terms(con, iid)[0] or cadence(_received(con, iid)):
                     continue
-                qs.append({"id": f"pdf:freq-{iid}", "text": f"How often does {name} send statements?", "options": list(ASK), "assumed": None})
+                freq, why = suggest(con, iid) or (None, "")
+                pick = LABEL.get(freq or "")
+                text = f"How often does {name} send statements?" + (f" I suggest {pick.lower()}: {why}." if pick else "")
+                qs.append({"id": f"pdf:freq-{iid}", "text": text, "options": SHOWN + [pick] * (pick is not None and pick not in SHOWN), "assumed": pick})
     except Exception:  # noqa: BLE001 - no warehouse yet: nothing to ask
         log.info("expected statements: no questions", exc_info=True)
     return qs
