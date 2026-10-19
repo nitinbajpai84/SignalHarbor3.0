@@ -315,7 +315,8 @@ recipes:
   - id: limit_changes
     label: Proposed against current limits
     cards: [48]
-    names: [proposed against current limits, limit change impact, breaches each proposed limit would have caused, proposed single name limit, policy limit change]
+    names: [proposed against current limits, limit change impact, breaches each proposed limit would have caused, proposed single name limit, policy limit change, largest single name at each month end, largest single name each month end, largest single name by month end, limits to change, which limits to change]
+    words_all: [[largest, highest, biggest], [name, issuer, exposure, concentration], [month, months], [end, ends]]  # r7 uc-048: "the largest single name at each month end", "which limits to change and by how much"
     may_read: [position_snapshots, instruments, portfolios, business_rules, rule_versions]
     never_read: [commitments, cash_movements, transactions]
     why: To see what a limit would have caused, the largest name at each month end is tested against each version of the limit, the signed one and the proposed one. It reads positions, names and the limit versions.
@@ -343,7 +344,9 @@ recipes:
       cast(month_end = max(month_end) over (partition by portfolio) as integer) as is_latest from r
     measure: over_limit
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
-      - {lead: "Largest name against the {limit_pct}% limit:", say: "{month_end} {largest_holding} {largest_name_pct}%", max: 6}
+      - {if: not is_opening, all: true, lead: "Largest single name at each month end:", say: "{month_end} {largest_holding} {largest_name_pct}%"}  # r7 uc-048: every month end said, the opening position left out
+      - {if: "version_number = 1 and not is_opening", once: true, say: "at the signed {limit_pct}% limit {breaches_in_period} of {months_tested} month ends would have been breaches"}
+      - {if: "version_number = 2 and not is_opening", once: true, say: "at the proposed {limit_pct}% limit {breaches_in_period} of {months_tested} would have been"}
     columns:
       largest_name_pct: The largest holding's share of the portfolio at the month end, in percent.
       over_limit: 1 when that share is above this version's limit at that month end, else 0; its sum is the breaches the version would have caused.
@@ -513,10 +516,10 @@ recipes:
     cards: [47]
     names: [committee pack sections, investment committee pack, pack sections and their owners, pack items]
     words_all: [[committee, committees], [matters, matter, pack]]  # "which matters to put to the committee" (w7)
-    may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, business_rules, rule_versions, valuation_observations, committee_decisions, deal_pipeline, cash_movements, market_observations, benchmark_definitions]
-    never_read: [commitments, transactions]
+    may_read: [documents, extracted_fields, position_snapshots, instruments, portfolios, business_rules, rule_versions, valuation_observations, committee_decisions, deal_pipeline, cash_movements, market_observations, benchmark_definitions, benchmark_components, transactions, bank_accounts, legal_entities]
+    never_read: [commitments]
     why: 'The committee pack is a list of sections, each with its owner and its state, drawn from what the office holds: the issued report, the performance inputs, the breaches, the amendments still open and the proposals waiting for a decision.'
-    formula: 'Five sections with an owner role. Report (cio): the latest issued report, how many of its lines are estimates. Performance (cio): ready when the index levels of the latest month and an approved benchmark are loaded. Attribution (investment_analyst): same inputs as performance. Breaches (risk_officer): the real single-name breaches (as single_name_breach counts them, signed exemptions only) with no committee decision on them, and the largest. Proposals (cfo): the capital calls noticed and not yet confirmed and the deals in the pipeline at their latest stage, each with its own amount (call_amount and deal_amount, never added together because a call is money owed and a deal is a possible commitment). Whether cash covers the call is the figure cash_after_calls, not this one. Amendments open = amended valuations (the latest of a chain) received after the latest issued report, which therefore does not carry them, and with no committee decision on them, shown on the Report section.'
+    formula: 'Five sections with an owner role. Report (cio): the latest issued report, how many of its lines are estimates. Performance (cio): ready when the index levels of the latest month and an approved benchmark are loaded, and then said with the return of the portfolio and of its benchmark for the last month (time_weighted_return). Attribution (investment_analyst): same inputs as performance. Breaches (risk_officer): the real single-name breaches (as single_name_breach counts them, signed exemptions only) with no committee decision on them, and the largest. Proposals (cfo): the capital calls noticed and not yet confirmed and the deals in the pipeline at their latest stage, each with its own amount (call_amount and deal_amount, never added together because a call is money owed and a deal is a possible commitment), then the entities short for the calls due (the shortfall of cash_after_calls) and each deal with its ticket. Amendments open = amended valuations (the latest of a chain) received after the latest issued report, which therefore does not carry them, and with no committee decision on them, shown on the Report section.'
     grain: By committee pack section
     sql: >-
       create table {name} as with {positions},
@@ -542,15 +545,69 @@ recipes:
       deals as (select count(*) as n, coalesce(sum(d.target_commitment), 0) as amount from deal_pipeline as d where not exists (select 1 from deal_pipeline as x where x.supersedes_deal_id = d.id)
       and lower(d.stage) not in ('declined', 'closed', 'withdrawn')),
       idx as (select count(*) as n from market_observations where observation_type = 'index_level' and observed_at >= (select coalesce(max(document_date), date '1900-01-01') from rep) - interval 1 month),
-      bmk as (select count(*) as n from benchmark_definitions where lower(approval_status) = 'approved')
+      bmk as (select count(*) as n from benchmark_definitions where lower(approval_status) = 'approved'),
+      pv as (select l.portfolio_id, l.position_date, sum(l.source_market_value) as v, count(*) as n, count(*) filter (where coalesce(l.data_status, '') in
+      ('Carried forward', 'Estimate')) as n_unsettled, count(*) filter (where l.currency <> g.base_currency) as n_foreign from positions as l join portfolios as g on g.id =
+      l.portfolio_id where (l.position_date = last_day(l.position_date) or l.position_date = last_day(l.position_date) - case dayofweek(last_day(l.position_date)) when 0 then 2
+      when 6 then 1 else 0 end) group by all), me as (select portfolio_id, position_date as month_end, v, n, n_unsettled, n_foreign from (select *, row_number() over (partition
+      by portfolio_id, date_trunc('month', position_date) order by position_date desc) as rn from pv) as q where rn = 1), pm as (select portfolio_id, month_end, v as end_value,
+      n as end_n, n_unsettled + lag(n_unsettled) over w as unsettled, n_foreign + lag(n_foreign) over w as foreign_n, lag(month_end) over w as start_date, lag(v) over w as
+      start_value, lag(n) over w as start_n from me window w as (partition by portfolio_id order by month_end)), fl as (select pm.portfolio_id, pm.month_end,
+      coalesce(-sum(t.cash_amount) filter (where t.transaction_type in ('buy', 'sell')), 0) as net_flow, count(*) filter (where t.transaction_type in ('buy', 'sell')) as
+      trades, count(*) filter (where t.transaction_type in ('buy', 'sell') and t.currency <> g.base_currency) as foreign_trades, coalesce(sum(t.cash_amount) filter (where
+      t.transaction_type in ('dividend', 'coupon')), 0) as income from pm join portfolios as g on g.id = pm.portfolio_id left join transactions as t on t.portfolio_id =
+      pm.portfolio_id and t.effective_date > pm.start_date and t.effective_date <= pm.month_end group by all), lv as (select series_key, date_trunc('month', cast(observed_at at
+      time zone 'UTC' as date)) as m, arg_max(value, observed_at) as level from market_observations where observation_type = 'index_level' group by all), bd as (select id as
+      def_id, benchmark_code, effective_from, coalesce(effective_to, date '9999-12-31') as effective_to from benchmark_definitions where lower(approval_status) = 'approved'
+      qualify row_number() over (partition by benchmark_code, effective_from order by version_number desc, id) = 1),
+      lk as (select p.id as portfolio_id, json_extract_string(v.parameters, '$.benchmark_code') as benchmark_code from business_rules as r join rule_versions as v on
+      v.business_rule_id = r.id join portfolios as p on p.portfolio_code = coalesce(json_extract_string(v.parameters, '$.portfolio'), json_extract_string(v.parameters, '$.portfolio_code')) where r.rule_code = 'benchmark_link' and
+      lower(v.approval_status) = 'approved' and v.effective_to is null), bm as (select pm.portfolio_id, pm.month_end, bd.benchmark_code, case when count(e.level) = count(*) and
+      count(s.level) = count(*) then sum(c.component_weight * (100 * (e.level / s.level - 1) + coalesce(c.spread_bps, 0) / 12 / 100)) end as b, string_agg(c.market_series_key,
+      ', ') filter (where e.level is null or s.level is null) as gap from pm join lk on lk.portfolio_id = pm.portfolio_id join bd on bd.benchmark_code = lk.benchmark_code and
+      pm.month_end between bd.effective_from and bd.effective_to join benchmark_components as c on c.benchmark_definition_id = bd.def_id and pm.month_end >=
+      c.weight_effective_from and pm.month_end <= coalesce(c.weight_effective_to, date '9999-12-31') left join lv as e on e.series_key = c.market_series_key and e.m =
+      date_trunc('month', pm.month_end) left join lv as s on s.series_key = c.market_series_key and s.m = date_trunc('month', pm.start_date) group by all), m0 as (select
+      pm.portfolio_id, bm.benchmark_code, pm.start_date, pm.month_end, pm.start_value, pm.end_value, fl.net_flow, fl.income, bm.b, bm.gap, pm.unsettled = 0 and pm.foreign_n = 0
+      and fl.foreign_trades = 0 and date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) = 1 and (pm.end_n = pm.start_n or fl.trades > 0)
+      as usable, case when pm.unsettled > 0 then 'a value is carried forward or estimated' when pm.foreign_n > 0 or fl.foreign_trades > 0 then 'holdings in another currency are
+      not converted' when date_diff('month', date_trunc('month', pm.start_date), date_trunc('month', pm.month_end)) <> 1 then 'a month end is missing' when pm.end_n <>
+      pm.start_n and fl.trades = 0 then 'the holdings changed with no trade on record' end as why_not from pm join fl on fl.portfolio_id = pm.portfolio_id and fl.month_end =
+      pm.month_end left join bm on bm.portfolio_id = pm.portfolio_id and bm.month_end = pm.month_end where pm.start_value is not null), m as (select *, case when usable then
+      100 * (end_value - start_value - net_flow) / nullif(start_value + 0.5 * net_flow, 0) end as r from m0), lastm as (select max(month_end) as last_end from m),
+      ca as (with {positions}, cashp as (select p.legal_entity_id as entity_id,
+      l.currency, l.position_date, sum(l.source_market_value) as cash from positions as l join instruments as i on i.id = l.instrument_id and i.instrument_type = 'cash' join
+      portfolios as p on p.id = l.portfolio_id where not exists (select 1 from bank_accounts as ba where ba.cash_instrument_id = i.id) group by all), calls as (select
+      p.legal_entity_id as entity_id, m.currency, m.due_date, m.confirmation_status as status, abs(m.amount) as amount from cash_movements as m join portfolios as p on p.id =
+      m.portfolio_id where m.movement_type = 'call' and m.confirmation_status in ('noticed', 'confirmed', 'expected') and not exists (select 1 from cash_movements as x where
+      x.supersedes_cash_movement_id = m.id)), lastc0 as (select c.* from cashp as c where c.position_date = (select max(x.position_date) from cashp as x where x.entity_id =
+      c.entity_id and x.currency = c.currency)), lastc as (select entity_id, currency, position_date, cash from lastc0 union all select distinct k.entity_id, k.currency,
+      (select max(x.position_date) from cashp as x where x.entity_id = k.entity_id), 0 from calls as k where exists (select 1 from cashp as x where x.entity_id = k.entity_id)
+      and not exists (select 1 from lastc0 as x where x.entity_id = k.entity_id and x.currency = k.currency)), due as (select c.entity_id, c.currency, sum(k.amount) as amount,
+      min(k.due_date) as next_due_date, sum(k.amount) filter (where k.due_date < c.position_date) as overdue from lastc as c join calls as k on k.entity_id = c.entity_id and
+      k.currency = c.currency and (k.status in ('noticed', 'expected') or k.due_date >= c.position_date) group by c.entity_id, c.currency), bufall as (select
+      cast(json_extract_string(v.parameters, '$.amount') as decimal(18,2)) as amount, json_extract_string(v.parameters, '$.currency') as currency, v.version_number,
+      v.effective_from, v.effective_to from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'cash_buffer' and v.approval_status =
+      'approved'), buf as (select c.entity_id, c.currency, b.amount from lastc as c join bufall as b on b.currency = c.currency and b.effective_from <= c.position_date and
+      (b.effective_to is null or b.effective_to >= c.position_date) qualify row_number() over (partition by c.entity_id, c.currency order by b.version_number desc) = 1) select
+      e.entity_name as entity, c.currency, c.position_date as as_of, cast(c.cash as decimal(18,2)) as cash, cast(coalesce(d.amount, 0) as decimal(18,2)) as calls_due,
+      cast(coalesce(d.overdue, 0) as decimal(18,2)) as overdue_calls, d.next_due_date, cast(b.amount as decimal(18,2)) as buffer, case when b.amount is not null then
+      cast(c.cash - coalesce(d.amount, 0) - b.amount as decimal(18,2)) end as cash_after_calls, case when b.amount is not null then cast(greatest(coalesce(d.amount, 0) +
+      b.amount - c.cash, 0) as decimal(18,2)) end as shortfall from lastc as c join legal_entities as e on e.id = c.entity_id left join due as d on d.entity_id = c.entity_id
+      and d.currency = c.currency left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency),
+      perf as (select count(*) as n, string_agg(g.portfolio_name || ' ' || strftime(m.month_end, '%B %Y') || ' ' || cast(cast(round(m.r, 4) as double) as varchar) || '% against ' || coalesce(cast(cast(round(m.b, 4) as double) as varchar) || '%', 'no benchmark return'), '; ') as txt
+      from m join portfolios as g on g.id = m.portfolio_id where m.month_end = (select last_end from lastm) and m.r is not null),
+      sf as (select string_agg(entity || ' short ' || currency || ' ' || printf('%,d', cast(round(shortfall) as bigint)), '; ') as txt from ca where calls_due > 0 and shortfall > 0),
+      dl as (select string_agg(d.deal_name || ' ticket ' || printf('%,d', cast(round(d.target_commitment) as bigint)), '; ' order by d.deal_name) as txt from deal_pipeline as d where not exists (select 1 from deal_pipeline as x where x.supersedes_deal_id = d.id)
+      and lower(d.stage) not in ('declined', 'closed', 'withdrawn'))
       select 'Report' as section, 'cio' as owner_role, 'report_tie_out' as figure_ref, case when est.n > 0 then est.n || ' line(s) estimated' else 'all lines official' end as status, est.total as amount, est.n as items,
       amend.n as amendments_open, est.report_date as as_of, cast(null as decimal(18,2)) as call_amount, cast(null as decimal(18,2)) as deal_amount from est, amend
-      union all select 'Performance', 'cio', 'time_weighted_return', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date, null, null from idx, bmk, est
+      union all select 'Performance', 'cio', 'time_weighted_return', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end || coalesce(': ' || perf.txt, ''), null, null, null, est.report_date, null, null from idx, bmk, est, perf
       union all select 'Attribution', 'investment_analyst', 'attribution', case when idx.n > 0 and bmk.n > 0 then 'inputs ready' else 'inputs missing' end, null, null, null, est.report_date, null, null from idx, bmk, est
       union all select 'Breaches', 'risk_officer', 'single_name_breach', br.n || ' real breach(es) open' || case when br.n > 0 then ', the largest is ' || br.top_name || ' at ' || cast(round(br.top_pct, 2) as varchar) || ' percent' else '' end,
       null, br.n, null, est.report_date, null, null from br, est
-      union all select 'Proposals', 'cfo', 'cash_after_calls', calls.n || ' capital call(s) noticed for ' || cast(round(calls.amount) as bigint) || ' and ' || deals.n || ' deal(s) in the pipeline for ' || cast(round(deals.amount) as bigint),
-      null, calls.n + deals.n, null, est.report_date, cast(calls.amount as decimal(18,2)), cast(deals.amount as decimal(18,2)) from calls, deals, est
+      union all select 'Proposals', 'cfo', 'cash_after_calls', calls.n || ' capital call(s) noticed for ' || cast(round(calls.amount) as bigint) || ' and ' || deals.n || ' deal(s) in the pipeline for ' || cast(round(deals.amount) as bigint) || coalesce('; calls: ' || sf.txt, '') || coalesce('; deals: ' || dl.txt, ''),
+      null, calls.n + deals.n, null, est.report_date, cast(calls.amount as decimal(18,2)), cast(deals.amount as decimal(18,2)) from calls, deals, est, sf, dl
     measure: amount
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
       - {lead: "Committee pack:", say: "{section} ({owner_role}): {status}", max: 5}
@@ -575,7 +632,7 @@ recipes:
     cards: [74]
     names: [board pack headline figures, board headline figures, headline figures for the family board, what to tell the board of the family, "net worth, return, liquidity, decisions"]
     words_all: [[board], [tell, headline, headlines, pack, page]]
-    answer: [{once: true, say: "Net worth is {net_worth_usd} USD and {net_worth_sgd} SGD at the fixing of {usd_sgd_fixing}, from the issued report of {report_date}"}, {once: true, say: "{estimate_note}"}, {once: true, say: "The liquid book returned {last_quarter_return_pct}% in {last_quarter} against {last_quarter_benchmark_pct}% for its benchmark; since {performance_from} it returned {since_start_return_pct}% against {since_start_benchmark_pct}%"}, {once: true, say: "Cash is {cash_usd_eq} USD at {cash_as_of}"}, {once: true, say: "The call shortfall is {call_shortfall_usd} USD after the calls due, against the signed buffer"}, {once: true, say: "Uncalled commitments are {uncalled_commitments_usd} USD"}, {once: true, say: "Statements amended after the report: {amendments_after_report}"}]
+    answer: [{once: true, all: true, say: "Net worth is {net_worth_usd} USD and {net_worth_sgd} SGD at the fixing of {usd_sgd_fixing}, from the issued report of {report_date}"}, {once: true, say: "{estimate_note}"}, {once: true, say: "The liquid book returned {last_quarter_return_pct}% in {last_quarter} against {last_quarter_benchmark_pct}% for its benchmark; since {performance_from} it returned {since_start_return_pct}% against {since_start_benchmark_pct}%"}, {once: true, say: "Cash is {cash_usd_eq} USD at {cash_as_of}"}, {once: true, say: "The call shortfall is {call_shortfall_usd} USD after the calls due, against the signed buffer"}, {once: true, say: "Uncalled commitments are {uncalled_commitments_usd} USD"}, {once: true, say: "Statements amended after the report: {amendments_after_report}"}]
     may_read: [documents, extracted_fields, market_observations, position_snapshots, transactions, benchmark_definitions, benchmark_components, portfolios, business_rules, rule_versions, bank_accounts, instruments, cash_movements, commitments, legal_entities, valuation_observations]
     never_read: [deal_pipeline, committee_decisions]
     why: The board sees the figures the office already stands behind, each from its own recipe, with the state it rests on. The report total is the one the issued report states (A3), the return is the signed benchmark link's, the cash is the banks' balances, the shortfall is cash less the calls due less the signed buffer, and the uncalled is the commitment file less the calls. A deal in the pipeline or a committee decision is not a headline figure here.
@@ -677,13 +734,19 @@ recipes:
       cast(coalesce(d.overdue, 0) as decimal(18,2)) as overdue_calls, d.next_due_date, cast(b.amount as decimal(18,2)) as buffer, case when b.amount is not null then
       cast(c.cash - coalesce(d.amount, 0) - b.amount as decimal(18,2)) end as cash_after_calls, case when b.amount is not null then cast(greatest(coalesce(d.amount, 0) +
       b.amount - c.cash, 0) as decimal(18,2)) end as shortfall from lastc as c join legal_entities as e on e.id = c.entity_id left join due as d on d.entity_id = c.entity_id
-      and d.currency = c.currency left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency), cd as (with cur as (select c.* from commitments as c where not
-      exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id)), mv as (select m.*, c.currency as commit_currency from cash_movements as m join cur as c
-      on c.id = m.commitment_id where m.movement_type = 'call' and m.confirmation_status <> 'cancelled' and not exists (select 1 from cash_movements as x where
-      x.supersedes_cash_movement_id = m.id)), conf as (select c.id as commitment_id, coalesce(sum(abs(m.amount)) filter (where m.confirmation_status = 'confirmed' and
-      m.currency = c.currency and m.effective_date > coalesce(c.called_as_at, date '1900-01-01')), 0) as since_stated, count(m.id) filter (where m.currency <> c.currency) as
-      other_currency_calls from cur as c left join mv as m on m.commitment_id = c.id group by c.id), nt as (select m.commitment_id, sum(abs(m.amount)) filter (where m.currency
-      = m.commit_currency) as noticed, min(m.due_date) as due_date from mv as m where m.confirmation_status = 'noticed' group by m.commitment_id), base as (select c.id as
+      and d.currency = c.currency left join buf as b on b.entity_id = c.entity_id and b.currency = c.currency), cd as (with recursive hd(id, head) as (select x.id, x.id from commitments as x where not exists (select 1 from commitments as y where y.supersedes_commitment_id = x.id)
+      union all select y.supersedes_commitment_id, hd.head from hd join commitments as y on y.id = hd.id where y.supersedes_commitment_id is not null),
+      cmv as (select m.* exclude (commitment_id), coalesce(hd.head, m.commitment_id) as commitment_id from cash_movements as m left join hd on hd.id = m.commitment_id),
+      cur as (select c.* from commitments as c where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id)
+      and not (c.source_record_id is null and c.called_to_date is null and not exists (select 1 from cmv as m where m.commitment_id = c.id)
+      and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
+      mv as (select m.*, c.currency as commit_currency, c.called_as_at as commit_as_at from cmv as m join cur as c on c.id = m.commitment_id where m.movement_type = 'call'
+      and m.confirmation_status <> 'cancelled' and not exists (select 1 from cmv as x where x.supersedes_cash_movement_id = m.id)),
+      conf as (select c.id as commitment_id, coalesce(sum(abs(m.amount)) filter (where m.confirmation_status = 'confirmed' and m.currency = c.currency
+      and m.effective_date > coalesce(c.called_as_at, date '1900-01-01')), 0) as since_stated, count(m.id) filter (where m.currency <> c.currency) as other_currency_calls
+      from cur as c left join mv as m on m.commitment_id = c.id group by c.id),
+      nt as (select m.commitment_id, sum(abs(m.amount)) filter (where m.currency = m.commit_currency) as noticed, min(m.due_date) as due_date from mv as m
+      where m.confirmation_status = 'noticed' and cast(m.received_at as date) >= coalesce(m.commit_as_at, date '1900-01-01') group by m.commitment_id), base as (select c.id as
       commitment_id, c.legal_entity_id, e.entity_name as investor, i.canonical_name as fund, c.currency, c.commitment_amount as commitment, coalesce(c.called_to_date, 0) +
       f.since_stated as called_before, coalesce(n.noticed, 0) as noticed, n.due_date as notice_due_date, f.other_currency_calls from cur as c join instruments as i on i.id =
       c.instrument_id join legal_entities as e on e.id = c.legal_entity_id join conf as f on f.commitment_id = c.id left join nt as n on n.commitment_id = c.id) select

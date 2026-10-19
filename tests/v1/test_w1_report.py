@@ -562,7 +562,7 @@ def test_uc047_the_pack_has_five_sections_with_owners_and_the_open_items(con, bu
     assert sorted(r) == sorted(s["section"] for s in k["sections"])
     assert r["Report"]["amendments_open"] == k["amendments_open"] and num(r["Report"]["amount"]) == 57600000 and r["Report"]["status"] == "1 line(s) estimated"
     assert (r["Report"]["owner_role"], r["Attribution"]["owner_role"], r["Breaches"]["owner_role"], r["Proposals"]["owner_role"]) == ("cio", "investment_analyst", "risk_officer", "cfo")
-    assert r["Performance"]["status"] == r["Attribution"]["status"] == "inputs ready"
+    assert r["Attribution"]["status"] == "inputs ready" and r["Performance"]["status"].startswith("inputs ready")  # r7: Performance also says the last month's return and its benchmark's
     p = r["Proposals"]  # call 7 noticed and the Harborlight ticket: two amounts, never added (a call is owed, a ticket is a possible commitment)
     assert p["items"] == 2 and (num(p["call_amount"]), num(p["deal_amount"]), p["amount"]) == (1250000, 2000000, None) and "1250000" in p["status"] and "2000000" in p["status"]
     # the key's 'short USD 270,000' is the figure cash_after_calls (cash domain), not produced by this recipe
