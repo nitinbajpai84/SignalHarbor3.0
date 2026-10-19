@@ -1873,10 +1873,14 @@ def intake(x) -> None:
 
 def _kind_serves(kind: str, sources) -> bool:
     """A kind serves a source when every word of the kind's name is in the source's name (manager_statements serves "Manager statements", not
-    "Capital call notices")."""
+    "Capital call notices"). A kind whose name is an abbreviation also serves a source in its full word: sops serves "Procedures register" and
+    "Procedure logs" (r7 uc-095, uc-096: one SOP of eight reached the build, by a word of its file name)."""
     from sh_platform.v1 import v3_harbor as H
     want = H._toks(kind)
-    return bool(want) and any(want <= H._toks(s) for s in sources or [])
+    return bool(want) and any(want <= (have := H._toks(s)) or KIND_WORDS.get(kind, set()) & have for s in sources or [])
+
+
+KIND_WORDS = {"sops": {"procedure"}}  # ponytail: one full word per abbreviated kind; add a kind here when a brief names it in full
 
 
 def claim(x) -> int:

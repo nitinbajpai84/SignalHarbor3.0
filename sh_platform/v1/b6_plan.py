@@ -201,7 +201,7 @@ def _check_sql(table: dict, schema: dict, known: set[str]) -> tuple[list[dict], 
     if getattr(target, "name", "") != name:
         raise Refused(400, f"The SQL for {name} writes to a different table ({getattr(target, 'name', '?')}).")
     ctes = {c.alias for c in sel.find_all(exp.CTE)}
-    reads = {t.name for t in sel.find_all(exp.Table) if t.name not in ctes}
+    reads = {t.name for t in sel.find_all(exp.Table) if t.name and t.name not in ctes}  # r7 uc-078: a table function (range(0, 37) as g(n)) has no name and reads nothing
     for r in sorted(reads):
         if r not in schema:
             raise Refused(400, f"{name} reads {r}, which is not in the data model or earlier in this plan.")
