@@ -173,8 +173,8 @@ def test_uc060_other_briefs_keep_unknown_files_on_the_generic_path(tmp_path):
 def test_uc098_the_mail_proposing_words_is_read_by_the_glossary_reader(tmp_path):
     rel = "2026-10/glossary/2026-10-06_word_proposal.eml"
     assert PK.kind_of("w.eml", (OFFICE / rel).read_bytes()) == ("glossary", "w.eml")
-    for p in OFFICE.rglob("*.eml"):  # every other mail of the office stays a document (v3_docs)
-        if p.name != Path(rel).name:
+    for p in OFFICE.rglob("*.eml"):  # every other mail of the office stays a document (v3_docs), but a manager's team-change mail (uc-076)
+        if p.name != Path(rel).name and p.parent.name != "manager_news":
             assert PK.kind_of(p.name, p.read_bytes()) is None, p.name
     files = [rel, "2026-10/glossary/office_words_2026-10-01.csv", "2026-10/glossary/word_review_2026-10-08.md"]
     plane, x = W3.flat_thread(tmp_path, files)

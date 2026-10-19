@@ -80,7 +80,7 @@ def figure_of(answer: str, question: str) -> dict | None:
 
 
 BARE = re.compile(r"^([a-z][a-z _]*?)\s+(-?[$]?\d[\d,]*(?:\.\d+)?%?)$")  # "commitment 10,000,000": a column word, then its number
-CCY = re.compile(r"^[A-Z]{3}$")
+CCY_CODE = re.compile(r"^[A-Z]{3}$")
 
 
 def named(fig: dict | None) -> dict | None:
@@ -90,7 +90,7 @@ def named(fig: dict | None) -> dict | None:
         return fig
     word, number = hit.group(1).replace("_", " ").strip(), hit.group(2)
     parts = [p.strip() for p in str(fig.get("label") or "").split("·")][1:]
-    subject = next((p for p in reversed(parts) if p and not CCY.match(p) and not p.lower().startswith("total")), "")
+    subject = next((p for p in reversed(parts) if p and not CCY_CODE.match(p) and not p.lower().startswith("total")), "")
     return fig | {"value": f"{word[:1].upper()}{word[1:]}{f' for {subject}' if subject else ''}: {number}"}
 
 
