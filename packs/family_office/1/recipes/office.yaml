@@ -168,10 +168,10 @@ recipes:
     may_read: [vendor_contracts, documents, extracted_fields]
     never_read: [cash_movements, real_assets]
     why: A policy, its sum insured, premium and renewal date come from the broker's schedule of policies (vendor contracts of kind insurance); a premium paid is not the policy. The renewal notices only say whether the insurer has written.
-    formula: 'One row per insurance policy on record (vendor_contracts of contract_kind insurance, not superseded, not ended or lapsed): days_left = next renewal date less the as-at date (the latest day a document was received); due_in_60_days = 1 when days_left is 0 to 60, the window of card 52. renewal_notice_received = 1 when a renewal notice (document insurance_renewal, field policy) names the policy.'
+    formula: 'One row per insurance policy on record (vendor_contracts of contract_kind insurance, not superseded, not ended or lapsed): days_left = next renewal date less the as-at date (the latest day a document was received, a UTC day as the office keeps its days); due_in_60_days = 1 when days_left is 0 to 60, the window of card 52. renewal_notice_received = 1 when a renewal notice (document insurance_renewal, field policy) names the policy.'
     grain: By policy
     sql: >-
-      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) at time zone 'UTC' as date) as d from documents),
       c as (select v.* from vendor_contracts as v where v.contract_kind = 'insurance' and not exists
       (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(coalesce(v.status, 'active')) not in ('ended', 'terminated', 'lapsed')),
       n as (select distinct upper(trim(f.value_text)) as policy from documents as d join extracted_fields as f on f.document_id = d.id
@@ -184,6 +184,9 @@ recipes:
       cast(case when r.days_left between 0 and 60 then 1 else 0 end as integer) as due_in_60_days, cast(1 as integer) as policies
       from r left join n on n.policy = upper(trim(r.contract_ref))
     measure: due_in_60_days
+    answer:  # r7 uc-052: each policy due is said with its sum insured and its date, never only the 0/1 of the window
+      - {if: due_in_60_days, lead: "Expiring in the next 60 days:", say: "{policy} {policy_name} renews {next_renewal_date} ({days_left} days), sum insured {currency} {sum_insured}, premium {premium}", all: true}
+      - {if: not due_in_60_days, once: true, say: "{list:policy} renew later"}
     columns:
       sum_insured: The policy's sum insured in its own currency, from the schedule.
       premium: The annual premium in the policy's currency, from the schedule.
@@ -394,10 +397,10 @@ recipes:
     may_read: [documents, extracted_fields]
     never_read: [cash_movements]
     why: When a procedure was last reviewed is written in the procedure itself; the date the file was received is not a review.
-    formula: 'One row per procedure (document sop, not superseded; the latest of each title): last_reviewed = its field last_reviewed_on; age_days = the as-at date (the latest day a document was received) less it; due = 1 above 365 days, the limit of card 95.'
+    formula: 'One row per procedure (document sop, not superseded; the latest of each title): last_reviewed = its field last_reviewed_on; age_days = the as-at date (the latest day a document was received, a UTC day as the office keeps its days: a file received late on the office''s day is not the next day) less it; due = 1 above 365 days, the limit of card 95.'
     grain: By procedure
     sql: >-
-      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
+      create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) at time zone 'UTC' as date) as d from documents),
       s as (select d.* from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
       qualify row_number() over (partition by lower(d.title) order by d.document_date desc nulls last, d.received_at desc, d.id desc) = 1),
       f as (select f.document_id, max(case when f.field_name = 'owner' then f.value_text end) as owner,
@@ -447,6 +450,9 @@ recipes:
       cast(r.fails as integer) as failures_6_months, cast(r.score as decimal(18,2)) as score, r.slowest as slowest_manual_step,
       cast(row_number() over (order by r.score desc nulls last, r.sop) as integer) as rank, r.score is not null and row_number() over (order by r.score desc nulls last, r.sop) = 1 as automate_next from r
     measure: score
+    answer:  # r7 uc-096: the ranking said from the scores, the first with its slowest manual step, never one procedure by a plain read
+      - {if: automate_next, say: "Automate {sop} next: score {score} ({manual_minutes_per_month} manual minutes a month, {failures_6_months} failures in six months); its slowest manual step is {slowest_manual_step}", all: true}
+      - {if: not automate_next, sort: score, lead: "Then:", say: "{sop} {score} (slowest manual step: {slowest_manual_step})", max: 2}
     columns:
       runs_per_month: How often the procedure runs, as it states.
       manual_minutes_per_month: Minutes of its manual steps x runs per month.
@@ -575,7 +581,7 @@ recipes:
   - id: grants_used
     label: Grants paid and pledged against the budget
     cards: [85]
-    names: [grants used, grant budget used, paid and pledged against budget, philanthropy budget, grants against budget, annual grant budget, grant budget, budget remaining, remaining budget, grants budget]
+    names: [grants used, grant budget used, paid and pledged against budget, philanthropy budget, grants against budget, annual grant budget, grant budget, budget remaining, remaining budget, grants budget, approve more grants, more grants this year, more grants]  # r7 uc-085: "Whether to approve more grants this year" is the budget left, not one request's check
     words_all: [[grant, grants, philanthropy, charity], [budget, used, remaining, pledged, paid]]
     may_read: [grants, cash_movements, portfolios, business_rules, rule_versions]
     never_read: [office_expenses]
@@ -840,20 +846,23 @@ recipes:
     cards: [94]
     names: [account setup, setup steps and signatories, account signatories, open a bank account, signing policy check]
     words_all: [[account, accounts, bank, signatory, signatories, signing], [open, opening, setup, signing, signatory, signatories, policy, check]]
-    may_read: [bank_accounts, legal_entities, extracted_fields, users, business_rules, rule_versions]
+    may_read: [bank_accounts, legal_entities, extracted_fields, users, staff_payroll, business_rules, rule_versions]
     never_read: [cash_movements]
-    why: A pending account is a bank_accounts row read from its opening form; the signatories are the form's signatory fields; the signing policy is the signed office rule signing_policy (A49); who holds the required role is the users table.
-    formula: 'One row per current pending bank account. signatories = the signatory fields of its opening form, in the form''s order. The policy needs at least min_signatories, one of whom holds the required_role (users.business_role). missing_signatory = the holder of the required role when not among the signatories. meets_signing_policy when both hold; approved when it meets the policy and the account is no longer pending. With no signed policy the checks are empty.'
+    why: A pending account is a bank_accounts row read from its opening form; the signatories are the form's signatory fields; the signing policy is the signed office rule signing_policy (A49); who holds the required role is the users table, else the title the office's latest payroll gives the person (r7 uc-094, the demo users call Daniel Foo the CIO and the payroll calls him the Head of Finance).
+    formula: 'One row per current pending bank account. signatories = the signatory fields of its opening form, in the form''s order. The policy needs at least min_signatories, one of whom holds the required_role (users.business_role, or the title of the latest payroll period). missing_signatory = the holder of the required role when not among the signatories. meets_signing_policy when both hold; approved when it meets the policy and the account is no longer pending. With no signed policy the checks are empty.'
     grain: By pending bank account
     sql: >-
       create table {name} as with a as (select b.* from bank_accounts as b where lower(b.status) = 'pending' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id)),
       sig as (select cast(f.document_id as varchar) as doc, f.value_text as name, coalesce(f.line_number, 0) as n from extracted_fields as f where f.field_name = 'signatory' and f.review_status is distinct from 'Rejected'),
       pol as (select cast(json_extract_string(v.parameters, '$.min_signatories') as integer) as min_n, json_extract_string(v.parameters, '$.required_role') as role
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'signing_policy' and v.approval_status = 'approved' qualify row_number() over (order by v.version_number desc) = 1),
-      req as (select string_agg(u.display_name, ', ' order by u.display_name) as person from users as u where u.is_active and u.business_role = (select role from pol)),
+      who as (select u.display_name as name from users as u where u.is_active and u.business_role = (select role from pol)
+      union select p.employee_name from staff_payroll as p where p.title = (select role from pol) and p.pay_period = (select max(pay_period) from staff_payroll)
+      and not exists (select 1 from staff_payroll as y where y.supersedes_staff_payroll_id = p.id)),
+      req as (select string_agg(name, ', ' order by name) as person from who),
       r as (select a.*, (select string_agg(s.name, ', ' order by s.n, s.name) from sig as s where s.doc = a.source_document_id) as signatories,
       (select count(*) from sig as s where s.doc = a.source_document_id) as n_sig,
-      exists (select 1 from sig as s join users as u on u.display_name = s.name and u.business_role = (select role from pol) where s.doc = a.source_document_id) as has_role from a)
+      exists (select 1 from sig as s where s.doc = a.source_document_id and s.name in (select name from who)) as has_role from a)
       select e.entity_name as account_holder, r.bank_name, r.currency, r.status, r.signatories, cast(r.n_sig as integer) as signatory_count, (select min_n from pol) as min_signatories,
       (select role from pol) as required_role, (select person from req) as required_person, case when (select role from pol) is not null and not r.has_role then (select person from req) end as missing_signatory,
       case when (select role from pol) is not null then r.n_sig >= (select min_n from pol) and r.has_role end as meets_signing_policy,

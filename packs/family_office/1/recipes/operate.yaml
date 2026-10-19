@@ -295,6 +295,9 @@ recipes:
       from fwd as f left join conf as c on c.trade_reference = f.external_trade_id left join spot as s on s.ccy = f.currency
       where f.settlement_date >= (select d from asat)
     measure: mtm_usd
+    answer:  # r7 uc-062: each forward with its date, what it delivers and its mark, then the USD to deliver in total, never the marks alone
+      - {say: "{trade} settles {value_date} ({days_to_value} days): sells USD {sell_amount} for {buy_currency} {buy_amount}, marked {mtm_usd} USD, confirmation {confirmation_status}", all: true}
+      - {once: true, say: "USD to deliver in total {sum:usd_to_deliver}"}
     columns:
       value_date: The forward's value date.
       days_to_value: Days from the latest FX rate day on file to the value date.

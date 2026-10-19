@@ -345,7 +345,7 @@ recipes:
     label: Payee bank details changed
     cards: [5]
     names: [bank details changed, payee account changed, standing instruction changed, bank account changed]
-    words_all: [[account, wire, bank, payee], [ending, changed, new, different]]  # "wire to an account ending 4471" (w6)
+    words_all: [[account, wire, bank, payee], [ending, changed, different]]  # "wire to an account ending 4471" (w6); not "new": "banks freeze an account ... ask the owner for a new one" is the KYC refresh (r7 uc-097)
     may_read: [bank_accounts, extracted_fields, documents, cash_movements, instruments]
     never_read: [position_snapshots, commitments]
     why: The account on a notice is compared with the payee account the office has on file, as it stood when the notice came. The notice and the file say it; balances and commitments do not.
@@ -1129,7 +1129,7 @@ recipes:
   - id: cash_forecast
     label: Twelve month cash forecast
     cards: [72]
-    names: [cash forecast, 12 month cash forecast, twelve month cash forecast, cash in cash out closing by month, "cash in, cash out, closing by month"]
+    names: [cash forecast, 12 month cash forecast, twelve month cash forecast, cash in cash out closing by month, "cash in, cash out, closing by month", needs to raise cash, need to raise cash, raise cash, cash month by month]  # r7 uc-072: "Whether the family needs to raise cash"
     answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
       - {once: true, all: true, say: "Cash starts at {opening_cash_usd_eq} on {as_of} and ends {horizon} at {closing_end}; the lowest month is {lowest_month} at {lowest_closing}"}
       - {if: cash_to_raise, once: true, all: true, say: "To stay above the {floor} floor the family needs to raise {cash_to_raise}"}

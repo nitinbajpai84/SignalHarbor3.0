@@ -961,7 +961,7 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     calls = bool(C.CALLS.search(text)) and not C.OTHER.search(text)
     if calls and (hit := recipe_rows(plane, text, pid, th, kpis)):  # w6: can we pay the call, how much to convert: the recipes' rows, never the old forecast
         return hit
-    k = RC.kpi_by_recipe(text, kpis) or kpi_for(text, kpis)  # the question's words name a recipe: the brief's figure built from it, whatever North called it
+    k = (by := RC.kpi_by_recipe(text, kpis)) or kpi_for(text, kpis)  # the question's words name a recipe: the brief's figure built from it, whatever North called it
     if k is None:
         return recipe_rows(plane, text, pid, th, kpis, floor=2) or recipe_rows(plane, text, pid, th, kpis, floor=1)  # w6: no figure named ("which payments to release"): the recipes the question reads as; r3b uc-073: a bound table with rows is never left to the rules-only reply
     from sh_platform.v1 import v3_recipes as R
@@ -972,8 +972,8 @@ def _answer(plane, viewer, text: str, pid: str, th: dict) -> dict | None:
     mine = relevance(text, R.bound(k)) if R.bound(k) else 0
     named = named_relevance(text, R.bound(k)) if R.bound(k) else 0
     if max((relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > max(mine, 1) and max(
-            (named_relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > named and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2)):
-        return rows  # w6 (uc-005 "Account number match ... 250,000"): the figure's name met a word, another figure's recipe fits the question's meaning
+            (named_relevance(text, r) for x in kpis if (r := R.bound(x))), default=0) > named and (rows := recipe_rows(plane, text, pid, th, kpis, floor=2, also=k if k is by else None)):
+        return rows  # w6 (uc-005 "Account number match ... 250,000"): the figure's name met a word, another figure's recipe fits the question's meaning; r7 uc-015: a figure whose recipe the question's own words name ("and do we have the cash") is said with it
     pack = P.latest_approved(plane, pid) or {}
     gold = (pack.get("target") or {}).get("gold") or []
     live = {t["name"]: t for t in CD.gold_tables(plane, pid)}
@@ -1181,7 +1181,7 @@ def _every_row(plane, text: str, pid: str, th: dict, k: dict) -> dict | None:
     return recipe_rows(plane, text, pid, th, [k], floor=0, every=True)
 
 
-def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False, wide: bool = False) -> dict | None:
+def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: int = 1, every: bool = False, wide: bool = False, also: dict | None = None) -> dict | None:
     """The card's question answered from the brief's recipe-bound figures (w6): the figures whose recipe the question's words fit best (scored by
     `relevance`, at least `floor`, and within one of the best), the rows of their ready tables for what the question names. `answer` is a short
     sentence from each recipe's own `answer` lines (else the figure, its subject and its measure), in the pack's order; `rows` holds the figures behind
@@ -1191,6 +1191,7 @@ def recipe_rows(plane, text: str, pid: str, th: dict, kpis: list[dict], floor: i
     scored = [(relevance(text, r), k) for k in kpis if (r := R.bound(k)) and not R.held(th, k["name"])]
     top = max((sc for sc, _ in scored), default=0)
     figs = [k for sc, k in sorted(scored, key=lambda t: -t[0]) if wide or sc >= max(floor, top - 1)]
+    figs += [also] if also is not None and also not in figs and any(also is k for _, k in scored) else []  # the figure the question names by its recipe, when another fits better
     if not figs:
         return None
     gold = ((P.latest_approved(plane, pid) or {}).get("target") or {}).get("gold") or []
