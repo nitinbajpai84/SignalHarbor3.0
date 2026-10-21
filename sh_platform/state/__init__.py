@@ -15,6 +15,7 @@ import json
 import os
 import re
 import threading
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Callable
 
@@ -137,6 +138,23 @@ class _Pool:
 
 
 _POOLS: dict[str, _Pool] = {}
+
+
+@contextmanager
+def pg(url: str):
+    """One pooled connection for a block (the same pool as PgStore): commit when the block ends, roll back when it raises, back to the pool."""
+    import psycopg
+    pool = _POOLS.setdefault(url, _Pool(int(os.environ.get("SH_PG_POOL") or 6)))
+    c = pool.get(lambda: psycopg.connect(url))
+    try:
+        yield c
+        c.commit()
+    except BaseException:
+        with suppress(Exception):
+            c.rollback()
+        raise
+    finally:
+        pool.put(c)
 
 
 class PgStore:

@@ -62,22 +62,21 @@ class MemoryBus:
 
 
 class PgBus:
-    """ponytail: one short connection per call, like PgStore."""
+    """Connections come from the shared pool (state.pg), so the web and the worker stay far under Postgres's max_connections."""
 
     def __init__(self, url: str):
         self.url, self.subs, self.ready = url, [], False
 
     def connect(self):
-        import psycopg
-        conn = psycopg.connect(self.url)
+        from sh_platform.state import pg
         if not self.ready:
-            conn.execute("CREATE TABLE IF NOT EXISTS sh_outbox (id bigserial PRIMARY KEY, topic text NOT NULL, payload jsonb NOT NULL, "
-                         "created_at timestamptz NOT NULL DEFAULT now(), dispatched_at timestamptz, attempts int NOT NULL DEFAULT 0)")
-            conn.execute("CREATE TABLE IF NOT EXISTS sh_outbox_done (consumer text NOT NULL, event_id bigint NOT NULL, "
-                         "PRIMARY KEY (consumer, event_id))")
-            conn.commit()
+            with pg(self.url) as conn:
+                conn.execute("CREATE TABLE IF NOT EXISTS sh_outbox (id bigserial PRIMARY KEY, topic text NOT NULL, payload jsonb NOT NULL, "
+                             "created_at timestamptz NOT NULL DEFAULT now(), dispatched_at timestamptz, attempts int NOT NULL DEFAULT 0)")
+                conn.execute("CREATE TABLE IF NOT EXISTS sh_outbox_done (consumer text NOT NULL, event_id bigint NOT NULL, "
+                             "PRIMARY KEY (consumer, event_id))")
             self.ready = True
-        return conn
+        return pg(self.url)
 
     def subscribe(self, consumer: str, prefix: str, fn) -> None:
         self.subs.append((consumer, prefix, fn))

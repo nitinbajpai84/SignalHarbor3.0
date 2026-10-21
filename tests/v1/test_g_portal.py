@@ -70,16 +70,16 @@ class _Clients(dict):
 
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
-    import os
-    os.environ["SH_MODEL_PROVIDER"] = "off"
-    os.environ["SH_V3_SCAN"] = "off"
-    data = tmp_path_factory.mktemp("g5") / "data"
-    data.mkdir()
-    EG.seed(data)
-    plane = PlaneStore(data).plane_for("evergreen")
-    _family(plane)
-    pw = {l.split()[0]: l.split()[1] for l in (data / "_control" / "seed_credentials.txt").read_text().splitlines() if l.strip()}
-    return data, plane, pw
+    with pytest.MonkeyPatch.context() as mp:  # model and scan off for this module only: set on os.environ they leaked into later tests in the worker
+        mp.setenv("SH_MODEL_PROVIDER", "off")
+        mp.setenv("SH_V3_SCAN", "off")
+        data = tmp_path_factory.mktemp("g5") / "data"
+        data.mkdir()
+        EG.seed(data)
+        plane = PlaneStore(data).plane_for("evergreen")
+        _family(plane)
+        pw = {l.split()[0]: l.split()[1] for l in (data / "_control" / "seed_credentials.txt").read_text().splitlines() if l.strip()}
+        yield data, plane, pw
 
 
 @pytest.fixture()

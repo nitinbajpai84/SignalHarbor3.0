@@ -3,7 +3,9 @@
 #   set DATABASE_URL=postgresql://sh:<SH_PG_PASSWORD>@127.0.0.1:5433/signal_harbor   (variable names only here; pick your own password)
 #   set REDIS_URL=redis://:<SH_REDIS_PASSWORD>@127.0.0.1:6380/0
 # The web server and tools/worker.py run on the host, not in a container. Remove the two variables to go back to simple mode.
-# Ports 5433 and 6380 keep clear of any Postgres or Redis already on the machine. Data lives on D: and survives `docker compose down`.
+# Ports 5433 and 6380 keep clear of any Postgres or Redis already on the machine. Data lives in Docker volumes (sh_pg, sh_redis) and survives
+# `docker compose down` (not `down -v`). Not a Windows folder: Postgres there crashed into recovery on 21 Oct (pg_wal "Interrupted system call").
+# The older D:/Docker/signal-harbor folders are no longer used and are left as they were.
 services:
   postgres:
     image: postgres:16
@@ -15,7 +17,7 @@ services:
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
-      - "D:/Docker/signal-harbor/postgres:/var/lib/postgresql/data"
+      - "sh_pg:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sh -d signal_harbor"]
       interval: 5s
@@ -31,9 +33,13 @@ services:
     ports:
       - "127.0.0.1:6380:6379"
     volumes:
-      - "D:/Docker/signal-harbor/redis:/data"
+      - "sh_redis:/data"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  sh_pg:
+  sh_redis:
