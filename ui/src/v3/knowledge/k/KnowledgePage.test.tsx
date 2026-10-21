@@ -11,7 +11,7 @@ vi.mock("./api", () => ({ getKnowledge: vi.fn() }));
 vi.mock("3d-force-graph", () => ({ default: class { constructor() { throw new Error("no WebGL in tests"); } } }));
 
 const m = vi.mocked(k);
-const at = () => render(<MemoryRouter><KnowledgePage /></MemoryRouter>);
+const at = () => render(<MemoryRouter initialEntries={["/v3/knowledge?tab=more"]}><KnowledgePage /></MemoryRouter>);
 const data = (over: Partial<k.Knowledge> = {}): k.Knowledge => ({
   nodes: [
     { id: "person:1", kind: "person", label: "Anita Rao", facts: [{ text: "Role: head of data", source: "Accounts", at: "" }] },
