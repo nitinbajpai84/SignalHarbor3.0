@@ -26,7 +26,7 @@ export function SignNote({ s }: { s?: SignOff | null }) {
 export function gapLine(gaps: string[] | undefined, updating: boolean, s: SignOff | null | undefined): string | null {
   if (!gaps?.length) return null;
   const list = gaps.join("; ").replace(/[.?!]$/, "");  // "Which figures do you want?" never ends as "?."
-  if (updating) return `Harbor is working on these now: ${list}.`;
+  if (updating) return `Open questions: ${list}. Answer any of them now in the box below; Harbor is drafting the usual practice for the rest, marked as suggestions, and folds in what you say.`;
   if (!s || s.state === "can_sign" || s.state === "awaiting_you") {
     return `Still open: ${list}. Confirm and Harbor tries the usual practice for these before signing; anything only you can say comes back here as a question. Or tell me in the box below.`;
   }
@@ -47,4 +47,16 @@ export function openComposer(box: HTMLTextAreaElement | null, hint = "Say what t
   box.placeholder = hint;
   box.scrollIntoView?.({ block: "center", behavior: "smooth" });
   box.focus();
+}
+
+/** While Harbor drafts: each open question with its own Answer button, so the person can answer it at once (draft-speed). */
+export function OpenQuestions({ gaps, updating, box }: { gaps?: string[]; updating: boolean; box: () => HTMLTextAreaElement | null }) {
+  if (!updating || !gaps?.length) return null;
+  return (
+    <ul className="v3-openq" aria-label="Open questions">
+      {gaps.map((g) => (
+        <li key={g}>{g} <button onClick={() => openComposer(box(), `Answer: ${g}`)}>Answer</button></li>
+      ))}
+    </ul>
+  );
 }

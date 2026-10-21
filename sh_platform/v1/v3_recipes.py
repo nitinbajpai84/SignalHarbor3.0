@@ -10,6 +10,7 @@ recipe forbids is dropped), `install` in v3_figures.install (Decision 3 gets the
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import logging
@@ -267,15 +268,22 @@ def bind(plane, model, kpis: list[dict], question: str = "", sources: list[dict]
                "sources": [{"name": s.get("name"), "holds": s.get("holds")} for s in sources or [] if isinstance(s, dict)],
                "figures": [{"id": i, **{f: k.get(f) for f in ("name", "definition", "formula", "unit")}} for i, k in enumerate(left)],
                "recipes": [card(r) for r in recipes() if r["id"] in near]}
-        got = _ask(plane, model, ctx) or {}
-        if model is not None:  # two models of different families bind each figure; a figure they agree on is bound, the rest keep the single model's binding
-            from sh_platform.v1 import v3_judge as J
-            from sh_platform.v1.egress_fit import fit
-            for i, k in enumerate(left):
-                rs = short[i] + [r for r in named if r not in short[i]]
-                one = fit({**ctx, "figures": [ctx["figures"][i]], "recipes": [card(r) for r in rs]})  # records as one-line strings: the row guard lets them out
-                agreed = J.judged(plane, "recipe", J.question("recipe", figure=k.get("name"), definition=k.get("definition") or "not given", formula=k.get("formula") or "not given"),
-                                  [*(r["id"] for r in rs), "none"], one, J.standard("recipe"), person=False, describe=described(rs))
+        from concurrent.futures import ThreadPoolExecutor
+        from contextvars import copy_context
+        with ThreadPoolExecutor(max_workers=len(left) + 1) as pool:  # draft-speed: the typed question and each figure's judgement at once, not one by one
+            asked, verdicts = pool.submit(copy_context().run, _ask, plane, model, ctx), []
+            if model is not None:  # two models of different families bind each figure; a figure they agree on is bound, the rest keep the single model's binding
+                from sh_platform.v1 import v3_judge as J
+                from sh_platform.v1.egress_fit import fit
+                for i, k in enumerate(left):
+                    rs = short[i] + [r for r in named if r not in short[i]]
+                    one = fit({**ctx, "figures": [ctx["figures"][i]], "recipes": [card(r) for r in rs]})  # records as one-line strings: the row guard lets them out
+                    verdicts.append(pool.submit(copy_context().run, J.judged, plane, "recipe", J.question("recipe", figure=k.get("name"), definition=k.get("definition") or "not given",
+                                                                                                        formula=k.get("formula") or "not given"),
+                                                [*(r["id"] for r in rs), "none"], one, J.standard("recipe"), person=False, describe=described(rs)))
+            got = asked.result() or {}
+            for i, v in enumerate(verdicts):
+                agreed = v.result()
                 if agreed:
                     got.setdefault("bindings", [])[:] = [b for b in got.get("bindings") or [] if str(b.get("figure")) != str(i)] + [
                         {"figure": i, "recipe": agreed, "why": "Two models of different families agreed."}]
@@ -338,6 +346,25 @@ def _sow_write(plane, iid: str, change) -> dict | None:
         return sow
 
 
+def _carry(mine: list[dict], live: list) -> bool:
+    """The bindings worked out on a copy, put on the brief as it is now: a figure the person confirmed meanwhile keeps theirs, a suggested figure is
+    added once. True when anything changed."""
+    by = {k.get("name"): k for k in live if isinstance(k, dict)}
+    changed = False
+    for k in mine:
+        if not isinstance(k, dict) or not k.get("name"):
+            continue
+        cur = by.get(k["name"])
+        if cur is None and k.get("pack_suggested") and "built_from" in k:
+            live.append(k)
+            changed = True
+        elif cur is not None and not cur.get("built_from_confirmed") and "built_from" in k:
+            new = {f: v for f, v in k.items() if f.startswith("built_from")}
+            changed |= any(cur.get(f) != v for f, v in new.items())
+            cur.update(new)
+    return changed
+
+
 def bind_brief(x, sow: dict) -> dict:
     """Decision 1 hook (v3_harbor._north): bind the drafted brief's figures; returns the brief with its bindings."""
     from sh_platform.build.agents.runtime import get_model
@@ -349,7 +376,9 @@ def bind_brief(x, sow: dict) -> dict:
         model = get_model(x.app.state, x.plane)
         with SK.record(x.plane, x.th.get("id"), BIND) as rec:
             said = " ".join(str(e.get("text") or "") for e in x.th.get("events") or [] if e.get("kind") == "person")[:2000]  # the person's own words
-            got = _sow_write(x.plane, iid, lambda ks: bind(x.plane, model, ks, str((sow.get("goal") or {}).get("line") or ""), sow.get("sources"), said))
+            from sh_platform.v1 import i4_sow as S4
+            mine = copy.deepcopy(S4.read(x.plane, iid).get("kpis") or [])  # draft-speed: the model calls run on a copy, never holding the brief's lock
+            got = _sow_write(x.plane, iid, lambda ks: _carry(mine, ks)) if bind(x.plane, model, mine, str((sow.get("goal") or {}).get("line") or ""), sow.get("sources"), said) else None
             rec["detail"] = "bound: " + "; ".join(f"{b['figure']} -> {b['recipe'] or 'none'} ({b['by']})" for b in bindings((got or sow).get("kpis") or []))[:280]
         sow = got or sow
     except Exception:  # noqa: BLE001 - a binding that fails leaves the figure unbound; Decision 1 still shows the brief

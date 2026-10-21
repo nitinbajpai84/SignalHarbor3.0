@@ -1,10 +1,11 @@
 """I6a routes: North's conversation. Body reading, file decoding, refusals, the model and the pack come from I2's routes.
 
 - `GET /api/v1/intents/open` → {id, greeting, recent}: the person's open intent (SOW not signed), or id null, North's greeting, and their latest intents with a state word.
-- `POST /api/v1/intents/chat` {text, files?: [{name, data (base64), kind}]} → a new intent, North's first reply by the model.
+- `POST /api/v1/intents/chat` {text, files?: [{name, data (base64), kind}], tools?} → a new intent, North's first reply by the model.
 - `GET /api/v1/intents/{iid}/chat` → thread, sow, process_map. For the decision maker it first answers a person turn North has not
   answered yet (an intent started through I2's `POST /api/v1/intents`: its fixed opening question is replaced by North's own reply).
-- `POST /api/v1/intents/{iid}/chat` {text, files?} → the same, after North's reply. Files: base64 or stored records, as I2's.
+- `POST /api/v1/intents/{iid}/chat` {text, files?, tools?} → the same, after North's reply. Files: base64 or stored records, as I2's.
+  `tools: false`: North drafts in one model call, with no tool round trip (Harbor's fill of the open parts).
 - `POST /api/v1/intents/{iid}/send-to-build` → {by, at, project_id}: the signed intent is ready for Build (I1).
 - `POST /api/v1/intents/{iid}/chat/files` {name, data, kind} → {name, path, kind}, as I2's.
 """
@@ -56,7 +57,8 @@ async def start(request: Request):
             raise N.Refused(400, "That file could not be read. Please try again.")
         files = [{"name": str(f.get("name") or ""), "data": _decode(f["data"]), "kind": f.get("kind")} for f in raw]
         return C.start(plane, viewer, str(body.get("text") or body.get("line") or ""), files,
-                       model=_model(request, plane), pack=_pack(request), template_id=str(body.get("template_id") or "") or None)
+                       model=_model(request, plane), pack=_pack(request), template_id=str(body.get("template_id") or "") or None,
+                       tools=body.get("tools") is not False)
     return await run_in_threadpool(_answer, work)
 
 
@@ -94,7 +96,7 @@ async def post_chat(iid: str, request: Request):
     def work():
         plane = _plane(request)
         return C.chat(plane, iid, viewer, str(body.get("text") or ""), _files(plane, iid, body.get("files")),
-                      model=_model(request, plane), pack=_pack(request))
+                      model=_model(request, plane), pack=_pack(request), tools=body.get("tools") is not False)
     return await run_in_threadpool(_answer, work)
 
 

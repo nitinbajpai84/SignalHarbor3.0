@@ -46,6 +46,7 @@ class _Lock:
 LOCK = _Lock()
 SCANNING = threading.Lock()  # one scan at a time; it judges files outside LOCK
 SYNC = False  # tests run chains inline
+PASSES: dict[str, dict] = {}  # draft-speed: thread id -> {"th": the dict the running draft pass saves, "queue": what the person said meanwhile}
 log = logging.getLogger(__name__)
 PEOPLE = {"mei": "mei.chen", "daniel": "daniel.foo", "anita": "anita.rao", "leo": "leo.park", "grace": "grace.ong"}
 ALL = ["company_admin", "sponsor", "analyst", "owner", "approver", "participant"]
@@ -146,7 +147,8 @@ def summary(th) -> dict:
 
 
 def view(th) -> dict:
-    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief"), "process": _P.view_of(th)}
+    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief"), "process": _P.view_of(th),
+            "drafting": th["id"] in PASSES}
 
 
 # ---- acting as the 2.0 seats ------------------------------------------------------------------------------------------------------
@@ -251,7 +253,8 @@ def _skill(x, sid: str, text: str):
     th = x.th
     th["now"] = {"skill": sid, "name": S.name_of(x.plane, sid), "text": text}
     try:
-        save(x.plane, th)
+        if not _gone(x.plane, th["id"]):  # a thread discarded while Harbor works keeps its record
+            save(x.plane, th)
     except Exception:  # noqa: BLE001 - saying what is happening never stops the work
         log.warning("could not save the working note", exc_info=True)
     try:
@@ -869,8 +872,9 @@ def brief(sow: dict) -> dict:
 
 def edit_brief(app, plane, tid, body: dict, account_id) -> dict:
     """One line of the brief changed by the person, straight into the 2.0 intent of work (no model call), then the card is refreshed."""
-    th = load(plane, tid)
-    if th["stage"] != "decision1" or not th.get("iid"):
+    with LOCK:
+        th = (PASSES.get(tid) or {}).get("th") or load(plane, tid)  # draft-speed: a line can be changed while Harbor is still drafting the rest
+    if th["stage"] not in ("decision1", "drafting") or not th.get("iid") or th["stage"] == "drafting" and tid not in PASSES:
         raise ValueError("The brief can be changed while Decision 1 is open.")
     x = Ctx(app, plane, th, account_id)
     sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/sow")
@@ -886,38 +890,62 @@ def edit_brief(app, plane, tid, body: dict, account_id) -> dict:
     return th
 
 
+def _show(x, sow: dict, gaps: list[str]) -> None:
+    """draft-speed: the brief as it stands and its open questions, saved to the thread now, so the person reads and answers them while Harbor works."""
+    x.th["decision"] = {"n": 1, "title": "Is this what you want?", "brief": brief(sow), "gaps": gaps}
+    if not _gone(x.plane, x.th["id"]):
+        save(x.plane, x.th)
+
+
+def _bind_aside(x, sow: dict):
+    """draft-speed: bind the figures already drafted while the fill call runs; the bind after the fill then only does the figures it added."""
+    if not sow.get("kpis") or SYNC:
+        return None
+    import contextvars
+    t = threading.Thread(target=contextvars.copy_context().run, args=(_R.bind_brief, x, sow), daemon=True)
+    t.start()
+    return t
+
+
 def _north(x, text, first=False):
     th = x.th
+    before = {(l["section"], l["index"], l["field"]): l["value"] for g in (((th.get("decision") or {}).get("brief") or {}).get("doc") or []) for l in g["lines"]}
     with _skill(x, "intent.restate-ask", "Reading what you asked"):
-        out = x.api("me", "POST", "/api/v1/intents/chat" if first else f"/api/v1/intents/{th['iid']}/chat", {"text": text})
+        # draft-speed: the first message is one model call (its context already carries memory and document passages); a later reply may look things up
+        out = x.api("me", "POST", "/api/v1/intents/chat" if first else f"/api/v1/intents/{th['iid']}/chat", {"text": text, "tools": not first})
     th["iid"] = out.get("id") or th.get("iid")
     sow = out.get("sow") or x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or {}
     with _skill(x, "intent.find-gaps", "Checking what is still open"):
         gaps = _gaps(x, th["iid"])
+    sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow  # with the drafted lines _gaps just accepted
     fill = first or "usual practice" in text.lower()  # later replies are one model call; filling the gaps again is only on asking
     if fill and gaps:  # show the first draft now; the suggested lines arrive as an update
-        th["decision"] = {"n": 1, "title": "Is this what you want?", "brief": brief(sow), "gaps": gaps}
-        ev(th, "harbor", (_turns(out) or "Here is my first draft.") + " I am filling the open parts with the usual practice now, marked as suggestions.", by="North")
-        save(x.plane, th)
+        ev(th, "harbor", (_turns(out) or "Here is my first draft.") + " I am filling the open parts with the usual practice now, marked as suggestions."
+           " You can answer any open question meanwhile; I will fold it in.", by="North")
+    _show(x, sow, gaps)  # draft-speed: every draft is on screen as soon as it lands, with its open questions
+    aside = _bind_aside(x, sow) if fill and gaps else None
     with _skill(x, "intent.fill-with-practice", "Filling the open parts with the usual practice") if fill and gaps else nullcontext():
-        for _ in range(2 if fill else 0):  # Harbor fills what the person left open with the industry's usual practice, marked as suggested
-            if not gaps:
-                break
-            out = x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": FILL + "; ".join(gaps)})
-            sow = out.get("sow") or x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow
+        if fill and gaps:  # Harbor fills what the person left open with the industry's usual practice, marked as suggested: one call, the open parts only
+            said = _drain(th["id"])  # what the person said meanwhile goes into the same call
+            # ponytail: North keeps its tools here. Tool-free, the whole fill is one JSON reply and Sonnet cut it off at the 4,096-token reply
+            # limit twice in two Real use runs (nothing landed); its propose tools spread the drafts over the calls instead.
+            out = x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": (" ".join(said) + " " if said else "") + FILL + "; ".join(gaps)})
             gaps = _gaps(x, th["iid"])
+            sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or out.get("sow") or sow
+            _show(x, sow, gaps)
         if fill and gaps:  # c8: success still empty after the fill: Harbor's own suggestion from the figures and their recipe tie-outs
             from sh_platform.v1 import v3_signoff as SO
             gaps = SO.success_fallback(x.plane, th["iid"], gaps)
     if fill and gaps and all("last period" in g for g in gaps):  # a first report has no earlier figures: say so plainly, once North has asked
-        x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": NO_EARLIER})
+        x.api("me", "POST", f"/api/v1/intents/{th['iid']}/chat", {"text": NO_EARLIER, "tools": False})
         gaps = _gaps(x, th["iid"])
+    if aside:
+        aside.join()
     sow = x.api("me", "GET", f"/api/v1/intents/{th['iid']}/chat").get("sow") or sow  # after the drafted lines were accepted
     sow = _R.bind_brief(x, sow)  # each figure bound to a recipe by what it means, shown as "Built from" for the person to change
     th["sources"] = [s.get("name", "") for s in sow.get("sources") or []]
     th["rules"] = [str(g.get("rule") or g.get("text") or g.get("name") or g) if isinstance(g, dict) else str(g) for g in sow.get("governance") or []]
     th["title"] = str(sow.get("title") or th["title"])[:80]  # the drafted title, not the first sentence typed
-    before = {(l["section"], l["index"], l["field"]): l["value"] for g in (((th.get("decision") or {}).get("brief") or {}).get("doc") or []) for l in g["lines"]}
     b = brief(sow)
     if before:  # mark what this reply changed, so the person sees it at a glance
         for g in b["doc"]:
@@ -1008,26 +1036,63 @@ def create(app, plane, text, account_id) -> dict:
     return th
 
 
-def _later(app, plane, th, account_id, text, first=False) -> None:
-    """Draft or redraft the brief off the request, so no click waits on the model. Failures become a question on the thread."""
-    def go():
-        x = Ctx(app, plane, th, account_id)
-        try:
-            _north(x, text, first)
-        except Exception as e:  # noqa: BLE001
-            q = e if isinstance(e, Q) else Q(str(e)[:300])
-            ev(th, "question", f"I could not draft the brief yet: {q.text} Say it another way and I will try again.")
-            th["stage"] = "question"
+def _drain(tid: str) -> list[str]:
+    """What the person said while this thread's draft pass was running, taken off its queue."""
+    with LOCK:
+        q = (PASSES.get(tid) or {}).get("queue") or []
+        out = list(q)
+        q.clear()
+        return out
+
+
+def _take(plane, th) -> list[str]:
+    """The pass's next step: what came in meanwhile, or (nothing queued) the thread saved and the pass closed, in one lock so a message never falls between."""
+    with LOCK:
+        q = _drain(th["id"])
+        if q:
+            th["stage"] = "drafting"
         if not _gone(plane, th["id"]):
             save(plane, th)
+        if not q:
+            PASSES.pop(th["id"], None)
+        return q
+
+
+def _later(app, plane, th, account_id, text, first=False) -> None:
+    """Draft or redraft the brief off the request, so no click waits on the model. Failures become a question on the thread. A message sent
+    while the pass runs joins it (say -> PASSES queue): the fill takes it, or one short redraft after, never a second full pass."""
+    with LOCK:
+        PASSES[th["id"]] = {"th": th, "queue": []}
+
+    def go():
+        x = Ctx(app, plane, th, account_id)
+        t, f = text, first
+        while t:
+            try:
+                _north(x, t, f)
+            except Exception as e:  # noqa: BLE001
+                q = e if isinstance(e, Q) else Q(str(e)[:300])
+                ev(th, "question", f"I could not draft the brief yet: {q.text} Say it another way and I will try again.")
+                th["stage"] = "question"
+            t, f = " ".join(_take(plane, th)), not th.get("iid")
+        if not _gone(plane, th["id"]):
             scan(app, plane)  # the brief now names its sources: files already dropped can be matched
     if SYNC:
         go()
-    else:  # ponytail: an in-process thread; a queue and worker (2.0 production mode) when more than one server runs
+    else:  # ponytail: an in-process thread and an in-process PASSES; a queue and worker (2.0 production mode) when more than one server runs
         threading.Thread(target=go, daemon=True).start()
 
 
 def say(app, plane, tid, text, account_id) -> dict:
+    with LOCK:
+        if (p := PASSES.get(tid)) and not _gone(plane, tid):  # draft-speed: a pass is drafting this brief: the message joins it
+            th = p["th"]
+            ev(th, "person", text, by="You")
+            if text.strip().lower() != "retry":
+                p["queue"].append(text)
+            ev(th, "harbor", "Got it. I am adding that to the brief I am drafting now." if text.strip().lower() != "retry" else "I am still drafting the brief.")
+            save(plane, th)
+            return th
     th = load(plane, tid)
     asked = next((e for e in reversed(th["events"]) if e["kind"] == "question"), None) if th.get("stage") == "question" else None
     ev(th, "person", text, by="You")

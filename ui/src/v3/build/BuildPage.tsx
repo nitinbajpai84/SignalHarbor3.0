@@ -12,7 +12,7 @@ import FigureChecks from "../thread/FigureChecks";
 import QuestionBlock from "../thread/QuestionBlock";
 import V3Frame from "../Frame";
 import Discard from "../thread/Discard";
-import { SignNote, confirmWhy, gapLine, openComposer, signAction } from "../thread/SignOff";
+import { OpenQuestions, SignNote, confirmWhy, gapLine, openComposer, signAction } from "../thread/SignOff";
 import { Row } from "../thread/ThreadPage";
 import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
@@ -268,6 +268,7 @@ function Case({ id }: { id: string }) {
       <div className="v3-dec">
         {updating && <p className="v3-updating" role="status">Harbor is updating the brief. Changed boxes glow.</p>}
         {gapLine(d?.gaps, updating, t.signoff) && <p className="v3-gap">{gapLine(d?.gaps, updating, t.signoff)}</p>}
+        <OpenQuestions gaps={d?.gaps} updating={updating} box={() => composer.current} />
         <SignNote s={t.signoff} />
         <div className="v3-row">
           {signAction(t.signoff, "Confirm the brief", busy || updating || !doc?.length, () => void run(decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}

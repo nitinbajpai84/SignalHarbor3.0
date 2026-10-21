@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
@@ -141,7 +141,10 @@ test("a greyed Confirm says why next to it, and Change something opens the box",
   await screen.findByText("Hello there");
   expect(screen.getByRole("button", { name: "Confirm the brief" })).toBeDisabled();
   expect(screen.getByText(/Confirm opens when Harbor has finished updating the brief/)).toBeInTheDocument();
-  expect(screen.getByText(/Harbor is working on these now: Who reads the result/)).toBeInTheDocument();
+  expect(screen.getByText(/Open questions: Who reads the result.*Answer any of them now/)).toBeInTheDocument();
+  fireEvent.click(within(screen.getByRole("list", { name: "Open questions" })).getAllByRole("button", { name: "Answer" })[0]!);
+  expect(screen.getByLabelText("Say something to Harbor")).toHaveFocus();
+  expect(screen.getByLabelText("Say something to Harbor")).toHaveAttribute("placeholder", expect.stringMatching(/^Answer: Who reads the result/));
   fireEvent.click(screen.getByText("Change something"));
   expect(screen.getByLabelText("Say something to Harbor")).toHaveFocus();
   expect(screen.getByLabelText("Say something to Harbor")).toHaveAttribute("placeholder", expect.stringMatching(/Say what to change/));
