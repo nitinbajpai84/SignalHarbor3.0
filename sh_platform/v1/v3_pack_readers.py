@@ -1581,7 +1581,8 @@ CSV_KINDS = [  # (kind, columns the header must hold)
 ]
 REFERENCE_CSV = [("accounts.csv", {"account_id", "account_number"}), ("standing_instructions.csv", {"fund_key", "account_last4", "callback_number"}),
                  ("vendor_master.csv", {"vendor", "category", "account_last4"}), ("fund_terms.csv", {"fund_key", "commitment_usd", "billing_months"}),
-                 ("office_rules.csv", {"rule", "value", "text"})]
+                 ("office_rules.csv", {"rule", "value", "text"}),
+                 ("ownership_register.csv", {"owner_kind", "owned_entity", "ownership_pct"})]
 XLSX_KINDS = [({"Positions", "NAV by portfolio"}, "administrator_nav"), ({"Transactions", "Daily balances"}, "bank_statements"), ({"Sample"}, "audit"),
               ({"Allowances"}, "family_allowances"), ({"Loan"}, "loan_statements"), ({"Payroll"}, "payroll"), ({"Report"}, "investment_reports"),
               ({"Security master"}, "reference"), ({"Components v1"}, "reference")]

@@ -2,6 +2,7 @@
 import base64
 import shutil
 import sys
+import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -177,13 +178,23 @@ def test_the_look_through_multiplies_the_chain_and_hides_what_is_not_shared(w):
     _, plane, c = w
     with wh.connect(plane) as con:
         org = con.execute("select id from organizations").fetchone()[0]
-        con.execute("create table entity_ownership (id varchar primary key, organization_id varchar, owner_member_name varchar, owner_entity_id varchar, owned_entity_id varchar,"
-                    " ownership_pct decimal(9,4), valid_from date, valid_to date)")
+        con.execute("delete from entity_ownership")  # the core table (A61); this test sets its own chain
         ids = {r[0]: str(r[1]) for r in con.execute("select entity_code, id from legal_entities").fetchall()}
         rows = [(SOFIA, None, "EG-TRUST", 50), (None, "EG-TRUST", "EG-HOLD", 60), (None, "EG-HOLD", "EG-TRUST", 10),  # the last closes a circle
                 (MEI, None, "EG-TRUST", 25), (SOFIA, None, "EG-B", 99)]
+        mid = {}
+        for name in (SOFIA, MEI):  # an owner who is a person is a family_members row (A61)
+            got = con.execute("select id from family_members where member_name = ?", [name]).fetchone()
+            if not got:
+                con.execute("insert into family_members (id, organization_id, source_record_id, received_at, recorded_at, member_name)"
+                            " values (gen_random_uuid(), ?, gen_random_uuid(), now(), now(), ?)", [org, name])
+                got = con.execute("select id from family_members where member_name = ?", [name]).fetchone()
+            mid[name] = str(got[0])
+        rows = [(mid.get(m) if m else None, own, owned, pct) for m, own, owned, pct in rows]
         for i, (mem, own, owned, pct) in enumerate(rows):
-            con.execute("insert into entity_ownership values (?,?,?,?,?,?,?,?)", [f"o{i}", org, mem, ids[own] if own else None, ids[owned], pct, date(2026, 1, 1), None])
+            con.execute("insert into entity_ownership (id, organization_id, source_record_id, received_at, recorded_at, owner_kind, owner_entity_id,"
+                        " owner_family_member_id, owned_entity_id, ownership_pct, valid_from) values (?,?,gen_random_uuid(),now(),now(),?,?,?,?,?,?)",
+                        [str(uuid.uuid4()), org, "family_member" if mem else "entity", ids[own] if own else None, mem, ids[owned], pct, date(2026, 1, 1)])
     try:
         s = c[SOFIA].get("/api/v3/portal").json()["share"]
         by = {l["code"]: l for l in s["lines"]}
@@ -195,7 +206,7 @@ def test_the_look_through_multiplies_the_chain_and_hides_what_is_not_shared(w):
         assert float(m["lines"][0]["your_pct"]) == pytest.approx(25.0) and len(m["lines"]) == 1
     finally:
         with wh.connect(plane) as con:
-            con.execute("drop table entity_ownership")
+            con.execute("delete from entity_ownership")
 
 
 # ---- push --------------------------------------------------------------------------------------------------------------------------
