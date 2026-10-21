@@ -531,7 +531,7 @@ recipes:
       today as (select max(p.position_date) as d from positions as p),
       ca as (select c.* from corporate_actions as c where not exists (select 1 from corporate_actions as x where x.supersedes_corporate_action_id = c.id)),
       fld as (select cast(f.document_id as varchar) as doc, f.field_name, coalesce(try_cast(f.corrected_value_text as decimal(28,10)), f.value_numeric) as v from extracted_fields as f
-      join documents as d on d.id = f.document_id where d.document_type = 'corporate_action_notice' and f.review_status <> 'rejected' and f.field_name in ('quantity_held', 'expected_cash')),
+      join documents as d on d.id = f.document_id where d.document_type = 'corporate_action_notice' and f.review_status not in ('rejected', 'held') and f.field_name in ('quantity_held', 'expected_cash')),
       px as (select p.instrument_id, sum(p.source_market_value) / nullif(sum(p.quantity), 0) as price from positions as p where p.position_date = (select d from today) group by p.instrument_id),
       s as (select i.canonical_name as security, replace(c.action_type, '_', ' ') as event, c.action_type, c.ex_date, c.pay_date, c.election_required, c.election_deadline as respond_by,
       c.custodian_ref, t.d as window_from, cast(t.d + 14 as date) as window_to,

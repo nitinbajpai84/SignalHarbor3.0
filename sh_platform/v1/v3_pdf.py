@@ -197,6 +197,10 @@ def read_values(plane, layout: dict, pairs: list[dict]) -> tuple[dict, list[dict
     for n, v in values.items():  # a value is only taken from the page: what is kept must be in the quote
         if v["raw"] and v["raw"] not in v["quote"]:
             checks.append({"kind": "quoted", "field": n, "detail": "", "ok": False, "why": "the value is not in the quoted lines"})
+    from sh_platform.v1 import v3_review as R
+    bad = {c.get("field") for c in checks if not c["ok"]}
+    for n, v in values.items():  # a layout the office has taught is a known layout: high unless one of its checks failed on this field
+        v["confidence"] = R.score(known=True, checks_ok=False if n in bad else None)
     return values, checks, "ok" if all(c["ok"] for c in checks) else "review"
 
 

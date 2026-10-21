@@ -132,7 +132,7 @@ recipes:
       create table {name} as with q as (select d.id as doc_id, d.title, d.document_date, m.value_text as manager from documents as d join extracted_fields
       as m on m.document_id = d.id and m.field_name = 'manager_name' where d.document_type = 'ddq' and not exists (select 1 from documents as s where
       s.supersedes_document_id = d.id)), a as (select f.document_id as doc_id, substr(f.field_name, 6) as topic, coalesce(f.corrected_value_text,
-      f.value_text) as answer, f.page_number from extracted_fields as f where f.field_name like 'ddq:%' and f.review_status <> 'rejected'), t as (select
+      f.value_text) as answer, f.page_number from extracted_fields as f where f.field_name like 'ddq:%' and f.review_status not in ('rejected', 'held')), t as (select
       distinct q.manager, a.topic from q join a on a.doc_id = q.doc_id), j as (select g.manager, t.topic, g.title as questionnaire, g.document_date as
       answered_on, a.answer, a.page_number as page, lag(a.answer) over (partition by g.manager, t.topic order by g.document_date) as previous_answer,
       lag(g.document_date) over (partition by g.manager, t.topic order by g.document_date) as previous_on from q as g join t on t.manager = g.manager left
@@ -151,7 +151,7 @@ recipes:
       label: Every answer read from a questionnaire appears once
       sql: >-
         select (select count(*) from {name} where answer is not null), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id
-        where d.document_type = 'ddq' and f.field_name like 'ddq:%' and f.review_status <> 'rejected' and not exists (select 1 from documents as s where
+        where d.document_type = 'ddq' and f.field_name like 'ddq:%' and f.review_status not in ('rejected', 'held') and not exists (select 1 from documents as s where
         s.supersedes_document_id = d.id))
 
 

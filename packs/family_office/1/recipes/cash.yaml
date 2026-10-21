@@ -185,11 +185,11 @@ recipes:
     grain: By capital call notice
     sql: >-
       create table {name} as with notice as (select d.id as document_id, d.title, d.document_date as notice_date, d.instrument_id, f.value_numeric as fee_on_notice,
-      (select coalesce(g.corrected_value_text, g.value_text) from extracted_fields as g where g.document_id = d.id and g.field_name = 'investor' and g.review_status <> 'rejected' limit 1) as investor
-      from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'management_fee' and f.review_status <> 'rejected'
+      (select coalesce(g.corrected_value_text, g.value_text) from extracted_fields as g where g.document_id = d.id and g.field_name = 'investor' and g.review_status not in ('rejected', 'held') limit 1) as investor
+      from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'management_fee' and f.review_status not in ('rejected', 'held')
       where d.document_type = 'capital_call_notice' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       rate as (select d.instrument_id, f.value_numeric as fee_rate from documents as d join extracted_fields as f on f.document_id = d.id
-      and f.field_name = 'management_fee_rate' and f.review_status <> 'rejected' where d.document_type = 'fund_terms'
+      and f.field_name = 'management_fee_rate' and f.review_status not in ('rejected', 'held') where d.document_type = 'fund_terms'
       and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       commit as (select c.instrument_id, e.entity_name as investor, c.commitment_amount as commitment from commitments as c join legal_entities as e on e.id = c.legal_entity_id
       where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id) and not (c.source_record_id is null and c.called_to_date is null and exists (select 1 from commitments as r where r.instrument_id = c.instrument_id and r.called_to_date is not null))),
@@ -354,7 +354,7 @@ recipes:
     sql: >-
       create table {name} as with notice as (select d.id as document_id, d.title, d.instrument_id, d.document_date as notice_date,
       right(regexp_replace(coalesce(f.corrected_value_text, f.value_text), '[^0-9A-Za-z]', '', 'g'), 4) as notice_ending
-      from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'bank_account' and f.review_status <> 'rejected'
+      from documents as d join extracted_fields as f on f.document_id = d.id and f.field_name = 'bank_account' and f.review_status not in ('rejected', 'held')
       where d.document_type = 'capital_call_notice' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       payee as (select b.* from bank_accounts as b where b.holder_kind = 'payee' and b.status <> 'closed'),
       basis as (select n.document_id, right(p.account_ref, 4) as on_file_ending, p.verified_on as on_file_verified_on from notice as n join payee as p on p.instrument_id = n.instrument_id
@@ -536,7 +536,7 @@ recipes:
       frule as (select cast(coalesce(json_extract_string(v.parameters, '$.tolerance_amount'), '0') as decimal(18,2)) as tol from business_rules as r join rule_versions as v on v.business_rule_id = r.id
       where r.rule_code = 'invoice_above_fee_schedule' and v.approval_status = 'approved' and v.effective_to is null and json_extract_string(v.parameters, '$.action') = 'hold'
       order by v.version_number desc limit 1),
-      fld as (select f.document_id, f.field_name, f.value_text, f.value_numeric, f.currency from extracted_fields as f where f.review_status is distinct from 'Rejected'),
+      fld as (select f.document_id, f.field_name, f.value_text, f.value_numeric, f.currency from extracted_fields as f where f.review_status not in ('Rejected', 'held')),
       inv as (select d.id as document_id, d.source_record_id, d.document_date, max(case when fld.field_name = 'vendor' then fld.value_text end) as vendor,
       max(case when fld.field_name = 'fee_base' then fld.value_numeric end) as fee_base, max(case when fld.field_name = 'fee_base' then fld.currency end) as base_currency,
       max(case when fld.field_name = 'amount_due' then fld.value_numeric end) as billed, max(case when fld.field_name = 'amount_due' then fld.currency end) as currency
@@ -818,8 +818,8 @@ recipes:
       where m.confirmation_status = 'noticed' and m.notice_kind = 'distribution' and m.due_date is not null group by all),
       n2 as (select d.instrument_id, try_cast(coalesce(p.corrected_value_text, p.value_text) as date) as pay_date, coalesce(a.currency, i.currency) as currency,
       sum(a.value_numeric) as notice_amount, false as recorded from documents as d
-      join extracted_fields as p on p.document_id = d.id and p.field_name = 'pay_date' and p.review_status <> 'rejected'
-      join extracted_fields as a on a.document_id = d.id and a.field_name = 'distribution_amount' and a.review_status <> 'rejected'
+      join extracted_fields as p on p.document_id = d.id and p.field_name = 'pay_date' and p.review_status not in ('rejected', 'held')
+      join extracted_fields as a on a.document_id = d.id and a.field_name = 'distribution_amount' and a.review_status not in ('rejected', 'held')
       join instruments as i on i.id = d.instrument_id
       where d.document_type = 'distribution_notice' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
       and try_cast(coalesce(p.corrected_value_text, p.value_text) as date) is not null
@@ -853,8 +853,8 @@ recipes:
       sql: >-
         select (select coalesce(sum(notice_amount), 0) from {name}), (select coalesce(sum(abs(m.amount)), 0) from cash_movements as m where m.movement_type = 'distribution'
         and m.confirmation_status = 'noticed' and m.notice_kind = 'distribution' and m.due_date is not null and not exists (select 1 from cash_movements as x where x.supersedes_cash_movement_id = m.id))
-        + (select coalesce(sum(a.value_numeric), 0) from documents as d join extracted_fields as p on p.document_id = d.id and p.field_name = 'pay_date' and p.review_status <> 'rejected'
-        join extracted_fields as a on a.document_id = d.id and a.field_name = 'distribution_amount' and a.review_status <> 'rejected'
+        + (select coalesce(sum(a.value_numeric), 0) from documents as d join extracted_fields as p on p.document_id = d.id and p.field_name = 'pay_date' and p.review_status not in ('rejected', 'held')
+        join extracted_fields as a on a.document_id = d.id and a.field_name = 'distribution_amount' and a.review_status not in ('rejected', 'held')
         where d.document_type = 'distribution_notice' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
         and try_cast(coalesce(p.corrected_value_text, p.value_text) as date) is not null
         and not exists (select 1 from cash_movements as m where m.movement_type = 'distribution' and m.confirmation_status = 'noticed' and m.notice_kind = 'distribution'

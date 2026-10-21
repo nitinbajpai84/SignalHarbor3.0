@@ -281,3 +281,31 @@ def get_consume(request: Request):
     if C.due(plane):  # the data version changed: warm the answers in the background, the page does not wait
         threading.Thread(target=precompute, args=(plane, viewer), daemon=True).start()
     return out
+
+
+# ---- "Check what I read": fields Harbor held for a person (v3_review, A60) ----------------------------------------------------------------
+
+@router.get("/api/v3/review")
+def get_review(request: Request):
+    """GET -> {min, items:[{id, field, reading, currency, page, line, confidence, document, quote}]}: the held fields."""
+    from sh_platform.v1 import v3_review as R
+    plane = _plane(request)
+    return {"min": R.minimum(plane), "items": R.queue(plane)}
+
+
+@router.post("/api/v3/review/{field_id}")
+async def post_review(field_id: str, request: Request):
+    """POST {value?} -> confirm the reading (no value) or correct it; the field is released with the person's name and time."""
+    from sh_platform.v1 import v3_review as R
+    plane, viewer = _plane(request), viewer_of(request)
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001 - no body is a confirm
+        body = {}
+    value = body.get("value") if isinstance(body, dict) else None
+    if value is not None and not str(value).strip():
+        raise HTTPException(422, "Type the right value, or choose Confirm.")
+    try:
+        return await run_in_threadpool(R.resolve, plane, field_id, viewer.name, None if value is None else str(value).strip())
+    except KeyError:
+        raise HTTPException(404, "That field is not waiting for a check.") from None

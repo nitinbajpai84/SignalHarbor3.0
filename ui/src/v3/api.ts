@@ -198,3 +198,6 @@ export const makeApiKey = (body: ApiKeyBody) => apiSend<ApiKeyMade>("POST", "/ap
 export const revokeApiKey = (id: string) => apiSend<{ revoked: boolean }>("DELETE", `/api/v3/api-keys/${encodeURIComponent(id)}`);
 export const setApiWebhook = (id: string, url: string) => apiSend<{ url: string; secret: string; allowed: boolean }>("POST", `/api/v3/api-keys/${encodeURIComponent(id)}/webhook`, { url });
 export const clearApiWebhook = (id: string) => apiSend<{ cleared: boolean }>("DELETE", `/api/v3/api-keys/${encodeURIComponent(id)}/webhook`);
+export interface ReviewItem { id: string; field: string; reading: string; currency: string | null; page: number | null; line: number | null; confidence: string; document: string; quote: string }
+export const getReview = () => apiGet<{ min: string; items: ReviewItem[] }>("/api/v3/review");
+export const resolveReview = (id: string, value?: string) => apiSend<{ id: string; status: string }>("POST", `/api/v3/review/${encodeURIComponent(id)}`, value === undefined ? {} : { value });
