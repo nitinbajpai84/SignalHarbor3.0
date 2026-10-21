@@ -1,0 +1,50 @@
+# Reading schema for a distribution notice. Source of the reader (rule: industry.md); a suggestion, not the company's own policy.
+doc_type: distribution_notice
+title: Distribution notice
+markers:  # words that classify the document before any model is asked (lower case)
+  - distribution notice
+  - notice of distribution
+  - distribution advice
+  - distribution payment
+fields:
+  - name: fund
+    type: text
+    description: Name of the fund or partnership making the distribution
+    required: true
+  - name: investor
+    type: text
+    description: Name of the investor receiving it
+    required: true
+  - name: distribution_number
+    type: integer
+    description: Number of this distribution
+    positive: true
+  - name: currency
+    type: currency
+    description: Three-letter currency code
+    required: true
+  - name: total_distribution
+    type: money
+    description: Total amount paid to the investor
+    required: true
+    positive: true
+  - name: recallable_amount
+    type: money
+    description: Part that the fund may call back (return of capital)
+    positive: true
+  - name: non_recallable_amount
+    type: money
+    description: Part that cannot be called back (gains and income)
+    positive: true
+  - name: payment_date
+    type: date
+    description: Date the payment is made
+    required: true
+  - name: record_date
+    type: date
+    description: Record date for the distribution
+checks:
+  - kind: sum
+    total: total_distribution
+    parts: [recallable_amount, non_recallable_amount]
+    note: the two parts add up to the total

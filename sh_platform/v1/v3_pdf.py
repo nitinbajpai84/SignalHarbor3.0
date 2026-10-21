@@ -267,6 +267,8 @@ def intake(x) -> None:
             sig, name = layout_of(pages) if pages else ("", "")
             rec = st["files"][f["name"]] = {"doc_id": doc_id, "sig": sig, "status": "read" if pairs else "context" if pages else "unreadable"}
             if not pairs:
+                if pages:
+                    _doc_read(x, f["name"], data, rec)  # prose and columns have no pairs; the schema reader may still read them
                 continue  # text with no label and value (a letter in prose) is context: Lumen and Knowledge cite it
             if LETTER.search(name):  # a letter is not a statement: context, and a figure it states is offered for confirmation, not a layout
                 rec["status"] = "context"
@@ -278,6 +280,8 @@ def intake(x) -> None:
                 continue
             slug = slug_of(sig)
             ask = st["ask"].get(slug)
+            if ask is None and _doc_read(x, f["name"], data, rec):  # W2: a document type the pack has a schema for is read by it, not asked about
+                continue
             if ask is None:
                 fresh = propose(pairs)
                 fields = (known or {}).get("fields") or fresh
@@ -294,6 +298,22 @@ def intake(x) -> None:
                                              {"lines read": [f"{p['label']}: {p['value']}" for p in pairs][:20]}, J.standard("amount_line"), x.th["id"], person=False)
             ask["files"].append(f["name"])
             rec["status"], rec["ask"] = "asked", slug
+
+
+def _doc_read(x, name: str, data: bytes, rec: dict) -> bool:
+    """W2 (v3_doc_extract): no known layout matched. A capital call, distribution, statement, NAV or subscription is read into the pack's schema
+    (page and quote per field, unproven fields dropped); the read waits for a person to confirm it, then its layout is read without the model."""
+    from sh_platform.v1 import v3_doc_extract as DE
+    try:
+        got = DE.read(x.plane, name, data)
+    except Exception:  # noqa: BLE001 - the reader never stops intake: the layout question is asked as before
+        log.warning("%s could not be read by schema", name, exc_info=True)
+        return False
+    if not got:
+        return False
+    rec["status"], rec["doc_read"] = "extracted", {k: got[k] for k in ("doc_type", "via", "status", "fields", "dropped", "flags", "layout_id")}
+    x.th["pdf"].setdefault("reads", {})[name] = got
+    return True
 
 
 def questions(x) -> list[dict]:
@@ -577,4 +597,4 @@ def load_files(x, names: list[str], monthly: bool = False) -> tuple[int, list[di
 def load(x) -> tuple[int, list[dict]]:
     """b_load: every PDF of the thread that was not left out by the person."""
     st = (x.th.get("pdf") or {}).get("files") or {}
-    return load_files(x, [n for n in (x.th.get("intake") or {}) if is_pdf(n) and (st.get(n) or {}).get("status") not in ("left_out", "figures", "context")])  # figures: v3_loads
+    return load_files(x, [n for n in (x.th.get("intake") or {}) if is_pdf(n) and (st.get(n) or {}).get("status") not in ("left_out", "figures", "context", "extracted")])  # figures: v3_loads; extracted: v3_doc_extract (waits for a person)
