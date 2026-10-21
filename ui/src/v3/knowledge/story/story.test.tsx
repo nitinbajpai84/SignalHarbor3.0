@@ -5,6 +5,7 @@ import * as client from "../../../api/client";
 import KnowledgePage from "../KnowledgePage";
 import * as api from "./api";
 import { pack } from "./Domains";
+import { place, split } from "./Model";
 
 vi.mock("../../Frame", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("../../../api/client", () => ({ getCompany: vi.fn() }));
@@ -175,4 +176,26 @@ test("Decisions and rules: one list, filtered by kind, each with the use cases i
   expect(screen.queryByText("Cash buffer")).toBeNull();
   expect(screen.getByText("Rate is the fixing")).toBeInTheDocument();
   expect(screen.getByText("No use case reads it yet.")).toBeInTheDocument();
+});
+
+test("Logical: lines join neighbours only and run straight; a relation further apart is listed under Also connects to", async () => {
+  const o = (id: string, label: string, relations: api.LogicalObject["relations"] = []): api.LogicalObject => ({ id, label, about: label.toLowerCase(), count: 1, table: id, properties: [], relations, kpis: [] });
+  const objs = [o("entity", "Legal entity", [{ to: "bank_account", to_label: "Bank account", label: "banks with" }]), o("bank_account", "Bank account"),
+    o("commitment", "Fund commitment", [{ to: "entity", to_label: "Legal entity", label: "made by" }]), o("portfolio", "Portfolio", [{ to: "entity", to_label: "Legal entity", label: "belongs to" }])];
+  const { drawn, listed } = split(objs, place(objs));
+  expect(drawn.map((e) => e.label).sort()).toEqual(["banks with", "belongs to"]);
+  expect(listed.map((e) => e.label)).toEqual(["made by"]);
+  m.getLogical.mockResolvedValue({ objects: objs, pack: null });
+  m.getPhysical.mockResolvedValue({ bronze: { items: [], total: 0 }, silver: { items: [], total: 0 }, gold: { items: [], total: 0 }, kpis: { items: [], total: 0 }, picked: null, path: null });
+  const { container } = at("?tab=model");
+  expect(await screen.findByText("banks with")).toBeInTheDocument();
+  expect(screen.queryByText("made by")).toBeNull();  // not drawn
+  for (const l of Array.from(container.querySelectorAll(".km-edge line"))) {
+    const [x1, y1, x2, y2] = ["x1", "y1", "x2", "y2"].map((k) => Number(l.getAttribute(k)));
+    expect(x1 === x2 || y1 === y2).toBe(true);  // straight: across or down, never diagonal
+  }
+  const detail = screen.getByRole("complementary", { name: "Detail" });
+  expect(within(detail).getByText(/Also connects to:/).parentElement).toHaveTextContent("Fund commitment (made by it)");
+  fireEvent.click(screen.getByRole("button", { name: /Fund commitment/ }));
+  expect(within(detail).getByText(/Also connects to:/).parentElement).toHaveTextContent("Legal entity (made by)");
 });

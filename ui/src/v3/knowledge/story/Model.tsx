@@ -4,28 +4,39 @@ import { Link } from "react-router-dom";
 import { Failed, useRead } from "../../board/common";
 import { getLogical, getPhysical, type Logical, type LogicalObject, type Physical } from "./api";
 
-/** Where each business object sits in the picture: [column, row]. An object the pack adds later is placed in the next free cell. */
+/** Where each business object sits in the picture: [column, row]. Only neighbours (side by side or one above the other) get a line; a relation
+ * between boxes further apart is listed under "Also connects to" in the side panel, so no line ever crosses a box. An object the pack adds later
+ * is placed in the next free cell. Laid out so the most relations are between neighbours (12 of the family office's 17). */
 export const LAYOUT: Record<string, [number, number]> = {
   family_member: [0, 0], ownership: [1, 0], entity: [2, 0], bank_account: [3, 0],
-  commitment: [0, 1], position: [1, 1], portfolio: [2, 1], nav_snapshot: [3, 1],
-  instrument: [0, 2], transaction: [2, 2], cash_movement: [3, 2],
-  valuation: [0, 3], document: [1, 3], market_observation: [2, 3],
+  cash_movement: [0, 1], position: [1, 1], portfolio: [2, 1], nav_snapshot: [3, 1],
+  commitment: [0, 2], instrument: [1, 2], transaction: [2, 2],
+  market_observation: [0, 3], valuation: [1, 3], document: [2, 3],
 };
-const W = 196, H = 74, GX = 84, GY = 50, PAD = 14;
+const COLS = 4, W = 210, H = 78, GX = 116, GY = 64, PAD = 8;
 
 export function place(objects: LogicalObject[]): Record<string, [number, number]> {
   const out: Record<string, [number, number]> = {};
   const used = new Set<string>();
-  for (const o of objects) { const c = LAYOUT[o.id]; if (c) { out[o.id] = c; used.add(c.join()); } }
+  for (const o of objects) { const c = LAYOUT[o.id]; if (c && !used.has(c.join())) { out[o.id] = c; used.add(c.join()); } }
   let i = 0;
   for (const o of objects) {
     if (out[o.id]) continue;
-    while (used.has([i % 4, 3 + Math.floor(i / 4)].join())) i += 1;
-    const c: [number, number] = [i % 4, 3 + Math.floor(i / 4)];
+    while (used.has([i % COLS, Math.floor(i / COLS)].join())) i += 1;
+    const c: [number, number] = [i % COLS, Math.floor(i / COLS)];
     out[o.id] = c;
     used.add(c.join());
   }
   return out;
+}
+/** Side by side or one above the other. */
+export const neighbours = (a?: [number, number], b?: [number, number]) => !!a && !!b && Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) === 1;
+
+export interface Rel { from: string; to: string; label: string }
+/** The relations drawn (between neighbours) and the rest, which the side panel lists. */
+export function split(objects: LogicalObject[], at: Record<string, [number, number]>): { drawn: Rel[]; listed: Rel[] } {
+  const all = objects.flatMap((o) => o.relations.map((r) => ({ from: o.id, to: r.to, label: r.label }))).filter((e) => at[e.from] && at[e.to]);
+  return { drawn: all.filter((e) => neighbours(at[e.from], at[e.to])), listed: all.filter((e) => !neighbours(at[e.from], at[e.to])) };
 }
 const wrap = (text: string, n: number): string[] => {
   const lines: string[] = [];
@@ -36,12 +47,26 @@ const wrap = (text: string, n: number): string[] => {
   return lines.slice(0, 2);
 };
 const rect = (c: [number, number]) => ({ x: PAD + c[0] * (W + GX), y: PAD + c[1] * (H + GY) });
-/** Where the line from one box's centre to another's leaves the first box. */
-function edgePoint(a: { x: number; y: number }, b: { x: number; y: number }) {
-  const [ax, ay, bx, by] = [a.x + W / 2, a.y + H / 2, b.x + W / 2, b.y + H / 2];
-  const dx = bx - ax, dy = by - ay;
-  const t = Math.min(dx ? (W / 2 + 3) / Math.abs(dx) : Infinity, dy ? (H / 2 + 3) / Math.abs(dy) : Infinity);
-  return [ax + dx * t, ay + dy * t] as const;
+
+/** A straight connector in the gap between two neighbours, with its label in that gap: above the line across a column gap, beside it down a row gap. */
+function Connector({ a, b, label, hot }: { a: [number, number]; b: [number, number]; label: string; hot: boolean }) {
+  const [pa, pb] = [rect(a), rect(b)];
+  let line: [number, number, number, number], tx: number, ty: number, anchor: "middle" | "start";
+  if (a[1] === b[1]) {  // same row: across the column gap
+    const y = pa.y + H / 2, right = b[0] > a[0];
+    line = right ? [pa.x + W + 3, y, pb.x - 3, y] : [pa.x - 3, y, pb.x + W + 3, y];
+    [tx, ty, anchor] = [(line[0] + line[2]) / 2, y - 7, "middle"];
+  } else {  // same column: down the row gap
+    const x = pa.x + W / 2, down = b[1] > a[1];
+    line = down ? [x, pa.y + H + 3, x, pb.y - 3] : [x, pa.y - 3, x, pb.y + H + 3];
+    [tx, ty, anchor] = [x + 8, (line[1] + line[3]) / 2 + 4, "start"];
+  }
+  return (
+    <g className={hot ? "km-edge hot" : "km-edge"}>
+      <line x1={line[0]} y1={line[1]} x2={line[2]} y2={line[3]} markerEnd="url(#km-arrow)" />
+      <text x={tx} y={ty} textAnchor={anchor}>{label}</text>
+    </g>
+  );
 }
 
 export default function Model({ view, onView, kpi, onKpi }: { view: "logical" | "physical"; onView: (v: "logical" | "physical") => void; kpi: string | null; onKpi: (id: string | null) => void }) {
@@ -68,31 +93,24 @@ function LogicalView() {
 
 function Picture({ m, sel, onSel }: { m: Logical; sel: string | null; onSel: (id: string) => void }) {
   const at = place(m.objects);
-  const rows = Math.max(...Object.values(at).map((c) => c[1]), 0) + 1;
-  const pos = (id: string) => rect(at[id] ?? [0, 0]);
-  const width = PAD * 2 + 4 * W + 3 * GX, height = PAD * 2 + rows * H + (rows - 1) * GY;
+  const cells = Object.values(at);
+  const cols = Math.max(...cells.map((c) => c[0]), 0) + 1, rows = Math.max(...cells.map((c) => c[1]), 0) + 1;
+  const width = PAD * 2 + cols * W + (cols - 1) * GX, height = PAD * 2 + rows * H + (rows - 1) * GY;
   const cur = m.objects.find((o) => o.id === sel) ?? m.objects.find((o) => o.id === "entity") ?? m.objects[0];
   if (!m.objects.length) return <div className="v3-card"><p>This office has no industry model yet.</p></div>;
-  const edges = m.objects.flatMap((o) => o.relations.map((r) => ({ from: o.id, to: r.to, label: r.label }))).filter((e) => at[e.from] && at[e.to]);
+  const { drawn, listed } = split(m.objects, at);
+  const cell = (id: string): [number, number] => at[id] ?? [0, 0];
+  const label = (id: string) => m.objects.find((o) => o.id === id)?.label ?? id;
+  const also = cur ? listed.filter((e) => e.from === cur.id || e.to === cur.id).map((e) => `${label(e.from === cur.id ? e.to : e.from)} (${e.from === cur.id ? e.label : `${e.label} it`})`) : [];
   return (
     <div className="ks-body km-body">
       <div className="km-pic">
         <p className="kd-intro">In the office{"’"}s words, no table names. Click a box to see its properties and which KPIs read it; switch to Physical to see the tables behind it.</p>
         <svg viewBox={`0 0 ${width} ${height}`} className="km-svg" role="group" aria-label="Business objects and how they relate">
-          <defs><marker id="km-arrow" orient="auto" markerWidth="6" markerHeight="6" refX="3" refY="3"><path d="M0 0 L6 3 L0 6 Z" className="km-head-fill" /></marker></defs>
-          {edges.map((e) => {
-            const [a, b] = [pos(e.from), pos(e.to)];
-            const [x1, y1] = edgePoint(a, b), [x2, y2] = edgePoint(b, a);
-            const hot = cur && (e.from === cur.id || e.to === cur.id);
-            return (
-              <g key={`${e.from}>${e.to}`} className={hot ? "km-edge hot" : "km-edge"}>
-                <line x1={x1} y1={y1} x2={x2} y2={y2} markerEnd="url(#km-arrow)" />
-                <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 + 4} textAnchor="middle">{e.label}</text>
-              </g>
-            );
-          })}
+          <defs><marker id="km-arrow" orient="auto" markerWidth="6" markerHeight="6" refX="5" refY="3"><path d="M0 0 L6 3 L0 6 Z" className="km-head-fill" /></marker></defs>
+          {drawn.map((e) => <Connector key={`${e.from}>${e.to}`} a={cell(e.from)} b={cell(e.to)} label={e.label} hot={!!cur && (e.from === cur.id || e.to === cur.id)} />)}
           {m.objects.map((o) => {
-            const p = pos(o.id);
+            const p = rect(cell(o.id));
             const on = cur?.id === o.id;
             return (
               <g key={o.id} className={on ? "km-box on" : "km-box"} role="button" tabIndex={0} aria-pressed={on} aria-label={`${o.label}: ${o.about}`}
@@ -100,19 +118,19 @@ function Picture({ m, sel, onSel }: { m: Logical; sel: string | null; onSel: (id
                 <rect x={p.x} y={p.y} width={W} height={H} rx="10" />
                 <text x={p.x + 12} y={p.y + 24} className="km-name">{o.label}</text>
                 {o.count != null && <text x={p.x + W - 12} y={p.y + 24} textAnchor="end" className="km-count">{o.count.toLocaleString("en-GB")}</text>}
-                {wrap(o.about, 30).map((l, i) => <text key={i} x={p.x + 12} y={p.y + 44 + i * 14} className="km-about">{l}</text>)}
+                {wrap(o.about, 32).map((l, i) => <text key={i} x={p.x + 12} y={p.y + 46 + i * 15} className="km-about">{l}</text>)}
               </g>
             );
           })}
         </svg>
-        <p className="kd-intro">Every record keeps its receipt to the file it came from. Office rules govern limits and approvals.</p>
+        <p className="kd-intro">Lines join neighbours only; a box{"’"}s other relations are listed beside the picture when you click it. Every record keeps its receipt to the file it came from. Office rules govern limits and approvals.</p>
       </div>
-      {cur && <ObjectPanel o={cur} />}
+      {cur && <ObjectPanel o={cur} also={also} />}
     </div>
   );
 }
 
-function ObjectPanel({ o }: { o: LogicalObject }) {
+function ObjectPanel({ o, also }: { o: LogicalObject; also: string[] }) {
   return (
     <aside className="ks-detail" aria-label="Detail">
       <p className="ks-kicker">Selected {"·"} Business object</p>
@@ -121,6 +139,7 @@ function ObjectPanel({ o }: { o: LogicalObject }) {
       <p className="ks-line"><b>Rows today:</b> {o.count != null ? o.count.toLocaleString("en-GB") : "not counted"}</p>
       <p className="ks-line"><b>Kept as:</b> {o.table}</p>
       {o.relations.length > 0 && <p className="ks-line"><b>Connects to:</b> {o.relations.map((r) => `${r.label} ${r.to_label.toLowerCase()}`).join("; ")}</p>}
+      {also.length > 0 && <p className="ks-line"><b>Also connects to:</b> {also.join("; ")}</p>}
       <p className="ks-line"><b>Properties:</b></p>
       <ul className="ks-props">{o.properties.map((p) => <li key={p.label}>{p.label}{p.derived ? <span className="v3-mute"> {"·"} worked out: {p.derived}</span> : null}</li>)}</ul>
       <p className="ks-line"><b>KPIs that read it:</b>{o.kpis.length === 0 ? " none yet" : ""}</p>

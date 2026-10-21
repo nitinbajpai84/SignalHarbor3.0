@@ -82,3 +82,22 @@ def test_tool_figures_style_fact_ids_dont_matter():
 ])
 def test_r2_r3_r4(text, missing):
     assert check_numbers(text, F).missing == missing
+
+
+def test_kp2_drafted_brief_lines_are_left_whole_for_the_caller_to_check():
+    """KP-2: North's drafted brief lines (sow_patch, process_steps) were blanked mid-sentence: "Retain the feasibility-check result for not
+    available yet years", "ready by not available yet:not available yet". The caller (i6_chat.ungrounded) keeps or leaves out each line whole."""
+    import json
+    from sh_platform.agents.guard import unblank
+    reply = json.dumps({"reply": "I drafted 37 lines.", "sow_patch": {"governance": [{"rule": "Retain the feasibility-check result for 7 years"}],
+                        "process": {"steps": [{"control": "Note must be ready by 08:00"}]}}, "process_steps": [{"name": "Hold", "does": "Hold calls over 500,000"}]})
+    g = check_numbers(reply, [], "")
+    got = json.loads(g.text)
+    assert got["sow_patch"]["governance"][0]["rule"] == "Retain the feasibility-check result for 7 years"
+    assert got["sow_patch"]["process"]["steps"][0]["control"] == "Note must be ready by 08:00" and got["process_steps"][0]["does"] == "Hold calls over 500,000"
+    assert got["reply"] == "I drafted not available yet lines." and g.replaced == 1  # the reply the person reads is still checked
+    cut = reply[:reply.index("7 years") + 8]  # a reply cut short inside the draft has no whole draft: no exemption
+    assert "not available yet" in check_numbers(cut, [], "").text.split('"sow_patch"')[1]
+    assert unblank("Retain the feasibility-check result for not available yet years") == "Retain the feasibility-check result"
+    assert unblank("Note must be ready by not available yet:not available yet") == "Note must be ready"
+    assert unblank("Keep 7 years") == "Keep 7 years"

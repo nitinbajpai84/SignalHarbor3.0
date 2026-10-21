@@ -12,6 +12,7 @@ from functools import lru_cache
 
 import yaml
 
+from sh_platform.agents.guard import unblank
 from sh_platform.v1 import v3_figstore as FS
 from sh_platform.v1 import v3_harbor as H
 from sh_platform.v1 import v3_recipes as R
@@ -171,6 +172,40 @@ def _kinds(names) -> str:
     return ", ".join(sorted({n.rsplit(".", 1)[-1].lower() for n in names if "." in n}))
 
 
+# a pack reader's kind of file (v3_pack_readers.KINDS and kind_of) -> the plain name its group of bronze files goes by; a kind not here is its own
+# words ("deal_pipeline" -> "Deal pipeline")
+PLAIN_KIND = {
+    "bank_statements": "Bank statements", "iso_camt053": "Bank statements", "mt940": "Bank statements", "bai2": "Bank statements",
+    "custodian_positions": "Custodian positions", "swift_mt535": "Custodian positions", "custody_statements": "Custodian positions",
+    "custodian_transactions": "Custodian transactions", "swift_mt536": "Custodian transactions",
+    "notices": "Capital call notices", "fx_rates": "FX fixings", "index_levels": "Market data", "market_data": "Market data",
+    "sops": "Procedures", "manager_statements": "Manager statements", "trading_export": "Trading desk exports",
+    "administrator_cash": "Administrator files", "administrator_nav": "Administrator files", "administrator_trades": "Administrator files",
+    "commitments": "Commitments register", "fx_confirmations": "FX confirmations", "invoices": "Invoices", "property_bills": "Property bills",
+    "reference": "Office standing data", "investment_reports": "Investment reports", "payroll": "Payroll", "payroll_drafts": "Payroll",
+    "approvals": "Payment approvals", "close_checklist": "Month-end checklists", "loan_statements": "Loan statements",
+    "family_allowances": "Family allowances", "ddq": "Due diligence questionnaires", "vendor_contracts": "Vendor contracts",
+    "insurance": "Insurance", "insurance_schedule": "Insurance", "inbox": "Unsorted inbox files", "glossary": "Office words",
+}
+
+
+def kind_label(plane, name: str) -> str:
+    """The plain name of the kind of a received file: the kind a pack reader knows it as, else an email or a note."""
+    from sh_platform.v1 import v3_pack_readers as PK
+    k = PK.recognise(plane, name) if plane.path("dropbox", name).is_file() else None
+    if k:
+        return PLAIN_KIND.get(k[0]) or k[0].replace("_", " ").capitalize()
+    return "Emails" if name.lower().endswith((".eml", ".msg")) else "Notes and other documents"
+
+
+def _bronze_groups(plane, files) -> dict[str, list]:
+    """plain kind name -> its files, the biggest group first."""
+    out: dict[str, list] = {}
+    for fl in files:
+        out.setdefault(kind_label(plane, fl["name"]), []).append(fl)
+    return dict(sorted(out.items(), key=lambda kv: (-len(kv[1]), kv[0].lower())))
+
+
 def _thread_story(plane, th, ctx) -> dict:
     """One thread's story with every item; `ctx` carries the shared reads (figure records, counts, rules, signals, files, people)."""
     tid, rec, sow = th["id"], th.get("record") or {}, ctx["sows"].get(th.get("iid") or "") or {}
@@ -212,12 +247,13 @@ def _thread_story(plane, th, ctx) -> dict:
         items["decisions"].append(_item("rule", ru["code"], plain(ru["code"]).capitalize(), f"Rule · version {ru['version']} · {ru['signer']}",
                                         detail=[("What it says", ru["text"]), ("Version", str(ru["version"])), ("Signed by", ru["signer"]), ("Signed on", ru["at"]), ("Read by", ", ".join(sorted(set(users))))]))
     for text in th.get("rules") or []:
+        text = unblank(text)  # a line an older number guard blanked mid-sentence is said without the number
         items["decisions"].append(_item("brule", _slug(text), str(text)[:90], f"Rule in the brief · {signer}", detail=[("What it says", str(text)), ("Stated in", "the signed brief"), ("Signed by", signer)]))
     # assumptions: "What I assumed" of the figure versions this use case uses, the ones a person or Harbor gave first
     said = {}
     for f in figs:
         for a in f["ver"].get("assumptions") or []:
-            t = str(a.get("text") or "").strip()
+            t = unblank(str(a.get("text") or "").strip())
             if t:
                 said.setdefault(t, {"source": a.get("source") or "", "figs": []})["figs"].append(f["name"])
     for t, a in sorted(said.items(), key=lambda kv: (kv[1]["source"] in WHY, kv[0])):
@@ -256,18 +292,16 @@ def _thread_story(plane, th, ctx) -> dict:
         items["silver"].append(_item("silver", t, plain(t), f"{n:,} rows" if n is not None else "",
                                      detail=[("Rows", f"{n:,}" if n is not None else "not counted"), ("Read by", ", ".join(sorted(set(silver_seen[t])))),
                                              ("What it is", "one table of the office's clean model, shared by every use case")]))
-    # bronze: files recognised for this use case by the source they were read as, the brief's sources, documents and reference files
-    by_src: dict[str, list] = {}
-    for fl in ctx["files"]:
-        if fl.get("thread") == tid and fl.get("status") in ("recognised", "loaded"):
-            by_src.setdefault(fl.get("source") or "Files", []).append(fl)
-    sources = {str(s.get("name")): s for s in sow.get("sources") or [] if isinstance(s, dict) and s.get("name")} | {s: {} for s in th.get("sources") or []}
-    for name in sorted(set(by_src) | set(sources), key=str.lower):
-        fs = by_src.get(name, [])
+    # bronze: the files read for this use case grouped by their kind in plain words; a source the brief names that no file has arrived for yet
+    mine = [fl for fl in ctx["files"] if fl.get("thread") == tid and fl.get("status") in ("recognised", "loaded")]
+    for label, fs in _bronze_groups(plane, mine).items():
         kinds = _kinds(f["name"] for f in fs)
-        held = (sources.get(name) or {}).get("holds")
-        items["bronze"].append(_item("bronze", _slug(name), name, (f"{len(fs)} files" + (f" · {kinds}" if kinds else "")) if fs else "named in the brief",
-                                     detail=[("Files read", str(len(fs))), ("File types", kinds), ("Holds", str(held or "")), ("Newest", max((_day(f.get("arrived_at")) for f in fs), default=""))]))
+        items["bronze"].append(_item("bronze", _slug(label), label, f"{len(fs)} file{'s' if len(fs) != 1 else ''}" + (f" · {kinds}" if kinds else ""),
+                                     detail=[("Files read", str(len(fs))), ("File types", kinds), ("Newest", max((_day(f.get("arrived_at")) for f in fs), default=""))]))
+    claimed = {str(fl.get("source") or "") for fl in mine}
+    sources = {str(s.get("name")): s for s in sow.get("sources") or [] if isinstance(s, dict) and s.get("name")} | {s: {} for s in th.get("sources") or []}
+    for name in sorted(set(sources) - claimed, key=str.lower):
+        items["bronze"].append(_item("bronze", _slug(name), name, "named in the brief, no file yet", detail=[("Holds", str((sources.get(name) or {}).get("holds") or "")), ("Files read", "0")]))
     for key, label, names in (("documents", "Documents read", list((th.get("docs") or {}).keys())), ("reference", "Reference files", list((th.get("pack") or {}).keys()))):
         if names:
             items["bronze"].append(_item("bronze", f"{tid}-{key}", label, f"{len(names)} · {_kinds(names)}", detail=[("Files", str(len(names))), ("File types", _kinds(names))]))
@@ -445,11 +479,8 @@ def physical(plane, accounts, kpi: str | None = None) -> dict:
             gold.setdefault(g["id"].split(":", 1)[1], {"id": g["id"], "label": g["label"], "rows": counts.get(g["id"].split(":", 1)[1]), "usecase": s["title"]})
     silver = [{"id": f"silver:{t}", "label": plain(t), "rows": n} for t, n in counts.items() if not t.startswith(("gold_", "bronze_"))]
     silver.sort(key=lambda r: (-(r["rows"] or 0), r["label"]))
-    src: dict[str, list] = {}
-    for fl in b["ctx"]["files"]:
-        if fl.get("status") in ("recognised", "loaded"):
-            src.setdefault(fl.get("source") or "Files", []).append(fl["name"])
-    bronze = [{"id": f"bronze:{_slug(n)}", "label": n, "rows": len(v), "kinds": _kinds(v)} for n, v in sorted(src.items(), key=lambda kv: (-len(kv[1]), kv[0].lower()))]
+    got = _bronze_groups(plane, [fl for fl in b["ctx"]["files"] if fl.get("status") in ("recognised", "loaded")])
+    bronze = [{"id": f"bronze:{_slug(n)}", "label": n, "rows": len(v), "kinds": _kinds(f["name"] for f in v)} for n, v in got.items()]
     kpis: dict[str, dict] = {}
     for s in b["stories"]:
         by_id = {k["id"]: k for k in s["kpis"]}

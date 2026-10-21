@@ -244,3 +244,58 @@ def test_every_route_is_declared_in_the_permissions_file():
     from sh_platform.v1 import v3_knowledge_story_routes as R
     declared = set(yaml.safe_load((ROOT / "sh_platform" / "v1" / "v3_knowledge_story.permissions.yaml").read_text(encoding="utf-8"))["routes"])
     assert {f"GET {r.path}" for r in R.router.routes} == declared
+
+
+# ---- review fixes: short titles, unblanked brief lines, bronze by kind ------------------------------------------------------------------
+
+def test_a_use_case_is_titled_by_what_was_asked_not_the_first_words_typed(env):
+    c, plane, _ = env
+    seed(plane)
+    said = ("Daniel's team just handed me the Cedarpoint call 7 notice. Before I record it, tell me whether it fits what we committed to "
+            "Cedarpoint Ventures III, what is left after it, and whether the fee part is what the fund terms say.")
+    H.save(plane, {**thread("t-d", "Daniel's team just handed me", "live", {}, "Helen Foo"), "brief": {"question": said},
+                   "events": [{"at": "2026-10-21T08:00:00Z", "kind": "person", "text": said, "by": "You"}]})
+    asked = "A Cedarpoint call is due on the 23rd. I want to know in one answer whether Holdings can pay it from its own cash after the 250,000 buffer."
+    H.save(plane, {**thread("t-e", "Call payment feasibility", "live", {"Call payment feasibility": False}, "Helen Foo"), "brief": {"question": asked},
+                   "events": [{"at": "2026-10-21T08:00:00Z", "kind": "person", "text": asked, "by": "You"}]})  # a figure's name is no title
+    S._KEPT.clear()
+    titles = {i["id"]: i["title"] for g in get(c, "/usecases")["groups"] for i in g["items"]}
+    assert titles["t-d"] == "Check the Cedarpoint call 7 notice" and titles["t-e"] == "Can Holdings pay the Cedarpoint call"
+    assert titles[B] == "Log a call notice"  # North's own short title stays
+    assert get(c, "/usecase/t-d")["title"] == "Check the Cedarpoint call 7 notice"
+    assert next(t for t in c.get("/api/v3/threads").json()["threads"] if t["id"] == "t-d")["title"] == "Check the Cedarpoint call 7 notice"  # the Desk too
+    for typed, want in (("Every morning I check cash for each entity: administrator against the bank. Anything over 5,000 is a break.", "Check cash for each entity every morning"),
+                        ("I want to test the liquid book against our signed limits every month: no single name over 5 percent.", "Test the liquid book against our signed limits"),
+                        ("Each morning I would like a short note: what we are worth.", "A short note each morning"),
+                        ("The administrator renamed a column. Show me which column changed, what it was called before.", "Which column changed")):
+        got = H.ask_title(typed)
+        assert got == want and len(got) <= H.TITLE_MAX, (typed, got)
+
+
+def test_a_brief_line_an_older_guard_blanked_is_said_without_the_number(env):
+    c, plane, _ = env
+    seed(plane)
+    H.save(plane, thread("t-f", "Keep the feasibility check", "live", {}, "Helen Foo", rules=["Retain the feasibility‑check result for not available yet years"]))
+    S._KEPT.clear()
+    lines = [i["label"] for i in get(c, "/usecase/t-f")["decisions"] if i["kind"] == "brule"]
+    assert lines == ["Retain the feasibility‑check result"]
+    assert "not available yet" not in json.dumps(get(c, "/decisions"))
+
+
+def test_bronze_is_grouped_by_the_kind_of_file_in_plain_words(env):
+    c, plane, _ = env
+    seed(plane)
+    files = {"fx_usdsgd_20260901.csv": b"date,pair,fixing\n2026-09-01,USDSGD,1.29\n", "fx_usdsgd_20260902.csv": b"date,pair,fixing\n2026-09-02,USDSGD,1.30\n",
+             "2026-09-01_call_D_5.eml": b"Subject: Capital call 5\n\nPlease pay.\n", "mt EG-LIQUID.txt": b"nothing a reader knows\n"}
+    for name, data in files.items():
+        H.drop(plane, name, data)
+    plane.path("v3", "files.json").write_text(json.dumps([{"name": n, "arrived_at": "2026-10-21T08:00:00Z", "status": "loaded", "source": n.split("_")[0], "thread": A}
+                                                          for n in files]), encoding="utf-8")
+    S._KEPT.clear()
+    bronze = {b["label"]: b["sub"] for b in get(c, f"/usecase/{A}")["bronze"]}
+    assert bronze["FX fixings"] == "2 files · csv" and bronze["Emails"] == "1 file · eml" and "Notes and other documents" in bronze
+    assert bronze["Bank statements"] == "named in the brief, no file yet" and not any("EG-LIQUID" in b or "fx " in b for b in bronze)
+    p = get(c, "/model/physical")
+    assert [(b["label"], b["rows"]) for b in p["bronze"]["items"]][0] == ("FX fixings", 2) and p["bronze"]["total"] == 4
+    one = get(c, "/model/physical?kpi=fig-cash-after-calls-due")  # the path still lights the kinds this use case read
+    assert {"bronze:fx-fixings", "bronze:emails"} <= set(one["path"]["bronze"]) and {"bronze:fx-fixings", "bronze:emails"} <= {b["id"] for b in one["bronze"]["items"]}

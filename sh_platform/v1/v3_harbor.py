@@ -83,11 +83,83 @@ def _read(p) -> dict:
     # a save replaces the file whole, but Windows can refuse a read during the swap: try again briefly
     for i in range(5):
         try:
-            return json.loads(p.read_text(encoding="utf-8"))
+            th = json.loads(p.read_text(encoding="utf-8"))
+            if isinstance(th, dict) and "title" in th:
+                th["title"] = title_of(th)  # every reader (Desk, Build, Knowledge) gets the short title; older threads too
+            return th
         except (json.JSONDecodeError, PermissionError):
             if i == 4:
                 raise
             time.sleep(0.05 * (i + 1))
+
+
+_WHEN = re.compile(r"^((?:every|each) (?:morning|day|week|month|quarter|year|monday|tuesday|wednesday|thursday|friday)|(?:before|after|when|once) [^,]+),?\s+", re.I)
+_ASK = re.compile(r"^(?:(?:i|we) (?:want|need|would like|'d like)(?: to)?(?: (?:know|see|have|get))?(?: in one answer)?\s+|"
+                  r"(?:please )?(?:tell|show|give) me(?: in one answer)?\s+|(?:i|we) (?=(?:check|prepare|review|track|test|compare|read)\b))", re.I)
+_DO = re.compile(r"^(?:check|test|compare|list|prepare|review|track|read|write)\b", re.I)
+_CUT = re.compile(r"\s*(?:[:;,(]|\s(?:so that|so i|so we|because|until|and hold|and send|then|after the)\s)", re.I)
+_WH = re.compile(r"^(?:whether|if|which|what|how much|how many|when|where)\b", re.I)
+_PRON = re.compile(r"\b(?:it|they|them|this)\b", re.I)
+_THING = re.compile(r"\b(?:the|a|an) ((?:[\w'-]+ ){0,4}(?:notice|call|file|statement|report|book|run|letter|email|pack|account))\b", re.I)
+_TAIL = {"the", "a", "an", "of", "our", "to", "and", "in", "for", "how", "did", "against", "with", "by", "on", "from", "its", "own", "we", "i", "what", "is",
+         "it", "at", "every", "each"}
+TITLE_MAX = 52
+
+
+def _clip(t: str, n: int = TITLE_MAX) -> str:
+    """At most n characters, cut on a word, never ending on a small word ("for the"); first letter capital."""
+    words = t.split()
+    while words and len(" ".join(words)) > n:
+        words.pop()
+    while len(words) > 2 and words[-1].lower().strip(",.") in _TAIL:
+        words.pop()
+    t = " ".join(words).rstrip(" ,.;:")
+    return t[:1].upper() + t[1:]
+
+
+def ask_title(*texts: str) -> str:
+    """A short title from what was asked: the sentence that asks ("I want to test the liquid book against our signed limits every month" ->
+    "Test the liquid book against our signed limits"); "tell me whether it fits" checks the thing named before it; else the first sentence, cleaned."""
+    said = [s.strip().rstrip(".!? ") for x in texts for s in re.split(r"(?<=[.!?])\s+", " ".join(str(x or "").split())) if s.strip()]
+    thing = ""
+    for s in said:
+        when, t = "", s
+        while (m := _WHEN.match(t)):
+            when, t = (m.group(1) if m.group(1).lower().startswith(("every", "each")) else when), t[m.end():]
+        m = _ASK.match(t)
+        if m or _DO.match(t):
+            t = t[m.end():] if m else t
+            if _WH.match(t):  # "show me which column changed" stays a question; "tell me whether it fits" checks the thing named before
+                if _PRON.search(_CUT.split(t, 1)[0]):
+                    if not thing:
+                        continue
+                    c = re.match(r"^(?:whether|if) ([A-Z][\w' ]*?) (can|could|will) (.*)$", t)
+                    t = f"{c.group(2)} {c.group(1)} {_PRON.sub('the ' + thing, c.group(3), 1)}" if c else "check the " + thing
+                else:
+                    t = re.sub(r"^(?:whether|if) ", "", t, flags=re.I)
+            t = _CUT.split(t, 1)[0]
+            if len(t.split()) >= 2:
+                if when and len(t) + len(when) < TITLE_MAX:
+                    t = f"{t} {when[:1].lower()}{when[1:]}"
+                return _clip(t)
+        if not thing and (g := _THING.search(s)):
+            thing = g.group(1)
+    return _clip(_CUT.split(_WHEN.sub("", said[0]), 1)[0]) if said else ""
+
+
+def title_of(th: dict) -> str:
+    """The use case's short title. North's drafted title when it gave one (short, not just a figure's name); else one made from the brief's
+    question and the first message, since a title that is only the first words typed ("Daniel's team just handed me") names nothing."""
+    t = " ".join(str(th.get("title") or "").split())
+    first = next((str(e.get("text") or "") for e in th.get("events") or [] if isinstance(e, dict) and e.get("kind") == "person"), "")
+    q = str((th.get("brief") or {}).get("question") or ((th.get("decision") or {}).get("brief") or {}).get("question") or "")
+    said = [s.casefold() for s in re.split(r"(?<=[.!?])\s+", " ".join(f"{q} {first}".split()))]
+    said += [re.sub(r"^(?:i|we)(?: would|'d)? (?:want|need|like)\s+", "", s) for s in said]  # "I want to write ..." was titled "To write ..."
+    typed = not t or any(s.startswith(t.casefold()) for s in said) or t.casefold() in {str(k).casefold() for k in th.get("figs") or {}}
+    whole = t.endswith("?") and len(t) <= TITLE_MAX or t.rstrip(".!? ").casefold() == first.strip().rstrip(".!? ").casefold() and len(t) <= TITLE_MAX
+    if not whole and (typed or len(t) > TITLE_MAX + 4):  # a short question or a short whole message is its own title
+        return ask_title(q, first) or t[:TITLE_MAX]
+    return t
 
 
 def save(plane, th: dict) -> None:
@@ -945,7 +1017,7 @@ def _north(x, text, first=False):
     sow = _R.bind_brief(x, sow)  # each figure bound to a recipe by what it means, shown as "Built from" for the person to change
     th["sources"] = [s.get("name", "") for s in sow.get("sources") or []]
     th["rules"] = [str(g.get("rule") or g.get("text") or g.get("name") or g) if isinstance(g, dict) else str(g) for g in sow.get("governance") or []]
-    th["title"] = str(sow.get("title") or th["title"])[:80]  # the drafted title, not the first sentence typed
+    th["title"] = title_of({**th, "title": str(sow.get("title") or th["title"])[:80]})  # the drafted title, not the first sentence typed
     b = brief(sow)
     if before:  # mark what this reply changed, so the person sees it at a glance
         for g in b["doc"]:

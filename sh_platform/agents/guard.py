@@ -33,7 +33,11 @@ Rules (documented limits):
   "1 row returned"); when the answer's figure is followed by a word too, one of the next three words on either side must be the same
   (singular or plural), else the figure is replaced ("4 entities" when the tool said "4 tables"). A labelled fact or a tool figure with no
   word after it matches any word.
+- KP-2: a JSON reply's "sow_patch" and "process_steps" are North's drafted brief lines, and the caller checks each line whole (i6_chat.ungrounded
+  leaves out a line holding a figure that neither the person, the files, the context nor a tool stated). The guard leaves them alone: before
+  this it blanked a number inside the sentence ("Retain the result for not available yet years", "ready by not available yet:not available yet").
 """
+import json
 import re
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
@@ -57,6 +61,28 @@ _ID_SKIP = (r"|(?<![\w-])[a-z]+(?:-[a-z]+)*-(?=[0-9a-f]*\d)[0-9a-f]{6,}(?:-[0-9a
 # r7: in a JSON reply's "sql", 0 and 1 (coalesce(x, 0), nullif(n, 0), limit 1) and a digit glued to a name (an alias ps2) are code, not figures; any
 # other number in the SQL is still checked, so a threshold the intent does not state is still blanked (and the plan check refuses that SQL)
 _SQL_VALUE = re.compile(r'"sql"\s*:\s*"((?:[^"\\]|\\.)*)"')
+_DRAFT_KEY = re.compile(r'"(?:sow_patch|process_steps)"\s*:\s*')
+
+
+def _draft_spans(text: str) -> list[tuple[int, int]]:
+    """KP-2: where a JSON reply's drafted brief lines are; a reply cut short (no whole value) gets no exemption."""
+    out = []
+    for m in _DRAFT_KEY.finditer(text):
+        try:
+            out.append((m.end(), json.JSONDecoder().raw_decode(text, m.end())[1]))
+        except ValueError:
+            continue
+    return out
+
+
+_BLANKED = re.compile(r"(?:\s+(?:for|by|of|in|at|to|over|under|within|after|before|every|about|around))?\s+" + re.escape(NOT_AVAILABLE)
+                      + r"(?:\s*[:.,]\s*" + re.escape(NOT_AVAILABLE) + r")*(?:\s+(?!and\b|or\b)[a-z]+)?", re.I)
+
+
+def unblank(text) -> str:
+    """A line an older guard blanked mid-sentence, said without the number ("Retain the result for not available yet years" -> "Retain the result")."""
+    t = str(text or "")
+    return re.sub(r"\s{2,}", " ", _BLANKED.sub("", t)).strip() if NOT_AVAILABLE in t else t
 _TOKEN = re.compile(
     r"(?P<skip>\b\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?(?!\d)"
     r"|\b\d{1,2}[/.]\d{1,2}[/.]\d{2,4}\b"
@@ -197,10 +223,14 @@ def check_numbers(answer_text: str, facts: list[dict], question: str = "", words
     result = GuardResult(answer_text)
     listed = len(_LIST_LINE.findall(answer_text))
     sql_spans = [m.span(1) for m in _SQL_VALUE.finditer(answer_text)]  # a count of the items the reply lists itself ("four tables:" and four lines) is not an outside figure
+    drafts = _draft_spans(answer_text) if "_patch" in answer_text or "process_steps" in answer_text else []
+
+    def drafted(m: re.Match) -> bool:
+        return any(a <= m.start() < b for a, b in drafts)
 
     def fix(m: re.Match) -> str:
         tok = m.group("num")
-        if tok is None:
+        if tok is None or drafted(m):
             return m.group()
         text = m.string
         line_start = text.rfind("\n", 0, m.start()) + 1
@@ -226,7 +256,7 @@ def check_numbers(answer_text: str, facts: list[dict], question: str = "", words
         n = 1 if word.lower() == "a single" else _NUMBER_WORDS[word.lower()]
         before = m.string[max(0, m.start() - 6):m.start()]
         tooled = bool(words) and (_stem(noun) in {_stem(w) for w in words})
-        if noun in _IDIOM or _NOT_COUNT.search(before) or not tooled:
+        if noun in _IDIOM or _NOT_COUNT.search(before) or not tooled or drafted(m):
             return m.group()
         v = Decimal(n)
         if v in asked or (listed and v == listed) or (v in sources and _fits(m.group(2), sources[v])):
@@ -237,5 +267,8 @@ def check_numbers(answer_text: str, facts: list[dict], question: str = "", words
         result.kinds.append({"kind": "number_in_words", "counts": _stem(noun)[:24]})
         return NOT_AVAILABLE + m.group()[len(word):]
 
-    result.text = _WORD_NUM.sub(fix_word, _TOKEN.sub(fix, answer_text))
+    text = _TOKEN.sub(fix, answer_text)
+    if drafts:  # the first pass changed lengths before the drafts (the "reply" comes first): find them again
+        drafts[:] = _draft_spans(text)
+    result.text = _WORD_NUM.sub(fix_word, text)
     return result

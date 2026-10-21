@@ -314,7 +314,8 @@ def claim_files(x) -> int:
     are claimed by this thread when their name shares a word with its question or its sources. Returns how many."""
     from sh_platform.v1 import v3_harbor as H
     th = x.th
-    words = H._toks(" ".join([th.get("title") or "", (th.get("brief") or {}).get("question") or ""] + list(th.get("sources") or [])))
+    asked = next((str(e.get("text") or "") for e in th.get("events") or [] if e.get("kind") == "person"), "")  # the title is short now; what was asked is whole
+    words = H._toks(" ".join([th.get("title") or "", asked, (th.get("brief") or {}).get("question") or ""] + list(th.get("sources") or [])))
     n = 0
     with S.record(x.plane, th["id"], "data.recognise-file") as rec, H.LOCK:
         fs = H.read_files(x.plane)
