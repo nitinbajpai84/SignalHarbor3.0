@@ -1,0 +1,15 @@
+# Harbor 3.0 public API. The /api/public/v1 routes are public to the session check on purpose: each carries its own API key (Authorization: Bearer shpub...)
+# and refuses without one (401), by scope (403) and by rate (429). Making and revoking keys is for an office admin only.
+routes:
+  GET /api/public/v1/figures: {public: true}
+  GET /api/public/v1/figures/{figure_id}: {public: true}
+  POST /api/public/v1/ask: {public: true}
+  GET /api/public/v1/signals: {public: true}
+  GET /api/public/v1/documents: {public: true}
+  GET /api/public/v1/openapi.json: {public: true}
+  GET /api/v3/api-keys: {roles: [company_admin]}
+  POST /api/v3/api-keys: {roles: [company_admin]}
+  DELETE /api/v3/api-keys/{key_id}: {roles: [company_admin]}
+  GET /api/v3/api-keys/{key_id}/calls: {roles: [company_admin]}
+  POST /api/v3/api-keys/{key_id}/webhook: {roles: [company_admin]}
+  DELETE /api/v3/api-keys/{key_id}/webhook: {roles: [company_admin]}

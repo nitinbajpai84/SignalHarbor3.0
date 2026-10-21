@@ -23,6 +23,7 @@ import BuildPage from "./build/BuildPage";
 import Connections from "./build/Connections";
 import Onboarding from "./build/Onboarding";
 import AuditPage from "./build/AuditPage";
+import ApiKeys from "./build/ApiKeys";
 import ConsumePage from "./consume/ConsumePage";
 import KnowledgePage from "./knowledge/KnowledgePage";
 import SkillsPage from "./knowledge/SkillsPage";
@@ -59,6 +60,7 @@ export default function V3Routes() {
       <Route path="build" element={<BuildPage />} />
       <Route path="build/connections" element={<Connections />} />
       <Route path="build/onboarding" element={<Onboarding />} />
+      <Route path="build/api-keys" element={<ApiKeys />} />
       <Route path="build/:id" element={<BuildPage />} />
       <Route path="consume" element={<ConsumePage />} />
       <Route path="knowledge" element={<KnowledgePage />} />
