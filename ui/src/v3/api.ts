@@ -147,6 +147,8 @@ export const decideCorrection = (id: string, answer: "admit" | "reject") =>
 export const getPeople = () => apiGet<People>("/api/v3/people");
 export const setAutonomy = (thread: string, level: Level) => apiSend<People>("POST", "/api/v3/people/autonomy", { thread, level });
 export const getRuns = () => apiGet<{ runs: Run[] }>("/api/v3/runs");
+export interface AccuracyRound { round: string; total: number; right: number; right_pct: number; slipped: number; corrected: number }
+export const getAccuracy = () => apiGet<{ rounds: AccuracyRound[] }>("/api/v3/accuracy");
 export const getConnections = () => apiGet<{ connections: Connection[] }>("/api/v3/connections");
 export const getSetup = () => apiGet<Setup>("/api/v3/setup");
 export const setSetup = (pack: string) => apiSend<Setup>("POST", "/api/v3/setup", { pack });

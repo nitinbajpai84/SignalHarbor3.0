@@ -87,3 +87,11 @@ test("people: a job select posts the job for that person", async () => {
   await userEvent.selectOptions(await screen.findByLabelText("Job for Anita"), "cfo");
   await waitFor(() => expect(f.mock.calls.some((c) => String(c[0]).endsWith("/people/job") && String(c[1]?.body).includes('"cfo"'))).toBe(true));
 });
+
+test("proof: draws the accuracy chart from the rounds", async () => {
+  const rounds = [{ round: "r1", total: 50, right: 8, right_pct: 16, slipped: 34, corrected: 0 }, { round: "r2", total: 50, right: 14, right_pct: 28, slipped: 29, corrected: 2 }];
+  vi.stubGlobal("fetch", vi.fn(async (u: string) => json(String(u).endsWith("/accuracy") ? { rounds } : { runs: [{ run_id: "RUN-1", thread: "t1", kind: "live", started: "2026-10-09T06:11:00", files: 1, checks_passed: 1, checks_total: 1, result: "Ready", signed_by: "Anita" }] })));
+  at(<ProofPage />);
+  expect(await screen.findByText("Answers right, by round")).toBeInTheDocument();
+  expect(screen.getByText("Wrong answers that slipped through")).toBeInTheDocument();
+});

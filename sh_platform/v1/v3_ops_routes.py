@@ -42,6 +42,12 @@ def get_runs(request: Request):
     return O.runs(_plane(request))
 
 
+@router.get("/api/v3/accuracy")
+def get_accuracy(request: Request):
+    from sh_platform.v1 import v3_accuracy
+    return {"rounds": v3_accuracy.rounds(_plane(request))}
+
+
 @router.get("/api/v3/connections")
 async def get_connections(request: Request):
     return await run_in_threadpool(O.connections, _plane(request))

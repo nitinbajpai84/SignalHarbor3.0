@@ -67,13 +67,19 @@ def _busy(e: Exception) -> bool:
     return "being used by another process" in m or "process cannot access" in m or "Could not set lock" in m
 
 
+def _utc(con):
+    """Every warehouse session runs in UTC, so cast(max(received_at) as date) never lands a day late on a UTC+7 machine."""
+    con.execute("set TimeZone = 'UTC'")
+    return con
+
+
 def _open(key: str) -> duckdb.DuckDBPyConnection:
     """duckdb.connect, a busy file tried again briefly; still busy, a plain Busy naming who holds it."""
     from sh_platform import mode
     tries = _PROD_TRIES if mode.production() else _TRIES
     for attempt in range(tries):
         try:
-            return duckdb.connect(key)
+            return _utc(duckdb.connect(key))
         except duckdb.Error as e:
             if not _busy(e):
                 raise
@@ -174,8 +180,8 @@ def connect(plane, read_only: bool = False) -> duckdb.DuckDBPyConnection:
             from sh_platform import mode
             if mode.production():
                 _USERS[key] = _USERS.get(key, 0) + 1
-                return _Lease(key, _SHARED[key].cursor())
-            return _SHARED[key].cursor()
+                return _Lease(key, _utc(_SHARED[key].cursor()))
+            return _utc(_SHARED[key].cursor())
     return _open(key)
 
 
