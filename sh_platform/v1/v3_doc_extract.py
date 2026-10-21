@@ -161,7 +161,7 @@ def dates(s: str) -> list[tuple[str, date]]:
     for m in DATE.finditer(str(s)):
         for fmt in DATE_FORMATS:
             try:
-                out.append((m.group(1), datetime.strptime(m.group(1).replace("Sept", "Sep"), fmt).date()))
+                out.append((m.group(1), datetime.strptime(re.sub(r"Sept", "Sep", m.group(1)), fmt).date()))
                 break
             except ValueError:
                 continue
@@ -216,7 +216,7 @@ def take(vtype: str, rest: str) -> str | None:
     if vtype == "currency":
         m = CCY.search(rest)
         return m.group(0) if m else next((k for k in SYMBOLS if k in rest), None)
-    return rest.strip(" :-–|") or None
+    return rest.strip(" :-–|").rstrip(".,;") or None  # ponytail: a name that ends in "." (Ltd.) loses it in a prose layout; the quote still proves it
 
 
 # ---- 5. proof ----------------------------------------------------------------------------------------------------------------------------
@@ -277,11 +277,13 @@ def judge(schema: dict, fields: dict) -> list[dict]:
 # ---- 2. the layout memory ----------------------------------------------------------------------------------------------------------------
 
 def fingerprint(pages: list[dict]) -> list[str]:
-    """Header words and positions of page 1: each cell with no digit (a label, a heading), with where it sits in a 6 by 16 grid."""
+    """Header words and positions of page 1: each cell with no digit (a label, a heading) as its first four words before any colon (the rest
+    is a value), with where it sits in a 6 by 16 grid."""
     if not pages:
         return []
     p = pages[0]
-    return sorted({f"{squash(c['t'])}@{int(c['x0'] / p['w'] * 6)},{int(c['y0'] / p['h'] * 16)}" for c in p["cells"] if not re.search(r"\d", c["t"])})
+    return sorted({f"{squash(' '.join(c['t'].split(':')[0].split()[:4]))}@{int(c['x0'] / p['w'] * 6)},{int(c['y0'] / p['h'] * 16)}"
+                   for c in p["cells"] if not re.search(r"\d", c["t"].split(":")[0])})
 
 
 def similar(a: list[str], b: list[str]) -> float:
@@ -303,26 +305,32 @@ def known_layout(plane, fp: list[str]) -> tuple[str, dict] | None:
     return (best[1], best[2]) if best and best[0] >= SAME_LAYOUT and len(best[2]["fingerprint"]) >= 2 else None
 
 
-def anchor_for(pages: list[dict], f: dict, got: dict) -> dict | None:
+def anchor_for(pages: list[dict], f: dict, got: dict, values: set) -> dict | None:
     """Where a proven value sits: the label (in its own cell before the value, left of it, or above it) and the cell's place among the same
-    labels. None when no label is found, or a text value shares its cell with words after it (prose): that field needs the model."""
+    labels. A label is a cell with letters and no digit that is not itself one of the document's values (`values`, squashed): that is what
+    tells a header over a row of values from the value to its left. None when no label is found, or a text value shares its cell with words
+    after it (prose): that field needs the model."""
     page = next(p for p in pages if p["n"] == got["page"])
-    cell = next((c for c in page["cells"] if got["raw"] in c["t"]), None)
+    q = squash(got["quote"])
+    tok = re.compile(r"(?<![\w.,])" + re.escape(got["raw"]) + r"(?![\w,]|\.\d)")
+    hits = [c for c in page["cells"] if tok.search(c["t"])]
+    cell = next((c for c in hits if squash(c["t"]) in q), hits[0] if hits else None)  # a "1" is in many cells: the one the quote shows
     if cell is None:
         return None
-    pre, post = cell["t"].split(got["raw"], 1)
+    m = tok.search(cell["t"])
+    pre, post = cell["t"][:m.start()], cell["t"][m.end():]
     if f["type"] == "text" and post.strip(" .,;"):
         return None
-    pre = " ".join(pre.split()[max([i + 1 for i, w in enumerate(pre.split()) if re.search(r"\d", w)] or [0]):])
+    cut = max([i + 1 for i, w in enumerate(pre.split()) if re.search(r"\d", w)] or [0])  # words up to a number belong to another value
+    pre = " ".join(pre.split()[cut:])
     pre = re.sub(r"(\b[A-Z]{3}|[$€£])\s*$", "", pre).strip(" :=-–")
-    q = squash(got["quote"])
     if re.search(r"[A-Za-z]{3}", pre):
-        return {"page": got["page"], "rel": "same", "label": pre, "nth": 0}
+        return {"page": got["page"], "rel": "same", "label": pre, "nth": 0, "start": cut == 0}
     row = next(r for r in page["rows"] if cell in r)
-    left = [c for c in row if c["x0"] < cell["x0"] and re.search(r"[A-Za-z]{3}", c["t"]) and squash(c["t"]) in q]
-    above = sorted((c for c in page["cells"] if c["y1"] <= cell["y0"] and abs(c["x0"] - cell["x0"]) < 25 and re.search(r"[A-Za-z]{3}", c["t"]) and squash(c["t"]) in q),
-                   key=lambda c: -c["y1"])
-    lab, rel = (left[-1], "left") if left else (above[0], "above") if above else (None, "")
+    label = lambda c: bool(re.search(r"[A-Za-z]{3}", c["t"])) and not re.search(r"\d", c["t"]) and squash(c["t"]) not in values  # noqa: E731
+    left = [c for c in row if c["x0"] < cell["x0"] and label(c)]
+    above = sorted((c for c in page["cells"] if c["y1"] <= cell["y0"] and abs(c["x0"] - cell["x0"]) < 25 and label(c)), key=lambda c: -c["y1"])
+    lab, rel = (left[-1], "left") if left and left[-1] is row[row.index(cell) - 1] else (above[0], "above") if above else (None, "")
     if lab is None:
         return None
     return {"page": got["page"], "rel": rel, "label": lab["t"], "nth": sum(squash(c["t"]) == squash(lab["t"]) for c in page["cells"][:page["cells"].index(lab)])}
@@ -342,9 +350,15 @@ def read_anchored(schema_by_type: dict, entry: dict, pages: list[dict]) -> dict 
         if page is None:
             return None
         if a["rel"] == "same":
-            hits = [c for c in page["cells"] if a["label"].casefold() in c["t"].casefold()]
+            where = squash(a["label"])
+            hits = [c for c in page["cells"] if (squash(c["t"]).startswith(where) if a.get("start") else where in squash(c["t"]))]
             lab = hits[a["nth"]] if len(hits) > a["nth"] else None
-            rest = lab["t"][lab["t"].casefold().find(a["label"].casefold()) + len(a["label"]):] if lab else ""
+            i = lab["t"].casefold().find(a["label"].casefold()) if lab else -1
+            if lab and i < 0:  # the cell has the label with other spacing (a scan): the label's words, as they come
+                m = re.search(r"\s*".join(map(re.escape, a["label"].split())), lab["t"], re.I)
+                i = m.start() if m else -1
+                a = {**a, "label": m.group(0)} if m else a
+            rest = lab["t"][i + len(a["label"]):] if lab and i >= 0 else ""
             quote = lab["t"] if lab else ""
         else:
             hits = [c for c in page["cells"] if squash(c["t"]) == squash(a["label"])]
@@ -458,9 +472,11 @@ def read(plane, name: str, data: bytes, folder=None) -> dict | None:
         got, why = prove(f, items[f["name"]] if isinstance(items[f["name"]], dict) else {}, pages)
         if got is None:
             dropped.append({"field": f["name"], "why": why})
-            continue
-        fields[f["name"]] = got
-        a = anchor_for(pages, f, got)
+        else:
+            fields[f["name"]] = got
+    values = {squash(g["raw"]) for g in fields.values()}
+    for f in schema["fields"]:
+        a = anchor_for(pages, f, fields[f["name"]], values) if f["name"] in fields else None
         if a:
             anchors[f["name"]] = a
     flags = judge(schema, fields)
