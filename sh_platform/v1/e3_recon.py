@@ -684,3 +684,74 @@ def last_runs(plane, limit: int = 20) -> list[dict]:
     p = wh.path(plane).parent / "recon_runs.jsonl"
     lines = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
     return [json.loads(x) for x in lines[-limit:]][::-1]
+
+
+# ---- a capital call matched to the payment that settled it (W10, method 3; UC01 step 6) ------------------------------------------------------
+CALL_WINDOW = 5  # business days either side of the due date
+
+
+def _call_no(ref: str | None, no: str | None) -> bool:
+    """The call number in a payment's reference ('CC-CALL-C-7', 'call 7'), as a whole number."""
+    return bool(no and re.search(rf"(?<!\d){re.escape(str(no))}(?!\d)", ref or ""))
+
+
+def match_calls(plane, as_of_date=None) -> dict:
+    """Match each noticed capital call (cash_movements, call, noticed, not yet replaced) to a bank outflow in the same currency by amount (exact, or within the
+    signed cash_tolerance), a date window (due date +- 5 business days) and reference words (the fund's name or the call number in the payment's reference or payee).
+    A match is marked paid the way the loader marks a call the bank shows: a confirmed call row with the bank's receipt, replacing the noticed row (which keeps the
+    notice's receipt); the expected payment of that call is cancelled. One payment is never used twice. A call still unmatched after its due date opens a card.
+    -> {"paid": [{call, payment, notice_receipt, bank_receipt, ...}], "open": [...], "cards": [exception ids]}"""
+    on = _day(as_of_date)
+    tol = (_mod("e3_rules").current(plane, "cash_tolerance", on) or {}).get("parameters") or {}
+    limit = _d(tol.get("abs_amount"))
+    out: dict = {"paid": [], "open": [], "cards": []}
+    with wh.connect(plane) as con:
+        q = lambda sql, *a: (lambda c: [dict(zip([d[0] for d in c.description], r)) for r in c.fetchall()])(con.execute(sql, list(a)))  # noqa: E731
+        calls = q("select m.*, i.canonical_name as fund, (select f.value_text from extracted_fields f join documents d on d.id = f.document_id where d.source_record_id = m.source_record_id "
+                  "and f.field_name = 'call_no' limit 1) as call_no from cash_movements m join instruments i on i.id = m.instrument_id where m.movement_type = 'call' "
+                  "and m.confirmation_status = 'noticed' and not exists (select 1 from cash_movements x where x.supersedes_cash_movement_id = m.id) order by m.due_date, m.id")
+        pays = q("select * from cash_movements m where m.movement_type = 'payment' and m.confirmation_status = 'confirmed' and m.amount < 0 and m.effective_date is not null "
+                 "and not exists (select 1 from cash_movements x where x.source_record_id = m.source_record_id and x.movement_type = 'call' and x.confirmation_status = 'confirmed')")
+        ent = {r[0]: r[1] for r in con.execute("select id, legal_entity_id from portfolios").fetchall()}
+        scored = []
+        for c in calls:
+            words = [w for w in re.findall(r"[a-z]{4,}", c["fund"].lower())]
+            for p in pays:
+                if p["currency"] != c["currency"] or not c["due_date"]:
+                    continue
+                diff = abs(abs(_d(p["amount"])) - abs(_d(c["amount"])))
+                text = f"{p.get('reference') or ''} {p.get('payee_name') or ''}"
+                by_no = _call_no(p.get("reference"), c["call_no"])
+                hit = sum(w in text.lower() for w in words)
+                if diff > limit or ent.get(p["portfolio_id"]) != ent.get(c["portfolio_id"]) or _bdays(c["due_date"], _day(p["effective_date"])) > CALL_WINDOW or not (by_no or hit):
+                    continue
+                scored.append((not by_no, -hit, diff, abs((c["due_date"] - _day(p["effective_date"])).days), str(c["id"]), str(p["id"]), c, p))
+        used_c, used_p = set(), set()
+        for _, _, diff, _, cid, pid, c, p in sorted(scored, key=lambda s: s[:6]):
+            if cid in used_c or pid in used_p:
+                continue
+            used_c.add(cid), used_p.add(pid)
+            cols = [k for k in c if k not in ("id", "fund", "call_no", "supersedes_cash_movement_id")]
+            row = {**{k: c[k] for k in cols}, "id": wh.new_id(), "confirmation_status": "confirmed", "amount": p["amount"], "effective_date": p["effective_date"],
+                   "source_record_id": p["source_record_id"], "supersedes_cash_movement_id": c["id"],
+                   "received_at": p["received_at"], "recorded_at": wh.now()}
+            have = {r[0] for r in con.execute("select column_name from information_schema.columns where table_name = 'cash_movements'").fetchall()}
+            row = {k: v for k, v in row.items() if k in have}
+            con.execute(f"insert into cash_movements ({', '.join(row)}) values ({', '.join('?' * len(row))})", list(row.values()))
+            con.execute("update cash_movements set confirmation_status = 'cancelled' where movement_type = 'payment' and confirmation_status = 'expected' and instrument_id = ? and due_date = ? and amount = ?",
+                        [c["instrument_id"], c["due_date"], c["amount"]])
+            out["paid"].append({"call": str(c["id"]), "fund": c["fund"], "call_no": c["call_no"], "payment": str(p["id"]), "paid_row": row["id"], "notice_receipt": str(c["source_record_id"]),
+                                "bank_receipt": str(p["source_record_id"]), "amount_difference": str(diff),
+                                "words": f"{c['fund']} call {c['call_no']} ({_m(abs(_d(c['amount'])))} due {_pretty(c['due_date'])}) was paid on {_pretty(_day(p['effective_date']))}."})
+        late = [c for c in calls if str(c["id"]) not in used_c and c["due_date"] and c["due_date"] < on]
+        out["open"] = [{"call": str(c["id"]), "fund": c["fund"], "call_no": c["call_no"]} for c in calls if str(c["id"]) not in used_c]
+    for c in late:
+        title = f"{c['fund']} call {c['call_no']} not paid by {_pretty(c['due_date'])}"
+        if title in _open_titles(plane, "call_unpaid"):
+            continue
+        out["cards"].append(_mod("e4_cases").open(plane, {
+            "exception_type": "call_unpaid", "title": title, "instrument_id": c["instrument_id"], "portfolio_id": c["portfolio_id"], "detected_at": wh.now(), "owner_user_id": "Daniel Foo",
+            "description": f"{c['fund']} call {c['call_no']} for {_m(abs(_d(c['amount'])))} {c['currency']} was due on {_pretty(c['due_date'])} and no bank payment of that amount "
+                           f"within {CALL_WINDOW} business days of it names the fund or the call. Daniel Foo (Head of Finance) checks whether it was paid from another account or is still to be paid.",
+            "candidate_impact_amount": abs(_d(c["amount"])), "impact_currency": c["currency"], "materiality_status": "material"}))
+    return out

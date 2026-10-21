@@ -350,6 +350,8 @@ class Office:
             for k in kinds:  # each kind that has files in this batch is a run of its own reader, timed and logged as skill data.read-<kind>
                 fn = (lambda k, inner: lambda: self.recorder(k, inner))(k, fn)
             fn()
+        from sh_platform.v1 import v3_rule_checks
+        v3_rule_checks.check_documents(self)  # W10 method 2: every document just read is checked; a failure is held from the figures and carded
         self.unread()
         self.flush()
         return self.report
@@ -808,12 +810,17 @@ class Office:
             month_end = last_day(int(doc_period[1]), int(doc_period[2]))
             sr = self.record("bank", p, recv, effective=month_end)
             did = self.doc(p, "bank_statement", p.stem, kind="bank", instrument=a["cash"], valuation=month_end, date_=month_end, received=recv, record=sr)
+            txs = dicts(sheet_rows(p, "Transactions"))
+            if bal:  # W10 rule check: the opening balance (as stated, and as the first day's movements imply) and the closing balance of the statement
+                moved = sum(Decimal(str(t["Amount"])) for t in txs if parse_date(t["Value date"]) == parse_date(bal[0]["Value date"]))
+                for nm, v in (("opening_balance", bal[0]["Opening balance"]), ("opening_implied", Decimal(str(bal[0]["Closing ledger balance"])) - moved), ("closing_balance", bal[-1]["Closing ledger balance"])):
+                    self.field(did, nm, num=Decimal(str(v)), ccy=bal[0]["Currency"])
             for r in bal:
                 d = parse_date(r["Value date"])
                 self.add("position_snapshots", source_record_id=sr, portfolio_id=self.cashport[a["entity"]], instrument_id=a["cash"], position_date=d, as_of_at=stamp(d, 20), received_at=stamp(recv, 6),
                          recorded_at=stamp(recv, 6), quantity=r["Closing ledger balance"], source_market_value=r["Closing ledger balance"], currency=r["Currency"], data_status="Final")
                 nbal += 1
-            for i, r in enumerate(dicts(sheet_rows(p, "Transactions")), 2):
+            for i, r in enumerate(txs, 2):
                 self.bank_line(p, recv, a, acct, r, i, did)
                 nlines += 1
             self.note("bank_statements", files=1)
