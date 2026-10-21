@@ -14,3 +14,5 @@ A diagram with cited sources (sh-four-centres) also needs `--repo-root <git repo
 | sh-packages | Package layout |
 | sh-return-cycle | Notice, Think, Decide, Build, Run, Prove: the agent at each stage and the records it writes |
 | sh-cycle-modules | Radar, Proving, Build chain and Consume views: routes, records and the exit, inside the three planes |
+| sh3-detailed-architecture | 3.0 as built (21 Oct, revision 42418cf): people and the PWA, the app server, Harbor's thread runner and services, the five skill groups (North, Span, Flow, Lumen, Tally), the company volume, production-only Redis, worker and Postgres, and the outside; views for a file to an answer, a use case build, a model call and a signal to an Action card; every box cites source |
+| sh3-cloud-targets | 3.0 at a customer: each Signal Harbor part mapped to AWS, Azure and no cloud (Docker Compose or Kubernetes on a VM), one view per target plus the DuckDB one-writer constraint |

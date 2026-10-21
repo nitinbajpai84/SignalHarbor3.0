@@ -1,0 +1,1814 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signal Harbor 3.0 at a customer: AWS, Azure or no cloud",
+  "subtitle": "Each row is one Signal Harbor part (left, from the code) and where it runs in each target. All targets run production mode: DATABASE_URL + REDIS_URL.",
+  "output": "docs/architecture/sh3-cloud-targets.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/nitinbajpai84/SignalHarbor3.0.git",
+   "link_mode": "local-only",
+   "revision": "42418cfdea3ed053936c0169f2124a24853da43a"
+  },
+  "legend": {
+   "mode": "all",
+   "entries": {
+    "backend": {
+     "label": "Compute"
+    },
+    "database": {
+     "label": "Data store"
+    },
+    "messagebus": {
+     "label": "Queue and shared state"
+    },
+    "security": {
+     "label": "Guard, entry or secrets"
+    },
+    "cloud": {
+     "label": "Managed platform service"
+    },
+    "external": {
+     "label": "Model route"
+    },
+    "frontend": {
+     "label": "Browser",
+     "visible": false
+    }
+   }
+  },
+  "views": [
+   {
+    "id": "v_aws",
+    "label": "AWS",
+    "focus": [
+     "sh_entry",
+     "sh_web",
+     "sh_worker",
+     "sh_volume",
+     "sh_pg",
+     "sh_redis",
+     "sh_backup",
+     "sh_secrets",
+     "sh_logs",
+     "sh_net",
+     "sh_model",
+     "aws_entry",
+     "aws_web",
+     "aws_worker",
+     "aws_volume",
+     "aws_pg",
+     "aws_redis",
+     "aws_backup",
+     "aws_secrets",
+     "aws_logs",
+     "aws_net",
+     "aws_model"
+    ],
+    "note": "Fargate web and worker on one EFS, RDS, ElastiCache, S3 backups, Secrets Manager and KMS, WAF on ALB, CloudWatch, private VPC."
+   },
+   {
+    "id": "v_azure",
+    "label": "Azure",
+    "focus": [
+     "sh_entry",
+     "sh_web",
+     "sh_worker",
+     "sh_volume",
+     "sh_pg",
+     "sh_redis",
+     "sh_backup",
+     "sh_secrets",
+     "sh_logs",
+     "sh_net",
+     "sh_model",
+     "az_entry",
+     "az_web",
+     "az_worker",
+     "az_volume",
+     "az_pg",
+     "az_redis",
+     "az_backup",
+     "az_secrets",
+     "az_logs",
+     "az_net",
+     "az_model"
+    ],
+    "note": "Container Apps on one Azure Files share, PostgreSQL Flexible, Azure Cache for Redis, Blob, Key Vault, WAF, Monitor, VNet."
+   },
+   {
+    "id": "v_nocloud",
+    "label": "No cloud",
+    "focus": [
+     "sh_entry",
+     "sh_web",
+     "sh_worker",
+     "sh_volume",
+     "sh_pg",
+     "sh_redis",
+     "sh_backup",
+     "sh_secrets",
+     "sh_logs",
+     "sh_net",
+     "sh_model",
+     "nc_entry",
+     "nc_web",
+     "nc_worker",
+     "nc_volume",
+     "nc_pg",
+     "nc_redis",
+     "nc_backup",
+     "nc_secrets",
+     "nc_logs",
+     "nc_net",
+     "nc_model"
+    ],
+    "note": "Docker Compose or Kubernetes on a VM: Postgres, Redis, local disk or NAS, MinIO, Vault, Nginx or Traefik, Prometheus."
+   },
+   {
+    "id": "v_duckdb",
+    "label": "The one-writer constraint",
+    "focus": [
+     "sh_web",
+     "sh_worker",
+     "sh_volume",
+     "aws_web",
+     "aws_worker",
+     "aws_volume",
+     "az_web",
+     "az_worker",
+     "az_volume",
+     "nc_web",
+     "nc_worker",
+     "nc_volume"
+    ],
+    "note": "DuckDB allows one writer per company file: web and worker share one volume, or each company is pinned to one writer."
+   }
+  ]
+ },
+ "components": [
+  {
+   "id": "sh_entry",
+   "type": "security",
+   "label": "Way in",
+   "sublabel": "PWA, public API, POST /mcp",
+   "tag": "both modes",
+   "pos": [
+    20,
+    40
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 200,
+     "label": "gate behind the proxy"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 15,
+     "end_line": 15,
+     "label": "uvicorn --proxy-headers"
+    },
+    {
+     "path": "railway.json",
+     "line": 5,
+     "end_line": 5,
+     "label": "/api/health"
+    }
+   ]
+  },
+  {
+   "id": "aws_entry",
+   "type": "security",
+   "label": "ALB + AWS WAF",
+   "sublabel": "TLS, rate rules, health check",
+   "tag": "AWS",
+   "pos": [
+    300,
+    40
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 200,
+     "label": "gate behind the proxy"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 15,
+     "end_line": 15,
+     "label": "uvicorn --proxy-headers"
+    },
+    {
+     "path": "railway.json",
+     "line": 5,
+     "end_line": 5,
+     "label": "/api/health"
+    }
+   ]
+  },
+  {
+   "id": "az_entry",
+   "type": "security",
+   "label": "Front Door or App Gateway",
+   "sublabel": "WAF policy, TLS",
+   "tag": "Azure",
+   "pos": [
+    580,
+    40
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 200,
+     "label": "gate behind the proxy"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 15,
+     "end_line": 15,
+     "label": "uvicorn --proxy-headers"
+    },
+    {
+     "path": "railway.json",
+     "line": 5,
+     "end_line": 5,
+     "label": "/api/health"
+    }
+   ]
+  },
+  {
+   "id": "nc_entry",
+   "type": "security",
+   "label": "Nginx or Traefik",
+   "sublabel": "TLS, forwarded headers",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    40
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 200,
+     "label": "gate behind the proxy"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 15,
+     "end_line": 15,
+     "label": "uvicorn --proxy-headers"
+    },
+    {
+     "path": "railway.json",
+     "line": 5,
+     "end_line": 5,
+     "label": "/api/health"
+    }
+   ]
+  },
+  {
+   "id": "sh_web",
+   "type": "backend",
+   "label": "Web process",
+   "sublabel": "uvicorn: API, Harbor, loops",
+   "tag": "both modes",
+   "pos": [
+    20,
+    180
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/start.sh",
+     "line": 1,
+     "end_line": 15,
+     "label": "web start"
+    },
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 33,
+     "label": "one image"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1270,
+     "end_line": 1292,
+     "label": "loops in web"
+    }
+   ]
+  },
+  {
+   "id": "aws_web",
+   "type": "backend",
+   "label": "ECS Fargate: web",
+   "sublabel": "1 task; App Runner has no EFS",
+   "tag": "AWS",
+   "pos": [
+    300,
+    180
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/start.sh",
+     "line": 1,
+     "end_line": 15,
+     "label": "web start"
+    },
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 33,
+     "label": "one image"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1270,
+     "end_line": 1292,
+     "label": "loops in web"
+    }
+   ]
+  },
+  {
+   "id": "az_web",
+   "type": "backend",
+   "label": "Container Apps: web",
+   "sublabel": "1 replica, Azure Files mount",
+   "tag": "Azure",
+   "pos": [
+    580,
+    180
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/start.sh",
+     "line": 1,
+     "end_line": 15,
+     "label": "web start"
+    },
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 33,
+     "label": "one image"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1270,
+     "end_line": 1292,
+     "label": "loops in web"
+    }
+   ]
+  },
+  {
+   "id": "nc_web",
+   "type": "backend",
+   "label": "web container",
+   "sublabel": "Compose or K8s, 1 replica",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    180
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/start.sh",
+     "line": 1,
+     "end_line": 15,
+     "label": "web start"
+    },
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 33,
+     "label": "one image"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1270,
+     "end_line": 1292,
+     "label": "loops in web"
+    }
+   ]
+  },
+  {
+   "id": "sh_worker",
+   "type": "backend",
+   "label": "Worker",
+   "sublabel": "jobs, retries, outbox",
+   "tag": "production only",
+   "pos": [
+    20,
+    320
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/worker.py",
+     "line": 1,
+     "end_line": 37,
+     "label": "worker"
+    },
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "RedisQueue"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 11,
+     "end_line": 14,
+     "label": "worker beside web"
+    }
+   ]
+  },
+  {
+   "id": "aws_worker",
+   "type": "backend",
+   "label": "ECS Fargate: worker",
+   "sublabel": "same image, same EFS",
+   "tag": "AWS",
+   "pos": [
+    300,
+    320
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/worker.py",
+     "line": 1,
+     "end_line": 37,
+     "label": "worker"
+    },
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "RedisQueue"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 11,
+     "end_line": 14,
+     "label": "worker beside web"
+    }
+   ]
+  },
+  {
+   "id": "az_worker",
+   "type": "backend",
+   "label": "Container Apps: worker",
+   "sublabel": "same image, same share",
+   "tag": "Azure",
+   "pos": [
+    580,
+    320
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/worker.py",
+     "line": 1,
+     "end_line": 37,
+     "label": "worker"
+    },
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "RedisQueue"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 11,
+     "end_line": 14,
+     "label": "worker beside web"
+    }
+   ]
+  },
+  {
+   "id": "nc_worker",
+   "type": "backend",
+   "label": "worker container",
+   "sublabel": "same image, same disk",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    320
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/worker.py",
+     "line": 1,
+     "end_line": 37,
+     "label": "worker"
+    },
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "RedisQueue"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 11,
+     "end_line": 14,
+     "label": "worker beside web"
+    }
+   ]
+  },
+  {
+   "id": "sh_volume",
+   "type": "database",
+   "label": "Company volume /data",
+   "sublabel": "plane files + DuckDB",
+   "tag": "both modes",
+   "pos": [
+    20,
+    460
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/plane.py",
+     "line": 7,
+     "end_line": 7,
+     "label": "plane areas"
+    },
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 45,
+     "end_line": 50,
+     "label": "evidence.duckdb"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 44,
+     "end_line": 50,
+     "label": "v3/threads"
+    }
+   ]
+  },
+  {
+   "id": "aws_volume",
+   "type": "database",
+   "label": "Amazon EFS",
+   "sublabel": "one access point, encrypted",
+   "tag": "AWS",
+   "pos": [
+    300,
+    460
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/plane.py",
+     "line": 7,
+     "end_line": 7,
+     "label": "plane areas"
+    },
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 45,
+     "end_line": 50,
+     "label": "evidence.duckdb"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 44,
+     "end_line": 50,
+     "label": "v3/threads"
+    }
+   ]
+  },
+  {
+   "id": "az_volume",
+   "type": "database",
+   "label": "Azure Files",
+   "sublabel": "premium share",
+   "tag": "Azure",
+   "pos": [
+    580,
+    460
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/plane.py",
+     "line": 7,
+     "end_line": 7,
+     "label": "plane areas"
+    },
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 45,
+     "end_line": 50,
+     "label": "evidence.duckdb"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 44,
+     "end_line": 50,
+     "label": "v3/threads"
+    }
+   ]
+  },
+  {
+   "id": "nc_volume",
+   "type": "database",
+   "label": "Local disk or NAS",
+   "sublabel": "one host mount",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    460
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/plane.py",
+     "line": 7,
+     "end_line": 7,
+     "label": "plane areas"
+    },
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 45,
+     "end_line": 50,
+     "label": "evidence.duckdb"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 44,
+     "end_line": 50,
+     "label": "v3/threads"
+    }
+   ]
+  },
+  {
+   "id": "sh_pg",
+   "type": "database",
+   "label": "Postgres",
+   "sublabel": "event outbox today",
+   "tag": "production only",
+   "pos": [
+    20,
+    600
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/events.py",
+     "line": 64,
+     "end_line": 128,
+     "label": "sh_outbox"
+    },
+    {
+     "path": "sh_platform/state/__init__.py",
+     "line": 102,
+     "end_line": 190,
+     "label": "PgStore, not wired"
+    },
+    {
+     "path": "sh_platform/mode.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "both URLs"
+    }
+   ]
+  },
+  {
+   "id": "aws_pg",
+   "type": "database",
+   "label": "RDS for PostgreSQL",
+   "sublabel": "Multi-AZ, private subnet",
+   "tag": "AWS",
+   "pos": [
+    300,
+    600
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/events.py",
+     "line": 64,
+     "end_line": 128,
+     "label": "sh_outbox"
+    },
+    {
+     "path": "sh_platform/state/__init__.py",
+     "line": 102,
+     "end_line": 190,
+     "label": "PgStore, not wired"
+    },
+    {
+     "path": "sh_platform/mode.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "both URLs"
+    }
+   ]
+  },
+  {
+   "id": "az_pg",
+   "type": "database",
+   "label": "Azure DB for PostgreSQL",
+   "sublabel": "Flexible Server, private",
+   "tag": "Azure",
+   "pos": [
+    580,
+    600
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/events.py",
+     "line": 64,
+     "end_line": 128,
+     "label": "sh_outbox"
+    },
+    {
+     "path": "sh_platform/state/__init__.py",
+     "line": 102,
+     "end_line": 190,
+     "label": "PgStore, not wired"
+    },
+    {
+     "path": "sh_platform/mode.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "both URLs"
+    }
+   ]
+  },
+  {
+   "id": "nc_pg",
+   "type": "database",
+   "label": "Postgres 16",
+   "sublabel": "container or VM service",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    600
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/events.py",
+     "line": 64,
+     "end_line": 128,
+     "label": "sh_outbox"
+    },
+    {
+     "path": "sh_platform/state/__init__.py",
+     "line": 102,
+     "end_line": 190,
+     "label": "PgStore, not wired"
+    },
+    {
+     "path": "sh_platform/mode.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "both URLs"
+    }
+   ]
+  },
+  {
+   "id": "sh_redis",
+   "type": "messagebus",
+   "label": "Redis",
+   "sublabel": "jobs, limits, breaker",
+   "tag": "production only",
+   "pos": [
+    20,
+    740
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "job lists"
+    },
+    {
+     "path": "sh_platform/state/kv.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "window, breaker"
+    }
+   ]
+  },
+  {
+   "id": "aws_redis",
+   "type": "messagebus",
+   "label": "ElastiCache for Redis",
+   "sublabel": "TLS, auth token",
+   "tag": "AWS",
+   "pos": [
+    300,
+    740
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "job lists"
+    },
+    {
+     "path": "sh_platform/state/kv.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "window, breaker"
+    }
+   ]
+  },
+  {
+   "id": "az_redis",
+   "type": "messagebus",
+   "label": "Azure Cache for Redis",
+   "sublabel": "TLS, private endpoint",
+   "tag": "Azure",
+   "pos": [
+    580,
+    740
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "job lists"
+    },
+    {
+     "path": "sh_platform/state/kv.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "window, breaker"
+    }
+   ]
+  },
+  {
+   "id": "nc_redis",
+   "type": "messagebus",
+   "label": "Redis 7",
+   "sublabel": "appendonly, password",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    740
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "job lists"
+    },
+    {
+     "path": "sh_platform/state/kv.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "window, breaker"
+    }
+   ]
+  },
+  {
+   "id": "sh_backup",
+   "type": "backend",
+   "label": "Backup and restore test",
+   "sublabel": "tools/backup.py, manual",
+   "tag": "CLI today",
+   "pos": [
+    20,
+    880
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/backup.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "encrypted plane copy"
+    },
+    {
+     "path": "tools/restore_test.py",
+     "line": 1,
+     "end_line": 6,
+     "label": "restore proof"
+    }
+   ]
+  },
+  {
+   "id": "aws_backup",
+   "type": "cloud",
+   "label": "Amazon S3",
+   "sublabel": "versioned, Object Lock",
+   "tag": "AWS",
+   "pos": [
+    300,
+    880
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/backup.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "encrypted plane copy"
+    },
+    {
+     "path": "tools/restore_test.py",
+     "line": 1,
+     "end_line": 6,
+     "label": "restore proof"
+    }
+   ]
+  },
+  {
+   "id": "az_backup",
+   "type": "cloud",
+   "label": "Blob Storage",
+   "sublabel": "immutable container",
+   "tag": "Azure",
+   "pos": [
+    580,
+    880
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/backup.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "encrypted plane copy"
+    },
+    {
+     "path": "tools/restore_test.py",
+     "line": 1,
+     "end_line": 6,
+     "label": "restore proof"
+    }
+   ]
+  },
+  {
+   "id": "nc_backup",
+   "type": "cloud",
+   "label": "MinIO or backup disk",
+   "sublabel": "off-host copy",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    880
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/backup.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "encrypted plane copy"
+    },
+    {
+     "path": "tools/restore_test.py",
+     "line": 1,
+     "end_line": 6,
+     "label": "restore proof"
+    }
+   ]
+  },
+  {
+   "id": "sh_secrets",
+   "type": "security",
+   "label": "Secrets as env vars",
+   "sublabel": "model keys, URLs, SMTP",
+   "tag": "both modes",
+   "pos": [
+    20,
+    1020
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/settings.py",
+     "line": 33,
+     "end_line": 60,
+     "label": "settings from env"
+    },
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 125,
+     "end_line": 144,
+     "label": "key per provider host"
+    }
+   ]
+  },
+  {
+   "id": "aws_secrets",
+   "type": "security",
+   "label": "Secrets Manager + KMS",
+   "sublabel": "injected as env, KMS keys",
+   "tag": "AWS",
+   "pos": [
+    300,
+    1020
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/settings.py",
+     "line": 33,
+     "end_line": 60,
+     "label": "settings from env"
+    },
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 125,
+     "end_line": 144,
+     "label": "key per provider host"
+    }
+   ]
+  },
+  {
+   "id": "az_secrets",
+   "type": "security",
+   "label": "Key Vault",
+   "sublabel": "secret refs, managed identity",
+   "tag": "Azure",
+   "pos": [
+    580,
+    1020
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/settings.py",
+     "line": 33,
+     "end_line": 60,
+     "label": "settings from env"
+    },
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 125,
+     "end_line": 144,
+     "label": "key per provider host"
+    }
+   ]
+  },
+  {
+   "id": "nc_secrets",
+   "type": "security",
+   "label": "Vault or env file",
+   "sublabel": "root-only env, rotation",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    1020
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/settings.py",
+     "line": 33,
+     "end_line": 60,
+     "label": "settings from env"
+    },
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 125,
+     "end_line": 144,
+     "label": "key per provider host"
+    }
+   ]
+  },
+  {
+   "id": "sh_logs",
+   "type": "backend",
+   "label": "Logs on the volume",
+   "sublabel": "egress, audit, cost JSONL",
+   "tag": "both modes",
+   "pos": [
+    20,
+    1160
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 42,
+     "end_line": 42,
+     "label": "egress_log.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 1,
+     "end_line": 3,
+     "label": "ops/audit.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 43,
+     "end_line": 43,
+     "label": "model_costs.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "aws_logs",
+   "type": "cloud",
+   "label": "CloudWatch",
+   "sublabel": "stdout logs, alarms",
+   "tag": "AWS",
+   "pos": [
+    300,
+    1160
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 42,
+     "end_line": 42,
+     "label": "egress_log.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 1,
+     "end_line": 3,
+     "label": "ops/audit.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 43,
+     "end_line": 43,
+     "label": "model_costs.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "az_logs",
+   "type": "cloud",
+   "label": "Azure Monitor",
+   "sublabel": "Log Analytics, alerts",
+   "tag": "Azure",
+   "pos": [
+    580,
+    1160
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 42,
+     "end_line": 42,
+     "label": "egress_log.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 1,
+     "end_line": 3,
+     "label": "ops/audit.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 43,
+     "end_line": 43,
+     "label": "model_costs.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "nc_logs",
+   "type": "cloud",
+   "label": "Prometheus + Grafana",
+   "sublabel": "plus Loki for stdout",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    1160
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 42,
+     "end_line": 42,
+     "label": "egress_log.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 1,
+     "end_line": 3,
+     "label": "ops/audit.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 43,
+     "end_line": 43,
+     "label": "model_costs.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "sh_net",
+   "type": "security",
+   "label": "Egress gateway",
+   "sublabel": "only exit, allow-list",
+   "tag": "both modes",
+   "pos": [
+    20,
+    1300
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 186,
+     "end_line": 200,
+     "label": "EgressGateway"
+    },
+    {
+     "path": "sh_platform/egress/policy.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "off by default"
+    }
+   ]
+  },
+  {
+   "id": "aws_net",
+   "type": "cloud",
+   "label": "VPC private subnets",
+   "sublabel": "NAT, egress allow-list",
+   "tag": "AWS",
+   "pos": [
+    300,
+    1300
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 186,
+     "end_line": 200,
+     "label": "EgressGateway"
+    },
+    {
+     "path": "sh_platform/egress/policy.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "off by default"
+    }
+   ]
+  },
+  {
+   "id": "az_net",
+   "type": "cloud",
+   "label": "VNet",
+   "sublabel": "private endpoints, NAT",
+   "tag": "Azure",
+   "pos": [
+    580,
+    1300
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 186,
+     "end_line": 200,
+     "label": "EgressGateway"
+    },
+    {
+     "path": "sh_platform/egress/policy.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "off by default"
+    }
+   ]
+  },
+  {
+   "id": "nc_net",
+   "type": "cloud",
+   "label": "Private network",
+   "sublabel": "host firewall, proxy",
+   "tag": "no cloud",
+   "pos": [
+    860,
+    1300
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 186,
+     "end_line": 200,
+     "label": "EgressGateway"
+    },
+    {
+     "path": "sh_platform/egress/policy.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "off by default"
+    }
+   ]
+  },
+  {
+   "id": "sh_model",
+   "type": "external",
+   "label": "Model providers",
+   "sublabel": "OpenRouter, Gemini today",
+   "tag": "outside",
+   "pos": [
+    20,
+    1440
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 35,
+     "end_line": 60,
+     "label": "providers"
+    },
+    {
+     "path": "sh_platform/v1/model_modes.yaml",
+     "line": 1,
+     "end_line": 17,
+     "label": "tiers per mode"
+    }
+   ]
+  },
+  {
+   "id": "aws_model",
+   "type": "external",
+   "label": "Amazon Bedrock",
+   "sublabel": "optional; needs an adapter",
+   "tag": "planned",
+   "pos": [
+    300,
+    1440
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 35,
+     "end_line": 60,
+     "label": "providers"
+    },
+    {
+     "path": "sh_platform/v1/model_modes.yaml",
+     "line": 1,
+     "end_line": 17,
+     "label": "tiers per mode"
+    }
+   ]
+  },
+  {
+   "id": "az_model",
+   "type": "external",
+   "label": "Azure OpenAI",
+   "sublabel": "optional; needs an adapter",
+   "tag": "planned",
+   "pos": [
+    580,
+    1440
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 35,
+     "end_line": 60,
+     "label": "providers"
+    },
+    {
+     "path": "sh_platform/v1/model_modes.yaml",
+     "line": 1,
+     "end_line": 17,
+     "label": "tiers per mode"
+    }
+   ]
+  },
+  {
+   "id": "nc_model",
+   "type": "external",
+   "label": "Provider or local model",
+   "sublabel": "allow-listed host",
+   "tag": "planned for local",
+   "pos": [
+    860,
+    1440
+   ],
+   "size": [
+    240,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 35,
+     "end_line": 60,
+     "label": "providers"
+    },
+    {
+     "path": "sh_platform/v1/model_modes.yaml",
+     "line": 1,
+     "end_line": 17,
+     "label": "tiers per mode"
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "SIGNAL HARBOR (from the code)",
+   "wraps": [
+    "sh_entry",
+    "sh_web",
+    "sh_worker",
+    "sh_volume",
+    "sh_pg",
+    "sh_redis",
+    "sh_backup",
+    "sh_secrets",
+    "sh_logs",
+    "sh_net",
+    "sh_model"
+   ],
+   "pad": 16
+  },
+  {
+   "kind": "region",
+   "label": "AWS",
+   "wraps": [
+    "aws_entry",
+    "aws_web",
+    "aws_worker",
+    "aws_volume",
+    "aws_pg",
+    "aws_redis",
+    "aws_backup",
+    "aws_secrets",
+    "aws_logs",
+    "aws_net",
+    "aws_model"
+   ],
+   "pad": 16
+  },
+  {
+   "kind": "region",
+   "label": "AZURE",
+   "wraps": [
+    "az_entry",
+    "az_web",
+    "az_worker",
+    "az_volume",
+    "az_pg",
+    "az_redis",
+    "az_backup",
+    "az_secrets",
+    "az_logs",
+    "az_net",
+    "az_model"
+   ],
+   "pad": 16
+  },
+  {
+   "kind": "region",
+   "label": "NO CLOUD (customer-hosted)",
+   "wraps": [
+    "nc_entry",
+    "nc_web",
+    "nc_worker",
+    "nc_volume",
+    "nc_pg",
+    "nc_redis",
+    "nc_backup",
+    "nc_secrets",
+    "nc_logs",
+    "nc_net",
+    "nc_model"
+   ],
+   "pad": 16
+  }
+ ],
+ "connections": [
+  {
+   "id": "c_sh_in",
+   "from": "sh_entry",
+   "to": "sh_web",
+   "label": "HTTPS",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_sh_w",
+   "from": "sh_web",
+   "to": "sh_worker",
+   "label": "jobs via Redis",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_sh_v",
+   "from": "sh_worker",
+   "to": "sh_volume",
+   "label": "one shared volume",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_sh_n",
+   "from": "sh_net",
+   "to": "sh_model",
+   "label": "only exit",
+   "variant": "security"
+  },
+  {
+   "id": "c_aws_in",
+   "from": "aws_entry",
+   "to": "aws_web",
+   "label": "HTTPS",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_aws_w",
+   "from": "aws_web",
+   "to": "aws_worker",
+   "label": "jobs via Redis",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_aws_v",
+   "from": "aws_worker",
+   "to": "aws_volume",
+   "label": "one shared volume",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_aws_n",
+   "from": "aws_net",
+   "to": "aws_model",
+   "label": "only exit",
+   "variant": "security"
+  },
+  {
+   "id": "c_az_in",
+   "from": "az_entry",
+   "to": "az_web",
+   "label": "HTTPS",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_az_w",
+   "from": "az_web",
+   "to": "az_worker",
+   "label": "jobs via Redis",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_az_v",
+   "from": "az_worker",
+   "to": "az_volume",
+   "label": "one shared volume",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_az_n",
+   "from": "az_net",
+   "to": "az_model",
+   "label": "only exit",
+   "variant": "security"
+  },
+  {
+   "id": "c_nc_in",
+   "from": "nc_entry",
+   "to": "nc_web",
+   "label": "HTTPS",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_nc_w",
+   "from": "nc_web",
+   "to": "nc_worker",
+   "label": "jobs via Redis",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_nc_v",
+   "from": "nc_worker",
+   "to": "nc_volume",
+   "label": "one shared volume",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_nc_n",
+   "from": "nc_net",
+   "to": "nc_model",
+   "label": "only exit",
+   "variant": "security"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "THE CONSTRAINT | DuckDB is one writer per company file | ALL TARGETS",
+   "items": [
+    "Each company's warehouse is one DuckDB file (warehouse/evidence.duckdb). DuckDB allows one process to write a file at a time, so the web process and the worker must mount the same volume and must not both write one company's file at once; or each company is pinned to one writer.",
+    "Today's documents (threads, figures, intents, settings) are also files on that volume in both modes: store_for, which would move them into Postgres, is not wired into the app. Until it is, the volume is the system of record and the web runs as ONE replica (the dropbox scanner, daily signal tick and push loop run as threads in every web process).",
+    "Network file systems (EFS, Azure Files, NFS on a NAS) make file locking weaker than a local disk. Safest first step: one web task and one worker task on one volume, never two hosts writing one company. Scale out by giving companies to different writer pairs."
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "AWS | ECS Fargate, RDS, ElastiCache, EFS | TARGET",
+   "items": [
+    "Compute: one ECS Fargate service for web (1 task) and one for the worker, from the same image, both mounting the same EFS access point at /data. App Runner is the simpler choice only after documents and the warehouse leave the volume: it cannot mount EFS today.",
+    "Data: RDS for PostgreSQL (event outbox; documents later), ElastiCache for Redis (TLS, auth token), EFS encrypted with KMS. Backups: tools/backup.py writes an encrypted plane archive to S3 (versioned, Object Lock); RDS snapshots on top.",
+    "Edge and secrets: ALB with AWS WAF and ACM TLS in front of the web task (health check /api/health); Secrets Manager injects DATABASE_URL, REDIS_URL, model keys and SMTP as env; KMS keys for EFS, RDS, S3.",
+    "Network and logs: everything in private subnets; outbound only through NAT to the hosts the egress gateway allows. CloudWatch for stdout and alarms; the egress, audit and cost logs stay on EFS.",
+    "Models: OpenRouter or Gemini through the egress gateway today. Bedrock keeps prompts in the customer's account but needs a new provider adapter beside gemini.py and openrouter.py (planned)."
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "AZURE | Container Apps, PostgreSQL Flexible, Azure Cache, Azure Files | TARGET",
+   "items": [
+    "Compute: one Container App for web (min and max replicas 1) and one for the worker, same image, both mounting one Azure Files share at /data.",
+    "Data: Azure Database for PostgreSQL Flexible Server and Azure Cache for Redis on private endpoints; Blob Storage (immutable container) for the encrypted backups.",
+    "Edge and secrets: Front Door or Application Gateway with a WAF policy; Key Vault secret references with a managed identity become the env variables.",
+    "Network and logs: a VNet-integrated Container Apps environment, NAT for the allowed outbound hosts; Azure Monitor and Log Analytics for stdout and alerts.",
+    "Models: Azure OpenAI as an optional in-tenant route needs a provider adapter (planned); until then OpenRouter or Gemini through the gateway."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "NO CLOUD | Docker Compose or Kubernetes on a VM | TARGET",
+   "items": [
+    "Compute: the repo's docker-compose.yml already runs Postgres 16 and Redis 7 with passwords and health checks; add the web and worker containers from the Dockerfile on the same host, both mounting one local disk or NAS path at /data. On Kubernetes: one web and one worker pod with a ReadWriteOnce volume on the same node.",
+    "Edge: Nginx or Traefik terminates TLS and forwards to uvicorn (started with --proxy-headers).",
+    "Secrets: HashiCorp Vault, or a root-only env file with rotation. Backups: tools/backup.py to MinIO or a backup disk off the host, proved by tools/restore_test.py.",
+    "Monitoring: Prometheus and Grafana (plus Loki for stdout). Models: a provider through the egress allow-list, or a local model once an adapter for it exists (planned)."
+   ]
+  },
+  {
+   "dot": "slate",
+   "title": "SIGNAL HARBOR | What every target must provide | FROM THE CODE",
+   "items": [
+    "Production mode: both DATABASE_URL and REDIS_URL, or the server refuses to start (sh_platform/mode.py). SH_DATA_ROOT pointing at the shared volume.",
+    "Postgres today holds only the event outbox (sh_outbox, sh_outbox_done). tools/migrate_to_postgres.py copies JSON documents into PgStore at start-up, but the app does not read them yet.",
+    "Redis holds the job queue and the shared small state (rate limit, provider breaker, chat cache counter). The v3 Consume answer cache is per process and is lost on restart.",
+    "Backups: tools/backup.py and tools/restore_test.py exist as manual commands; nothing schedules them, and the Dockerfile does not copy them into the image yet.",
+    "Nothing leaves except through the egress gateway: model prompts, bank connectors, webhooks and email all pass its allow-list, name tokenising and log."
+   ]
+  }
+ ]
+}

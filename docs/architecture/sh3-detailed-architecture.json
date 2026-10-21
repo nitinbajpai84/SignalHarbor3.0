@@ -1,0 +1,1744 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "Signal Harbor 3.0 in detail: Harbor, its skills and services",
+  "subtitle": "Simple mode = one process, files, memory (Railway today). Production = DATABASE_URL + REDIS_URL: adds worker, Redis, Postgres outbox. Documents stay files in both.",
+  "output": "docs/architecture/sh3-detailed-architecture.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/nitinbajpai84/SignalHarbor3.0.git",
+   "link_mode": "local-only",
+   "revision": "42418cfdea3ed053936c0169f2124a24853da43a"
+  },
+  "legend": {
+   "mode": "all",
+   "entries": {
+    "frontend": {
+     "label": "Browser PWA"
+    },
+    "backend": {
+     "label": "Runs in the web process"
+    },
+    "database": {
+     "label": "Store"
+    },
+    "cloud": {
+     "label": "Deployment"
+    },
+    "security": {
+     "label": "Guard"
+    },
+    "messagebus": {
+     "label": "Queue, production only"
+    },
+    "external": {
+     "label": "Outside the platform"
+    }
+   }
+  },
+  "views": [
+   {
+    "id": "trace_file",
+    "label": "1. A file to an answer with a receipt",
+    "focus": [
+     "banks",
+     "connectors",
+     "loops",
+     "runner",
+     "flow",
+     "readers",
+     "duckdb",
+     "figstore",
+     "v3files",
+     "lumen",
+     "consume",
+     "gate",
+     "pwa"
+    ],
+    "note": "Fetch, dropbox, scan, read with receipts, figure version, verified answer with where it came from."
+   },
+   {
+    "id": "trace_build",
+    "label": "2. A use case build: drafting to live",
+    "focus": [
+     "pwa",
+     "gate",
+     "v3api",
+     "runner",
+     "north",
+     "span",
+     "recipes",
+     "flow",
+     "readers",
+     "lumen",
+     "figstore",
+     "skills",
+     "v3files"
+    ],
+    "note": "North drafts, D1 signs; chain A pack and intake; D2; chain B load and run on a copy; D3; chain C live, board, note."
+   },
+   {
+    "id": "trace_model",
+    "label": "3. A model call: router and egress",
+    "focus": [
+     "skills",
+     "router",
+     "judge",
+     "egress",
+     "providers",
+     "redis"
+    ],
+    "note": "Skill or judge picks a tier, gateway checks, tokenises and logs, then OpenRouter or Gemini. Breaker in Redis in production."
+   },
+   {
+    "id": "trace_signal",
+    "label": "4. A signal to an Action card",
+    "focus": [
+     "loops",
+     "runner",
+     "signals",
+     "rules",
+     "tally",
+     "portal",
+     "pubapi",
+     "egress",
+     "gate",
+     "pwa",
+     "custtools"
+    ],
+    "note": "Run or daily tick evaluates signals, one owner gets a card, push to the PWA, webhook to customer tools via egress."
+   }
+  ]
+ },
+ "components": [
+  {
+   "id": "banks",
+   "type": "external",
+   "label": "Banks and custodians",
+   "sublabel": "SFTP, IMAP, bank APIs",
+   "tag": "outside",
+   "pos": [
+    20,
+    40
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/connectors/files.py",
+     "line": 34,
+     "end_line": 70,
+     "label": "SFTP folder, IMAP inbox"
+    },
+    {
+     "path": "sh_platform/v1/connectors/plaid.py",
+     "label": "Plaid"
+    },
+    {
+     "path": "sh_platform/v1/connectors/saxo.py",
+     "label": "Saxo"
+    }
+   ]
+  },
+  {
+   "id": "pwa",
+   "type": "frontend",
+   "label": "Harbor PWA",
+   "sublabel": "React; 6 centres plus Portal",
+   "tag": "both modes",
+   "pos": [
+    510,
+    40
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "ui/src/v3/routes.tsx",
+     "line": 40,
+     "end_line": 74,
+     "label": "v3 pages"
+    },
+    {
+     "path": "ui/src/pwa.ts",
+     "line": 1,
+     "end_line": 69,
+     "label": "install, push"
+    },
+    {
+     "path": "ui/public/sw.js",
+     "line": 1,
+     "end_line": 103,
+     "label": "service worker"
+    }
+   ]
+  },
+  {
+   "id": "custtools",
+   "type": "external",
+   "label": "Customer tools",
+   "sublabel": "own apps, AI assistants",
+   "tag": "outside",
+   "pos": [
+    1000,
+    40
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/mcp_harbor.py",
+     "line": 1,
+     "end_line": 5,
+     "label": "stdio MCP over public API"
+    },
+    {
+     "path": "docs/v3/API.md",
+     "label": "API examples"
+    }
+   ]
+  },
+  {
+   "id": "connectors",
+   "type": "backend",
+   "label": "Connectors",
+   "sublabel": "fetch only, file into dropbox",
+   "tag": "both modes",
+   "pos": [
+    20,
+    215
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/connectors/base.py",
+     "line": 17,
+     "end_line": 38,
+     "label": "Fetched contract"
+    },
+    {
+     "path": "sh_platform/v1/connectors/files.py",
+     "line": 34,
+     "end_line": 70,
+     "label": "SFTP, IMAP, MT940, BAI2"
+    }
+   ]
+  },
+  {
+   "id": "v3api",
+   "type": "backend",
+   "label": "v3 routes",
+   "sublabel": "/api/v3 threads, decide",
+   "tag": "both modes",
+   "pos": [
+    265,
+    215
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_routes.py",
+     "line": 36,
+     "end_line": 132,
+     "label": "threads, decide, files"
+    },
+    {
+     "path": "sh_platform/v1/__init__.py",
+     "line": 23,
+     "end_line": 25,
+     "label": "mounts *_routes.py"
+    }
+   ]
+  },
+  {
+   "id": "gate",
+   "type": "security",
+   "label": "Auth and policy gate",
+   "sublabel": "default deny, CSRF, roles",
+   "tag": "both modes",
+   "pos": [
+    510,
+    215
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/auth/__init__.py",
+     "line": 105,
+     "end_line": 200,
+     "label": "AuthMiddleware"
+    },
+    {
+     "path": "sh_platform/auth/permissions.py",
+     "line": 1,
+     "end_line": 34,
+     "label": "route_permissions.yaml"
+    }
+   ]
+  },
+  {
+   "id": "portal",
+   "type": "backend",
+   "label": "Portal and push",
+   "sublabel": "member share, Web Push",
+   "tag": "both modes",
+   "pos": [
+    1000,
+    915
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/g5_portal.py",
+     "line": 313,
+     "end_line": 316,
+     "label": "portal"
+    },
+    {
+     "path": "sh_platform/v1/g5_push.py",
+     "line": 166,
+     "end_line": 209,
+     "label": "notify, tick"
+    },
+    {
+     "path": "sh_platform/v1/g5_portal.py",
+     "line": 388,
+     "end_line": 404,
+     "label": "push loop"
+    }
+   ]
+  },
+  {
+   "id": "audit",
+   "type": "security",
+   "label": "Audit log",
+   "sublabel": "hash-chained ops/audit.jsonl",
+   "tag": "both modes",
+   "pos": [
+    755,
+    215
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 1,
+     "end_line": 3,
+     "label": "append-only, chained"
+    },
+    {
+     "path": "sh_platform/v1/v3_audit.py",
+     "line": 111,
+     "end_line": 128,
+     "label": "record_request"
+    }
+   ]
+  },
+  {
+   "id": "pubapi",
+   "type": "backend",
+   "label": "Public API and MCP",
+   "sublabel": "/api/public/v1, POST /mcp",
+   "tag": "both modes",
+   "pos": [
+    1000,
+    215
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_public_api_routes.py",
+     "line": 1,
+     "end_line": 13,
+     "label": "shpub keys"
+    },
+    {
+     "path": "sh_platform/mcp/routes.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "POST /mcp"
+    },
+    {
+     "path": "sh_platform/v1/v3_public_api.py",
+     "line": 360,
+     "end_line": 390,
+     "label": "signal webhooks"
+    }
+   ]
+  },
+  {
+   "id": "loops",
+   "type": "backend",
+   "label": "Background loops",
+   "sublabel": "dropbox scan, daily tick",
+   "tag": "in web process",
+   "pos": [
+    20,
+    390
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1270,
+     "end_line": 1292,
+     "label": "start_scanner"
+    },
+    {
+     "path": "sh_platform/app.py",
+     "line": 205,
+     "end_line": 215,
+     "label": "scheduler, delivery, portal"
+    }
+   ]
+  },
+  {
+   "id": "runner",
+   "type": "backend",
+   "label": "Harbor thread runner",
+   "sublabel": "chains A B C M, decisions 1-3",
+   "tag": "in web process",
+   "pos": [
+    265,
+    390
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 722,
+     "end_line": 742,
+     "label": "CHAINS"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 742,
+     "end_line": 790,
+     "label": "run_chain"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 1039,
+     "end_line": 1060,
+     "label": "decide"
+    }
+   ]
+  },
+  {
+   "id": "signals",
+   "type": "backend",
+   "label": "Signals and cards",
+   "sublabel": "237 library signals",
+   "tag": "both modes",
+   "pos": [
+    1000,
+    740
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_signals.py",
+     "line": 426,
+     "end_line": 470,
+     "label": "evaluate"
+    },
+    {
+     "path": "sh_platform/v1/v3_signals.py",
+     "line": 489,
+     "end_line": 552,
+     "label": "on_run, tick, act"
+    },
+    {
+     "path": "sh_platform/v1/v3_signals.py",
+     "line": 607,
+     "end_line": 612,
+     "label": "cards"
+    }
+   ]
+  },
+  {
+   "id": "consume",
+   "type": "backend",
+   "label": "Consume answers",
+   "sublabel": "verified figures, answer cache",
+   "tag": "cache in memory",
+   "pos": [
+    510,
+    390
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_consume.py",
+     "line": 22,
+     "end_line": 25,
+     "label": "KEPT: process memory"
+    },
+    {
+     "path": "sh_platform/v1/v3_consume.py",
+     "line": 101,
+     "end_line": 122,
+     "label": "answer, precompute"
+    },
+    {
+     "path": "sh_platform/v1/v3_board_routes.py",
+     "line": 200,
+     "end_line": 250,
+     "label": "POST /api/v3/ask"
+    }
+   ]
+  },
+  {
+   "id": "rules",
+   "type": "backend",
+   "label": "Rule checks, review queue",
+   "sublabel": "signed limits, held fields",
+   "tag": "both modes",
+   "pos": [
+    755,
+    390
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_rule_checks.py",
+     "line": 82,
+     "end_line": 160,
+     "label": "limits, breaks"
+    },
+    {
+     "path": "sh_platform/v1/v3_rule_checks.py",
+     "line": 189,
+     "end_line": 274,
+     "label": "check_documents"
+    },
+    {
+     "path": "sh_platform/v1/v3_review.py",
+     "line": 17,
+     "end_line": 107,
+     "label": "score, status, resolve"
+    }
+   ]
+  },
+  {
+   "id": "skills",
+   "type": "backend",
+   "label": "Skills library",
+   "sublabel": "63 SKILL.md folders",
+   "tag": "both modes",
+   "pos": [
+    20,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_skills.py",
+     "line": 1,
+     "end_line": 5,
+     "label": "skill = folder"
+    },
+    {
+     "path": "sh_platform/v1/v3_skills.py",
+     "line": 145,
+     "end_line": 180,
+     "label": "record, skill_runs.jsonl"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 215,
+     "end_line": 236,
+     "label": "SKILLS_OF, _skill"
+    }
+   ]
+  },
+  {
+   "id": "north",
+   "type": "backend",
+   "label": "North: intent.*",
+   "sublabel": "18 skills: brief, sign",
+   "tag": "skill group",
+   "pos": [
+    215,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 856,
+     "end_line": 875,
+     "label": "_north"
+    },
+    {
+     "path": "sh_platform/v1/i2_north.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "the brief"
+    },
+    {
+     "path": "skills/intent.sign/SKILL.md",
+     "label": "intent.sign"
+    }
+   ]
+  },
+  {
+   "id": "tally",
+   "type": "backend",
+   "label": "Tally: action.*",
+   "sublabel": "7 skills: exceptions",
+   "tag": "skill group",
+   "pos": [
+    995,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/n1_tally.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "Tally analyst"
+    },
+    {
+     "path": "sh_platform/v1/tally_tools.py",
+     "line": 102,
+     "end_line": 110,
+     "label": "TallyTools"
+    },
+    {
+     "path": "skills/action.route-owner/SKILL.md",
+     "label": "action.route-owner"
+    }
+   ]
+  },
+  {
+   "id": "lumen",
+   "type": "backend",
+   "label": "Lumen: consume.*",
+   "sublabel": "12: answer, board, note",
+   "tag": "skill group",
+   "pos": [
+    605,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/k10_note.py",
+     "line": 728,
+     "end_line": 740,
+     "label": "morning_note"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 697,
+     "end_line": 720,
+     "label": "c_note"
+    },
+    {
+     "path": "skills/consume.answer-question/SKILL.md",
+     "label": "consume.answer-question"
+    }
+   ]
+  },
+  {
+   "id": "span",
+   "type": "backend",
+   "label": "Span: model build map",
+   "sublabel": "11: pack, gold tables",
+   "tag": "skill group",
+   "pos": [
+    410,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/b10_pack.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "architecture pack"
+    },
+    {
+     "path": "sh_platform/v1/b10_design.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "gold tables"
+    },
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 352,
+     "end_line": 370,
+     "label": "a_pack"
+    }
+   ]
+  },
+  {
+   "id": "flow",
+   "type": "backend",
+   "label": "Flow: data run check",
+   "sublabel": "10: read, load, run",
+   "tag": "skill group",
+   "pos": [
+    800,
+    565
+   ],
+   "size": [
+    160,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 509,
+     "end_line": 530,
+     "label": "b_run"
+    },
+    {
+     "path": "sh_platform/v1/v3_pack_readers.py",
+     "line": 1874,
+     "end_line": 1890,
+     "label": "intake"
+    },
+    {
+     "path": "skills/run.on-copy/SKILL.md",
+     "label": "run.on-copy"
+    }
+   ]
+  },
+  {
+   "id": "router",
+   "type": "backend",
+   "label": "Model router",
+   "sublabel": "fast, specialist, manager tiers",
+   "tag": "both modes",
+   "pos": [
+    20,
+    740
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 81,
+     "end_line": 104,
+     "label": "pick_tier"
+    },
+    {
+     "path": "sh_platform/v1/router.py",
+     "line": 395,
+     "end_line": 400,
+     "label": "route"
+    },
+    {
+     "path": "sh_platform/v1/model_modes.yaml",
+     "line": 1,
+     "end_line": 17,
+     "label": "Testing, Real use"
+    }
+   ]
+  },
+  {
+   "id": "judge",
+   "type": "backend",
+   "label": "Second-model judge",
+   "sublabel": "worker + checker, two families",
+   "tag": "both modes",
+   "pos": [
+    265,
+    915
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_judge.py",
+     "line": 1,
+     "end_line": 4,
+     "label": "why"
+    },
+    {
+     "path": "sh_platform/v1/v3_judge.py",
+     "line": 159,
+     "end_line": 176,
+     "label": "two clients"
+    },
+    {
+     "path": "sh_platform/v1/v3_judge.py",
+     "line": 262,
+     "end_line": 318,
+     "label": "ask, judged"
+    }
+   ]
+  },
+  {
+   "id": "figstore",
+   "type": "backend",
+   "label": "Figure store",
+   "sublabel": "versions, tie-out, lineage",
+   "tag": "both modes",
+   "pos": [
+    510,
+    740
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_figstore.py",
+     "line": 159,
+     "end_line": 264,
+     "label": "confirm, trial"
+    },
+    {
+     "path": "sh_platform/v1/v3_figstore.py",
+     "line": 316,
+     "end_line": 360,
+     "label": "lineage, rollback"
+    }
+   ]
+  },
+  {
+   "id": "recipes",
+   "type": "backend",
+   "label": "Recipes and plan guard",
+   "sublabel": "8 YAML domains, SQL, tie-outs",
+   "tag": "both modes",
+   "pos": [
+    265,
+    740
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_recipes.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "recipes"
+    },
+    {
+     "path": "packs/family_office/1/recipes/cash.yaml",
+     "label": "cash recipes"
+    },
+    {
+     "path": "sh_platform/v1/v3_plan_guard.py",
+     "line": 15,
+     "end_line": 60,
+     "label": "ensure_plan"
+    }
+   ]
+  },
+  {
+   "id": "readers",
+   "type": "backend",
+   "label": "Readers",
+   "sublabel": "pack readers, PDF, fund docs",
+   "tag": "both modes",
+   "pos": [
+    755,
+    740
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_pack_readers.py",
+     "line": 1606,
+     "end_line": 1716,
+     "label": "kind_of"
+    },
+    {
+     "path": "sh_platform/v1/v3_pack_readers.py",
+     "line": 1716,
+     "end_line": 1849,
+     "label": "read_files, receipts"
+    },
+    {
+     "path": "sh_platform/v1/v3_doc_extract.py",
+     "line": 1,
+     "end_line": 10,
+     "label": "fund documents"
+    }
+   ]
+  },
+  {
+   "id": "egress",
+   "type": "security",
+   "label": "Egress gateway",
+   "sublabel": "allow-list, tokenise, log",
+   "tag": "both modes",
+   "pos": [
+    20,
+    915
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 186,
+     "end_line": 200,
+     "label": "EgressGateway"
+    },
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 278,
+     "end_line": 300,
+     "label": "send_model_prompt"
+    },
+    {
+     "path": "sh_platform/egress/policy.py",
+     "line": 14,
+     "end_line": 20,
+     "label": "off by default"
+    }
+   ]
+  },
+  {
+   "id": "redis",
+   "type": "messagebus",
+   "label": "Redis",
+   "sublabel": "jobs, limits, breaker",
+   "tag": "production only",
+   "pos": [
+    1000,
+    1265
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 214,
+     "end_line": 262,
+     "label": "RedisQueue"
+    },
+    {
+     "path": "sh_platform/state/kv.py",
+     "line": 1,
+     "end_line": 60,
+     "label": "window, breaker"
+    },
+    {
+     "path": "sh_platform/v1/chat_fastpath.py",
+     "line": 222,
+     "end_line": 233,
+     "label": "cache bump key"
+    }
+   ]
+  },
+  {
+   "id": "worker",
+   "type": "backend",
+   "label": "Worker",
+   "sublabel": "jobs, retries, failed list",
+   "tag": "production only",
+   "pos": [
+    755,
+    1265
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "tools/worker.py",
+     "line": 1,
+     "end_line": 37,
+     "label": "worker"
+    },
+    {
+     "path": "sh_platform/jobs/__init__.py",
+     "line": 81,
+     "end_line": 93,
+     "label": "retry, failed"
+    },
+    {
+     "path": "sh_platform/jobs/handlers.py",
+     "line": 28,
+     "end_line": 62,
+     "label": "job handlers"
+    }
+   ]
+  },
+  {
+   "id": "postgres",
+   "type": "database",
+   "label": "Postgres",
+   "sublabel": "event outbox only today",
+   "tag": "production only",
+   "pos": [
+    510,
+    1265
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/events.py",
+     "line": 64,
+     "end_line": 128,
+     "label": "sh_outbox, sh_outbox_done"
+    },
+    {
+     "path": "sh_platform/state/__init__.py",
+     "line": 102,
+     "end_line": 190,
+     "label": "PgStore, store_for"
+    },
+    {
+     "path": "tools/migrate_to_postgres.py",
+     "line": 1,
+     "end_line": 8,
+     "label": "copy JSON in"
+    }
+   ]
+  },
+  {
+   "id": "v3files",
+   "type": "database",
+   "label": "Harbor records",
+   "sublabel": "threads, figures, skill runs",
+   "tag": "files, both modes",
+   "pos": [
+    510,
+    915
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/v3_harbor.py",
+     "line": 44,
+     "end_line": 82,
+     "label": "v3/threads"
+    },
+    {
+     "path": "sh_platform/v1/v3_figstore.py",
+     "line": 42,
+     "end_line": 60,
+     "label": "v3/figures"
+    },
+    {
+     "path": "sh_platform/v1/v3_skills.py",
+     "line": 124,
+     "end_line": 152,
+     "label": "v3/skill_runs.jsonl"
+    }
+   ]
+  },
+  {
+   "id": "duckdb",
+   "type": "database",
+   "label": "Warehouse (DuckDB)",
+   "sublabel": "evidence.duckdb, one writer",
+   "tag": "files, both modes",
+   "pos": [
+    755,
+    915
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 45,
+     "end_line": 50,
+     "label": "path"
+    },
+    {
+     "path": "sh_platform/v1/wh.py",
+     "line": 157,
+     "end_line": 160,
+     "label": "connect"
+    }
+   ]
+  },
+  {
+   "id": "providers",
+   "type": "external",
+   "label": "Model providers",
+   "sublabel": "OpenRouter, Gemini",
+   "tag": "outside",
+   "pos": [
+    20,
+    1090
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/providers/__init__.py",
+     "line": 35,
+     "end_line": 60,
+     "label": "TIERS, select_provider"
+    },
+    {
+     "path": "sh_platform/egress/providers/openrouter.py",
+     "line": 18,
+     "end_line": 30,
+     "label": "OpenRouter"
+    },
+    {
+     "path": "sh_platform/egress/providers/gemini.py",
+     "line": 34,
+     "end_line": 50,
+     "label": "Gemini"
+    }
+   ]
+  },
+  {
+   "id": "email",
+   "type": "external",
+   "label": "Email (SMTP)",
+   "sublabel": "or .eml in outbox folder",
+   "tag": "outside",
+   "pos": [
+    265,
+    1090
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/egress/email.py",
+     "line": 1,
+     "end_line": 5,
+     "label": "SMTP or outbox"
+    },
+    {
+     "path": "sh_platform/egress/gateway.py",
+     "line": 486,
+     "end_line": 534,
+     "label": "send_email"
+    }
+   ]
+  },
+  {
+   "id": "railway",
+   "type": "cloud",
+   "label": "Railway service",
+   "sublabel": "Docker, /data, simple mode",
+   "tag": "today",
+   "pos": [
+    1000,
+    1090
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "railway.json",
+     "line": 1,
+     "end_line": 10,
+     "label": "health check"
+    },
+    {
+     "path": "Dockerfile",
+     "line": 1,
+     "end_line": 33,
+     "label": "image"
+    },
+    {
+     "path": "tools/start.sh",
+     "line": 1,
+     "end_line": 15,
+     "label": "seed, start"
+    }
+   ]
+  },
+  {
+   "id": "plane",
+   "type": "database",
+   "label": "Company plane",
+   "sublabel": "dropbox, landing, intents",
+   "tag": "files, both modes",
+   "pos": [
+    755,
+    1090
+   ],
+   "size": [
+    176,
+    72
+   ],
+   "sources": [
+    {
+     "path": "sh_platform/plane.py",
+     "line": 7,
+     "end_line": 7,
+     "label": "AREAS"
+    },
+    {
+     "path": "sh_platform/plane.py",
+     "line": 59,
+     "end_line": 100,
+     "label": "CompanyPlane.path"
+    },
+    {
+     "path": "tools/seed_v3_office.py",
+     "line": 1,
+     "end_line": 4,
+     "label": "seeded office"
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "PEOPLE AND UI",
+   "wraps": [
+    "pwa"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "OUTSIDE: banks and custodians",
+   "wraps": [
+    "banks"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "OUTSIDE: customer tools",
+   "wraps": [
+    "custtools"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "APP SERVER (FastAPI web process)",
+   "wraps": [
+    "connectors",
+    "v3api",
+    "gate",
+    "audit",
+    "pubapi"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "HARBOR: runner, loops, answers (web process)",
+   "wraps": [
+    "loops",
+    "runner",
+    "consume",
+    "rules"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "HARBOR SERVICES (web process)",
+   "wraps": [
+    "router",
+    "recipes",
+    "figstore",
+    "readers",
+    "signals"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "PUSH (web process)",
+   "wraps": [
+    "portal"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "SKILLS (the old agents, now skill groups)",
+   "wraps": [
+    "skills",
+    "north",
+    "tally",
+    "lumen",
+    "span",
+    "flow"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "security-group",
+   "label": "GUARD: second model and the only exit",
+   "wraps": [
+    "egress",
+    "judge"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "PRODUCTION ONLY (DATABASE_URL + REDIS_URL)",
+   "wraps": [
+    "redis",
+    "worker",
+    "postgres"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "COMPANY VOLUME /data (files, both modes)",
+   "wraps": [
+    "v3files",
+    "duckdb",
+    "plane"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "OUTSIDE: models and mail",
+   "wraps": [
+    "providers",
+    "email"
+   ],
+   "pad": 18
+  },
+  {
+   "kind": "region",
+   "label": "DEPLOYMENT TODAY",
+   "wraps": [
+    "railway"
+   ],
+   "pad": 18
+  }
+ ],
+ "connections": [
+  {
+   "id": "c_pwa_gate",
+   "from": "pwa",
+   "to": "gate",
+   "label": "HTTPS, CSRF",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_gate_api",
+   "from": "gate",
+   "to": "v3api",
+   "label": "threads"
+  },
+  {
+   "id": "c_gate_audit",
+   "from": "gate",
+   "to": "audit",
+   "label": "writes"
+  },
+  {
+   "id": "c_cust_pub",
+   "from": "custtools",
+   "to": "pubapi",
+   "label": "key, MCP",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_banks_conn",
+   "from": "banks",
+   "to": "connectors",
+   "label": "fetch"
+  },
+  {
+   "id": "c_conn_loops",
+   "from": "connectors",
+   "to": "loops",
+   "label": "dropbox"
+  },
+  {
+   "id": "c_api_runner",
+   "from": "v3api",
+   "to": "runner",
+   "label": "chain",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_loops_runner",
+   "from": "loops",
+   "to": "runner",
+   "label": "scan"
+  },
+  {
+   "id": "c_gate_consume",
+   "from": "gate",
+   "to": "consume",
+   "label": "ask",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_consume_rules",
+   "from": "consume",
+   "to": "rules",
+   "label": "limits"
+  },
+  {
+   "id": "c_runner_north",
+   "from": "runner",
+   "to": "north",
+   "label": "D1 brief"
+  },
+  {
+   "id": "c_runner_skills",
+   "from": "runner",
+   "to": "skills",
+   "label": "log calls"
+  },
+  {
+   "id": "c_consume_lumen",
+   "from": "consume",
+   "to": "lumen",
+   "label": "consume.*"
+  },
+  {
+   "id": "c_span_recipes",
+   "from": "span",
+   "to": "recipes",
+   "label": "recipes first"
+  },
+  {
+   "id": "c_lumen_fig",
+   "from": "lumen",
+   "to": "figstore",
+   "label": "figures"
+  },
+  {
+   "id": "c_flow_readers",
+   "from": "flow",
+   "to": "readers",
+   "label": "read, load"
+  },
+  {
+   "id": "c_flow_signals",
+   "from": "flow",
+   "to": "signals",
+   "label": "on_run"
+  },
+  {
+   "id": "c_signals_tally",
+   "from": "signals",
+   "to": "tally",
+   "label": "card"
+  },
+  {
+   "id": "c_signals_portal",
+   "from": "signals",
+   "to": "portal",
+   "label": "push"
+  },
+  {
+   "id": "c_skills_router",
+   "from": "skills",
+   "to": "router",
+   "label": "model call",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_router_egress",
+   "from": "router",
+   "to": "egress",
+   "label": "prompt",
+   "variant": "security"
+  },
+  {
+   "id": "c_judge_egress",
+   "from": "judge",
+   "to": "egress",
+   "label": "calls",
+   "variant": "security"
+  },
+  {
+   "id": "c_egress_prov",
+   "from": "egress",
+   "to": "providers",
+   "label": "tokenised",
+   "variant": "security"
+  },
+  {
+   "id": "c_egress_email",
+   "from": "egress",
+   "to": "email",
+   "label": "mail",
+   "variant": "security"
+  },
+  {
+   "id": "c_readers_wh",
+   "from": "readers",
+   "to": "duckdb",
+   "label": "rows, receipts",
+   "variant": "emphasis"
+  },
+  {
+   "id": "c_fig_files",
+   "from": "figstore",
+   "to": "v3files",
+   "label": "figures/*.json"
+  },
+  {
+   "id": "c_rail_plane",
+   "from": "railway",
+   "to": "plane",
+   "label": "/data"
+  },
+  {
+   "id": "c_files_pg",
+   "from": "v3files",
+   "to": "postgres",
+   "label": "planned",
+   "variant": "dashed"
+  },
+  {
+   "id": "c_worker_pg",
+   "from": "worker",
+   "to": "postgres",
+   "label": "events"
+  },
+  {
+   "id": "c_redis_worker",
+   "from": "redis",
+   "to": "worker",
+   "label": "jobs"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "slate",
+   "title": "READ THIS FIRST | Two modes, one codebase | sh_platform/mode.py",
+   "items": [
+    "Simple mode: neither DATABASE_URL nor REDIS_URL is set. One web process; jobs run on in-process threads (LocalQueue), events go to an in-memory bus (MemoryBus), the rate limit, outage breaker and answer-cache key live in process memory. Railway runs this today.",
+    "Production mode: BOTH DATABASE_URL and REDIS_URL are set. Adds Redis (job queue, shared small state), tools/worker.py (runs jobs with retries) and Postgres (the event outbox). Exactly one of the two set is refused at start-up (ModeError).",
+    "In BOTH modes the app's documents (threads, figures, intents, settings, skills runs) are files on the company volume. PgStore and store_for exist in sh_platform/state but the running app never calls store_for; only tools/migrate_to_postgres.py writes into PgStore. Planned: documents into Postgres.",
+    "Harbor itself (thread chains, the dropbox scanner, the daily signal tick, the push loop) runs on threads inside the web process in both modes. The worker runs the 2.0 pipeline jobs (b6.run, b6.tick, d1.tick, graph.rebuild) and dispatches outbox events."
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "PEOPLE AND UI | Harbor PWA | BOTH MODES",
+   "items": [
+    "What it does: one React app under /v3: Desk, a thread page per use case, Action, Build (use cases, connections, onboarding, API keys, audit), Consume (board, ask, morning note), Knowledge (map, skills, figures, signals), Trust (model, ontology, language, people, proof, workbench) and the family Portal.",
+    "Installable PWA: ui/src/pwa.ts registers ui/public/sw.js and the manifest; Web Push arrives with no body and the page fetches its inbox.",
+    "Talks to: the app server only, JSON over HTTPS with the session cookie and CSRF token. Holds no company data of its own."
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "APP SERVER | Auth and policy gate, audit log | BOTH MODES",
+   "items": [
+    "Gate: AuthMiddleware checks the signed session, CSRF on every unsafe method and the role, against route_permissions.yaml. A route that is not declared is refused (default deny).",
+    "Audit: v3_audit.py appends one hash-chained line per write request to <company>/ops/audit.jsonl (sign-ins with no company go to _control/audit.jsonl). An edited or removed line breaks the chain and verify() says where.",
+    "Routes: sh_platform/v1/__init__.py mounts every *_routes.py file, so the v3 routes (v3_routes, v3_board_routes, v3_signals_routes, v3_public_api_routes and the rest) sit beside the 2.0 routes in one FastAPI app."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "APP SERVER | Connectors | BOTH MODES",
+   "items": [
+    "A connector only fetches and hands back Fetched(name, data, source); the file then goes into the company dropbox like any dropped file, so readers, receipts and rule checks apply the same way.",
+    "files.py: SFTP folder, IMAP inbox and bank formats (MT940, camt.053, MT535/536, BAI2). banksg.py, gocardless.py, plaid.py and saxo.py turn API JSON into standard files.",
+    "Network calls go through the egress gateway, off by default per company."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "APP SERVER | Public API and MCP | BOTH MODES",
+   "items": [
+    "Public API: read-only REST under /api/public/v1 (figures, one figure with receipts, ask, signals, documents), opened with an shpub key an office admin makes on Build > API keys. Keys are hashed, scoped, rate limited and every call is logged.",
+    "Webhooks: when a signal fires, notify_signal posts signal.fired to each key's webhook through the egress gateway (send_webhook), signed with an HMAC header, on its own thread.",
+    "MCP: two doors. POST /mcp in the app (bearer shmcp token, sh_platform/mcp) and tools/mcp_harbor.py, a stdio MCP server a customer's AI tool runs that calls the public API with its key."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "HARBOR | Harbor thread runner | BOTH MODES, IN THE WEB PROCESS",
+   "items": [
+    "A use case is a thread (<company>/v3/threads) with a stage: drafting, decision1, working, question, decision2, decision3, live.",
+    "Drafting: _north calls the intent chat with intent.restate-ask, intent.find-gaps, intent.fill-with-practice. Decision 1 (decide n=1) signs the brief and starts chain A.",
+    "Chain A: sign, hand over, Span reads the systems and samples, drafts and approves the design pack, Flow reads the dropped files; then Decision 2 (here is what I understood). Chain B: apply answers, load, run on a copy, compare with the report; then Decision 3 (numbers match, go live?). Chain C: go live, Lumen's starter board, the first morning note. Chain M: monthly load and exceptions.",
+    "Each step is an in-process call to the existing 2.0 routes (Ctx.api) wrapped in _skill, which logs the skill run. A failed step becomes a question and the thread waits. Chains run on a daemon thread, not on the job queue, in both modes."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "HARBOR | Background loops | BOTH MODES, IN THE WEB PROCESS",
+   "items": [
+    "start_scanner (started by the first /api/v3 request): every 30 seconds scans each company dropbox for new files and runs the daily signal tick once a day per office.",
+    "app.py startup also starts the 2.0 scheduler, delivery ticks and the G5 portal loop (Web Push for new cards and approvals, the daily morning email).",
+    "These are threads in each web process. With two web replicas each would run its own loops: today there is one replica."
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "SKILLS | Skills library and the five skill groups | BOTH MODES",
+   "items": [
+    "A skill is a folder skills/<id>/ with SKILL.md and optional tests.jsonl; an office's own <company>/skills/<id>/ overrides the core one. 63 folders have a SKILL.md. Every call is a line in <company>/v3/skill_runs.jsonl.",
+    "North = intent.* (18): restate, gaps, figures, sources, access, decision path, sign. Span = model.*, build.*, map.* (11): design pack, gold tables, ready SQL, mappings. Flow = data.*, run.*, check.* (10): recognise, profile, read PDF fields, load, run on a copy, adds-up checks. Lumen = consume.* (12): answers, board, morning note, monthly pack. Tally = action.* (7): detect exception, route owner, size impact, draft message.",
+    "Harbor's own: harbor.route, harbor.write-skill, harbor.test-skill and knowledge.* (5). A skill Harbor writes waits until a person admits it.",
+    "Router aliases (model_modes.yaml): north, span (with flow, data, intake, investigation), lumen, tally."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "HARBOR SERVICES | Readers and the second-model judge | BOTH MODES",
+   "items": [
+    "Readers: kind_of and recognise name a file by content and name; read_files loads a batch in one transaction with a source record per file (content hash, received date): that is the receipt every row points back to. Family readers: v3_pack_readers_family, _invest, _treasury, _controls, _feeds, _assets.",
+    "PDFs: v3_pdf.py reads on this machine (OCR for pictures), learns each new layout once. v3_doc_extract.py reads capital calls, distributions and NAV by text layer, then layout fingerprint, then a model only when needed.",
+    "Judge: a small judgement call goes to two models of different families (worker on the fast tier, checker on another), each through its own egress gateway client. Agreement is recorded as an assumption; disagreement becomes one Decision 2 question. Cost per build is capped (SH_JUDGE_BUDGET_USD)."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "HARBOR SERVICES | Recipes, plan guard and the figure store | BOTH MODES",
+   "items": [
+    "Recipes: packs/family_office/1/recipes holds 8 YAML files. A recipe names the tables a figure may and must never read, the formula, the SQL and a tie-out. Span uses recipes first, then a saved design, then the model.",
+    "Plan guard: ensure_plan re-approves a missing build plan or asks a question naming the failed step.",
+    "Figure store: one record per figure at <company>/v3/figures/<id>.json. confirm at Decision 1, trial at Decision 3, a version per run; a version that fails its tie-out is held and the last verified one stays current. lineage gives files, then tables, then figure; rollback for admins."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "HARBOR | Consume answers, rule checks and review queue | BOTH MODES",
+   "items": [
+    "verified_answer reads the office's verified figures through their figure records first. POST /api/v3/ask returns the answer, the figure, the trace and whether it was cached.",
+    "Answer cache: KEPT in v3_consume.py, keyed by viewer, question and data version (the latest live run). It is process memory in BOTH modes: a restart answers the first ask live again. The Redis cache key in production belongs to the 2.0 chat fast path, not to this cache.",
+    "Rule checks: concentration against the signed limit, cash breaks against the signed tolerance, document checks. A limit not on record is never invented.",
+    "Review queue: every document field gets high, medium or low confidence; below the signed minimum it is held out of the figures until a person confirms or corrects it, and the correction is kept as a regression case."
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "HARBOR SERVICES | Signals, Action cards, portal and push | BOTH MODES",
+   "items": [
+    "A signal is a declared catch: what arrives, the condition, the one person who acts. Library: packs/family_office/1/signals (237 YAML) plus the office's own. evaluate runs on a file load, after each chain (on_run), after an action and on the daily tick. Same signal for the same subject fires once.",
+    "cards() returns open cards (kind, severity, owner by role, one action, evidence) for the Action centre and the Desk; act is a hit, dismiss is a miss.",
+    "Push: g5_push sends a body-less VAPID Web Push for new cards and approvals; the family portal shows one member's share, documents, approvals and note, read-only."
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "GUARD | Model router and egress gateway | BOTH MODES",
+   "items": [
+    "Router: pick_tier chooses fast, specialist or manager; retries go up a tier, never down. Testing mode (default) uses qwen3.7-flash and gpt-oss-120b through OpenRouter; Real use uses the SH_MODEL_* settings. The mode is saved per company. Costs go to model_costs.jsonl.",
+    "Egress gateway: the only exit. For each prompt: destination and URL checks, structure checks, tokenise names, check the body for vault names and raw rows, write the log line, then send. Refused means EgressBlocked before the network is touched. Internet access is off unless the company switches it on.",
+    "Provider outage breaker: a dict in simple mode, Redis in production (kv.breaker_map), so all processes agree a provider is out.",
+    "Email goes through gateway.send_email: SMTP when SH_SMTP_URL is set, otherwise an .eml file in <company>/outbox."
+   ]
+  },
+  {
+   "dot": "violet",
+   "title": "DATA | Company volume: plane, Harbor records, warehouse | FILES IN BOTH MODES",
+   "items": [
+    "Company plane: one folder per company under SH_DATA_ROOT (/data on Railway): dropbox, landing (originals, records), warehouse, intents, build, consume, graph, context, model, templates, settings, skills, ops (audit.jsonl), outbox, portal, v3.",
+    "Harbor records under v3/: threads, figures, signals, skill_runs.jsonl, corrections.jsonl, review quotes, design cache.",
+    "Warehouse: one DuckDB file per company, warehouse/evidence.duckdb; wh.connect is the only way in. DuckDB allows one writer process per file, so web and worker must share one volume (Railway: the worker runs in the web container).",
+    "Planned: documents into Postgres (PgStore exists, store_for is not wired)."
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "PRODUCTION ONLY | Redis, worker and Postgres | DATABASE_URL + REDIS_URL",
+   "items": [
+    "Redis: the job queue (sh:jobs:ready, delayed, failed lists), shared small state (chat rate limit window, provider breaker, fast-path cache bump counter).",
+    "Worker: tools/worker.py takes each job once; a failed job is retried with doubling backoff, then lands on the failed list where the admin page can resend it. It also dispatches outbox events.",
+    "Postgres: sh_outbox and sh_outbox_done (each consumer marks an event done in the same savepoint). tools/migrate_to_postgres.py copies the JSON documents into PgStore at start-up, but the app keeps reading and writing the files, so that copy is not used yet."
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "DEPLOYMENT TODAY | Railway service | SIMPLE MODE",
+   "items": [
+    "railway.json builds the Dockerfile and health-checks /api/health. The image builds ui/dist (node 22) and serves it and the API from uvicorn (python 3.11).",
+    "tools/start.sh seeds an empty /data volume (seed_v3_office.py: the synthetic Evergreen Office when SH_V3_OFFICE=1, never wiped), then starts the web app. If both URLs were set it would also migrate to Postgres and start the worker in the same container, because a Railway volume attaches to one service.",
+    "Model providers: OpenRouter and Gemini, reached only through the egress gateway."
+   ]
+  }
+ ]
+}
