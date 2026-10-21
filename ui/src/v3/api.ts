@@ -173,3 +173,12 @@ export interface ReuseOffer { figure_id: string; name: string; built_from: { kin
 export const listFigures = () => apiGet<FigureRow[]>("/api/v3/figures");
 export const getFigure = (id: string) => apiGet<FigureRecord>(`/api/v3/figures/${encodeURIComponent(id)}`);
 export const rollbackFigure = (id: string, v: number) => apiSend<FigureRecord>("POST", `/api/v3/figures/${encodeURIComponent(id)}/rollback`, { v });
+
+// W1 + W8: Build > Connections and Build > Onboarding
+export interface ConnectorRow { id: string; label: string; kind: string; missing: string[]; state: "connected" | "needs_settings" | "error"; last_run: string | null; files: number; errors: string[]; message: string }
+export interface OnboardingStep { id: string; step: string; owner: string; harbor: string; manual: boolean; status: "done" | "doing" | "waiting" | "attention"; detail: string; ticked_by: string | null; ticked_at: string | null }
+export interface Onboarding { score: number; parts: { label: string; weight: number; points: number; detail: string }[]; steps: OnboardingStep[] }
+export const getConnectors = () => apiGet<{ connectors: ConnectorRow[] }>("/api/v3/connectors");
+export const runConnector = (id: string) => apiSend<ConnectorRow>("POST", `/api/v3/connectors/${encodeURIComponent(id)}/run`, {});
+export const getOnboarding = () => apiGet<Onboarding>("/api/v3/onboarding");
+export const tickStep = (id: string, done: boolean, note = "") => apiSend<Onboarding>("POST", `/api/v3/onboarding/${encodeURIComponent(id)}/tick`, { done, note });
