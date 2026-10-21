@@ -1973,3 +1973,5 @@ from sh_platform.v1 import v3_pack_readers_family as _family  # noqa: E402 - the
 _family.install(__import__("sys").modules[__name__])
 from sh_platform.v1 import v3_pack_readers_invest as _invest  # noqa: E402 - the invest kinds register themselves in the tables above
 _invest.install(__import__("sys").modules[__name__])
+from sh_platform.v1 import v3_pack_readers_feeds as _feeds  # noqa: E402 - the file-format feeds (MT940, camt.053, BAI2, MT535, MT536) register themselves, after invest
+_feeds.install(__import__("sys").modules[__name__])
