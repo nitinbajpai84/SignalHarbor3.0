@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 
 import { useSession } from "../useSession";
 import ModeSwitch from "../v1/router/ModeSwitch";  // Testing or Real use models, the same company switch as 2.0
@@ -25,6 +25,7 @@ const KNOW = <><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4
  * On a phone the nav becomes a bottom tab bar with Home first and a count of what needs a person on Action. */
 export default function V3Frame({ children, back }: { children: ReactNode; back?: ReactNode }) {
   const { user, signOut } = useSession();
+  const refused = (useLocation().state as { refused?: boolean } | null)?.refused;  // set by the RoleGate in App.tsx
   const [needs, setNeeds] = useState(0);
   useEffect(() => {
     // Only phones show the badge, so only phones pay for the call. One call per page; a failure just hides the badge.
@@ -55,6 +56,7 @@ export default function V3Frame({ children, back }: { children: ReactNode; back?
         <PersonMenu name={user?.display_name ?? ""} onSignOut={signOut} />
       </header>
       <InstallBanner />
+      {refused ? <p role="status" className="v3-mute">That page is not open to you. This is your start page.</p> : null}
       {children}
     </div>
   );

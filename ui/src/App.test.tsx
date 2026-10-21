@@ -128,7 +128,7 @@ describe("routing and session", () => {
   test("signed-in visit to login goes to home", async () => {
     mockWorld({ signedIn: true, modules: [M1] });
     renderAt("/login");
-    expect(await screen.findByText("Harbor Test Co")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Home: the Desk" })).toBeInTheDocument();  // 3.0: home is the Desk
   });
 
   test("login success goes to home; first field is focused; Enter submits", async () => {
@@ -282,7 +282,7 @@ describe("return to the page asked for", () => {
     mockWorld({ signedIn: false, modules: [M1] });
     renderAt(`/login?next=${encodeURIComponent(next)}`);
     await signInAs(userEvent.setup());
-    expect(await screen.findByRole("link", { name: "Action" })).toHaveAttribute("aria-current", "page");  // Action is the landing page
+    expect(await screen.findByRole("link", { name: "Home: the Desk" })).toBeInTheDocument();  // landed in the app (the Desk), not the other site
   });
 });
 

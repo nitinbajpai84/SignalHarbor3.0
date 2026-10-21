@@ -119,7 +119,7 @@ describe("role gate", () => {
     mock({ roles: ["participant"] });
     at("/centre/build/pipelines");
     expect(await screen.findByText(/not open to you/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Action" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Home: the Desk" })).toBeInTheDocument();  // 3.0: refused pages fall back to the Desk
   });
 
   test("a sponsor may not open the data model in Settings", async () => {
@@ -141,7 +141,7 @@ describe("redirects", () => {
     await user.type(await screen.findByLabelText("Email"), "a@b.co");
     await user.type(screen.getByLabelText("Password"), "pw");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("link", { name: "Action" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("link", { name: "Home: the Desk" })).toBeInTheDocument();  // 3.0: everyone lands on the Desk
   });
 
   test.each([
