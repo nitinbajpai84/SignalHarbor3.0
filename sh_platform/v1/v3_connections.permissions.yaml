@@ -1,0 +1,6 @@
+# W1/W8: every company role sees the connectors and the onboarding checklist; the office admin and the head of data run connectors; they, the sponsor and the data team tick steps.
+routes:
+  GET /api/v3/connectors: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/connectors/{cid}/run: {roles: [company_admin, head_of_data]}
+  GET /api/v3/onboarding: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/onboarding/{sid}/tick: {roles: [company_admin, sponsor, analyst]}
