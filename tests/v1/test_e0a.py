@@ -49,7 +49,7 @@ def test_core_seeds_as_version_one_and_is_described(plane):
     assert d["columns"][0]["pk"] and any(r["to"]["table"] == "organizations" for r in d["refs"]) and E.describe(plane, "nope") is None
     assert {t["name"] for t in E.tables(plane)} == {t["name"] for t in cat["tables"]}
     ddl = E.ddl(cat)
-    assert len(ddl) == 60 and "FLOAT[384]" in "".join(ddl) and "TIMESTAMPTZ" in "".join(ddl) and "tsvector" not in "".join(ddl)
+    assert len(ddl) == 61 and "FLOAT[384]" in "".join(ddl) and "TIMESTAMPTZ" in "".join(ddl) and "tsvector" not in "".join(ddl)
 
 
 def test_a_broken_script_is_refused_with_its_line(plane):

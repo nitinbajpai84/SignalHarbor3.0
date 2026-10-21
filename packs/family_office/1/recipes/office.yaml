@@ -896,11 +896,11 @@ recipes:
     words_all: [[member, members, family], [access, see, view, grant, grants, granted, allowed, request, requests]]
     may_read: [family_members, legal_entities, access_groups, access_group_scopes, business_rules, rule_versions, documents, extracted_fields]
     never_read: [system_access_grants]
-    why: What a member may see is a signed rule family_access_<member>_<entity> (A38, A49); what they are given is the scope of their family access group (summary is stored as preview, none as no row); a request is a document with requester, requested_entity and requested_level fields.
+    why: What a member may see is a signed rule family_access_<member>_<entity> (A38, A49); the principal, whom the ownership register adds as a family member (A61), is the office's client, not governed by the family access policy, so is not listed; what they are given is the scope of their family access group (summary is stored as preview, none as no row); a request is a document with requester, requested_entity and requested_level fields.
     formula: 'One row per family member and legal entity. allowed = the level of the signed rule (empty when none is signed); granted = the scope of the member''s family group (none when there is no scope). Levels rank none < summary < full; over_granted when granted ranks above allowed. A request on record for the member and entity gives requested_level, and request_allowed when it ranks at or below allowed.'
     grain: By family member and entity
     sql: >-
-      create table {name} as with fm as (select distinct m.member_name from family_members as m where not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id)),
+      create table {name} as with fm as (select distinct m.member_name from family_members as m where m.relationship is distinct from 'principal' and not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id)),
       pol as (select r.rule_code, json_extract_string(v.parameters, '$.level') as level from business_rules as r join rule_versions as v on v.business_rule_id = r.id
       where starts_with(r.rule_code, 'family_access_') and v.approval_status = 'approved' qualify row_number() over (partition by r.rule_code order by v.version_number desc) = 1),
       gr as (select substr(g.group_name, 8) as member_name, s.scope_value as entity_code, case when s.access_level = 'preview' then 'summary' else s.access_level end as level
@@ -935,7 +935,7 @@ recipes:
       label: Every family member is listed against every entity
       sql: >-
         select (select count(*) from {name}), (select count(distinct m.member_name) * (select count(*) from legal_entities) from family_members as m
-        where not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id))
+        where m.relationship is distinct from 'principal' and not exists (select 1 from family_members as x where x.supersedes_family_member_id = m.id))
 
   - id: estate_cash_need
     label: Transfer tax need against liquid assets
