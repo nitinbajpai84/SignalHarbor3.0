@@ -377,3 +377,45 @@ def test_the_public_routes_are_declared_and_the_admin_ones_are_not_open(env):
     for k in [f"GET {BASE}/figures", f"POST {BASE}/ask", f"GET {BASE}/documents"]:
         assert perms[k].public
     assert perms["POST /api/v3/api-keys"].roles == {"company_admin"} and not perms["POST /api/v3/api-keys"].public
+
+
+# ---- the MCP bridge (tools/mcp_harbor.py) -----------------------------------------------------------------------------------------------
+
+def bridge(client):
+    def go(method, path, body=None):
+        r = client.request(method, BASE + path, json=body)
+        return r.status_code, r.json()
+    return go
+
+
+def test_the_mcp_bridge_lists_three_tools_and_reads_through_the_api(env, monkeypatch):
+    from tools import mcp_harbor as M
+    app, eg, _ = env
+    FS._save(eg, figure_rec("fig-cash-break", "Cash break"))
+    SG._put(eg, card("sg-1"))
+    monkeypatch.setattr(B, "_ask", lambda plane, viewer, text, pid: {"answer": "Cash is 100.", "figure": None, "trace": [], "used": []})
+    go = bridge(api(app, make(login(app, ADMIN), scopes=["figures", "ask", "signals"])["key"]))
+    hello = M.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}}, go)
+    assert hello["result"]["protocolVersion"] == "2025-06-18" and M.handle({"jsonrpc": "2.0", "method": "notifications/initialized"}, go) is None
+    tools = M.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, go)["result"]["tools"]
+    assert [t["name"] for t in tools] == ["ask", "figures", "signals"]
+
+    def call(name, **args):
+        return M.handle({"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": name, "arguments": args}}, go)["result"]
+    assert "Cash is 100." in call("ask", question="How much cash?")["content"][0]["text"]
+    assert "fig-cash-break" in call("figures")["content"][0]["text"] and "abc123abc123" in call("figures", id="fig-cash-break")["content"][0]["text"]
+    assert "sg-1" in call("signals", status="open")["content"][0]["text"]
+    gone = call("figures", id="fig-nope")
+    assert gone["isError"] and "No such figure" in gone["content"][0]["text"]
+    assert call("delete_everything")["isError"] and M.handle({"jsonrpc": "2.0", "id": 4, "method": "nope"}, go)["error"]["code"] == -32601
+
+
+def test_the_mcp_bridge_says_so_plainly_with_no_key_or_a_refused_one(env, monkeypatch):
+    from tools import mcp_harbor as M
+    app, _, _ = env
+    monkeypatch.delenv("HARBOR_API_KEY", raising=False)
+    assert "HARBOR_API_KEY is not set" in M.call_tool("figures", {})["content"][0]["text"]
+    bad = M.call_tool("figures", {}, bridge(api(app, "shpub.evergreen.nope.nope")))
+    assert bad["isError"] and "missing, wrong or revoked" in bad["content"][0]["text"]
+    narrow = M.call_tool("signals", {}, bridge(api(app, make(login(app, ADMIN), scopes=["figures"])["key"])))
+    assert narrow["isError"] and "does not have the signals scope" in narrow["content"][0]["text"]
