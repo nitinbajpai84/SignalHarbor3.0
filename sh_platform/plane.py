@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from sh_platform import jsonfile
+
 AREAS = ("landing", "warehouse", "intents", "baseline", "context", "graph")
 _ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
 _MODULE_ID = re.compile(r"[a-z][a-z0-9_]*")
@@ -56,6 +58,16 @@ def _plain(p: Path) -> Path:
     return Path("\\\\" + s[8:] if s[4:8].upper() == "UNC\\" else s[4:])
 
 
+def _state_path():
+    from sh_platform.state.routing import StatePath
+    return StatePath
+
+
+def _wrap(folder: Path) -> Path:
+    """Production mode: the folder is a StatePath, so every path under it sends its .json documents to the state store."""
+    return _state_path()(folder) if jsonfile.ROUTE is not None else folder
+
+
 @dataclass(frozen=True)
 class CompanyPlane:
     company_id: str
@@ -75,6 +87,8 @@ class CompanyPlane:
         except (OSError, RuntimeError, ValueError):  # RuntimeError: link loop
             raise CrossCompanyError("path outside company plane") from None
         p = _plain(p)
+        if jsonfile.ROUTE is not None:
+            p = _state_path()(p)
         if not p.is_relative_to(self.root):
             raise CrossCompanyError("path outside company plane")
         if not p.exists() and parts and str(parts[0]) in ("library", "projects"):  # L3: a library file that moved into its folder
@@ -114,7 +128,7 @@ class PlaneStore:
             plain = False
         if not plain:
             raise CrossCompanyError("plane is not a plain folder in the data root")
-        return CompanyPlane(company_id, folder)
+        return CompanyPlane(company_id, _wrap(folder))
 
     def exists(self, company_id: str) -> bool:
         return self._plane(company_id).root.is_dir()

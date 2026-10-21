@@ -89,6 +89,9 @@ def create_app(settings: Settings | None = None, dist_dir: Path | str | None = N
     app = FastAPI(title="Signal Harbor", docs_url=None, redoc_url=None, openapi_url=None)
     from sh_platform.perf import install_timer; install_timer(app)  # logs any route over 500 ms
     settings = settings or load_settings()
+    if run_mode.production():  # the documents of every company plane live in Postgres (sh_platform/state/routing.py)
+        from sh_platform.state import routing
+        routing.configure(settings.data_root)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

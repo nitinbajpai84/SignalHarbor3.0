@@ -17,9 +17,33 @@ from datetime import date, datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
+from sh_platform import jsonfile
 from sh_platform.v1 import v3_pdf as V  # PDFs go down the document path
 
-LOCK = threading.RLock()
+class _Lock:
+    """The in-process RLock; in production mode also a Postgres advisory lock, so a second web copy or the worker waits on the same one."""
+
+    def __init__(self):
+        self.t, self.pg = threading.RLock(), None
+
+    def _cur(self):
+        r = jsonfile.ROUTE
+        if r is None:
+            return self.t
+        if self.pg is None or self.pg.route is not r:
+            from sh_platform.state.routing import PgLock
+            self.pg = PgLock(r, "v3_harbor")
+        return self.pg
+
+    def __enter__(self):
+        self._held = self._cur()  # ponytail: one holder field is enough while the hold is short; the lock is re-entered by the same thread only
+        return self._held.__enter__()
+
+    def __exit__(self, *exc):
+        return self._held.__exit__(*exc)
+
+
+LOCK = _Lock()
 SCANNING = threading.Lock()  # one scan at a time; it judges files outside LOCK
 SYNC = False  # tests run chains inline
 log = logging.getLogger(__name__)
@@ -69,6 +93,8 @@ def save(plane, th: dict) -> None:
     # write to a side file and swap it in, so a reader never sees a half-written thread (round 9: start failed with HTTP 500)
     with LOCK:
         p = _dir(plane) / f"{th['id']}.json"
+        if jsonfile.ROUTE is not None:  # production: the thread is a document in the state store
+            return jsonfile.write_json_atomic(p, json.loads(json.dumps(th, default=str)))
         tmp = p.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(th, default=str), encoding="utf-8")
         for i in range(5):
