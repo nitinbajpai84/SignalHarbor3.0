@@ -222,3 +222,5 @@ def _install_build_scheduler(app: FastAPI) -> None:
         d1_delivery.stop()
         from sh_platform.v1 import g5_portal
         g5_portal.stop()
+        from sh_platform.state import kv
+        kv.unlead()

@@ -740,6 +740,13 @@ def start_chain(app, plane, tid, name, account_id, at=0) -> None:
 
 
 def run_chain(app, plane, tid, name, account_id, at=0) -> None:
+    from sh_platform.state import kv
+    with kv.lock(f"chain:{plane.path('v3')}:{tid}") as got:  # one run per thread across all web copies; a second asker finds it already running
+        if got:
+            _run_chain(app, plane, tid, name, account_id, at)
+
+
+def _run_chain(app, plane, tid, name, account_id, at=0) -> None:
     th = load(plane, tid)
     x, (steps, final) = Ctx(app, plane, th, account_id), CHAINS[name]
     th["stage"], th["resume"] = "working", None
@@ -1275,10 +1282,13 @@ def start_scanner(app) -> None:
 
     def loop():
         from sh_platform.plane import PlaneStore
+        from sh_platform.state import kv
         ticked: dict = {}
         while True:
             time.sleep(30)
             try:
+                if not kv.lead():  # only the leader copy scans and ticks; the others idle and take over if the lease lapses
+                    continue
                 store = PlaneStore(app.state.settings.data_root)
                 for cid in store.list_company_ids():
                     if store.plane_for(cid).path("dropbox").is_dir():

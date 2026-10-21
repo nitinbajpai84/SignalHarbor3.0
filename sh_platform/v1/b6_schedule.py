@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import re
 import threading
+
+from sh_platform.state import kv
 from datetime import datetime, timedelta
 
 from sh_platform.v1 import b6_run as R
@@ -107,6 +109,8 @@ def start(planes, interval: float = 60.0) -> threading.Thread:
     def loop() -> None:
         while not _STOP.wait(interval):
             try:
+                if not kv.lead():  # one copy per deployment runs this loop
+                    continue
                 for plane in planes():
                     # W3: through the job queue. Simple mode runs it here, as before; production hands it to a worker (one tick per company per minute)
                     from sh_platform.jobs import handlers as H, queue

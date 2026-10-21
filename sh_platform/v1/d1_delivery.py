@@ -18,6 +18,8 @@ import os
 import re
 import secrets
 import threading
+
+from sh_platform.state import kv
 from contextlib import suppress
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -475,6 +477,8 @@ def start(planes, interval: float = 60.0) -> threading.Thread:
     def loop() -> None:
         while not _STOP.wait(interval):
             try:
+                if not kv.lead():  # one copy per deployment runs this loop
+                    continue
                 for plane in planes():
                     from sh_platform.jobs import handlers as H, queue  # W3: through the job queue (a worker sends in production)
                     queue().submit("d1.tick", H.payload_of(plane), key=H.minute_key("d1.tick", plane))
