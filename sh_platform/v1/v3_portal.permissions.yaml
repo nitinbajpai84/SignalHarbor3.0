@@ -1,0 +1,12 @@
+# Harbor 3.0 family portal, push and the morning email. Every company role may open the portal and the push settings; the handler lets in only a family member
+# (or, for the preview, the company admin) and raising an approval or sending the email is checked in the handler too. Default deny: every route is listed.
+routes:
+  GET /api/v3/portal: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/portal/ask: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/portal/approvals: {roles: [company_admin, sponsor, analyst, approver]}
+  POST /api/v3/portal/approvals/{aid}/decide: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/portal/morning-email: {roles: [company_admin]}
+  GET /api/v3/push/config: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/push/subscribe: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  POST /api/v3/push/unsubscribe: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
+  GET /api/v3/push/inbox: {roles: [company_admin, sponsor, analyst, owner, approver, participant]}
