@@ -192,7 +192,7 @@ def check_documents(o) -> list[dict]:
     fld: dict = {}
     for f in rows.get("extracted_fields", []):
         fld.setdefault(f["document_id"], {})[f["field_name"]] = f
-    num = lambda did, n: _d((fld.get(did, {}).get(n) or {}).get("value_numeric"))  # noqa: E731
+    num = lambda did, n: _d((fld.get(did, {}).get(n) or {}).get("value_numeric")) or Decimal(0)  # noqa: E731
     txt = lambda did, n: (fld.get(did, {}).get(n) or {}).get("value_text")  # noqa: E731
     docs = rows.get("documents", [])
     raised = [(e.get("exception_type"), e.get("title") or "") for e in rows.get("exceptions", [])]
