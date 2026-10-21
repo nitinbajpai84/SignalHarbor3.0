@@ -1087,6 +1087,33 @@ Table system_access_grants {
 }
 
 /*
+  Who owns what share of an entity, as at a date: a legal entity or a family member owns a percentage of another legal entity, from a date to a date. It comes from a share register or a trust deed schedule. Look-through exposure (a person's or entity's share of a position, commitment or cash, however many holdings deep) is a figure, never stored.
+  Added by the v3 steward for the ownership look-through (assumption A61). Same organisation and load columns as fx_confirmations.
+*/
+Table entity_ownership {
+  id uuid [pk]
+  organization_id uuid [not null, ref: > organizations.id]
+  source_record_id uuid [not null, ref: > source_records.id]
+  source_document_id varchar(100) [note: 'The document in Evidence the values were read from: the share register or the trust deed']
+  source_page integer [note: 'The page the values were read from']
+  received_at timestamptz [not null]
+  recorded_at timestamptz [not null]
+  supersedes_entity_ownership_id uuid [ref: > entity_ownership.id]
+
+  owner_kind varchar(20) [not null, note: 'entity or family_member']
+  owner_entity_id uuid [ref: > legal_entities.id, note: 'Set when owner_kind is entity']
+  owner_family_member_id uuid [ref: > family_members.id, note: 'Set when owner_kind is family_member']
+  owned_entity_id uuid [not null, ref: > legal_entities.id]
+  ownership_pct numeric(9,6) [not null, note: 'A percent, 0 to 100']
+  valid_from date [not null]
+  valid_to date [note: 'Empty means still in force']
+
+  indexes {
+    (organization_id, owned_entity_id, valid_from)
+  }
+}
+
+/*
   Covers licensed prices, index levels, rates and FX observations.
   series_key is the provider's identifier; mapping/entitlement
   must be checked before use in a report.
@@ -1580,6 +1607,7 @@ TableGroup office_records {
   kyc_records
   fund_holdings
   system_access_grants
+  entity_ownership
 }
 
 TableGroup rules_and_benchmarks {

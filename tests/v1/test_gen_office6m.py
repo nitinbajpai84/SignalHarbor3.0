@@ -446,7 +446,7 @@ def test_other_cards_have_inputs_and_keys():
         assert [p for g in k[i]["input_files"] for p in FIX.glob(g)], f"no input file for {i}: {k[i]['input_files']}"
         for q in k[i]["questions"].values():
             assert q["expected"] is not None and q["how"], i
-    assert len(k) == 100
+    assert len(k) == 101  # the 100 cards plus uc-101-ownership (A61)
 
 
 def test_signed_rules_of_cards_51_to_100_agree_with_the_keys():

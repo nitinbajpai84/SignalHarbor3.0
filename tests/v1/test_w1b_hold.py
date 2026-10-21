@@ -386,7 +386,7 @@ def test_68_cash_already_received_is_not_forecast(office):
 def test_the_build_carries_the_exact_answer_keys(card):
     b = yaml.safe_load((PACK / "builds" / "hold-51.yaml").read_text(encoding="utf-8"))
     builds = {x["id"]: (r["id"], x) for r in b["roles"] for x in r["builds"]}
-    assert set(builds) == set(BUILT)
+    assert set(builds) == set(BUILT) | {"uc-101-ownership"}  # the ownership card (A61) has its own test, tests/v1/test_g_ownership.py
     role, x = builds[card]
     assert role in ROLES and x["say"] and x["files"] and x["check"]["ask"] and x["check"]["expect"]
     assert all(f.startswith("office6m:") and glob.glob(str(OFFICE / f[9:])) for f in x["files"])

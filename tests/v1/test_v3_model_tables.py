@@ -28,7 +28,7 @@ from tools import seed_evergreen as EG  # noqa: E402
 FIX = ROOT / "tests" / "v1" / "fixtures" / "10uc" / "otc_confirms"
 NEW = ("fx_confirmations", "expected_statements", "bank_accounts", "credit_facilities", "family_members", "vendor_contracts", "deal_pipeline", "committee_decisions")
 NEW2 = ("office_expenses", "corporate_actions", "real_assets", "tax_lots", "tax_obligations", "grants", "staff_payroll", "kyc_records", "fund_holdings", "system_access_grants")  # assumptions A32 to A41
-NEW = NEW + NEW2
+NEW = NEW + NEW2 + ("entity_ownership",)  # assumption A61
 ADDED_COLS = {"cash_movements": ("bank_account_id", "counterparty_portfolio_id", "payment_stage", "payee_name", "reference"), "approvals": ("cash_movement_id",),  # assumption A18: columns added to existing tables
               "transactions": ("counterparty_name", "status_reason"), "exceptions": ("external_ref", "legal_entity_id"), "source_batches": ("arrived_on_time", "manual_fix"),  # assumptions A32 onward
               "sheet_mapping_columns": ("confidence",), "vendor_contracts": ("contract_kind", "sum_insured", "covered_asset_ref")}

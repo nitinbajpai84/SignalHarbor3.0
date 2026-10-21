@@ -572,3 +572,4 @@ def build_keys(w):
 
 
 from . import keys2  # noqa: E402,F401  (the other 49 cards register their keys here, after everything they import is defined)
+from . import ownership  # noqa: E402,F401  (the ownership look-through card registers its key here)

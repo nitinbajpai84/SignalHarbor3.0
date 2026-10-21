@@ -126,3 +126,13 @@ objects:
       - {name: valuation_date, label: Valuation date, type: date, synonyms: [valuation_date]}
     relations:
       - {to: instrument, label: evidence for}
+  - name: ownership
+    label: Ownership
+    table: entity_ownership
+    properties:
+      - {name: owner_kind, label: Owner kind, type: string, synonyms: []}
+      - {name: ownership_pct, label: Ownership, type: number, synonyms: [Share, Stake, Holding %]}
+      - {name: valid_from, label: Valid from, type: date, synonyms: []}
+      - {name: valid_to, label: Valid to, type: date, synonyms: []}
+    relations:
+      - {to: entity, label: owns a share of}

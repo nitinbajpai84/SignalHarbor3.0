@@ -996,3 +996,22 @@ CREATE TABLE IF NOT EXISTS system_access_grants (
   revoked_on DATE,
   status VARCHAR NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS entity_ownership (
+  id VARCHAR PRIMARY KEY,
+  organization_id VARCHAR NOT NULL,
+  source_record_id VARCHAR NOT NULL,
+  source_document_id VARCHAR,
+  source_page INTEGER,
+  received_at TIMESTAMPTZ NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  supersedes_entity_ownership_id VARCHAR,
+  owner_kind VARCHAR NOT NULL,
+  owner_entity_id VARCHAR,
+  owner_family_member_id VARCHAR,
+  owned_entity_id VARCHAR NOT NULL,
+  ownership_pct DECIMAL(9,6) NOT NULL,
+  valid_from DATE NOT NULL,
+  valid_to DATE
+);
+

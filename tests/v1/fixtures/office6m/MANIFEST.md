@@ -81,7 +81,7 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 | `property_valuations` | 7 | pdf, appraisals of six real assets. | `2026-04/property_valuations/valuation_RA-01_2024-11-20.pdf` |
 | `prospects` | 1 | pdf, a fund teaser. | `2026-09/prospects/fund_teaser_Harborlight_Ventures_IV.pdf` |
 | `realised_lots` | 1 | csv, custodian realised gains report: the lots sold 1 Apr to 13 Oct, matched first-in first-out. | `2026-10/realised_lots/realised_lots_2026-10-13.csv` |
-| `reference` | 15 | standing data and reused documents: standing instructions, fund terms, vendor master, accounts, office rules, policy, benchmark workbook, security master, process narrative, research documents. | `reference/accounts.csv` |
+| `reference` | 16 | standing data and reused documents: standing instructions, fund terms, vendor master, accounts, office rules, policy, benchmark workbook, security master, process narrative, research documents. | `reference/accounts.csv` |
 | `settlement_status` | 1 | csv, custodian settlement report as at 13 Oct. | `2026-10/settlement_status/settlement_report_2026-10-13.csv` |
 | `sops` | 8 | md, eight SOPs with last review date, step minutes and the failures logged against each. | `2026-10/sops/sop_month-end-report.md` |
 | `target_allocation` | 1 | xlsx, proposed interim targets of the liquid book (not signed). | `2026-10/target_allocation/interim_targets_EG-LIQUID_2026-10-08.xlsx` |
@@ -93,7 +93,7 @@ Answer keys: `answer_keys.yaml`, by use case id, then question, then expected va
 | `trust_deed` | 1 | pdf, deed of the Evergreen Family Trust. | `2026-04/trust_deed/evergreen_family_trust_deed.pdf` |
 | `vendor_contracts` | 4 | pdf, vendor contracts with renewal dates. | `reference/vendor_contract_orchard_it.pdf` |
 
-Total: 821 files.
+Total: 822 files.
 
 ## Mess planted on purpose
 
@@ -258,6 +258,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml`: all 100 ca
 |  | `uc-098-wordlist` | Keep the office words in step with the model | 3 files: `*/glossary/*` | 1 |
 |  | `uc-099-newfeed` | Bring in a new source file | 2 files: `*/new_feed/*` | 1 |
 |  | `uc-100-famaccess` | What each family member can see | 3 files: `*/family_access/*` | 1 |
+|  | `uc-101-ownership` |  | 3 files: `reference/ownership_register.csv`; `reference/fund_terms.csv`; `*/trust_deed/evergreen_family_trust_deed.pdf` | 1 |
 
 ## Every file
 
@@ -1078,6 +1079,7 @@ Use case ids are those of `packs/family_office/1/use_cases_100.yaml`: all 100 ca
 | `reference/month_end_process_narrative.md` | Reference or policy file: month end process narrative |  |  |
 | `reference/northgate_mid_year_letter_2026.pdf` | Reference or policy file: northgate mid year letter 2026 |  |  |
 | `reference/office_rules.csv` | Reference or policy file: office rules |  |  |
+| `reference/ownership_register.csv` | Reference or policy file: ownership register |  |  |
 | `reference/standing_instructions.csv` | Reference or policy file: standing instructions | M05a |  |
 | `reference/vendor_contract_marina_lease.pdf` | Vendor contract: Marina Office Suites, renews 2027-03-31 |  |  |
 | `reference/vendor_contract_orchard_it.pdf` | Vendor contract: Orchard It Services, renews 2026-12-31 |  |  |

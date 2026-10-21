@@ -37,6 +37,13 @@ roles:
         skills: ["data.recognise-file", "data.read-pdf-fields", "action.detect-exception", "action.draft-message", "action.route-owner"]
         dashboard: "Action: each real asset with the age of its latest appraisal, those over 365 days first"
         check: {ask: "Whether to order a new appraisal?", expect: ["784", "378", "353", "329", "225", "125"], must_have_verdict: true}
+      - id: uc-101-ownership
+        title: "Who owns what: the look-through of the family's holdings"
+        say: "I want to know what each of us really owns. Evergreen Holdings holds the Cedarpoint commitment; the Family Trust holds part of Holdings and I hold the rest, and the Trust's beneficiaries hold the Trust by the shares of the deed. Tell me my share of Cedarpoint Ventures III today and at 30 June (before I moved five points to the Trust), and what the Trust holds indirectly. The share register, the trust deed and the fund terms are the files. If the owners of an entity do not add to 100 percent, or the chain loops, raise it before I rely on a number."
+        files: ["office6m:reference/ownership_register.csv", "office6m:reference/fund_terms.csv", "office6m:*/trust_deed/evergreen_family_trust_deed.pdf"]
+        skills: ["data.recognise-file", "data.read-pdf-fields", "build.write-formula-table", "check.against-source", "action.detect-exception", "consume.answer-question"]
+        dashboard: "Consume: each person's and entity's share of every position, commitment and cash balance through the chain, as at a date, with the chain shown beside each figure"
+        check: {ask: "What is Mei Chen's share of Cedarpoint Ventures III, and what does the Trust hold indirectly?", expect: ["10,000,000", "4,000,000", "4,500,000", "6,000,000", "2,400,000", "1,500,000", "1,620,000", "480,000", "40", "45", "60", "16.2"]}
   - id: fund_accountant
     builds:
       - id: uc-067-unrl
