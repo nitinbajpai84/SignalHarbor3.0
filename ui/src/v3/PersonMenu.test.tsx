@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import PersonMenu from "./PersonMenu";
+
+const signOut = vi.fn(async () => undefined);
 
 const enable = vi.fn(async () => undefined);
 const disable = vi.fn(async () => undefined);
@@ -44,4 +46,12 @@ test("with no keys on the server the switch is off and says why", async () => {
   await open();
   expect(await screen.findByText(/not switched on for this office/)).toBeInTheDocument();
   expect(screen.getByRole("switch")).toBeDisabled();
+});
+
+test("Sign out ends the session and lands on the login page", async () => {
+  render(<MemoryRouter initialEntries={["/v3/desk"]}><Routes><Route path="/login" element={<p>Login page</p>} /><Route path="*" element={<PersonMenu name="Sofia Reyes" onSignOut={signOut} />} /></Routes></MemoryRouter>);
+  await userEvent.click(screen.getByRole("button", { name: "Sofia Reyes" }));
+  await userEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+  expect(signOut).toHaveBeenCalled();
+  expect(await screen.findByText("Login page")).toBeInTheDocument();
 });

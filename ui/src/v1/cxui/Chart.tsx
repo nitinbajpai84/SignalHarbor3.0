@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { TileData } from "./api";
 import { VIEWS } from "./ChartKinds";
+import { fmt1, fmtValue, pct1 } from "./fmt";
 
 // C2: one tile's chart. The program sends a Vega-Lite spec and the rows; the spec is data, never code we run (no actions menu,
 // vega's safe expression interpreter). DS1: three widget views are drawn here, not by Vega: a figure (one number and how it moved),
@@ -10,12 +11,12 @@ import { VIEWS } from "./ChartKinds";
 type Row = Record<string, unknown>;
 const head = (c: string) => c.replace(/_/g, " ").replace(/^./, (m) => m.toUpperCase());
 const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v)) ? Number(v) : null);
-const fmt = (n: number) => n.toLocaleString("en-GB", { maximumFractionDigits: 2 });
-const show = (v: unknown) => (v === null || v === undefined || v === "" ? "Not available yet" : typeof v === "number" ? fmt(v) : String(v));
+const fmt = fmt1;
+const show = (v: unknown) => (v === null || v === undefined || v === "" ? "Not available yet" : fmtValue(v));
 
 /** A return, rate or yield stored as a fraction (0.0103): shown as a percentage, and its move in percentage points, never a percent of a percent. */
 const RATE = /\b(return|rate|yield|margin|ratio|growth|share|percent)/i;
-export const asRate = (n: number) => `${(n * 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`; // V6B: two decimals, so 4.17% is not shown as 4%
+export const asRate = (n: number) => pct1(n * 100); // dashboards show one decimal everywhere
 
 /** A Vega-Lite spec whose rate-like quantitative fields hold fractions: axis, legend and tooltip show them as percent (0.28 as 28.00%). */
 type Enc = Record<string, Record<string, unknown>>;
@@ -73,8 +74,8 @@ export function Figure({ rows, label, field = "value" }: { rows: Row[]; label: s
   const pct = diff === null || before === 0 ? null : (diff / Math.abs(before as number)) * 100;
   const shown = rate ? asRate(now) : fmt(now);
   const moved = diff === null ? "" : rate
-    ? `${diff > 0 ? "Up" : "Down"} ${(Math.abs(diff) * 100).toLocaleString("en-GB", { maximumFractionDigits: 2 })} points`
-    : `${diff > 0 ? "Up" : "Down"} ${fmt(Math.abs(diff))}${pct === null ? "" : ` (${Math.abs(pct).toFixed(1)}%)`}`;
+    ? `${diff > 0 ? "Up" : "Down"} ${fmt1(Math.abs(diff) * 100)} points`
+    : `${diff > 0 ? "Up" : "Down"} ${fmt(Math.abs(diff))}${pct === null ? "" : ` (${pct1(Math.abs(pct))})`}`;
   return (
     <div role="img" aria-label={`${label}: ${shown}`}>
       <div style={{ fontSize: 36, fontWeight: 600, lineHeight: 1.1 }}>{shown}</div>

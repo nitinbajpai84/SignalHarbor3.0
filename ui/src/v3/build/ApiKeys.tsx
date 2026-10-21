@@ -46,7 +46,7 @@ export default function ApiKeys() {
 
   return (
     <V3Frame back={<Link to="/v3/build">&larr; Build</Link>}>
-      <main className="b3 b3-keys">
+      <main className="b3-board b3">
         <div>
           <h1>API keys</h1>
           <p className="v3-mute">A key lets your own tools read this office's figures, signals and document list, and ask questions. It can only read. Each call is logged.</p>

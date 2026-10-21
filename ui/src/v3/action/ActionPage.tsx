@@ -112,7 +112,7 @@ export default function ActionPage() {
         <section aria-label="Queue" className="act-queue">
           {filter === "all" && data.review.map((r) => <ReviewCard key={r.id} item={r} onDone={reload} />)}
           {!shown.length && !data.review.length && <p className="v3-mute">{data.items.length ? "Nothing of this kind needs a person." : "Nothing needs a person right now."}</p>}
-          {shown.map((i) => i.draft ? <DraftCard key={i.key} id={i.draft.id} noticed={i.draft.text} title={i.draft.draft.title} message={i.draft.draft.message} backtest={i.draft.backtest} needs={i.draft.needs} onDone={reload} />
+          {shown.map((i) => i.draft ? <DraftCard key={i.key} id={i.draft.id} noticed={i.draft.text} title={i.draft.draft.title} message={i.draft.draft.message} preview={i.draft.draft.preview} backtest={i.draft.backtest} needs={i.draft.needs} onDone={reload} />
             : i.signal ? <SignalCard key={i.key} card={i.signal} onDone={reload} /> : (
             // The whole card opens it (a tap on a phone); the Open button toggles it and is the keyboard way in.
             <article key={i.key} className={`act-item ${i.kind}`} data-on={i.key === sel} onClick={() => { if (i.key !== sel) { setSel(i.key); setProblem(""); window.scrollTo?.(0, 0); } }}>

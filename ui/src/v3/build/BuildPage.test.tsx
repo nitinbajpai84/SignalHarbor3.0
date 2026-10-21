@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, it, test, vi } from "vitest";
 
 import type { BriefGroup, BriefLine, Stage, Thread } from "../api";
 import BuildPage, { stepClass } from "./BuildPage";
-import IntentGraph, { buildNodes } from "./IntentGraph";
+import IntentGraph, { buildNodes, NW, NH, W } from "./IntentGraph";
 
 const getThread = vi.fn();
 const listThreads = vi.fn();
@@ -157,4 +157,26 @@ test("Confirm with open gaps confirms (Harbor fills at signing) and a failed cli
   const err = await screen.findByRole("alert");
   expect(err).toHaveTextContent("We could not reach the service.");
   expect(screen.getByLabelText("The intent, drawn as you talk")).toContainElement(err);
+});
+
+describe("brief map layout", () => {
+  const line = (section: string, index: number, field: string, label: string, value: string) => ({ section, index, field, label, value, changed: false, suggested: false }) as never;
+  const mk = (n: number) => {
+    const nr = Math.ceil(n * 0.25), nf = Math.ceil(n * 0.25), ns = n - nr - nf;
+    return [
+      { title: "What you want", lines: [line("w", 0, "line", "Line", "Q"), line("w", 1, "readers", "Readers", "R"), line("w", 2, "needed_by", "By", "Friday")] },
+      { title: "Rules", lines: Array.from({ length: nr }, (_, i) => line("r", i, "rule", "Rule", `rule ${i}`)) },
+      ...Array.from({ length: nf }, (_, i) => ({ title: `Figure: Fig ${i}`, lines: [line("f", i, "definition", "Def", "d")] })),
+      { title: "Where the data comes from", lines: Array.from({ length: Math.max(ns, 0) }, (_, i) => line("s", i, "src", `Source ${i}`, "v")) },
+    ] as never;
+  };
+  it.each([12, 20])("no two boxes intersect with %i nodes", (n) => {
+    const nodes = buildNodes(mk(n));
+    expect(nodes.length).toBeGreaterThan(n - 1);
+    for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i]!, b = nodes[j]!;
+      expect(Math.abs(a.x - b.x) >= NW || Math.abs(a.y - b.y) >= NH, `${a.id} vs ${b.id}`).toBe(true);
+    }
+    for (const a of nodes) expect(a.x - NW / 2 >= 0 && a.x + NW / 2 <= W).toBe(true);
+  });
 });

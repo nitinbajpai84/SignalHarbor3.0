@@ -24,7 +24,7 @@ const KNOW = <><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4
 /** The 3.0 page frame: logo, the four places (Action, Build, Consume, Knowledge); the logo is the Desk, the signed-in person.
  * On a phone the nav becomes a bottom tab bar with Home first and a count of what needs a person on Action. */
 export default function V3Frame({ children, back }: { children: ReactNode; back?: ReactNode }) {
-  const { user } = useSession();
+  const { user, signOut } = useSession();
   const [needs, setNeeds] = useState(0);
   useEffect(() => {
     // Only phones show the badge, so only phones pay for the call. One call per page; a failure just hides the badge.
@@ -52,7 +52,7 @@ export default function V3Frame({ children, back }: { children: ReactNode; back?
           <NavLink to="/v3/knowledge"><Ico d={KNOW} />Knowledge</NavLink>
         </nav>
         <span className="v3-mode"><ModeSwitch /><ThemePick /></span>
-        <PersonMenu name={user?.display_name ?? ""} />
+        <PersonMenu name={user?.display_name ?? ""} onSignOut={signOut} />
       </header>
       <InstallBanner />
       {children}

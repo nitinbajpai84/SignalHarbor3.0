@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
+import { fmt1, pct1 } from "./fmt";
 
 // E: six richer widget views, plain SVG/CSS (no dependency), colours from the design-system variables so dark theme follows. The data shape of each is
 // fixed by b7_studio._view_tile (column aliases): the spec only names the view, so nothing here looks columns up.
 type Row = Record<string, unknown>;
 const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v)) ? Number(v) : null);
-const fmt = (n: number) => n.toLocaleString("en-GB", { maximumFractionDigits: 2 });
+const fmt = fmt1;
 const text = (v: unknown) => (v === null || v === undefined ? "" : String(v));
 const INK = "var(--ds-ink, currentColor)", MUTED = "var(--ds-ink-muted, #888)", LINE = "var(--ds-line-2, #8884)", TEAL = "var(--ds-teal-bright, #2aa)", AMBER = "var(--ds-amber, #d90)", SURF = "var(--ds-surface, #8881)";
 const none = <p className="ds-muted">Not available yet</p>;
@@ -22,7 +23,7 @@ export function Bullet({ rows, label }: { rows: Row[]; label: string }) {
   const all = r.flatMap((x) => [x.v as number, ...(x.t === null ? [] : [x.t])]);
   const lo = Math.min(0, ...all), hi = Math.max(0, ...all), span = hi - lo || 1;
   const pct = all.every((v) => Math.abs(v) < 1.5);  // returns stored as fractions read as percentages
-  const show = (v: number) => (pct ? `${(v * 100).toFixed(1)}%` : fmt(v));
+  const show = (v: number) => (pct ? pct1(v * 100) : fmt(v));
   const L = 120, W = 240, row = 34, X = (v: number) => L + ((v - lo) / span) * W;
   return (
     <svg role="group" aria-label={label} viewBox={`0 0 ${L + W + 70} ${r.length * row + 8}`} width="100%" style={{ display: "block" }}>
@@ -131,7 +132,7 @@ export function Treemap({ rows, label }: { rows: Row[]; label: string }) {
   return (
     <svg role="group" aria-label={label} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
       {lay(items, 0, 0, W, H).map((b, i) => (
-        <g key={i} role="img" aria-label={`${b.n}: ${fmt(b.v)} (${((b.v / total) * 100).toFixed(1)}%)`}>
+        <g key={i} role="img" aria-label={`${b.n}: ${fmt(b.v)} (${pct1((b.v / total) * 100)})`}>
           <rect x={b.x + 1} y={b.y + 1} width={Math.max(b.w - 2, 0)} height={Math.max(b.h - 2, 0)} fill={TEAL} opacity={0.25 + 0.6 * (b.v / items[0]!.v)} />
           {b.w > 60 && b.h > 28 ? <text x={b.x + 6} y={b.y + 16} fontSize={11} fill={INK}>{b.n.slice(0, Math.floor(b.w / 7))}</text> : null}
         </g>))}
@@ -153,7 +154,7 @@ export function KpiStrip({ rows, label }: { rows: Row[]; label: string }) {
           <div key={c} role="img" aria-label={`${name}: ${fmt(now)}${diff === null ? "" : `, ${diff >= 0 ? "up" : "down"} ${fmt(Math.abs(diff))}`}`}>
             <div style={{ fontSize: 12, color: MUTED }}>{name}</div>
             <div style={{ fontSize: 24, fontWeight: 600, lineHeight: 1.1 }}>{short(now)}</div>
-            {diff === null ? null : <div style={{ fontSize: 12, color: diff >= 0 ? TEAL : AMBER }}>{diff >= 0 ? "Up" : "Down"} {short(Math.abs(diff))}{now - diff ? ` (${((diff / Math.abs(now - diff)) * 100).toFixed(1)}%)` : ""}</div>}
+            {diff === null ? null : <div style={{ fontSize: 12, color: diff >= 0 ? TEAL : AMBER }}>{diff >= 0 ? "Up" : "Down"} {short(Math.abs(diff))}{now - diff ? ` (${pct1((diff / Math.abs(now - diff)) * 100)})` : ""}</div>}
             {svg("", 80, 26, <path d={d} fill="none" stroke={TEAL} strokeWidth={1.5} />)}
           </div>);
       })}

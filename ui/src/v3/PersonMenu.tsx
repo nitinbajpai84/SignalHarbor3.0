@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import "./person.css";
 import { disablePush, enablePush, getPushConfig, install, installKind, onInstallChange, pushSupported, type PushConfig } from "../pwa";
@@ -9,11 +9,13 @@ const PHONE = "(max-width: 719px)";
 const kept = (): boolean => { try { return localStorage.getItem(DISMISS_KEY) === "1"; } catch { return false; } };
 
 /** The signed-in person's name as a menu: the family portal, Install app and the notifications switch (Web Push). Reads nothing until it is opened. */
-export default function PersonMenu({ name }: { name: string }) {
+export default function PersonMenu({ name, onSignOut }: { name: string; onSignOut?: () => Promise<void> }) {
   const [open, setOpen] = useState(false);
   const [cfg, setCfg] = useState<PushConfig | null>(null);
   const [say, setSay] = useState("");
   const [kind, setKind] = useState(installKind);
+  const go = useNavigate();
+  const out = async () => { setOpen(false); await onSignOut?.(); go("/login", { replace: true }); };
   const box = useRef<HTMLSpanElement>(null);
   useEffect(() => onInstallChange(() => setKind(installKind())), []);
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function PersonMenu({ name }: { name: string }) {
           </label>
           {!supported && <p className="v3-mute">This browser cannot show notifications.</p>}
           {supported && cfg && !cfg.enabled && <p className="v3-mute">Notifications are not switched on for this office yet.</p>}
+          <button type="button" role="menuitem" onClick={() => { void out(); }}>Sign out</button>
           {say && <p className="v3-err" role="alert">{say}</p>}
         </div>
       )}

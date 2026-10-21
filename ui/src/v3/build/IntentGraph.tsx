@@ -5,35 +5,42 @@ import type { BriefGroup, BriefLine } from "../api";
 export type NodeKind = "question" | "readers" | "when" | "figure" | "source" | "rule";
 export interface GraphNode { id: string; kind: NodeKind; label: string; value: string; x: number; y: number; lines: BriefLine[]; changed: boolean; suggested: boolean }
 
-const W = 800, H = 580, CX = 400, CY = 290, NW = 164, NH = 52;
-const spread = (n: number, a: number, b: number) => Array.from({ length: n }, (_, i) => (n === 1 ? (a + b) / 2 : a + ((b - a) * i) / (n - 1)));
+export const W = 800, NW = 176, NH = 52, COLS = 4, STEP = 78;
+const CX = W / 2;
 const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}...` : s);
+/** Boxes in rows of COLS, centred on the middle line, wrapping to a new row so none touch. */
+const rowX = (i: number, n: number) => { const inRow = Math.min(COLS, n - Math.floor(i / COLS) * COLS); return CX + ((i % COLS) - (inRow - 1) / 2) * (NW + 14); };
 
-/** The brief document laid out in fixed places: the question in the centre, readers and timing left, figures right, rules above, sources below. */
+/** Graph height for a laid-out set of nodes: the lowest box plus a margin. */
+export const graphHeight = (nodes: GraphNode[]) => Math.max(...nodes.map((n) => n.y), 0) + NH / 2 + 24;
+
+/** The brief document laid out in bands: rules along the top, readers and timing left, the question in the middle, figures right, sources along the bottom. Each band wraps into rows, so boxes never overlap. */
 export function buildNodes(doc: BriefGroup[]): GraphNode[] {
   const out: GraphNode[] = [];
   const add = (n: Omit<GraphNode, "changed" | "suggested">) => out.push({ ...n, changed: n.lines.some((l) => l.changed), suggested: n.lines.some((l) => l.suggested) });
   const what = doc.find((g) => g.title === "What you want")?.lines ?? [];
   const f = (field: string) => what.filter((l) => l.field === field);
-  const q = [...f("line"), ...f("why")];
-  const first = q[0];
-  if (first) add({ id: "question", kind: "question", label: "The question", value: first.value, x: CX, y: CY, lines: q });
+  const rules = doc.find((g) => g.title === "Rules")?.lines ?? [];
+  const figs = doc.filter((g) => g.title.startsWith("Figure:"));
+  const srcs = doc.find((g) => g.title === "Where the data comes from")?.lines ?? [];
   const reads = [...f("readers"), ...f("decisions")];
   const left = [
     { id: "readers", kind: "readers" as const, label: "Who reads and decides", value: reads.map((l) => l.value).filter(Boolean).join(" · "), lines: reads },
     { id: "when", kind: "when" as const, label: "When", value: f("needed_by")[0]?.value ?? "", lines: f("needed_by") },
   ].filter((n) => n.lines.length);
-  const ys = spread(left.length, 190, 400);
-  left.forEach((n, i) => add({ ...n, x: 100, y: ys[i] ?? CY }));
-  const figs = doc.filter((g) => g.title.startsWith("Figure:"));
-  const fy = spread(figs.length, 120, 470);
-  figs.forEach((g, i) => add({ id: `figure:${g.title}`, kind: "figure", label: g.title.slice(7).trim() || "Figure", value: g.lines.find((l) => l.field === "definition")?.value ?? "", x: 700, y: fy[i] ?? CY, lines: g.lines }));
-  const srcs = doc.find((g) => g.title === "Where the data comes from")?.lines ?? [];
-  const sx = spread(srcs.length, 200, 600);
-  srcs.forEach((l, i) => add({ id: `source:${i}`, kind: "source", label: l.label, value: l.value, x: sx[i] ?? CX, y: 535, lines: [l] }));
-  const rules = doc.find((g) => g.title === "Rules")?.lines ?? [];
-  const rx = spread(rules.length, 230, 470);
-  rules.forEach((l, i) => add({ id: `rule:${i}`, kind: "rule", label: "Rule", value: l.value, x: rx[i] ?? CX, y: 45, lines: [l] }));
+  const topRows = Math.ceil(rules.length / COLS);
+  const midTop = 45 + topRows * STEP;
+  const m = Math.max(figs.length, left.length, 1);
+  const cy = midTop + ((m - 1) * STEP) / 2;
+  const rowY = (i: number, y0: number) => y0 + Math.floor(i / COLS) * STEP;
+  const q = [...f("line"), ...f("why")];
+  const first = q[0];
+  if (first) add({ id: "question", kind: "question", label: "The question", value: first.value, x: CX, y: cy, lines: q });
+  left.forEach((n, i) => add({ ...n, x: NW / 2 + 8, y: cy + (i - (left.length - 1) / 2) * STEP }));
+  figs.forEach((g, i) => add({ id: `figure:${g.title}`, kind: "figure", label: g.title.slice(7).trim() || "Figure", value: g.lines.find((l) => l.field === "definition")?.value ?? "", x: W - NW / 2 - 8, y: cy + (i - (figs.length - 1) / 2) * STEP, lines: g.lines }));
+  rules.forEach((l, i) => add({ id: `rule:${i}`, kind: "rule", label: "Rule", value: l.value, x: rowX(i, rules.length), y: rowY(i, 45), lines: [l] }));
+  const srcTop = midTop + m * STEP;
+  srcs.forEach((l, i) => add({ id: `source:${i}`, kind: "source", label: l.label, value: l.value, x: rowX(i, srcs.length), y: rowY(i, srcTop), lines: [l] }));
   return out;
 }
 
@@ -95,6 +102,7 @@ export default function IntentGraph({ doc, busy, onSave, arrived = new Set(), li
 }) {
   const [sel, setSel] = useState<string | null>(null);
   const nodes = buildNodes(doc ?? []);
+  const H = graphHeight(nodes);
   if (nodes.length === 0) return <p className="v3-mute b3-empty" role="status">Nothing to draw yet. Say what you want and Harbor draws it here.</p>;
   const centre = nodes.find((n) => n.kind === "question");
   const open = nodes.find((n) => n.id === sel);
@@ -118,10 +126,11 @@ export default function IntentGraph({ doc, busy, onSave, arrived = new Set(), li
               onClick={() => pick(n.id)}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(n.id); } }}
             >
+              <title>{`${n.label}: ${n.value || "not said yet"}`}</title>
               <rect x={n.x - NW / 2} y={n.y - NH / 2} width={NW} height={NH} rx={14} />
               {dot && <circle className={`b3-ndot ${dot}`} cx={n.x - NW / 2 + 12} cy={n.y - 6 - 4} r={4} />}
-              <text x={n.x} y={n.y - 6} textAnchor="middle" className="b3-t1">{cut(n.label, 24)}</text>
-              <text x={n.x} y={n.y + 12} textAnchor="middle" className="b3-t2">{cut(n.value || "not said yet", 26)}</text>
+              <text x={n.x} y={n.y - 6} textAnchor="middle" className="b3-t1">{cut(n.label, 22)}</text>
+              <text x={n.x} y={n.y + 12} textAnchor="middle" className="b3-t2">{cut(n.value || "not said yet", 28)}</text>
               {n.changed ? <text x={n.x + NW / 2 - 6} y={n.y - NH / 2 - 5} textAnchor="end" className="b3-tag">just added</text>
                 : n.suggested ? <text x={n.x + NW / 2 - 6} y={n.y - NH / 2 - 5} textAnchor="end" className="b3-tag">suggested</text> : null}
             </g>
