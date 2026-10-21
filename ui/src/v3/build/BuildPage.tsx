@@ -110,7 +110,7 @@ function Board() {
           <p className="v3-mute"><Link to="/v3/build/audit">Audit log</Link> (office administrator)</p>
           <p className="v3-mute"><Link to="/v3/build/api-keys">API keys</Link>: let your own tools read this office's figures and signals.</p>
         </div>
-        <p className="v3-row"><Link to="/v3/build/connections">Connections</Link><Link to="/v3/build/onboarding">Onboarding</Link></p>
+        <p className="v3-row"><Link to="/v3/build/connections">Connections</Link><Link to="/v3/build/onboarding">Onboarding</Link><Link to="/v3/trust/model">See the data model</Link></p>
         <RoleSuggest />
         <Start />
         {err && (

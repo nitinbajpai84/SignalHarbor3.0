@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { getFigure, rollbackFigure, type FigureRecord } from "../api";
 import V3Frame from "../Frame";
+import AddToBoard from "../board/AddToBoard";
 import { Failed, Waiting, useRead } from "../board/common";
 import { Pill, day } from "./FiguresPage";
 import { thingPath } from "./k/kinds";
@@ -42,6 +43,7 @@ export default function FigurePage() {
             <Link to={thingPath(`figure:${f.id.replace(/^fig-/, "")}`)}>See it on the knowledge map</Link>
             {cur?.built_from?.kind === "recipe" ? <> · <Link to={thingPath(`recipe:${cur.built_from.id}`)}>The recipe it follows</Link></> : null}
           </p>
+          <AddToBoard figureId={f.id} label={f.name} />
         </div>
         <section aria-labelledby="fg-lin">
           <h2 id="fg-lin">Where this number comes from</h2>
