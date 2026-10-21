@@ -27,6 +27,7 @@ import FiguresPage from "./knowledge/FiguresPage";
 import SignalsPage from "./knowledge/SignalsPage";
 import ThingPage from "./knowledge/ThingPage";
 import FigurePage from "./knowledge/FigurePage";
+import PortalPage from "./portal/PortalPage";
 
 /** Mounted by App.tsx at /v3/* inside the signed-in Gate. Paths are relative to /v3. */
 export default function V3Routes() {
@@ -61,6 +62,7 @@ export default function V3Routes() {
       <Route path="knowledge/figures/:id" element={<FigurePage />} />
       <Route path="knowledge/signals" element={<SignalsPage />} />
       <Route path="knowledge/thing/:id" element={<ThingPage />} />
+      <Route path="portal" element={<PortalPage />} />
       <Route path="*" element={<Navigate to="desk" replace />} />
     </Routes>
   );

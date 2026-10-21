@@ -18,6 +18,11 @@ router = APIRouter()
 STAFF = {"company_admin", "sponsor", "analyst", "approver"}
 
 
+def _no(message: str) -> HTTPException:
+    """A 403 the screen words as written (ui/src/api/client.ts lifts `message` when `error` is not_allowed)."""
+    return HTTPException(403, {"error": "not_allowed", "message": message})
+
+
 def _me(request: Request) -> dict:
     a = request.app.state.account_store.get(request.state.account_id)
     if not a:
@@ -33,7 +38,7 @@ def _member(request: Request, plane, preview: str | None = None) -> str:
         return preview
     m = G.member_of(plane, me)
     if m is None:
-        raise HTTPException(403, "This page is for the family members of the office.")
+        raise _no("This page is for the family members of the office.")
     return m
 
 
@@ -64,7 +69,7 @@ async def ask(request: Request):
 async def raise_approval(request: Request):
     plane, b = _plane(request), await _body(request)
     if not STAFF & set(request.state.roles or []):
-        raise HTTPException(403, "Only the office team can ask a family member to approve something.")
+        raise _no("Only the office team can ask a family member to approve something.")
     try:
         return G.raise_approval(plane, _me(request).get("display_name") or "the office", str(b.get("member") or ""), b.get("title") or "", b.get("detail") or "",
                                 b.get("amount"), b.get("currency") or "USD")
@@ -101,7 +106,7 @@ def push_config(request: Request):
 async def push_subscribe(request: Request):
     plane, b = _plane(request), await _body(request)
     if P.vapid(plane) is None:
-        raise HTTPException(503, "Notifications are not switched on for this office yet.")
+        raise HTTPException(409, "Notifications are not switched on for this office yet.")
     sub = b.get("subscription") if isinstance(b.get("subscription"), dict) else {}
     if not P.subscribe(plane, request.state.account_id, sub):
         raise HTTPException(400, "That browser's notification address is not one I can use.")
