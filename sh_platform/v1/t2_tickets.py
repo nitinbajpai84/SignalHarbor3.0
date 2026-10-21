@@ -14,11 +14,10 @@ from __future__ import annotations
 import csv
 import io
 import logging
-import os
 import re
 from datetime import datetime, timezone
 
-from sh_platform.jsonfile import lock_for, read_json_strict, write_json_atomic
+from sh_platform.jsonfile import claim_new, lock_for, read_json_strict, write_json_atomic
 from sh_platform.profile.view import norm
 
 log = logging.getLogger(__name__)
@@ -146,7 +145,7 @@ def raise_ticket(plane, *, by, to, title: str, body: str = "", project: str | No
         d.mkdir(parents=True, exist_ok=True)
         while True:  # ponytail: the file itself is the claim, so a second process (8200 and the watch script) cannot take the same number
             try:
-                os.close(os.open(_file(plane, f"TCK-{n:04d}"), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                claim_new(_file(plane, f"TCK-{n:04d}"))
                 break
             except FileExistsError:
                 n += 1

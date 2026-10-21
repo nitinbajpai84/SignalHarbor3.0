@@ -558,8 +558,9 @@ def test_migration_copies_json_once_and_leaves_the_rest(tmp_path):
     again = m.migrate(src, dst)
     assert (again["copied"], again["unchanged"]) == (0, 1)
     (src / "acme" / "intents" / "i1" / "a.json").write_text('{"a": 2}')
-    assert m.migrate(src, dst, dry_run=True)["copied"] == 1 and dst.get("intents", "acme/i1/a.json")[0] == {"a": 1}  # dry run writes nothing
-    assert m.migrate(src, dst)["copied"] == 1 and dst.get("intents", "acme/i1/a.json")[0] == {"a": 2}
+    assert m.migrate(src, dst)["copied"] == 0 and dst.get("intents", "acme/i1/a.json")[0] == {"a": 1}  # the store holds the live copy: never overwritten
+    assert m.migrate(src, dst, dry_run=True, refresh=True)["copied"] == 1 and dst.get("intents", "acme/i1/a.json")[0] == {"a": 1}  # dry run writes nothing
+    assert m.migrate(src, dst, refresh=True)["copied"] == 1 and dst.get("intents", "acme/i1/a.json")[0] == {"a": 2}
 
 
 def test_parity_check_compares_modes_and_ignores_times():

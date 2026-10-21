@@ -25,6 +25,9 @@ def main() -> int:
     except mode.ModeError as e:
         print(e)
         return 2
+    from sh_platform.settings import load_settings
+    from sh_platform.state import routing
+    routing.configure(load_settings().data_root)  # the same documents as the web app: Postgres
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, lambda *_: stop.set())

@@ -5,13 +5,16 @@
 - production: `PgStore` (Postgres via psycopg): one table per kind, JSONB document, bigint version, transactions.
 
 kind = the company-folder area ("intents", "build", ...); key = "<company>/<path inside the area>", e.g. "acme/p1/plan-v1.json".
-`version` is an opaque string; "0" means the document does not exist. `put(..., expected=v)` raises Conflict when the stored version is not v.
+The running app reaches the store through sh_platform/state/routing.py (production mode): jsonfile.py, the company plane's paths and lock_for send
+every JSON document there, so the callers still read and write "files". `version` is an opaque string; "0" means the document does not exist. `put(..., expected=v)` raises Conflict when the stored version is not v.
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import threading
 from pathlib import Path
 from typing import Callable
 
@@ -69,7 +72,14 @@ class FileStore:
         with lock_for(p):
             p.unlink(missing_ok=True)
 
+    def mtime(self, kind: str, key: str) -> float:
+        try:
+            return self._path(kind, key).stat().st_mtime
+        except OSError:
+            return 0.0
+
     def keys(self, kind: str, prefix: str = "") -> list[str]:
+        """The keys of a kind that start with prefix, sorted (the directory listing)."""
         out = []
         for c in sorted(d for d in self.root.iterdir() if d.is_dir()) if self.root.is_dir() else []:
             base = c / _kind(kind)
@@ -99,11 +109,49 @@ def _swap(doc, a: str, b: str):
     return doc
 
 
+class _Pool:
+    def __init__(self, size: int):
+        self.size, self.sem, self.idle, self.lock = size, threading.BoundedSemaphore(size), [], threading.Lock()
+
+    def get(self, connect):
+        self.sem.acquire()
+        try:
+            with self.lock:
+                c = self.idle.pop() if self.idle else None
+            return c if c is not None and not c.closed and not c.broken else connect()
+        except BaseException:
+            self.sem.release()
+            raise
+
+    def put(self, c):
+        with self.lock:
+            keep = not c.closed and not c.broken and len(self.idle) < self.size
+            if keep:
+                self.idle.append(c)
+        if not keep:
+            try:
+                c.close()
+            except Exception:  # noqa: BLE001
+                pass
+        self.sem.release()
+
+
+_POOLS: dict[str, _Pool] = {}
+
+
 class PgStore:
-    """ponytail: one short connection per call; psycopg_pool when the web service needs it. Tables are made on first use."""
+    """ponytail: a small pool of open connections per URL and process (SH_PG_POOL, default 6; a call waits for a free one), not one per thread, so
+    two web copies and the worker stay far under max_connections. Tables are made on first use."""
 
     def __init__(self, url: str):
         self.url, self._made = url, set()
+        self._pool = _POOLS.setdefault(url, _Pool(int(os.environ.get("SH_PG_POOL") or 6)))
+
+    def _conn(self):
+        return self._pool.get(self.connect)
+
+    def _release(self, c):
+        self._pool.put(c)
 
     def connect(self):
         import psycopg
@@ -112,6 +160,7 @@ class PgStore:
     def _table(self, kind: str, conn) -> str:
         t = "sh_state_" + re.sub(r"[^a-z0-9]", "_", _kind(kind))
         if t not in self._made:
+            conn.execute("SELECT pg_advisory_xact_lock(727)")  # two processes starting together must not both create
             conn.execute(f"CREATE TABLE IF NOT EXISTS {t} (key text PRIMARY KEY, doc jsonb NOT NULL, "
                          "version bigint NOT NULL DEFAULT 1, updated_at timestamptz NOT NULL DEFAULT now())")
             self._made.add(t)
@@ -146,7 +195,13 @@ class PgStore:
         with _maybe(self, conn) as c:
             c.execute(f"DELETE FROM {self._table(kind, c)} WHERE key = %s", (key,))
 
+    def mtime(self, kind: str, key: str) -> float:
+        with _maybe(self, None) as c:
+            row = c.execute(f"SELECT extract(epoch FROM updated_at) FROM {self._table(kind, c)} WHERE key = %s", (key,)).fetchone()
+        return 0.0 if row is None else float(row[0])
+
     def keys(self, kind: str, prefix: str = "") -> list[str]:
+        """The keys of a kind that start with prefix, sorted (the directory listing)."""
         with _maybe(self, None) as c:
             rows = c.execute(f"SELECT key FROM {self._table(kind, c)} WHERE key LIKE %s ORDER BY key",
                              (_like(prefix) + "%",)).fetchall()
@@ -162,13 +217,17 @@ class _maybe:
     def __enter__(self):
         if self.conn is not None:
             return self.conn
-        self.own = self.store.connect()
-        self.own.__enter__()
+        self.own = self.store._conn()
         return self.own
 
-    def __exit__(self, *exc):
+    def __exit__(self, t, v, tb):
         if self.conn is None:
-            return self.own.__exit__(*exc)
+            try:
+                self.own.rollback() if t else self.own.commit()
+            except Exception:  # noqa: BLE001 - a dead connection is dropped, not given back
+                self.own.close()
+            finally:
+                self.store._release(self.own)
 
 
 def update(store, kind: str, key: str, fn: Callable, tries: int = 8):
