@@ -165,6 +165,9 @@ class AuthMiddleware:
         if scope["type"] == "http" and scope["method"] == "POST" and demo_limits.CHAT_ROUTE.match(scope["path"]):
             if not self.owner.state.turn_limiter.allow(rec["account_id"]):
                 return "rate"
+        if scope["type"] == "http":
+            from sh_platform.v1 import v3_audit  # W7: reads, exports, changes, signed decisions
+            v3_audit.record_request(self.owner, state, scope["method"], scope["path"])
         return None
 
     def _guest(self, scope, state, rule) -> str | None:

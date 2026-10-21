@@ -12,7 +12,7 @@ interface Session {
   user: api.Me | null;
   /** True after a signed-in session ended on its own; false on a first visit and after sign-in or sign-out. */
   sessionEnded: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, otp?: string) => Promise<void>;
   signOut: () => Promise<void>;
   /** Check the session again after a failed check. */
   retry: () => void;
@@ -106,8 +106,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => setCompanyZone(user?.time_zone), [user]); // PF2: every date on screen in the company's one time zone
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const m = await api.login(email, password);
+  const signIn = useCallback(async (email: string, password: string, otp?: string) => {
+    const m = await api.login(email, password, otp);
     setUser(m);
     setSessionEnded(false);
     markSession(true);
