@@ -58,7 +58,7 @@ test("a person who is not family gets the plain refusal and the preview names th
 });
 
 test("the admin preview has no approve buttons", async () => {
-  const f = vi.fn(async () => json(portal));
+  const f = vi.fn(async (_u: string) => json(portal));
   vi.stubGlobal("fetch", f);
   page("/v3/portal?member=Sofia%20Reyes");
   await screen.findByText("Sofia Reyes's portal");
