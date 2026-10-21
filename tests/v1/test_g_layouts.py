@@ -2,6 +2,7 @@
 for the answer-key value in the rows and quotes the row); what is tested is the pipeline: the pack's schemas, classify, the quote proof, layout
 memory (a confirmed layout is read with no model call) and the OCR path. How well a REAL model reads is tools/score_layouts.py, not this file."""
 import json
+import re
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -37,7 +38,10 @@ class Fake:
 
     def complete(self, module_id, messages):
         self.calls += 1
-        req = json.loads(messages[1]["content"])
+        user = messages[1]["content"]
+        req = {"fields": [{"name": n, "type": ty} for n, ty in re.findall(r"^- (\w+) \((\w+)\): ", user, re.M)],
+               "pages": [{"page": int(n), "text": body} for n, body in re.findall(r"=== page (\d+) ===\n(.*?)(?=\n=== page |\n</document>)", user, re.S)]}
+        assert "<document>" in user and "</document>" in user  # the page text travels as quoted content, in plain text
         if messages[0]["content"] == DE.CLASSIFY:
             return type("R", (), {"text": json.dumps({"doc_type": self.doc_type}), "usage": None})()
         out = {}

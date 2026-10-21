@@ -61,7 +61,7 @@ def main() -> None:
     names = [n for n, k in sorted(keys.items()) if (want is None or k["doc_type"] in want) and k["layout"] < a.limit]
     from sh_platform.plane import PlaneStore
     with tempfile.TemporaryDirectory() as tmp:
-        plane = PlaneStore(tmp).plane_for("scoring")
+        plane = PlaneStore(tmp).create("scoring")
         with ThreadPoolExecutor(a.workers) as ex:
             rows = list(ex.map(lambda n: score_one(plane, n, keys[n]), names))
     tot, by_type = Counter(), {}
