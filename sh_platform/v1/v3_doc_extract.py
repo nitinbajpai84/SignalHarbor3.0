@@ -305,9 +305,9 @@ def known_layout(plane, fp: list[str]) -> tuple[str, dict] | None:
     return (best[1], best[2]) if best and best[0] >= SAME_LAYOUT and len(best[2]["fingerprint"]) >= 2 else None
 
 
-def anchor_for(pages: list[dict], f: dict, got: dict, values: set) -> dict | None:
+def anchor_for(pages: list[dict], f: dict, got: dict, values: dict) -> dict | None:
     """Where a proven value sits: the label (in its own cell before the value, left of it, or above it) and the cell's place among the same
-    labels. A label is a cell with letters and no digit that is not itself one of the document's values (`values`, squashed): that is what
+    labels. A label is a cell with letters and no digit that is not itself one of the document's values (`values`, field to squashed raw): that is what
     tells a header over a row of values from the value to its left. None when no label is found, or a text value shares its cell with words
     after it (prose): that field needs the model."""
     page = next(p for p in pages if p["n"] == got["page"])
@@ -321,13 +321,15 @@ def anchor_for(pages: list[dict], f: dict, got: dict, values: set) -> dict | Non
     pre, post = cell["t"][:m.start()], cell["t"][m.end():]
     if f["type"] == "text" and post.strip(" .,;"):
         return None
+    if f["type"] == "currency" and any(v and v != values[f["name"]] and v in squash(cell["t"]) for v in values.values()):
+        return None  # the cell holds another field's value too ("Class B USD" for the currency): its label is not this field's; currency is then taken from an amount
     cut = max([i + 1 for i, w in enumerate(pre.split()) if re.search(r"\d", w)] or [0])  # words up to a number belong to another value
     pre = " ".join(pre.split()[cut:])
     pre = re.sub(r"(\b[A-Z]{3}|[$€£])\s*$", "", pre).strip(" :=-–")
     if re.search(r"[A-Za-z]{3}", pre):
         return {"page": got["page"], "rel": "same", "label": pre, "nth": 0, "start": cut == 0}
     row = next(r for r in page["rows"] if cell in r)
-    label = lambda c: bool(re.search(r"[A-Za-z]{3}", c["t"])) and not re.search(r"\d", c["t"]) and squash(c["t"]) not in values  # noqa: E731
+    label = lambda c: bool(re.search(r"[A-Za-z]{3}", c["t"])) and not re.search(r"\d", c["t"]) and squash(c["t"]) not in values.values()  # noqa: E731
     left = [c for c in row if c["x0"] < cell["x0"] and label(c)]
     above = sorted((c for c in page["cells"] if c["y1"] <= cell["y0"] and abs(c["x0"] - cell["x0"]) < 25 and label(c)), key=lambda c: -c["y1"])
     lab, rel = (left[-1], "left") if left and left[-1] is row[row.index(cell) - 1] else (above[0], "above") if above else (None, "")
@@ -376,7 +378,16 @@ def read_anchored(schema_by_type: dict, entry: dict, pages: list[dict]) -> dict 
         if raw is None:
             return None
         items[f["name"]] = {"value": raw, "page": a["page"], "quote": quote}
+    for f in schema["fields"]:  # a currency with no label of its own is the one printed with the amounts
+        if f["type"] == "currency" and f["name"] not in items:
+            src = next((i for n, i in items.items() if types_of(schema)[n] == "money" and take("currency", i["quote"].splitlines()[-1])), None)
+            if src:
+                items[f["name"]] = {"value": take("currency", src["quote"].splitlines()[-1]), "page": src["page"], "quote": src["quote"]}
     return items
+
+
+def types_of(schema: dict) -> dict:
+    return {f["name"]: f["type"] for f in schema["fields"]}
 
 
 # ---- 3 and 4. classify and extract with the model ----------------------------------------------------------------------------------------
@@ -474,7 +485,7 @@ def read(plane, name: str, data: bytes, folder=None) -> dict | None:
             dropped.append({"field": f["name"], "why": why})
         else:
             fields[f["name"]] = got
-    values = {squash(g["raw"]) for g in fields.values()}
+    values = {n: squash(g["raw"]) for n, g in fields.items()}
     for f in schema["fields"]:
         a = anchor_for(pages, f, fields[f["name"]], values) if f["name"] in fields else None
         if a:
