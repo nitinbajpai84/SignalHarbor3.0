@@ -19,6 +19,8 @@ import logging
 import os
 import re
 import threading
+
+from sh_platform.state import kv
 import time
 import uuid
 from datetime import date, datetime
@@ -393,6 +395,8 @@ def start(planes, interval: float = 60.0) -> threading.Thread:
         from sh_platform.v1 import g5_push
         while not _STOP.wait(interval):
             try:
+                if not kv.lead():  # one copy per deployment runs this loop
+                    continue
                 for plane in planes():
                     accts = accounts_of(plane)
                     g5_push.tick(plane, accts)

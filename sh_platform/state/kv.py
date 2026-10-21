@@ -112,7 +112,7 @@ def cache_get(key: str):
     return json.loads(v) if v else None
 
 
-def cache_put(key: str, text: str, ttl_s: float) -> None:
+def cache_put(key: str, text, ttl_s: float) -> None:
     redis_client().set(f"sh:answer:{key}", json.dumps(text), ex=max(1, int(ttl_s)))
 
 
@@ -120,3 +120,64 @@ def cache_clear() -> None:
     r = redis_client()
     for k in r.scan_iter("sh:answer:*"):
         r.delete(k)
+
+
+# ---- the leader lease and short locks ---------------------------------------------------------------------------------------------
+_ID = os.urandom(8).hex()  # this process; tests change it to stand in for a second web copy
+LEASE_MS = 90_000  # three missed 30 s passes; a pass renews it
+_HELD = threading.local()
+_LOCKS: dict[str, threading.RLock] = defaultdict(threading.RLock)  # simple mode, per name
+
+
+def lead(name: str = "loops", ttl_ms: int = LEASE_MS) -> bool:
+    """True when this process holds the lease `name` (takes it, or renews it). Simple mode: the one process is always the leader.
+    Call it every pass of a background loop; a lease that lapses is taken by whichever copy asks next."""
+    if not _mode.production():
+        return True
+    r, k = redis_client(), f"sh:lead:{name}"
+    if r.set(k, _ID, nx=True, px=ttl_ms):
+        return True
+    if r.get(k) == _ID:  # ponytail: get-then-pexpire is not atomic; a Lua script if two copies ever share an id
+        r.pexpire(k, ttl_ms)
+        return True
+    return False
+
+
+def unlead(name: str = "loops") -> None:
+    """Give the lease up on shutdown so another copy takes over at once."""
+    if _mode.production():
+        r, k = redis_client(), f"sh:lead:{name}"
+        if r.get(k) == _ID:
+            r.delete(k)
+
+
+class lock:
+    """`with kv.lock("chain:t1") as got:` got is False when someone else holds it (skip the work). Re-entrant in the same thread.
+    Production: a Redis key with a TTL (so a crashed holder frees it); simple: an in-process lock."""
+
+    def __init__(self, name: str, ttl_s: float = 1800):
+        self.name, self.ttl, self.got, self.nested = name, ttl_s, False, False
+
+    def __enter__(self) -> bool:
+        held = _HELD.__dict__.setdefault("names", set())
+        if self.name in held:
+            self.nested = self.got = True
+            return True
+        if _mode.production():
+            self.got = bool(redis_client().set(f"sh:lock:{self.name}", _ID, nx=True, px=max(1, int(self.ttl * 1000))))
+        else:
+            self.got = _LOCKS[self.name].acquire(blocking=False)
+        if self.got:
+            held.add(self.name)
+        return self.got
+
+    def __exit__(self, *exc) -> None:
+        if not self.got or self.nested:
+            return
+        _HELD.names.discard(self.name)
+        if _mode.production():
+            r, k = redis_client(), f"sh:lock:{self.name}"
+            if r.get(k) == _ID:
+                r.delete(k)
+        else:
+            _LOCKS[self.name].release()

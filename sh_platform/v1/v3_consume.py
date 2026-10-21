@@ -7,6 +7,7 @@ ponytail: in memory, one process; a restart answers the first ask live again.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -15,6 +16,8 @@ import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+from sh_platform import mode as _mode
+from sh_platform.state import kv
 from sh_platform.v1 import v3_harbor as H
 from sh_platform.v1 import v3_process
 
@@ -98,24 +101,40 @@ def _key(plane, viewer, text: str, ver) -> tuple:
     return (str(plane.path("v3")), _who(viewer), norm(text), ver[0] if ver else "")
 
 
+TTL_S = 86400  # a day; the data version in the key is what really retires an answer
+
+
+def _kept(k: tuple):
+    """Simple: process memory (KEPT). Production: Redis through state.kv, shared by every web copy and kept over a restart."""
+    if _mode.production():
+        return kv.cache_get("v3:" + hashlib.sha1(json.dumps(k).encode()).hexdigest())
+    with LOCK:
+        return KEPT.get(k)
+
+
+def _keep(k: tuple, got: dict) -> None:
+    if _mode.production():
+        return kv.cache_put("v3:" + hashlib.sha1(json.dumps(k).encode()).hexdigest(), got, TTL_S)
+    with LOCK:
+        if len(KEPT) >= MAX:
+            KEPT.clear()
+        KEPT[k] = got
+
+
 def answer(plane, viewer, text: str, compute, count: bool = True) -> dict:
     """The kept answer, instantly, or `compute()` (today's path) stored with its trace. Adds cached, ms, as_of."""
     t0, ver = time.perf_counter(), version(plane)
     k = _key(plane, viewer, text, ver)
     if count:
         _count(plane, text)
-    with LOCK:
-        hit = KEPT.get(k)
+    hit = _kept(k)
     as_of = ver[1] if ver else None
     if hit:
         return hit | {"cached": True, "ms": int((time.perf_counter() - t0) * 1000), "as_of": as_of}
     got = compute()
     got = got | ({"figure": f} if "figure" not in got and (f := figure_of(got["answer"], text)) else {})
     got = got | ({"figure": named(got["figure"])} if got.get("figure") else {})
-    with LOCK:
-        if len(KEPT) >= MAX:
-            KEPT.clear()
-        KEPT[k] = got
+    _keep(k, got)
     return got | {"cached": False, "ms": int((time.perf_counter() - t0) * 1000), "as_of": as_of}
 
 
@@ -127,9 +146,8 @@ def precompute(plane, viewer, compute_for, n: int = 8) -> int:
         return 0
     PRE[str(plane.path("v3"))] = ver[0]
     for q in dict.fromkeys(top(plane, n) + golden(plane)):
-        with LOCK:
-            if _key(plane, viewer, q, ver) in KEPT:
-                continue
+        if _kept(_key(plane, viewer, q, ver)):
+            continue
         try:
             answer(plane, viewer, q, compute_for(q), count=False)
             done += 1
