@@ -17,6 +17,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import openpyxl
 import pypdf
 import pytest
@@ -83,7 +85,7 @@ class Office:
     """A small company model (the model's own DDL) filled from the office6m files by the loaders below."""
 
     def __init__(self):
-        self.con = duckdb.connect()
+        self.con = _utc(duckdb.connect())
         self.con.execute(DDL.read_text(encoding="utf-8"))
         self.n, self.cols, self.names = 0, {}, {}
         self.ent, self.port, self.fund, self.cashi, self.commit, self.office_acct, self.payee = {}, {}, {}, {}, {}, {}, {}

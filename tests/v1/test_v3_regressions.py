@@ -12,6 +12,8 @@ from contextlib import contextmanager
 from types import SimpleNamespace
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
@@ -217,7 +219,7 @@ def test_the_concentration_recipe_is_a_share_of_the_portfolio():
     """c5 risk_officer: the answer key is Harborview 2,368,000 of the EG-LIQUID portfolio's 41,200,000 = 5.75%; the recipe divided by everything held."""
     from decimal import Decimal
     from sh_platform.v1 import v3_recipes as R
-    con = duckdb.connect()
+    con = _utc(duckdb.connect())
     con.execute("create table portfolios (id int, portfolio_name varchar)")
     con.execute("create table instruments (id int, canonical_name varchar, instrument_type varchar)")
     con.execute("create table bank_accounts (id int, cash_instrument_id int)")  # cash counts once (the holdings snippet reads it)
@@ -306,7 +308,7 @@ def test_a_rule_check_on_any_ready_table_comes_before_a_plain_read(monkeypatch):
 def test_a_recipe_built_figure_is_answered_from_its_recipe_table_and_measure_column(monkeypatch):
     """c6 ops_clerk: 'FX forward match status' answered 991,000.00 from another table; the recipe table held FXF-2026-002 with variance 8,100."""
     from sh_platform.v1 import b10_pack as PK, cx_dash as CD, talk
-    con = duckdb.connect()
+    con = _utc(duckdb.connect())
     con.execute("create table gold_fx (trade_reference varchar, trade_date date, counterparty varchar, currency varchar, confirmed_amount decimal(18,2), "
                 "trade_amount decimal(18,2), variance decimal(18,2))")
     con.execute("insert into gold_fx values ('FXF-2026-001', '2026-09-15', 'Bank A', 'USD', 500000, 500000, 0), "

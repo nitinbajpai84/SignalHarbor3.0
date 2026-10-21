@@ -16,6 +16,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import openpyxl
 import pytest
 import yaml
@@ -265,7 +267,7 @@ def load_office(con) -> None:
 
 @pytest.fixture(scope="module")
 def con():
-    c = duckdb.connect()
+    c = _utc(duckdb.connect())
     load_office(c)
     yield c
     c.close()

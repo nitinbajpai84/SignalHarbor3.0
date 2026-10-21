@@ -10,6 +10,8 @@ from decimal import Decimal
 from pathlib import Path
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import openpyxl
 import pypdf
 import pytest
@@ -44,7 +46,7 @@ def test_allowance_due_is_served_by_the_loader():
 
 @pytest.fixture()
 def con():
-    c = duckdb.connect()
+    c = _utc(duckdb.connect())
     c.execute(DDL.read_text(encoding="utf-8"))
     return c
 

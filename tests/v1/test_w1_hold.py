@@ -14,6 +14,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import openpyxl
 import pypdf
 import pytest
@@ -40,7 +42,7 @@ DEFAULT = {"VARCHAR": "x", "DATE": date(2026, 10, 13), "BOOLEAN": False}
 
 
 def new_db():
-    con = duckdb.connect()
+    con = _utc(duckdb.connect())
     con.execute((REPO / "docs" / "v2" / "evidence-to-action-mvp.duckdb.sql").read_text(encoding="utf-8"))
     return con
 

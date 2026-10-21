@@ -7,6 +7,8 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import pytest
 
 from sh_platform.v1 import b10_design as D
@@ -78,7 +80,7 @@ def test_rules_count_30_and_60_day_windows_from_the_month_end_and_list_balances(
     rows = " ".join(m["needs_person"] for m in K.open_rows(pack))
     assert "Define Cash after calls by entity" not in rows and "Define Uncalled commitment by fund" not in rows  # both placed: nothing left to define
 
-    con = duckdb.connect()
+    con = _utc(duckdb.connect())
     con.execute("create table legal_entities (id varchar, entity_code varchar)")
     con.execute("create table portfolios (id varchar, legal_entity_id varchar)")
     con.execute("create table cash_movements (id varchar, portfolio_id varchar, movement_type varchar, notice_kind varchar, confirmation_status varchar, "

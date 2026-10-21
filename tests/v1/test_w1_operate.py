@@ -14,6 +14,8 @@ from decimal import Decimal
 from pathlib import Path
 
 import duckdb
+
+from sh_platform.v1.wh import _utc  # the same UTC session as the warehouse
 import openpyxl
 import pypdf
 import pytest
@@ -64,7 +66,7 @@ class Office:
     """A small company model in memory: the DDL of the model, rows put in by the loaders below."""
 
     def __init__(self):
-        self.con = duckdb.connect()
+        self.con = _utc(duckdb.connect())
         self.con.execute("set TimeZone='UTC'")
         self.con.execute(DDL.read_text(encoding="utf-8"))
         self.cache: dict = {}
