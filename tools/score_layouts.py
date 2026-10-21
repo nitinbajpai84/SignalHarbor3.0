@@ -13,6 +13,7 @@ import argparse
 import json
 import sys
 import tempfile
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -27,7 +28,9 @@ SCHEMAS = ROOT / "packs" / "family_office" / "1" / "doc_schemas"
 
 def score_one(plane, name: str, key: dict) -> dict:
     from sh_platform.v1 import v3_doc_extract as DE
+    t0 = time.time()
     got = DE.read(plane, name, (FIX / name).read_bytes(), folder=SCHEMAS)
+    print(f"  {name} {'unread' if got is None else got['status']} {time.time() - t0:.0f}s", file=sys.stderr, flush=True)
     out = Counter()
     status = got["status"] if got else "unread"
     if got is None:
