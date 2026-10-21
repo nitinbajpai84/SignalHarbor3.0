@@ -163,3 +163,122 @@ def kpi_by_recipe(text: str, kpis: list[dict]) -> dict | None:
     r = R.match({"name": text}, strict=False)
     got = [k for k in kpis if r and (R.bound(k) or {}).get("id") == r["id"]]  # the figure's binding, never its name
     return got[0] if len(got) == 1 else None
+
+
+# ---- checks on every document as it arrives (W10, method 2) -----------------------------------------------------------------------------
+# Called by the office loader (v3_pack_readers.Office.load) on the rows of the batch before they are written. A failure:
+#   - holds the document: documents.document_status = 'held', and the cash movements of its source record are 'held', so no figure reads them;
+#   - raises an Action card (an exceptions row, the mechanism bank_details_changed already uses) in plain words: the check, the values, the person who acts.
+# A bank-account failure holds nothing: the call stays in the figures (liquidity must still see it); the bank_details_changed card and recipe hold the
+# payment itself until the call-back is recorded. A card an earlier reader already raised for the same document is not raised twice.
+# ponytail: reads the batch's own rows; a document loaded in an earlier batch is not compared. Add a warehouse read when files arrive one at a time.
+
+HOLD = "held"
+WHO = {"parts": "Daniel Foo", "dates": "Daniel Foo", "unfunded": "Daniel Foo", "currency": "Daniel Foo", "account": "Grace Ong", "balance": "Grace Ong", "duplicate": "Grace Ong"}
+ROLE = {"Daniel Foo": "Head of Finance", "Grace Ong": "Operations Lead"}
+WHAT = {"parts": "the parts do not add up to the amount", "dates": "the due date is not after the notice date", "unfunded": "more than the unfunded commitment",
+        "currency": "currency differs from the commitment", "account": "payment account differs from the one on file",
+        "balance": "opening balance differs from the previous closing", "duplicate": "the same document has arrived before"}
+
+
+def _m(v) -> str:
+    v = _d(v)
+    return f"{v:,.0f}" if v == v.to_integral_value() else f"{v:,.2f}"
+
+
+def check_documents(o) -> list[dict]:
+    """Run every document check on the rows of the loader `o`. -> the failures: {check, document, words, who}. Each is already held and carded."""
+    rows = o.rows
+    fld: dict = {}
+    for f in rows.get("extracted_fields", []):
+        fld.setdefault(f["document_id"], {})[f["field_name"]] = f
+    num = lambda did, n: _d((fld.get(did, {}).get(n) or {}).get("value_numeric")) or Decimal(0)  # noqa: E731
+    txt = lambda did, n: (fld.get(did, {}).get(n) or {}).get("value_text")  # noqa: E731
+    docs = rows.get("documents", [])
+    raised = [(e.get("exception_type"), e.get("title") or "") for e in rows.get("exceptions", [])]
+    fails: list[dict] = []
+
+    def fail(check: str, d: dict, what: str, words: str, hold: bool = True) -> None:
+        who = WHO[check]
+        fails.append({"check": check, "document": d["id"], "words": words, "who": who})
+        if hold:
+            d["document_status"] = HOLD
+            for m in rows.get("cash_movements", []):
+                if d.get("source_record_id") and m.get("source_record_id") == d["source_record_id"]:
+                    m["confirmation_status"] = HOLD
+            for m in rows.get("position_snapshots", []):
+                if d.get("source_record_id") and m.get("source_record_id") == d["source_record_id"]:
+                    m["data_status"] = "Held"
+        if any(et in ("bank_details_changed", "duplicate_invoice") and what.lower() in t.lower() for et, t in raised):
+            return  # an earlier reader already raised the card for this document
+        o.add("exceptions", exception_type="document_check", title=f"{what}: {WHAT[check]}", owner_user_id=o.person(who), status="assigned",
+              detected_at=d.get("received_at"), instrument_id=d.get("instrument_id"), description=f"{words} {who} ({ROLE[who]}) acts on this.")
+        o.note("rule_checks", flag=f"{what}: {words}")
+
+    calls = sorted((d for d in docs if d.get("document_type") == "capital_call_notice"), key=lambda d: (d["document_date"], d["title"]))
+    seen: dict = {}
+    for d in calls:
+        did, fund = d["id"], txt(d["id"], "fund") or d["title"]
+        no, amt = txt(did, "call_no"), num(did, "amount")
+        what = f"{fund} call {no}"
+        if (key := (d.get("instrument_id"), no, amt)) in seen:  # no duplicate document: same fund, call number and amount
+            fail("duplicate", d, what, f"{what} for {_m(amt)} arrives a second time ({d['title']}); the first is {seen[key]}. The second is held and not counted.")
+            continue
+        seen[key] = d["title"]
+        if "new_investments" in fld.get(did, {}):  # the parts: new investments plus the management fee (a call with no fee line has none)
+            parts = num(did, "new_investments") + num(did, "management_fee")
+            if parts != amt:
+                fail("parts", d, what, f"The parts of {what} add up to {_m(parts)} (investments {_m(num(did, 'new_investments'))} plus fee {_m(num(did, 'management_fee'))}), but the notice asks for {_m(amt)}.")
+        notice, due = d["document_date"], _day(txt(did, "due_date"))
+        if due and notice and due <= notice:
+            fail("dates", d, what, f"{what} is due on {_day_words(due)}, which is not after its notice date of {_day_words(notice)}.")
+        if com := _commitment(o, d, txt(did, "investor"), calls, fld):
+            row, before = com
+            unfunded = _d(row["commitment_amount"]) - before
+            if amt > unfunded:
+                fail("unfunded", d, what, f"{what} asks for {_m(amt)} but only {_m(unfunded)} of the {_m(row['commitment_amount'])} commitment is unfunded.")
+            ccy = (fld.get(did, {}).get("amount") or {}).get("currency")
+            if ccy and row.get("currency") and ccy != row["currency"]:
+                fail("currency", d, what, f"{what} is in {ccy} but the commitment is in {row['currency']}.")
+        ending = re.sub(r"[^0-9A-Za-z]", "", txt(did, "bank_account") or "")[-4:]
+        known = {b["account_ref"] for b in rows.get("bank_accounts", []) if b.get("holder_kind") == "payee" and b.get("instrument_id") == d.get("instrument_id")
+                 and b.get("verified_on") and str(b["verified_on"]) <= str(notice)}
+        if ending and known and ending not in known:
+            fail("account", d, what, f"{what} asks for payment to the account ending {ending}; the account on file ends {', '.join(sorted(known))}. Call the fund back on the number on file before paying.", hold=False)
+
+    for d in (x for x in docs if x.get("document_type") == "invoice"):  # an invoice that names another account than the vendor master, or arrives twice
+        vendor, no, end = txt(d["id"], "vendor"), txt(d["id"], "invoice_no"), txt(d["id"], "pay_to_account_ending")
+        what = f"{vendor} invoice {no}"
+        vm = next((b for b in rows.get("bank_accounts", []) if b["id"] == o.vendor_acct.get((vendor or "").lower())), None)
+        if end and vm and vm.get("account_ref") and vm["account_ref"] != end:
+            fail("account", d, what, f"{what} asks for payment to the account ending {end}; the vendor master has {vm['account_ref']}. Call the vendor back on the number on file before paying.", hold=False)
+        if d.get("document_status") == "duplicate":  # the reader already marked it; the check still counts it and raises the card if there is none
+            fail("duplicate", d, what, f"{what} arrives a second time; it is paid once.", hold=False)
+
+    stm: dict = {}
+    for d in docs:
+        if d.get("document_type") == "bank_statement" and "closing_balance" in fld.get(d["id"], {}):
+            stm.setdefault(d.get("instrument_id"), []).append(d)
+    for lst in stm.values():  # a statement's opening balance equals the previous statement's closing (as stated, or as its first day's movements imply)
+        lst.sort(key=lambda d: d["valuation_date"])
+        for a, b in zip(lst, lst[1:]):
+            if b["valuation_date"].year * 12 + b["valuation_date"].month - a["valuation_date"].year * 12 - a["valuation_date"].month != 1:
+                continue  # a month is missing: nothing to compare with
+            close = num(a["id"], "closing_balance")
+            if close not in (num(b["id"], "opening_balance"), num(b["id"], "opening_implied")):
+                fail("balance", b, b["title"], f"Statement {b['title']} opens at {_m(num(b['id'], 'opening_balance'))} ({_m(num(b['id'], 'opening_implied'))} by its first day's movements); "
+                     f"the previous statement {a['title']} closed at {_m(close)}.")
+    return fails
+
+
+def _commitment(o, d: dict, investor: str | None, calls: list[dict], fld: dict):
+    """(the commitment row as known on the notice date, the amount called before this call) or None. Known = the latest register at or before the notice date."""
+    ent = next((o.ent[c] for c, n in o.md["entities"].items() if n == investor and c in o.ent), None)
+    regs = [c for c in o.rows.get("commitments", []) if c.get("instrument_id") == d.get("instrument_id") and (ent is None or c.get("legal_entity_id") == ent)
+            and c.get("called_as_at") and c["called_as_at"] <= d["document_date"]]
+    if not regs:
+        return None
+    reg = max(regs, key=lambda c: c["called_as_at"])
+    since = sum(_d((fld.get(e["id"], {}).get("amount") or {}).get("value_numeric")) for e in calls
+                if e is not d and e.get("instrument_id") == d.get("instrument_id") and reg["called_as_at"] < e["document_date"] <= d["document_date"])
+    return reg, _d(reg["called_to_date"]) + since
