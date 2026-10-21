@@ -430,6 +430,8 @@ def reference(w, R):
     write_csv(ref / "standing_instructions.csv", ["fund_key", "fund", "manager", "bank", "account_last4", "confirmed_on", "confirmed_by", "callback_number"], rows)
     write_csv(ref / "fund_terms.csv", ["fund_key", "fund", "entity", "commitment_usd", "committed_on", "called_before_2026_04_01", "fee_pct_of_commitment_per_billing", "billing_months"],
               [[f, pname(f), FUND[f]["legal_entity"], TERMS[f][0], COMMIT_DATE[f], TERMS[f][1], TERMS[f][2], " ".join(map(str, TERMS[f][3]))] for f in PRIVATE])
+    from .ownership import HEAD as OWN_HEAD, ROWS as OWN_ROWS  # the share register (A61); imported here because ownership imports this module
+    write_csv(ref / "ownership_register.csv", OWN_HEAD, OWN_ROWS)
     write_csv(ref / "vendor_master.csv", ["vendor", "category", "currency", "account_last4"], [list(v) for v in VENDORS])
     write_csv(ref / "accounts.csv", ["account_id", "bank", "entity", "currency", "account_number"], [[a, BANK[v["bank"]], ENT[v["ent"]], v["ccy"], v["no"]] for a, v in ACCT.items()])
     import json

@@ -8,6 +8,8 @@ Where the rows go (docs/v3/ASSUMPTIONS.md A40, A41, A44):
   grant_requests -> grants with status requested (the request pdf and the mail that carried it are documents); facts against the budget are flagged
   trust_deed     -> a document in the restricted group: fields beneficiary_share (value_text the beneficiary, value_numeric a fraction), payout_cap_pct (a percent: 70),
                     trust_year_start, trust_year_end, successor_trustee. No table (A44).
+  ownership_register (reference/ownership_register.csv, A61) -> entity_ownership, one row per period, plus a family_members row for a holder no allowance schedule names; the rule
+                    checks (holders add to 100, no overlap, no circle) are exceptions ownership_gap, ownership_overlap, ownership_cycle
   estate_planning-> a document: fields estate_tax_exemption, estate_tax_rate (fraction), payment_term_months, valuation_basis; PROPOSED rules estate_tax_exemption, estate_tax_rate
 Rules the files state are written as proposed (A20: signing is the office's, through approvals); a rule already signed is never touched. The legal entity of
 a grant is EG-HOLD: the ledger names none and its bank references are paid from the Holdings USD account (flagged). Synthetic data only."""
@@ -274,6 +276,90 @@ def fam_trust_deed(self) -> None:
         self.note("trust_deed", files=1, rows=len(shares))
 
 
+# ---------------------------------------------------------------------------------------------------------------- ownership register (A61)
+def ownership_problems(rows, asat: date) -> list[tuple[str, str, str]]:
+    """The rule checks on an ownership register, as at a date: (exception type, title, description) for each problem.
+    rows: dicts with owner (name), owned (name), pct, valid_from, valid_to (None = in force). The holders of an entity must add to 100 percent (a gap is flagged),
+    two periods of the same holder and entity must not overlap, and no entity may own itself through the chain (checked on every date a period starts)."""
+    out = []
+    live = lambda day: [r for r in rows if r["valid_from"] <= day and (r["valid_to"] is None or day <= r["valid_to"])]
+    by = {}
+    for r in live(asat):
+        by[r["owned"]] = by.get(r["owned"], Decimal(0)) + Decimal(str(r["pct"]))
+    for owned, tot in sorted(by.items()):
+        if tot != 100:
+            out.append(("ownership_gap", f"{owned}: the owners add to {tot:f} percent, not 100", f"As at {asat}, the register gives {tot:f} percent of {owned} to its owners; the other {100 - tot:f} percent has no owner on record."))
+    seen = set()
+    for i, a in enumerate(rows):
+        for b in rows[i + 1:]:
+            k = (a["owner"], a["owned"])
+            if k == (b["owner"], b["owned"]) and a["valid_from"] <= (b["valid_to"] or date.max) and b["valid_from"] <= (a["valid_to"] or date.max) and k not in seen:
+                seen.add(k)
+                out.append(("ownership_overlap", f"{a['owner']} in {a['owned']}: two periods overlap", f"The register holds two periods for {a['owner']} in {a['owned']} that share days ({a['valid_from']} to {a['valid_to'] or 'now'} and {b['valid_from']} to {b['valid_to'] or 'now'})."))
+    for day in sorted({r["valid_from"] for r in rows} | {asat}):
+        edges = {}
+        for r in live(day):
+            edges.setdefault(r["owner"], set()).add(r["owned"])
+        for start in sorted(edges):
+            stack, hit = [(start, [start])], None
+            while stack and hit is None:
+                node, path = stack.pop()
+                for nxt in sorted(edges.get(node, ())):
+                    if nxt == start:
+                        hit = path + [start]
+                        break
+                    if nxt not in path:
+                        stack.append((nxt, path + [nxt]))
+            key = ("cycle", tuple(sorted(hit[:-1]))) if hit else None
+            if hit and key not in seen:
+                seen.add(key)
+                out.append(("ownership_cycle", f"Circular ownership: {' > '.join(hit)}", f"On {day} {start} owns itself through {' > '.join(hit)}; a look-through would never end."))
+    return out
+
+
+def fam_ownership_register(self) -> None:
+    """reference/ownership_register.csv -> entity_ownership (one row per period; standing data, written once) and a family_members row for a holder the allowance schedules do not name."""
+    p = self.root / "reference" / "ownership_register.csv"
+    if not p.is_file():
+        return
+    try:
+        if self.con.execute("select count(*) from entity_ownership").fetchone()[0]:
+            self.note("ownership_register", flag="the ownership register is already on record in this company; not written again")
+            return
+    except Exception:  # noqa: BLE001 - a warehouse built before the table existed: nothing is written
+        self.note("ownership_register", why="this warehouse has no entity_ownership table yet")
+        return
+    recv = date(2026, 4, 1)
+    did = self.doc(p, "ownership_register", p.stem, kind="reference", received=recv, date_=recv)
+    members, rows, n = {}, [], 0
+    for r in self.rows.get("family_members", []):
+        members.setdefault(r["member_name"], r["id"])
+    for i, r in enumerate(P.csv_rows(p), 2):
+        kind, owner, owned = r["owner_kind"].strip(), r["owner"].strip(), C._entity_code(self, r["owned_entity"])
+        code = C._entity_code(self, owner) if kind == "entity" else None
+        try:
+            pct, vf, vt = Decimal(r["ownership_pct"]), P.parse_date(r["valid_from"]), (P.parse_date(r["valid_to"]) if r["valid_to"].strip() else None)
+        except Exception:  # noqa: BLE001 - a figure or date that cannot be read is not guessed
+            self.note("ownership_register", flag=f"row {i}: percent or dates not readable; set aside")
+            continue
+        if owned is None or kind not in ("entity", "family_member") or (kind == "entity" and code is None) or not 0 < pct <= 100:
+            self.note("ownership_register", flag=f"row {i}: {owner!r} in {r['owned_entity']!r} is not an owner of an entity of the office; set aside")
+            continue
+        sr = self.record("reference", p, recv, rtype="row", external=f"{owner}>{owned}:{vf}", row=i)
+        if kind == "family_member" and owner not in members:
+            members[owner] = self.add("family_members", source_record_id=sr, source_document_id=did, source_page=1, received_at=P.stamp(recv), recorded_at=P.stamp(recv), member_name=owner,
+                                      relationship="principal" if owner == "Mei Chen" else "other", active_from=vf)
+        self.add("entity_ownership", source_record_id=sr, source_document_id=did, source_page=1, received_at=P.stamp(recv), recorded_at=P.stamp(recv), owner_kind=kind,
+                 owner_entity_id=self.ent[code] if code else None, owner_family_member_id=members[owner] if kind == "family_member" else None, owned_entity_id=self.ent[owned],
+                 ownership_pct=pct, valid_from=vf, valid_to=vt)
+        rows.append(dict(owner=owner if kind == "family_member" else self.md["entities"][code], owned=self.md["entities"][owned], pct=pct, valid_from=vf, valid_to=vt))
+        n += 1
+    for etype, title, text in ownership_problems(rows, self.today):
+        self.note("ownership_register", flag=title)
+        self.exception(etype, title, text, self.today)
+    self.note("ownership_register", files=1, rows=n)
+
+
 # ---------------------------------------------------------------------------------------------------------------- estate planning
 def fam_estate_planning(self) -> None:
     for p in self.files("estate_planning"):
@@ -298,16 +384,16 @@ def install(module) -> None:
     P = module
     C.SPEC.update(SPEC)
     C.SUPERSEDES.update(SUPERSEDES)
-    for fn in (fam_tax_calendar, fam_tax_notices, fam_grant_ledger, fam_grant_requests, fam_trust_deed, fam_estate_planning):
+    for fn in (fam_tax_calendar, fam_tax_notices, fam_grant_ledger, fam_grant_requests, fam_trust_deed, fam_estate_planning, fam_ownership_register):
         setattr(module.Office, fn.__name__, fn)
 
     def family(self) -> None:  # named: the step's name is how STEP_KINDS finds its kinds
-        for fn in (fam_tax_calendar, fam_tax_notices, fam_grant_ledger, fam_grant_requests, fam_trust_deed, fam_estate_planning):
+        for fn in (fam_tax_calendar, fam_tax_notices, fam_grant_ledger, fam_grant_requests, fam_trust_deed, fam_estate_planning, fam_ownership_register):
             fn(self)
     module.Office.family = family
     module.KINDS.update(KINDS)
     module.STEP_KINDS["family"] = list(KINDS)
-    module.FLUSH_ORDER[:] = [*module.FLUSH_ORDER, *(t for t in ("tax_obligations", "grants") if t not in module.FLUSH_ORDER)]
+    module.FLUSH_ORDER[:] = [*module.FLUSH_ORDER, *(t for t in ("tax_obligations", "grants", "entity_ownership") if t not in module.FLUSH_ORDER)]
     plain = module.kind_of
 
     def kind_of_family(name: str, data: bytes):

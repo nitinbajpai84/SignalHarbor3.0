@@ -846,3 +846,71 @@ recipes:
         and h.as_at = (select max(y.as_at) from fund_holdings as y where y.instrument_id = h.instrument_id))
         select (select coalesce(sum(through_funds), 0) from {name}) + (select coalesce(sum(round(l.value_amount * h.weight_pct / 100, 2)), 0) from fh as h join lv as l on l.instrument_id = h.instrument_id where lower(h.holding_name) = 'other holdings'),
         (select coalesce(sum(l.value_amount), 0) from lv as l where l.instrument_id in (select instrument_id from fh))
+
+  # W3 (A61). Named ownership_lookthrough: lookthrough_exposure above is card 69 (companies behind the private funds), built and keyed, so the name is taken.
+  - id: ownership_lookthrough
+    label: Ownership look-through by person and entity
+    status: ready
+    cards: [101]
+    names: [ownership look-through, look-through ownership, ownership exposure, indirect holdings, indirect exposure, beneficial ownership, who owns what, ownership share, family share of assets]
+    words_all: [[ownership, owns, owned, stake, beneficial, beneficiary, beneficiaries], [look, lookthrough, through, indirect, indirectly, trust, holdings, family, entity, exposure]]
+    answer:  # the one-line answer: lines of a sentence over the rows the question names (v3_figures.say)
+      - {latest: as_at, if: indirect, sort: share_value, max: 6, lead: "Through the ownership chain as at {as_at}:", say: "{holder} holds {instrument} ({asset_type}) {currency} {share_value}, {effective_pct}% of {held_in} via {chain}"}
+    may_read: [entity_ownership, family_members, legal_entities, portfolios, instruments, commitments, position_snapshots, bank_accounts]
+    never_read: [cash_movements, transactions]
+    why: "What a person owns is the share of every owner down the chain, multiplied: Mei's part of Evergreen Holdings times what Holdings holds. The register (entity_ownership) says who owns whom and from when; a portfolio belongs to one entity, so the chain is the only way to a person."
+    formula: >-
+      As at each date (the latest position date, and the last day of every ownership period that has ended): the periods in force (valid_from to valid_to, both days included; a period a later row supersedes is out).
+      From each family member and from each entity, walk the owners down (a recursive walk, at most 8 steps, never through an entity already on the path) multiplying the percentages; paths to the
+      same entity add up. effective_pct = that product. The assets of an entity are its portfolios' positions (the last snapshot on or before the date; cash is the cash instruments, counted once as in
+      net worth; zero values out) and its commitments made on or before the date. share_value = value x effective_pct, rounded to the cent, in the asset's own currency. A row with hops 0 is the entity's
+      own asset (indirect false). Each family member's rows are all indirect.
+    grain: By date, holder and asset
+    sql: >-
+      create table {name} as with recursive {holdings},
+      oe as (select o.* from entity_ownership as o where not exists (select 1 from entity_ownership as x where x.supersedes_entity_ownership_id = o.id)),
+      own as (select case when o.owner_kind = 'family_member' then 'm:' || f.member_name else 'e:' || o.owner_entity_id end as owner_key, coalesce(f.member_name, le.entity_name) as owner_name,
+      o.owner_kind, o.owned_entity_id, o.ownership_pct / 100 as frac, o.valid_from, o.valid_to
+      from oe as o left join family_members as f on f.id = o.owner_family_member_id left join legal_entities as le on le.id = o.owner_entity_id),
+      asat as (select max(position_date) as d from positions union select valid_to from oe where valid_to is not null),
+      walk(as_at, holder, holder_kind, node, frac, hops, trail, chain) as (
+      select a.d, e.entity_name, 'entity', e.id, cast(1 as decimal(18,12)), 0, ['e:' || e.id], e.entity_name from asat as a cross join legal_entities as e
+      union all
+      select a.d, o.owner_name, o.owner_kind, o.owned_entity_id, cast(o.frac as decimal(18,12)), 1, [o.owner_key, 'e:' || o.owned_entity_id], o.owner_name || ' > ' || le.entity_name
+      from asat as a join own as o on o.owner_kind = 'family_member' and o.valid_from <= a.d and (o.valid_to is null or a.d <= o.valid_to) join legal_entities as le on le.id = o.owned_entity_id
+      union all
+      select w.as_at, w.holder, w.holder_kind, o.owned_entity_id, cast(w.frac * o.frac as decimal(18,12)), w.hops + 1, list_append(w.trail, 'e:' || o.owned_entity_id), w.chain || ' > ' || le.entity_name
+      from walk as w join own as o on o.owner_key = 'e:' || w.node and o.valid_from <= w.as_at and (o.valid_to is null or w.as_at <= o.valid_to)
+      join legal_entities as le on le.id = o.owned_entity_id where w.hops < 8 and not list_contains(w.trail, 'e:' || o.owned_entity_id)),
+      reach as (select as_at, holder, holder_kind, node, sum(frac) as frac, min(hops) as hops, string_agg(distinct chain, '; ' order by chain) as chain from walk group by all),
+      ph as (select * from (select a.d as as_at, s.*, row_number() over (partition by a.d, s.portfolio_id, s.instrument_id, s.currency order by s.position_date desc) as ord
+      from asat as a join positions as s on s.position_date <= a.d) as z where ord = 1 and source_market_value <> 0),
+      assets as (select h.as_at, p.legal_entity_id as entity_id, i.canonical_name as instrument, case when i.instrument_type = 'cash' then 'cash' else 'position' end as asset_type, h.currency,
+      h.source_market_value as value from ph as h join portfolios as p on p.id = h.portfolio_id join instruments as i on i.id = h.instrument_id
+      union all
+      select a.d, c.legal_entity_id, i.canonical_name, 'commitment', c.currency, c.commitment_amount from asat as a join commitments as c on c.committed_on <= a.d
+      join instruments as i on i.id = c.instrument_id where not exists (select 1 from commitments as x where x.supersedes_commitment_id = c.id))
+      select r.as_at, r.holder, r.holder_kind, le.entity_name as held_in, cast(r.hops as integer) as hops, (r.hops > 0) as indirect, cast(round(100 * r.frac, 4) as decimal(9,4)) as effective_pct,
+      a.asset_type, a.instrument, a.currency, cast(a.value as decimal(18,2)) as value, cast(round(a.value * r.frac, 2) as decimal(18,2)) as share_value, r.chain
+      from reach as r join assets as a on a.as_at = r.as_at and a.entity_id = r.node join legal_entities as le on le.id = r.node
+    measure: share_value
+    columns:
+      as_at: The date the ownership and the assets are as at (the latest position date, or the last day of an ended ownership period).
+      holder: The person or entity whose share the row is.
+      holder_kind: family_member or entity.
+      held_in: The entity that holds the asset itself (the end of the chain).
+      hops: Steps from the holder to that entity (0 is the entity's own asset).
+      indirect: True when the holder reaches the asset through at least one other entity.
+      effective_pct: The holder's share of the held_in entity, the percentages down the chain multiplied (paths added).
+      asset_type: position, cash or commitment.
+      value: The asset in its own currency at the date.
+      share_value: value times effective_pct.
+      chain: The ownership chain, holder first (several chains are separated by a semicolon).
+    tie_out:
+      label: The people's shares of an entity's assets add up, to the dollar, to the assets times the share of the entity the people hold
+      sql: >-
+        with a as (select distinct as_at, held_in, asset_type, instrument, currency, value from {name}),
+        p as (select as_at, held_in, sum(effective_pct) as pct from (select distinct as_at, held_in, holder, effective_pct from {name} where holder_kind = 'family_member') as z group by all),
+        t as (select (select coalesce(sum(share_value), 0) from {name} where holder_kind = 'family_member') as x,
+        (select coalesce(sum(a.value * p.pct / 100), 0) from a join p on p.as_at = a.as_at and p.held_in = a.held_in) as y)
+        select case when abs(x - y) <= 1 then y else x end, y from t

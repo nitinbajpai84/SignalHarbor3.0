@@ -4067,3 +4067,46 @@ keys:
             level: summary
             allowed: false
         how: views granted against the family access policy, per member and entity (none < summary < full)
+  uc-101-ownership:
+    title: ''
+    priority: null
+    input_files:
+    - reference/ownership_register.csv
+    - reference/fund_terms.csv
+    - '*/trust_deed/evergreen_family_trust_deed.pdf'
+    questions:
+      What is Mei Chen's share of Cedarpoint Ventures III, and what does the Trust hold indirectly?:
+        expected:
+          fund: Cedarpoint Ventures III
+          commitment: 10000000
+          held_by: Evergreen Holdings
+          as_at: '2026-10-13'
+          mei_effective_pct: 40
+          mei_share: 4000000
+          mei_effective_pct_at_30_jun: 45
+          mei_share_at_30_jun: 4500000
+          trust_effective_pct_of_holdings: 60
+          trust_share: 6000000
+          trust_beneficiaries:
+          - person: Lin Chen
+            effective_pct: 24
+            share: 2400000
+          - person: Maya Chen
+            effective_pct: 15
+            share: 1500000
+          - person: Ethan Chen
+            effective_pct: 16.2
+            share: 1620000
+          - person: Wen Chen
+            effective_pct: 4.8
+            share: 480000
+          holders_of_entity_b:
+          - Ethan Chen
+          - Evergreen Family Trust
+          - Evergreen Holdings
+          - Lin Chen
+          - Maya Chen
+          - Mei Chen
+          - Wen Chen
+        how: 'the commitment of the fund (reference/fund_terms.csv) times the share of every owner down the chain of ownership_register.csv as at the date: Mei Chen
+          holds 40 percent of Holdings since 1 Jul 2026 (45 before), the Trust 60 percent (55 before), a beneficiary the deed''s share of the Trust''s part'

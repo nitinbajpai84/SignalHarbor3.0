@@ -13,7 +13,7 @@ def plane(tmp_path):
 
 def test_silver_is_the_core_model_and_unknown_is_none(plane):
     assert E.layer_of(plane, "organizations") == "silver" and E.layer_of(plane, "nope") is None
-    assert len(E.tables_for_project(plane, "prj-1")["silver"]) == 60
+    assert len(E.tables_for_project(plane, "prj-1")["silver"]) == 61
     assert E.tables_for_project(plane, "prj-1")["bronze"] == [] and E.tables_for_project(plane, "prj-1")["gold"] == []
 
 
@@ -46,4 +46,4 @@ def test_slug_and_demo_bronze_and_view(plane):
     assert names == ["bronze_administrator_export", "bronze_trading_export_export", "bronze_manager_email_statement"]
     E.seed_demo_bronze(plane)  # idempotent
     v = E.catalogue_view(plane)["layers"]
-    assert [t["name"] for t in v["bronze"]] == sorted(names) and v["silver"]["tables"] == 60 and v["gold"] == []
+    assert [t["name"] for t in v["bronze"]] == sorted(names) and v["silver"]["tables"] == 61 and v["gold"] == []
