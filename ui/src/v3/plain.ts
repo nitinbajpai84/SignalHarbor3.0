@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 
 import { listThreads } from "./api";
 
-/** 880400.00 -> 880,400.00; leaves short numbers, text and anything already grouped alone. */
+/** A decimal's trailing zeros past two places dropped: .88000000 -> .88, .123400 -> .1234, .5 stays .5. */
+const trimFraction = (f: string) => (f.length > 3 ? f.replace(/0+$/, "").padEnd(3, "0") : f);
+
+/** 880400.00 -> 880,400.00 and 2605031.88000000 -> 2,605,031.88; leaves short numbers, text and anything already grouped alone. */
 export function fmtNum(v: string | number): string {
-  return String(v).replace(/(?<![\d.,/:]|\d-)(\d{4,})(\.\d+)?(?![\d,/:]|-\d)/g, (_, i: string, f = "") => i.replace(/\B(?=(\d{3})+$)/g, ",") + f);
+  return String(v).replace(/(?<![\d.,/:]|\d-)(\d{4,})(\.\d+)?(?![\d,/:]|-\d)/g, (_, i: string, f = "") => i.replace(/\B(?=(\d{3})+$)/g, ",") + trimFraction(f));
 }
 
 /** What the office calls a table or column. Anything not listed falls back to Title Case of the snake_case name. */
