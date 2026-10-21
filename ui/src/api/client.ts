@@ -161,8 +161,8 @@ export function apiSend<T>(method: "POST" | "PUT" | "PATCH" | "DELETE", path: st
   return request<T>(method, path, { body });
 }
 
-export async function login(email: string, password: string): Promise<Me> {
-  const me = await request<Me>("POST", "/api/auth/login", { body: { email, password } });
+export async function login(email: string, password: string, otp?: string): Promise<Me> {
+  const me = await request<Me>("POST", "/api/auth/login", { body: otp ? { email, password, otp } : { email, password } });
   expiredFired = false;
   return me;
 }

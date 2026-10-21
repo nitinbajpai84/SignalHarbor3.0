@@ -15,7 +15,7 @@ from sh_platform.v1.connectors import base
 
 log = logging.getLogger(__name__)
 # The other builders' connector modules; each registers itself on import. A module that is not merged yet is skipped.
-MODULES = ("files", "mt940", "camt053", "mt535", "bai2", "sftp", "imap", "plaid", "saxo", "gocardless", "sgbank")
+MODULES = ("files", "plaid", "saxo", "gocardless", "banksg")  # each registers its connectors in base.REGISTRY on import
 
 
 def load_connectors() -> None:

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { ApiError } from "../api/client";
+import { ApiError, apiSend } from "../api/client";
 import BrandMark from "../components/BrandMark";
 import ThemeControl from "../components/ThemeControl";
 import { copy } from "../copy";
@@ -30,6 +30,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"password" | "code" | "setup">("password");
+  const [setup, setSetup] = useState<{ secret: string; otpauth: string; codes?: string[] } | null>(null);
   const first = useRef<HTMLInputElement>(null);
 
   useEffect(() => first.current?.focus(), []);
@@ -39,12 +42,27 @@ export default function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      await signIn(email, password);
+      await signIn(email, password, step === "code" ? otp : undefined);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? copy.login.mismatch : copy.login.unavailable);
-      setPassword("");
+      // W7: the server asks for the authenticator code (401) or for the office's required set-up (403)
+      const msg = err instanceof ApiError ? err.message : "";
+      if (err instanceof ApiError && err.status === 403 && /second step/i.test(msg)) { setStep("setup"); setError(msg); }
+      else if (err instanceof ApiError && err.status === 401 && /6-digit|code did not work/i.test(msg)) { setStep("code"); setError(msg); setOtp(""); }
+      else { setError(err instanceof ApiError && err.status === 401 ? copy.login.mismatch : copy.login.unavailable); setPassword(""); setStep("password"); }
       setBusy(false);
     }
+  }
+
+  async function startSetup() {
+    setError(null);
+    try { setSetup(await apiSend("POST", "/api/auth/mfa/start", { email, password })); } catch (err) { setError((err as Error).message); }
+  }
+  async function confirmSetup() {
+    setError(null);
+    try {
+      const r = await apiSend<{ recovery_codes: string[] }>("POST", "/api/auth/mfa/confirm", { email, password, otp });
+      setSetup((s) => (s ? { ...s, codes: r.recovery_codes } : s));
+    } catch (err) { setError((err as Error).message); }
   }
 
   return (
@@ -66,8 +84,30 @@ export default function LoginPage() {
             {copy.login.password}
             <input id="password" className="lg-input" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
+          {step === "code" ? (
+            <label htmlFor="otp" className="lg-field">
+              Authenticator code or recovery code
+              <input id="otp" className="lg-input" inputMode="numeric" autoComplete="one-time-code" required value={otp} onChange={(e) => setOtp(e.target.value)} />
+            </label>
+          ) : null}
           {error ? <p role="alert" className="lg-line">{error}</p> : null}
-          <Button type="submit" variant="primary" disabled={busy}>{busy ? copy.login.busy : copy.login.button}</Button>
+          {step === "setup" ? (
+            <div className="lg-form">
+              {!setup ? <Button type="button" variant="primary" onClick={() => void startSetup()}>Set up my authenticator app</Button> : setup.codes ? (
+                <>
+                  <p className="lg-tagline">Keep these recovery codes somewhere safe. Each works once and they are not shown again.</p>
+                  <pre>{setup.codes.join(" ")}</pre>
+                  <Button type="button" variant="primary" onClick={() => { setStep("password"); setSetup(null); setOtp(""); setError(null); }}>Done, sign in</Button>
+                </>
+              ) : (
+                <>
+                  <p className="lg-tagline">Add this key to your authenticator app (shown once): <b>{setup.secret}</b>. <a href={setup.otpauth}>Open in app</a></p>
+                  <input aria-label="Code from the app" className="lg-input" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)} />
+                  <Button type="button" variant="primary" onClick={() => void confirmSetup()}>Turn it on</Button>
+                </>
+              )}
+            </div>
+          ) : <Button type="submit" variant="primary" disabled={busy}>{busy ? copy.login.busy : copy.login.button}</Button>}
         </form>
         <div className="lg-theme"><ThemeControl /></div>
       </div>

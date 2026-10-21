@@ -161,3 +161,17 @@ class AccountStore:
         acct = self.get_by_email(email)
         ok = check_password(password, acct["password_hash"] if acct else _DUMMY_HASH)
         return acct if acct and ok and not acct["disabled"] else None
+
+    def set_mfa(self, email: str, mfa: dict | None) -> None:
+        """Replace an account's MFA record (None clears it). Unknown email: ValueError."""
+        email = normalise_email(email)
+        with self._lock:
+            accounts = self._read()
+            acct = next((a for a in accounts if a["email"] == email), None)
+            if acct is None:
+                raise ValueError("unknown account")
+            if mfa is None:
+                acct.pop("mfa", None)
+            else:
+                acct["mfa"] = mfa
+            self._write(accounts)

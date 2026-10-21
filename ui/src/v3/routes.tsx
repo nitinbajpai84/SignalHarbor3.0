@@ -22,6 +22,7 @@ import SkillReviewPage from "./action/SkillReviewPage";
 import BuildPage from "./build/BuildPage";
 import Connections from "./build/Connections";
 import Onboarding from "./build/Onboarding";
+import AuditPage from "./build/AuditPage";
 import ConsumePage from "./consume/ConsumePage";
 import KnowledgePage from "./knowledge/KnowledgePage";
 import SkillsPage from "./knowledge/SkillsPage";
@@ -54,6 +55,7 @@ export default function V3Routes() {
       <Route path="trust/connections" element={<ConnectionsPage />} />
       <Route path="action" element={<ActionPage />} />
       <Route path="skill/:id" element={<SkillReviewPage />} />
+      <Route path="build/audit" element={<AuditPage />} />
       <Route path="build" element={<BuildPage />} />
       <Route path="build/connections" element={<Connections />} />
       <Route path="build/onboarding" element={<Onboarding />} />
