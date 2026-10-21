@@ -224,6 +224,17 @@ def test_env_keys_win_over_the_dev_pair(w, monkeypatch):
     assert P.vapid(plane) == {"public": "PUB", "private": "PRIV", "subject": "mailto:a@example.test"}
 
 
+def test_the_sender_posts_an_empty_push_with_the_vapid_header_and_only_to_known_hosts(w, monkeypatch):
+    import httpx
+    _, plane, _ = w
+    seen = []
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: seen.append((url, kw["headers"])) or httpx.Response(201))
+    assert P.send_one(plane, GOOD) == 201
+    url, h = seen[0]
+    assert url == GOOD and h["Authorization"].startswith("vapid t=") and h["Authorization"].endswith("k=" + P.vapid(plane)["public"]) and h["Content-Length"] == "0" and "TTL" in h
+    assert P.send_one(plane, "https://evil.example.test/x") == 0 and len(seen) == 1  # an address that is not a push service is never called
+
+
 def test_subscribe_toggle_and_the_address_check(w):
     _, plane, c = w
     ok = c[SOFIA].post("/api/v3/push/subscribe", json={"subscription": {"endpoint": GOOD, "keys": {}}})
