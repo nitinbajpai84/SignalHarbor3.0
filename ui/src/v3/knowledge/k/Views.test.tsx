@@ -34,7 +34,7 @@ vi.mock("3d-force-graph", () => ({
 }));
 
 const m = vi.mocked(k);
-const at = () => render(<MemoryRouter><KnowledgePage /></MemoryRouter>);
+const at = () => render(<MemoryRouter initialEntries={["/v3/knowledge?tab=more"]}><KnowledgePage /></MemoryRouter>);
 const f = (text: string, source = "Figure record", on = "2026-10-13") => ({ text, source, at: on });
 const data = (): k.Knowledge => ({
   nodes: [

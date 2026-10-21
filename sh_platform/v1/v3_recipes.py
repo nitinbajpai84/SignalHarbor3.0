@@ -48,6 +48,8 @@ def _file() -> dict:
         for r in f.get("recipes") or []:
             if r["id"] not in seen:
                 seen.add(r["id"])
+                if p.parent == DIR:
+                    r.setdefault("domain", p.stem)  # the domain a recipe is written in (cash, invest, hold, report, operate, family, office), for Knowledge
                 out["recipes"].append(r)
     return out
 

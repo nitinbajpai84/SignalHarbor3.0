@@ -35,7 +35,7 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); document.body.style.overflow = ""; });
 
 test("Expand map fills the window and locks the page; Collapse map and Esc bring it back with view and selection kept; the atlas resizes", async () => {
-  const { container } = render(<MemoryRouter><KnowledgePage /></MemoryRouter>);
+  const { container } = render(<MemoryRouter initialEntries={["/v3/knowledge?tab=more"]}><KnowledgePage /></MemoryRouter>);
   await screen.findByRole("heading", { name: "How Evergreen works" });
   await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
   expect(calls.made).toBe(1);

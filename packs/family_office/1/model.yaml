@@ -6,14 +6,17 @@ version: 1
 objects:
   - name: entity
     label: Legal entity
+    about: a company or trust the family owns
     table: legal_entities
     properties:
       - {name: entity_code, label: Entity code, type: string, synonyms: []}
       - {name: entity_name, label: Entity name, type: string, synonyms: []}
       - {name: base_currency, label: Base currency, type: string, synonyms: [currency]}
-    relations: []
+    relations:
+      - {to: bank_account, label: banks with}
   - name: portfolio
     label: Portfolio
+    about: a book of holdings kept for one entity
     table: portfolios
     properties:
       - {name: portfolio_code, label: Portfolio code, type: string, synonyms: [Acct]}
@@ -23,6 +26,7 @@ objects:
       - {to: entity, label: belongs to}
   - name: instrument
     label: Instrument
+    about: what can be held, such as a fund, a bond or cash
     table: instruments
     properties:
       - {name: canonical_name, label: Name, type: string, synonyms: [Fund, Fund / Manager]}
@@ -33,6 +37,7 @@ objects:
     relations: []
   - name: position
     label: Position
+    about: a holding on a date
     table: position_snapshots
     properties:
       - {name: position_date, label: Position date, type: date, synonyms: [Val Date]}
@@ -46,6 +51,7 @@ objects:
       - {to: instrument, label: of}
   - name: valuation
     label: Valuation
+    about: what an instrument is worth on a date
     table: valuation_observations
     properties:
       - {name: valuation_date, label: Valuation date, type: date, synonyms: [valuation_date]}
@@ -59,6 +65,7 @@ objects:
       - {to: portfolio, label: reported for}
   - name: commitment
     label: Fund commitment
+    about: a promise to put money into a fund
     table: commitments
     properties:
       - {name: commitment_amount, label: Commitment, type: number, synonyms: []}
@@ -71,6 +78,7 @@ objects:
       - {to: instrument, label: to}
   - name: cash_movement
     label: Cash movement
+    about: calls, payments, transfers
     table: cash_movements
     properties:
       - {name: movement_type, label: Movement type, type: string, synonyms: [event_type]}
@@ -85,6 +93,7 @@ objects:
       - {to: commitment, label: answers}
   - name: transaction
     label: Transaction
+    about: a buy, a sell or an FX trade
     table: transactions
     properties:
       - {name: transaction_type, label: Transaction type, type: string, synonyms: []}
@@ -98,6 +107,7 @@ objects:
       - {to: instrument, label: of}
   - name: nav_snapshot
     label: Administrator NAV
+    about: the fund administrator's reported value
     table: nav_snapshots
     properties:
       - {name: nav_period_end, label: Period end, type: date, synonyms: []}
@@ -108,6 +118,7 @@ objects:
       - {to: portfolio, label: reports on}
   - name: market_observation
     label: Market observation
+    about: prices, FX fixings, index levels
     table: market_observations
     properties:
       - {name: series_key, label: Series, type: string, synonyms: []}
@@ -118,6 +129,7 @@ objects:
       - {to: instrument, label: prices}
   - name: document
     label: Document
+    about: notices, statements, deeds
     table: documents
     properties:
       - {name: document_type, label: Document type, type: string, synonyms: []}
@@ -128,6 +140,7 @@ objects:
       - {to: instrument, label: evidence for}
   - name: ownership
     label: Ownership
+    about: who holds what share of an entity
     table: entity_ownership
     properties:
       - {name: owner_kind, label: Owner kind, type: string, synonyms: []}
@@ -135,4 +148,25 @@ objects:
       - {name: valid_from, label: Valid from, type: date, synonyms: []}
       - {name: valid_to, label: Valid to, type: date, synonyms: []}
     relations:
-      - {to: entity, label: owns a share of}
+      - {to: entity, label: a share of}
+  - name: bank_account
+    label: Bank account
+    about: the office's own and payees' accounts
+    table: bank_accounts
+    properties:
+      - {name: bank_name, label: Bank, type: string, synonyms: []}
+      - {name: account_ref, label: Account reference, type: string, synonyms: []}
+      - {name: currency, label: Currency, type: string, synonyms: []}
+      - {name: account_purpose, label: Purpose, type: string, synonyms: []}
+      - {name: status, label: Status, type: string, synonyms: []}
+    relations: []
+  - name: family_member
+    label: Family member
+    about: the people of the family and what they are allowed
+    table: family_members
+    properties:
+      - {name: member_name, label: Name, type: string, synonyms: []}
+      - {name: relationship, label: Relationship, type: string, synonyms: []}
+      - {name: allowance_amount, label: Allowance, type: number, synonyms: []}
+    relations:
+      - {to: ownership, label: holds}

@@ -133,7 +133,7 @@ def _objects(pack, lay: dict) -> list[dict]:
     """Industry objects with the office's admitted additions on them; admitted additions to an unknown table make an office object."""
     objs = {}
     for o in _section(pack, "model", {}).get("objects") or []:
-        objs[o["name"]] = {"name": o["name"], "label": o.get("label") or o["name"], "table": o.get("table") or o["name"], "from": "industry",
+        objs[o["name"]] = {"name": o["name"], "label": o.get("label") or o["name"], "table": o.get("table") or o["name"], "from": "industry", "about": o.get("about") or "",
                            "properties": [_prop(p, "industry") for p in o.get("properties") or []], "relations": list(o.get("relations") or [])}
     for a in lay["additions"]:
         o = objs.setdefault(a["object"], {"name": a["object"], "label": a.get("object_label") or a["object"], "table": a["table"], "from": "office",
