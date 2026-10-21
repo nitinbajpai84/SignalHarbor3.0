@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import V3Frame from "../Frame";
-import { decide, sendForSignature, getDesk, getThread, say, type Card, type Event, type SignalNeed, type DraftNeed } from "../api";
+import { decide, sendForSignature, getDesk, getThread, say, getReview, type ReviewItem, type Card, type Event, type SignalNeed, type DraftNeed } from "../api";
 import DraftCard from "./DraftCard";
 import SignalCard from "./SignalCard";
+import ReviewCard from "./ReviewCard";
 import { listSkills, when, type SkillRow } from "./actionApi";
 import "./action.css";
 
@@ -13,7 +14,7 @@ type NeedCard = Card & { case?: string };
 type Kind = "decision" | "exception" | "question" | "skill" | "signal";
 interface Item { key: string; kind: Kind; title: string; text: string; card?: NeedCard; skill?: SkillRow; signal?: SignalNeed; draft?: DraftNeed }
 interface Done { by: string; at: string; text: string; thread: string }
-interface Loaded { items: Item[]; done: Done[]; skillsFailed: boolean }
+interface Loaded { items: Item[]; done: Done[]; skillsFailed: boolean; review: ReviewItem[] }
 interface ThreadEvents { id: string; title: string; events: Event[] }
 
 const STEP: Record<string, 1 | 2 | 3> = { confirm: 1, carry_on: 2, go_live: 3, send_for_signature: 1 };
@@ -24,6 +25,7 @@ const WEEK = 7 * 24 * 3600 * 1000;
 
 async function load(): Promise<Loaded> {
   const desk = await getDesk();
+  const review = await getReview().then((r) => (Array.isArray(r?.items) ? r.items : []), () => [] as ReviewItem[]);
   const [sk, ...threads] = await Promise.allSettled([listSkills(), ...desk.threads.map((t) => getThread(t.id))]);
   const skills = sk.status === "fulfilled" ? (sk.value as { skills: SkillRow[] }).skills.filter((s) => s.status === "waiting") : [];
   const items: Item[] = [
@@ -43,7 +45,7 @@ async function load(): Promise<Loaded> {
     }
   }
   done.sort((a, b) => b.at.localeCompare(a.at));
-  return { items, done, skillsFailed: sk.status === "rejected" };
+  return { items, done, skillsFailed: sk.status === "rejected", review };
 }
 
 const Head = ({ children }: { children?: React.ReactNode }) => (
@@ -108,7 +110,8 @@ export default function ActionPage() {
 
       <div className="act-main" data-open={open ? "true" : "false"}>
         <section aria-label="Queue" className="act-queue">
-          {!shown.length && <p className="v3-mute">{data.items.length ? "Nothing of this kind needs a person." : "Nothing needs a person right now."}</p>}
+          {filter === "all" && data.review.map((r) => <ReviewCard key={r.id} item={r} onDone={reload} />)}
+          {!shown.length && !data.review.length && <p className="v3-mute">{data.items.length ? "Nothing of this kind needs a person." : "Nothing needs a person right now."}</p>}
           {shown.map((i) => i.draft ? <DraftCard key={i.key} id={i.draft.id} noticed={i.draft.text} title={i.draft.draft.title} message={i.draft.draft.message} backtest={i.draft.backtest} needs={i.draft.needs} onDone={reload} />
             : i.signal ? <SignalCard key={i.key} card={i.signal} onDone={reload} /> : (
             // The whole card opens it (a tap on a phone); the Open button toggles it and is the keyboard way in.

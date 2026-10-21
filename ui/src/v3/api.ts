@@ -173,3 +173,7 @@ export interface ReuseOffer { figure_id: string; name: string; built_from: { kin
 export const listFigures = () => apiGet<FigureRow[]>("/api/v3/figures");
 export const getFigure = (id: string) => apiGet<FigureRecord>(`/api/v3/figures/${encodeURIComponent(id)}`);
 export const rollbackFigure = (id: string, v: number) => apiSend<FigureRecord>("POST", `/api/v3/figures/${encodeURIComponent(id)}/rollback`, { v });
+
+export interface ReviewItem { id: string; field: string; reading: string; currency: string | null; page: number | null; line: number | null; confidence: string; document: string; quote: string }
+export const getReview = () => apiGet<{ min: string; items: ReviewItem[] }>("/api/v3/review");
+export const resolveReview = (id: string, value?: string) => apiSend<{ id: string; status: string }>("POST", `/api/v3/review/${encodeURIComponent(id)}`, value === undefined ? {} : { value });

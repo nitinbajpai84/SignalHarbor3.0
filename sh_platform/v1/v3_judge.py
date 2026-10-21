@@ -319,3 +319,15 @@ def judged(plane, kind: str, question: str, options: list, evidence, standard: s
 def ask_kind(plane, kind: str, subject: dict, options: list, evidence, thread=None, person: bool = True, describe: dict | None = None) -> dict:
     """ask() with the kind's own question and standard (GUIDES): what tools/judge_eval.py measures, the same text the call sites send."""
     return ask(plane, kind, question(kind, **subject), options, evidence, standard(kind), thread, person, describe)
+
+
+def field_agreement(plane, items: list[dict], thread=None) -> dict:
+    """Agreement per field, not per document: {label: True when both models take the reading as right, False when they say wrong or disagree,
+    None when no second model is available}. items: [{label, value, quote}]. What v3_loads.pdf_figures(agree=) and v3_review.score take."""
+    out = {}
+    for it in items:
+        r = ask(plane, "field_read", f"The page says: {it['quote']!r}. Is {it['value']!r} the value of {it['label']!r}?", ["right", "wrong"],
+                {"label": it["label"], "value": it["value"], "quote": it["quote"]}, "Answer right only when the quoted lines show this value for this label.",
+                thread, person=False)
+        out[it["label"]] = None if r.get("unavailable") else bool(r["agreed"] and r["answer"] == "right")
+    return out

@@ -101,26 +101,45 @@ def labelled(name: str, data: bytes) -> list[dict] | None:
     return out or None
 
 
-def pdf_figures(pairs: list[dict]) -> list[dict]:
-    """v3_pdf's label/value pairs (page, line, quote kept) as figures."""
-    return [{"label": p["label"][:100], "value_text": p["value"][:255], "value_numeric": (n := _num(p["value"])),
-             "currency": _ccy(p["label"], p["value"]) if n is not None else None, "page": p["page"], "line": p["line"], "quote": p["quote"]} for p in pairs]
+def pdf_figures(pairs: list[dict], picture: bool = False, agree: dict | None = None) -> list[dict]:
+    """v3_pdf's label/value pairs (page, line, quote kept) as figures, each with a confidence (v3_review.score): read by rules from the text layer,
+    checked that the value is in the quoted lines; a picture scan is low; `agree` ({label: bool}, v3_judge.field_agreement) lowers a disagreement."""
+    from sh_platform.v1 import v3_review as R
+    out = []
+    for p in pairs:
+        n = _num(p["value"])
+        out.append({"label": p["label"][:100], "value_text": p["value"][:255], "value_numeric": n,
+                    "currency": _ccy(p["label"], p["value"]) if n is not None else None, "page": p["page"], "line": p["line"], "quote": p["quote"],
+                    "confidence": R.score(known=True, picture=picture, checks_ok=p["value"] in p["quote"], agree=(agree or {}).get(p["label"]))})
+    return out
 
 
-def write(plane, doc_id: str, figs: list[dict]) -> int:
+def write(plane, doc_id: str, figs: list[dict], layout: str = "") -> int:
     """The figures as extracted fields of the document, once (a document that already has fields keeps them). Copied as written from the
-    sender's own file, so they are confirmed, as 2.0's reader confirms a high-confidence field."""
+    sender's own file, so they are confirmed, as 2.0's reader confirms a high-confidence field; one below the signed `review_confidence_min`
+    is held (v3_review) until a person confirms or corrects it."""
+    from sh_platform.v1 import v3_review as R
     from sh_platform.v1 import wh
     from sh_platform.v1.e1_write import org_id
+    ids, quotes = [], {}
     with wh.connect(plane) as con:
         have = con.execute("select count(*) from extracted_fields where document_id = ?", [doc_id]).fetchone()[0]
         if have:
             return int(have)
         org, at = org_id(plane), wh.now()
         for f in figs:
+            conf = f.get("confidence", "high")
+            st = R.status_for(plane, conf)
+            fid = wh.new_id()
             con.execute("insert into extracted_fields (id, organization_id, document_id, field_name, value_text, value_numeric, currency, page_number,"
                         " line_number, confidence, review_status, reviewed_at) values (?,?,?,?,?,?,?,?,?,?,?,?)",
-                        [wh.new_id(), org, doc_id, f["label"], f["value_text"], f["value_numeric"], f["currency"], f["page"], f["line"], "high", "confirmed", at])
+                        [fid, org, doc_id, f["label"], f["value_text"], f["value_numeric"], f["currency"], f["page"], f["line"], conf, st, at if st == "confirmed" else None])
+            if st == "held":
+                ids.append(fid)
+                quotes[fid] = f.get("quote") or ""
+    if ids:
+        R.remember_quotes(plane, quotes)
+        R.remember_layout(plane, ids, layout)
     return len(figs)
 
 
@@ -174,10 +193,11 @@ def load(x) -> tuple[int, list[dict]]:
         with H._skill(x, sid, f"Keeping the labelled figures of {name}, each with its place in the file"):
             try:
                 data = H.blob(x.plane, name)
-                figs = pdf_figures(V.pairs_of(V.pages_of(name, data))) if V.is_pdf(name) else labelled(name, data) or []
+                pages = V.pages_of(name, data) if V.is_pdf(name) else None
+                figs = pdf_figures(V.pairs_of(pages), V.is_picture(data)) if pages is not None else labelled(name, data) or []
                 if not doc_id or not figs:
                     raise ValueError("it could not be kept as a document" if not doc_id else "no labelled figure could be read from it")
-                write(x.plane, doc_id, figs)
+                write(x.plane, doc_id, figs, V.layout_of(pages)[0] if pages else "")
             except Exception as e:  # noqa: BLE001 - one file set aside, in one plain line; the rest carry on
                 log.warning("labelled figures of %s not kept", name, exc_info=True)
                 aside.append({"file": name, "title": f"{name} did not load", "text": f"I set it aside: {e}."[:200]})

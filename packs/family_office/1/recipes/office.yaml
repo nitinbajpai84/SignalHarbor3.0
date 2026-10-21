@@ -107,7 +107,7 @@ recipes:
     grain: By invoice
     sql: >-
       create table {name} as with fld as (select f.document_id, f.field_name, f.value_text, f.value_numeric, f.currency from extracted_fields as f
-      where f.review_status is distinct from 'Rejected'),
+      where f.review_status not in ('Rejected', 'held')),
       inv as (select d.id as document_id, d.document_date,
       max(case when fld.field_name = 'invoice_no' then fld.value_text end) as invoice_no,
       max(case when fld.field_name = 'vendor' then fld.value_text end) as vendor,
@@ -175,7 +175,7 @@ recipes:
       c as (select v.* from vendor_contracts as v where v.contract_kind = 'insurance' and not exists
       (select 1 from vendor_contracts as x where x.supersedes_vendor_contract_id = v.id) and lower(coalesce(v.status, 'active')) not in ('ended', 'terminated', 'lapsed')),
       n as (select distinct upper(trim(f.value_text)) as policy from documents as d join extracted_fields as f on f.document_id = d.id
-      where d.document_type = 'insurance_renewal' and f.field_name = 'policy' and f.review_status is distinct from 'Rejected'
+      where d.document_type = 'insurance_renewal' and f.field_name = 'policy' and f.review_status not in ('Rejected', 'held')
       and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       r as (select c.*, cast(date_diff('day', (select d from asat), c.next_renewal_date) as integer) as days_left from c)
       select r.contract_ref as policy, r.service as policy_name, r.vendor_name as broker, r.covered_asset_ref, r.currency,
@@ -317,7 +317,7 @@ recipes:
       and a.revoked_on is null and lower(coalesce(a.status, 'active')) not in ('revoked', 'removed')),
       asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from system_access_grants),
       fld as (select f.document_id, f.field_name, lower(trim(f.value_text)) as v from extracted_fields as f join documents as d on d.id = f.document_id
-      where f.field_name in ('leaver', 'joiner', 'joiner_access') and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
+      where f.field_name in ('leaver', 'joiner', 'joiner_access') and f.review_status not in ('Rejected', 'held') and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       lv as (select distinct v as person from fld where field_name = 'leaver'),
       jn as (select j.v as person, a.v as system from fld as j left join fld as a on a.document_id = j.document_id and a.field_name = 'joiner_access' where j.field_name = 'joiner'),
       r as (select g.*, cast(date_diff('day', g.last_used_on, (select d from asat)) as integer) as days_unused,
@@ -359,7 +359,7 @@ recipes:
     formula: 'One row per item of the latest onboarding checklist of each manager (document onboarding_checklist, not superseded; fields checklist_item, checklist_status, checklist_note by line, manager). complete = 1 when the status is complete. items and complete_items count the checklist; ready = 1 only when every item is complete.'
     grain: By manager and checklist item
     sql: >-
-      create table {name} as with fld as (select f.document_id, f.field_name, f.value_text, f.line_number from extracted_fields as f where f.review_status is distinct from 'Rejected'),
+      create table {name} as with fld as (select f.document_id, f.field_name, f.value_text, f.line_number from extracted_fields as f where f.review_status not in ('Rejected', 'held')),
       d0 as (select d.id, d.document_date, d.received_at, coalesce((select max(f.value_text) from fld as f where f.document_id = d.id and f.field_name = 'manager'), d.title) as manager
       from documents as d where d.document_type = 'onboarding_checklist' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
       dm as (select * from d0 qualify row_number() over (partition by lower(manager) order by document_date desc nulls last, received_at desc, id desc) = 1),
@@ -387,7 +387,7 @@ recipes:
       label: Items equal the checklist lines read from the checklists on record
       sql: >-
         select (select count(*) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where d.document_type = 'onboarding_checklist'
-        and f.field_name = 'checklist_item' and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+        and f.field_name = 'checklist_item' and f.review_status not in ('Rejected', 'held') and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
 
   - id: sop_age
     label: SOPs by last review
@@ -405,7 +405,7 @@ recipes:
       qualify row_number() over (partition by lower(d.title) order by d.document_date desc nulls last, d.received_at desc, d.id desc) = 1),
       f as (select f.document_id, max(case when f.field_name = 'owner' then f.value_text end) as owner,
       max(case when f.field_name = 'last_reviewed_on' then try_cast(f.value_text as date) end) as last_reviewed
-      from extracted_fields as f where f.review_status is distinct from 'Rejected' and f.field_name in ('owner', 'last_reviewed_on') group by 1)
+      from extracted_fields as f where f.review_status not in ('Rejected', 'held') and f.field_name in ('owner', 'last_reviewed_on') group by 1)
       select s.title as sop, f.owner, f.last_reviewed, cast(date_diff('day', f.last_reviewed, (select d from asat)) as integer) as age_days,
       cast(case when date_diff('day', f.last_reviewed, (select d from asat)) > 365 then 1 else 0 end as integer) as due, cast(1 as integer) as sops
       from s left join f on f.document_id = s.id
@@ -434,7 +434,7 @@ recipes:
     sql: >-
       create table {name} as with s as (select d.* from documents as d where d.document_type = 'sop' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
       qualify row_number() over (partition by lower(d.title) order by d.document_date desc nulls last, d.received_at desc, d.id desc) = 1),
-      f as (select f.* from extracted_fields as f join s on s.id = f.document_id where f.review_status is distinct from 'Rejected'),
+      f as (select f.* from extracted_fields as f join s on s.id = f.document_id where f.review_status not in ('Rejected', 'held')),
       st as (select document_id, line_number as n, max(case when field_name = 'step' then value_text end) as step, max(case when field_name = 'step' then value_numeric end) as minutes,
       coalesce(max(case when field_name = 'step_manual' then value_text end) = 'yes', false) as manual from f where field_name in ('step', 'step_manual') group by all),
       slow as (select document_id, step from st where manual qualify row_number() over (partition by document_id order by minutes desc nulls last, n) = 1),
@@ -516,7 +516,7 @@ recipes:
     grain: By term proposed
     sql: >-
       create table {name} as with dd as (select d.* from documents as d where not exists (select 1 from documents as x where x.supersedes_document_id = d.id)),
-      fld as (select f.document_id, f.field_name, lower(trim(f.value_text)) as v from extracted_fields as f join dd on dd.id = f.document_id where f.review_status is distinct from 'Rejected'),
+      fld as (select f.document_id, f.field_name, lower(trim(f.value_text)) as v from extracted_fields as f join dd on dd.id = f.document_id where f.review_status not in ('Rejected', 'held')),
       gl as (select id from dd where document_type = 'glossary' qualify row_number() over (order by received_at desc, id desc) = 1),
       lst as (select distinct v from fld where document_id in (select id from gl) and field_name in ('term', 'alias')),
       pr as (select v as term, count(*) as times_proposed from fld where field_name = 'proposed_term' and v <> '' group by 1)
@@ -539,7 +539,7 @@ recipes:
       label: Proposals equal the proposed_term fields on record
       sql: >-
         select (select coalesce(sum(times_proposed), 0) from {name}), (select count(*) from extracted_fields as f join documents as d on d.id = f.document_id where f.field_name = 'proposed_term'
-        and trim(coalesce(f.value_text, '')) <> '' and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
+        and trim(coalesce(f.value_text, '')) <> '' and f.review_status not in ('Rejected', 'held') and not exists (select 1 from documents as x where x.supersedes_document_id = d.id))
 
   # ---- W1b office, cards 83 to 100 on the family and controls readers (docs/v3/w1/build51-office.md). Every limit, budget, level and policy is a signed office rule
   # (A48, A49, A54), read here, never typed: with no signed rule the figure that needs it is empty, never zero. USD is the day's fixing (or the latest before it), as cash_runway does.
@@ -699,7 +699,7 @@ recipes:
       create table {name} as with asat as (select cast(coalesce(max(received_at), current_timestamp) as date) as d from documents),
       deed as (select d.* from documents as d where d.document_type = 'trust_deed' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id)
       qualify row_number() over (order by d.received_at desc, d.id) = 1),
-      f as (select x.* from extracted_fields as x where x.document_id = (select id from deed) and x.review_status is distinct from 'Rejected'),
+      f as (select x.* from extracted_fields as x where x.document_id = (select id from deed) and x.review_status not in ('Rejected', 'held')),
       ent as (select e.* from legal_entities as e where starts_with(trim(regexp_replace(lower((select title from deed)), '[^a-z0-9]+', '_', 'g'), '_'), trim(regexp_replace(lower(e.entity_name), '[^a-z0-9]+', '_', 'g'), '_'))),
       ys as (select make_date(year((select d from asat)), cast(split_part(value_text, '-', 1) as integer), cast(split_part(value_text, '-', 2) as integer)) as y from f where field_name = 'trust_year_start'),
       yr as (select case when y > (select d from asat) then cast(y - interval 1 year as date) else y end as y0, (select d from asat) as y1 from ys),
@@ -853,7 +853,7 @@ recipes:
     grain: By pending bank account
     sql: >-
       create table {name} as with a as (select b.* from bank_accounts as b where lower(b.status) = 'pending' and not exists (select 1 from bank_accounts as x where x.supersedes_bank_account_id = b.id)),
-      sig as (select cast(f.document_id as varchar) as doc, f.value_text as name, coalesce(f.line_number, 0) as n from extracted_fields as f where f.field_name = 'signatory' and f.review_status is distinct from 'Rejected'),
+      sig as (select cast(f.document_id as varchar) as doc, f.value_text as name, coalesce(f.line_number, 0) as n from extracted_fields as f where f.field_name = 'signatory' and f.review_status not in ('Rejected', 'held')),
       pol as (select cast(json_extract_string(v.parameters, '$.min_signatories') as integer) as min_n, json_extract_string(v.parameters, '$.required_role') as role
       from business_rules as r join rule_versions as v on v.business_rule_id = r.id where r.rule_code = 'signing_policy' and v.approval_status = 'approved' qualify row_number() over (order by v.version_number desc) = 1),
       who as (select u.display_name as name from users as u where u.is_active and u.business_role = (select role from pol)
@@ -907,7 +907,7 @@ recipes:
       from access_groups as g join access_group_scopes as s on s.access_group_id = g.id where starts_with(g.group_name, 'family:') and s.scope_type = 'entity'),
       rq as (select d.id, max(f.value_text) filter (where f.field_name = 'requester') as member_name, max(f.value_text) filter (where f.field_name = 'requested_entity') as entity_code,
       max(f.value_text) filter (where f.field_name = 'requested_level') as level from documents as d join extracted_fields as f on f.document_id = d.id
-      where f.field_name in ('requester', 'requested_entity', 'requested_level') and f.review_status is distinct from 'Rejected' and not exists (select 1 from documents as x where x.supersedes_document_id = d.id) group by d.id),
+      where f.field_name in ('requester', 'requested_entity', 'requested_level') and f.review_status not in ('Rejected', 'held') and not exists (select 1 from documents as x where x.supersedes_document_id = d.id) group by d.id),
       grid as (select fm.member_name, e.entity_code, e.entity_name, p.level as allowed, coalesce(g.level, 'none') as granted,
       (select max(q.level) from rq as q where q.member_name = fm.member_name and q.entity_code = e.entity_code) as requested
       from fm cross join legal_entities as e left join pol as p on p.rule_code = 'family_access_' || trim(regexp_replace(lower(fm.member_name), '[^a-z0-9]+', '_', 'g'), '_') || '_'
