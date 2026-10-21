@@ -316,11 +316,16 @@ def reject(plane, did: str, by: str, reason: str = "") -> dict:
         return d[did]
 
 
+def preview(message: str) -> str:
+    """A draft message for reading: each {placeholder} becomes [the last word of its name], so a card never shows braces. The real values are filled in when the signal fires."""
+    return re.sub(r"\{([A-Za-z_][\w.]*)(?::[^{}]+)?\}", lambda m: "[" + m[1].split(".")[-1].replace("_", " ") + "]", str(message))
+
+
 def cards(plane) -> list[dict]:
     """The waiting drafts, as the Desk's needs for the decision maker."""
     from sh_platform.v1 import v3_signals as SG
     who = SG._person(plane, DECIDER)
     return [{"kind": "signal_draft", "id": r["id"], "title": "Harbor noticed a pattern", "text": r["noticed"], "role": DECIDER, "person": who["email"],
-             "draft": {"title": r["signal"]["title"], "message": r["signal"]["message"], "route_to": r["signal"]["route_to"], "condition": r["signal"]["condition"]},
+             "draft": {"title": r["signal"]["title"], "message": r["signal"]["message"], "preview": preview(r["signal"]["message"]), "route_to": r["signal"]["route_to"], "condition": r["signal"]["condition"]},
              "needs": r["needs"], "backtest": r["backtest"]["line"], "actions": [{"label": "Admit", "answer": "admit"}, {"label": "Edit", "answer": "edit"}, {"label": "Reject", "answer": "reject"}]}
             for r in _drafts(plane).values() if r["status"] == "waiting"]

@@ -275,3 +275,11 @@ def test_approving_the_shortfall_leads_to_prepare_payment_and_the_hold_still_ref
     c3 = card(plane, "uc01-cash-shortfall")
     out = SG.act(plane, c3["id"], "Daniel Foo", "Approve")
     assert out["payment"]["status"] == "refused" and "held" in out["payment"]["why"] and out["status"] == "acted"
+
+
+def test_render_never_shows_braces():
+    from sh_platform.v1 import v3_signal_draft as D
+    from sh_platform.v1.v3_signals import render
+    assert render("is {fig.value}, over {limit.amount:,.0f}", {"fig": {"value": "5"}}) == "is 5, over not available yet"
+    assert render("is {nope.x}", {}) == "is not available yet"
+    assert "{" not in D.preview("Equity is {fig.value}, past {limit.amount:,.0f}") and D.preview("a {fig.value}") == "a [value]"

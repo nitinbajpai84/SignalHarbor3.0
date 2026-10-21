@@ -3,8 +3,8 @@ import { useState } from "react";
 import { admitDraft, editDraft, rejectDraft } from "../api";
 
 /** What Harbor noticed, what the drafted signal would say, how often it would have fired, and Admit / Edit / Reject. */
-export default function DraftCard({ id, noticed, title, message, backtest, needs, onDone }: {
-  id: string; noticed: string; title: string; message: string; backtest: string; needs: string[]; onDone: () => void;
+export default function DraftCard({ id, noticed, title, message, preview, backtest, needs, onDone }: {
+  id: string; noticed: string; title: string; message: string; preview?: string; backtest: string; needs: string[]; onDone: () => void;
 }) {
   const [edit, setEdit] = useState(false);
   const [text, setText] = useState(message);
@@ -30,7 +30,7 @@ export default function DraftCard({ id, noticed, title, message, backtest, needs
       <div className="v3-head"><span className="v3-kicker">Harbor noticed a pattern</span></div>
       <b className="act-title">{noticed}</b>
       <p className="v3-mute">{title}</p>
-      {!edit && <p>{message}</p>}
+      {!edit && <p>{preview ?? message}</p>}
       <p className="dr-test">{backtest}</p>
       {needs.map((n) => <p key={n} className="dr-ask" role="status">{n}</p>)}
       {problem && <p className="v3-err" role="alert">{problem}</p>}

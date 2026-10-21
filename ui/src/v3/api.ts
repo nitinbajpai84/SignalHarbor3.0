@@ -53,10 +53,10 @@ export const actSignal = (id: string, body: { choice?: string; note?: string; di
 /** A signal Harbor drafted from something people did twice. On the desk it arrives as `kind: "signal_draft"`. */
 export interface SignalDraft {
   id: string; status: "waiting" | "admitted" | "rejected"; noticed: string; needs: string[]; repeats: number; evidence: { at: string; text: string }[];
-  signal: { title: string; message: string; route_to: string; condition: string; trigger: { on: string; [k: string]: unknown } };
+  signal: { title: string; message: string; preview?: string; route_to: string; condition: string; trigger: { on: string; [k: string]: unknown } };
   backtest: { count: number | null; checked: number; examples: string[]; line: string };
 }
-export interface DraftNeed { kind: "signal_draft"; id: string; title: string; text: string; role: string; needs: string[]; backtest: string; draft: { title: string; message: string }; actions: CardAction[] }
+export interface DraftNeed { kind: "signal_draft"; id: string; title: string; text: string; role: string; needs: string[]; backtest: string; draft: { title: string; message: string; preview?: string }; actions: CardAction[] }
 export const listDrafts = (status?: SignalDraft["status"]) => apiGet<SignalDraft[]>(`/api/v3/signals/drafts${status ? `?status=${status}` : ""}`);
 const draftUrl = (id: string, what: "admit" | "reject" | "edit") => `/api/v3/signals/drafts/${encodeURIComponent(id)}/${what}`;
 export const admitDraft = (id: string) => apiSend<SignalDraft>("POST", draftUrl(id, "admit"), {});

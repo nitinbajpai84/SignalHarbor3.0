@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 import type { AskAnswer, Figure } from "../api";
+import { fmtValue } from "../../v1/cxui/fmt";
 import "./board.css";
 
 /** The place a number came from, when the server could trace it (a `source` key on the figure). */
@@ -40,7 +41,7 @@ export function FigureCard({ f }: { f: Figure }) {
   return (
     <article className="v3b-fig" aria-label={f.label}>
       <small>{f.label}</small>
-      <span className="num" title={src ? `Where this is from: ${src}` : undefined}>{f.value}</span>
+      <span className="num" title={src ? `Where this is from: ${src}` : undefined}>{fmtValue(f.value, true)}</span>
       {f.change ? <small className={/^[-−]/.test(f.change) ? "v3b-down" : /^\+/.test(f.change) ? "v3b-up" : undefined}>{f.change}</small> : null}
     </article>
   );

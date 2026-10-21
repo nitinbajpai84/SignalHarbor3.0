@@ -141,7 +141,7 @@ def calc(text: str, ns: dict, funcs: dict):
 
 
 def render(template: str, ns: dict) -> str:
-    """`{doc.amount:,.0f}` in a message: a dotted name from ns and an optional format. A name that is not there stays as written."""
+    """`{doc.amount:,.0f}` in a message: a dotted name from ns and an optional format. A name that is not there (or a value that cannot take the format) reads "not available yet"; braces never reach a card."""
     def one(m):
         try:
             v = ns
@@ -149,7 +149,7 @@ def render(template: str, ns: dict) -> str:
                 v = v[part]
             return format(num(v) if m[2] else v, m[2] or "")
         except (KeyError, TypeError, ValueError):
-            return m[0]
+            return "not available yet"
     return re.sub(r"\{([A-Za-z_][\w.]*)(?::([^{}]+))?\}", one, str(template))
 
 

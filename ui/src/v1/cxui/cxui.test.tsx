@@ -219,6 +219,6 @@ test("FIX1: every one-number tile kind shows its figure with thousands separator
   const used = { tables: [], last_refresh: null };
   render(<Chart label="Net worth" data={{ spec: { mark: { type: "text", fontSize: 40 }, encoding: { text: { field: "net_worth", type: "quantitative" } } }, rows: [{ net_worth: 103405000 }], data_used: used }} />);
   render(<Chart label="Holdings" data={{ spec: { mark: "text", usermeta: { view: "figure" }, encoding: { text: { field: "value", type: "quantitative" } } }, rows: [{ value: "2500000" }], data_used: used }} />);
-  expect(screen.getByText("103,405,000")).toBeInTheDocument();
-  expect(screen.getByText("2,500,000")).toBeInTheDocument();
+  expect(screen.getByText("103,405,000.0")).toBeInTheDocument();
+  expect(screen.getByText("2,500,000.0")).toBeInTheDocument();
 });

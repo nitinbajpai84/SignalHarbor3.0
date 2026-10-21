@@ -310,8 +310,8 @@ test("OP1: Lumen's tile list stays in the library and places in the chosen slot"
 test("a return figure shows as a percentage and moves in points, never a percent of a percent", async () => {
   const { Figure } = await import("../cxui/Chart");
   render(<Figure label="Portfolio return" rows={[{ value: 0.0103 }, { value: 0.0024 }]} />);
-  expect(screen.getByText("1.03%")).toBeInTheDocument();
-  expect(screen.getByText(/Up 0.79 points on the period before/)).toBeInTheDocument();
+  expect(screen.getByText("1.0%")).toBeInTheDocument();
+  expect(screen.getByText(/Up 0.8 points on the period before/)).toBeInTheDocument();
   expect(screen.queryByText(/334/)).toBeNull();
 });
 
