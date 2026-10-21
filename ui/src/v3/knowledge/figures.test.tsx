@@ -7,6 +7,8 @@ import type { FigureRecord, FigureRow } from "../api";
 import FigurePage from "./FigurePage";
 import FiguresPage from "./FiguresPage";
 
+let roles: string[] = ["analyst"];
+vi.mock("../../useSession", () => ({ useSession: () => ({ user: { display_name: "Anita", roles } }) }));
 const listFigures = vi.fn();
 const getFigure = vi.fn();
 const rollbackFigure = vi.fn();
@@ -73,4 +75,16 @@ test("the figure page links to its recipe and its place on the knowledge map", a
   page();
   expect(await screen.findByRole("link", { name: "The recipe it follows" })).toHaveAttribute("href", "/v3/knowledge/thing/recipe:cash_break");
   expect(screen.getByRole("link", { name: "See it on the knowledge map" })).toHaveAttribute("href", "/v3/knowledge/thing/figure:cash");
+});
+
+test("a maker is offered Add to board on the figure page; a reader is not", async () => {
+  getFigure.mockResolvedValue(rec(2));
+  const { unmount } = page();
+  expect(await screen.findByRole("button", { name: "Add to board" })).toBeInTheDocument();
+  unmount();
+  roles = ["participant"];
+  page();
+  await screen.findByRole("link", { name: "The recipe it follows" });
+  expect(screen.queryByRole("button", { name: "Add to board" })).toBeNull();
+  roles = ["analyst"];
 });

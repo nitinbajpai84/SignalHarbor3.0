@@ -6,6 +6,7 @@ import StartPage from "./setup/StartPage";
 import SetupPage from "./setup/SetupPage";
 import ThreadPage from "./thread/ThreadPage";
 import FilesPage from "./files/FilesPage";
+import BoardsPage from "./consume/BoardsPage";
 import BoardPage from "./board/BoardPage";
 import AnswerPage from "./board/AnswerPage";
 import NotePage from "./board/NotePage";
@@ -64,6 +65,7 @@ export default function V3Routes() {
       <Route path="build/api-keys" element={<ApiKeys />} />
       <Route path="build/:id" element={<BuildPage />} />
       <Route path="consume" element={<ConsumePage />} />
+      <Route path="consume/boards" element={<BoardsPage />} />
       <Route path="knowledge" element={<KnowledgePage />} />
       <Route path="knowledge/skills" element={<SkillsPage />} />
       <Route path="knowledge/figures" element={<FiguresPage />} />

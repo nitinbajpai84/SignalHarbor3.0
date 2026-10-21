@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useSession } from "../../useSession";
 import { MicButton } from "../../v1/voice";
 import V3Frame from "../Frame";
+import AddToBoard from "../board/AddToBoard";
 import { ShowFigures, useRead } from "../board/common";
 import { askConsume, getConsume, type ConsumeAnswer, type ConsumeData, type Reading } from "./consumeApi";
 import "./consume.css";
@@ -87,6 +88,7 @@ function Answer({ turn, golden, ask }: { turn: Turn; golden: string[]; ask: (q: 
         <button type="button" className="go" onClick={() => window.print()}>Download PDF</button>
         <button type="button" onClick={() => csv(turn)}>Excel</button>
       </div>
+      {a.figure ? <AddToBoard figureId={a.figure.id} label={a.figure.label} value={a.figure.value} text={a.answer} /> : null}
       {a.figure?.id ? <p className="noprint"><Link to={`/v3/knowledge/figures/${encodeURIComponent(a.figure.id)}`}>Where this number comes from</Link></p> : null}
       <p className="v3c-src"><Check /><span>Source: {source}</span></p>
       {a.ms !== undefined ? <small className="noprint">Answered in {a.ms} ms{a.cached ? " (from memory)" : ""}</small> : null}
@@ -187,7 +189,7 @@ export default function ConsumePage() {
                     <div className="v3c-bar" role="img" aria-label="Exposure split, not available yet"><span /><span /><span /></div>
                     <p className="v3c-empty">Public, private equity and hedge show here once net worth is reliable.</p>
                   </Card>
-                  <Card id="boards" title="Your boards" aside={d.boards.length ? <small>{d.boards.length} board{d.boards.length === 1 ? "" : "s"}</small> : null}>
+                  <Card id="boards" title="Your boards" aside={<>{d.boards.length ? <small>{d.boards.length} board{d.boards.length === 1 ? "" : "s"}</small> : null}<Link to="/v3/consume/boards">All boards, owners and drafts</Link></>}>
                     {d.boards.length ? (
                       <div className="v3c-boards">{d.boards.map((b, i) => (
                         <Link key={b.id} to="/v3/board" className="v3c-board">

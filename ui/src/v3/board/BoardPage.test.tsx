@@ -8,7 +8,7 @@ import NotePage from "./NotePage";
 
 vi.mock("../Frame", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock("../../v1/cxui/TileCard", () => ({ default: ({ tile, pid, did }: { tile: { title: string }; pid: string; did: string }) => <article aria-label={tile.title}>{pid}/{did}</article> }));
-vi.mock("../api", () => ({ getBoard: vi.fn(), ask: vi.fn(), getNote: vi.fn(), getLanguage: vi.fn() }));
+vi.mock("../api", async (orig) => ({ ...(await orig<typeof import("../api")>()), getBoard: vi.fn(), getBoards: vi.fn(), ask: vi.fn(), getNote: vi.fn(), getLanguage: vi.fn() }));
 
 const m = vi.mocked(api);
 const at = (ui: React.ReactElement, path = "/") => render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>);
@@ -17,7 +17,7 @@ const board = (over: Partial<api.Board> = {}): api.Board => ({
   figures: [{ label: "Cash", value: "4.14m", change: "-0.2m", source: "Run run-77 of Capital calls" } as api.Figure],
   tiles: [{ id: "t-1", title: "Cash by entity", spec: {}, project_id: "EV-0003", dashboard_id: "dash-1" }], ...over,
 });
-beforeEach(() => { vi.resetAllMocks(); m.getLanguage.mockResolvedValue({ words: [], corrections: [], golden: [{ q: "What is our cash?", a: "", by: "Anita" }], taught: [] }); });
+beforeEach(() => { vi.resetAllMocks(); m.getBoards.mockResolvedValue({ can_edit: false, boards: [] }); m.getLanguage.mockResolvedValue({ words: [], corrections: [], golden: [{ q: "What is our cash?", a: "", by: "Anita" }], taught: [] }); });
 
 test("the board shows its figures with the source on hover, its tiles, and answers a question with its trace and Used line", async () => {
   m.getBoard.mockResolvedValue(board());
@@ -66,4 +66,27 @@ test("the note lists its figures and past notes, and has an empty state", async 
   m.getNote.mockResolvedValueOnce({ text: "", figures: [], history: [] });
   at(<NotePage />);
   expect(await screen.findByText(/There is no note yet/)).toBeInTheDocument();
+});
+
+test("a maker sees Edit this board and the draft-approve-publish line; a reader does not; both can reach the data model", async () => {
+  m.getBoard.mockResolvedValueOnce(board({ pid: "EV-0003", dashboard_id: "dash-1", can_edit: true }));
+  const { unmount } = at(<BoardPage />);
+  expect(await screen.findByRole("link", { name: "Edit this board" })).toHaveAttribute("href", "/centre/build/p/EV-0003/studio?d=dash-1");
+  expect(screen.getByText(/approved by someone else, then published/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "See the data model" })).toHaveAttribute("href", "/v3/trust/model");
+  expect(screen.getByRole("link", { name: "What Harbor knows" })).toHaveAttribute("href", "/v3/trust/ontology");
+  unmount();
+  m.getBoard.mockResolvedValueOnce(board({ pid: "EV-0003", dashboard_id: "dash-1", can_edit: false }));
+  at(<BoardPage />);
+  await screen.findByRole("heading", { name: "Liquidity" });
+  expect(screen.queryByRole("link", { name: "Edit this board" })).toBeNull();
+});
+
+test("with more than one board a picker opens the chosen use case's board", async () => {
+  const row = (pid: string, use_case: string) => ({ pid, dashboard_id: "d", title: "Liquidity", use_case, owner: null, refreshed: null, draft: false, status: "published" });
+  m.getBoards.mockResolvedValue({ can_edit: true, boards: [row("P1", "Capital calls"), row("P2", "Fees")] });
+  m.getBoard.mockResolvedValue(board());
+  at(<BoardPage />);
+  fireEvent.change(await screen.findByRole("combobox", { name: /Board/ }), { target: { value: "P2" } });
+  await waitFor(() => expect(m.getBoard).toHaveBeenLastCalledWith("P2"));
 });

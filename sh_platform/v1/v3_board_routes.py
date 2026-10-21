@@ -1,6 +1,8 @@
 """Harbor 3.0 board, ask and note (spec: docs/v3/HARBOR-SPEC.md, 14 Oct addendum). No new chart or answer logic: the board is the live thread's
 published 2.0 dashboard (cx_dash), the ask is Lumen's company talk with its number guard (talk.ask), the note is k10_note's morning note.
-GET /api/v3/board -> {title, as_at, figures:[{label,value,change,source?}], tiles:[2.0 tile + project_id, dashboard_id], empty}
+GET /api/v3/board[?pid=] -> {title, as_at, figures:[{label,value,change,source?}], tiles:[2.0 tile + project_id, dashboard_id], empty, pid, dashboard_id, can_edit}
+GET /api/v3/boards -> {can_edit, boards:[{pid, dashboard_id, title, use_case, owner, refreshed, draft, status}]} (one per live use case; draft = a change waiting in the studio)
+POST /api/v3/board/add {pid, dashboard_id?, figure_id?, label, value?, text?} -> {added, kind, status}: the figure as a widget of the studio's draft (a maker only; approval as the studio requires)
 POST /api/v3/ask {text} -> {answer, figure?, understood?, trace:[{kind,label}], used:[str], cached, ms, as_of} (kept per question and data version: v3_consume)
 GET /api/v3/consume -> {office, answer, as_of, figures, watchlist, boards, note, reports, golden} (v3_consume)
 GET /api/v3/note -> {text, figures, history:[{at, headline}]}. Every failure answers a plain message, never a trace."""
@@ -16,6 +18,7 @@ from fastapi.concurrency import run_in_threadpool
 from sh_platform.profile.api import _plane
 from sh_platform.v1 import b7_studio as S
 from sh_platform.v1 import cx_dash as D
+from sh_platform.v1 import b7h_history as H7
 from sh_platform.v1 import e6_trace, k10_note as N, talk as T, teach
 from sh_platform.v1 import v3_consume as C
 from sh_platform.v1 import v3_harbor as H
@@ -40,6 +43,10 @@ def _live(plane, text: str = "") -> dict | None:
     q = R._stems(text)
     asked = lambda t: next((str(e.get("text") or "") for e in t.get("events") or [] if e.get("kind") == "person"), t.get("title") or "")  # noqa: E731
     return max(live, key=lambda t: len(q & R._stems(asked(t))))  # max keeps the first (newest) of equals
+
+
+def _live_all(plane) -> list[dict]:
+    return [t for t in H.all_threads(plane) if t["stage"] == "live" and t.get("pid") and t.get("mode") != "process"]
 
 
 def _source(th: dict) -> str | None:
@@ -74,17 +81,102 @@ def _board(plane, viewer, th: dict) -> dict:
     tiles = [{k: t.get(k) for k in ("id", "title", "state", "spec", "kpi", "note")} | {"project_id": pid, "dashboard_id": dash["id"]} for t in shown]
     shown_ids = {t["id"] for t in shown}
     lines = [f"{t['title']}: no data yet" for t in accepted if t["id"] not in shown_ids]
-    return {"title": dash["title"], "as_at": D._last_refresh(plane, pid) or dash.get("published_at") or "", "figures": _figures(th), "tiles": tiles, "lines": lines, "empty": False}
+    return {"title": dash["title"], "as_at": D._last_refresh(plane, pid) or dash.get("published_at") or "", "figures": _figures(th), "tiles": tiles, "lines": lines, "empty": False,
+            "pid": pid, "dashboard_id": dash["id"], "can_edit": S.is_maker(viewer)}
 
 
 @router.get("/api/v3/board")
-def get_board(request: Request):
+def get_board(request: Request, pid: str | None = None):
     plane, viewer = _plane(request), viewer_of(request)
-    th = _live(plane)
+    th = next((t for t in _live_all(plane) if t["pid"] == pid), None) if pid else _live(plane)
     if th is None:
         return EMPTY
     try:
         return _board(plane, viewer, th)
+    except Refused as e:
+        raise HTTPException(e.status, e.message) from None
+
+
+def _board_rows(plane, viewer) -> list[dict]:
+    """One row per live use case that has a published dashboard: where it is, who made it, when its data last ran, and whether the studio holds a change."""
+    out = []
+    for th in _live_all(plane):
+        try:
+            S.adopt(plane, th["pid"])
+            pub = next((d for d in D.list_for(plane, viewer, th["pid"]) if d.get("accepted")), None)
+            if pub is None:
+                continue
+            mine = {r["id"]: r for r in S.listing(plane, viewer, th["pid"])}.get(pub["id"], {})
+            status = mine.get("status") or "published"
+            out.append({"pid": th["pid"], "dashboard_id": pub["id"], "title": pub.get("title") or th["title"], "use_case": th["title"],
+                        "owner": mine.get("made_by") or str(mine.get("created_by") or "") or None, "refreshed": D._last_refresh(plane, th["pid"]),
+                        "draft": status != "published", "status": status})
+        except Exception:  # noqa: BLE001 - a use case whose board cannot be read is left off the list, never the page
+            log.info("board row unavailable for %s", th.get("pid"), exc_info=True)
+    return out
+
+
+@router.get("/api/v3/boards")
+def get_boards(request: Request):
+    plane, viewer = _plane(request), viewer_of(request)
+    return {"can_edit": S.is_maker(viewer), "boards": _board_rows(plane, viewer)}
+
+
+def _slug(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", s.lower()).strip("_")
+
+
+def _figure_widget(plane, pid: str, figure_id: str, label: str) -> dict | None:
+    """The studio widget body for a stored figure: its first ready table of this project that has a number column, the column named like the figure when there is one."""
+    from sh_platform.v1 import v3_figstore as FS
+    rec = FS.read(plane, figure_id) if figure_id else None
+    reads = (FS.version(rec) or {}).get("reads") or [] if rec else []
+    gold = {t["name"]: t for t in D.gold_tables(plane, pid)} if reads else {}
+    for name in reads:
+        cols = {c["name"] for c in gold.get(name, {}).get("columns", [])}
+        want = next((c for c in (_slug(label), _slug((rec or {}).get("name") or "")) if c in cols), None)
+        try:
+            S.build_tile(plane, pid, "figure", name, want)
+        except Refused:
+            continue
+        return {"kind": "figure", "table": name, "measure": want}
+    return None
+
+
+@router.post("/api/v3/board/add")
+async def post_board_add(request: Request):
+    """Add a figure to a board as a widget of the studio's draft. Only a maker (the studio's own rule); the draft then goes for approval in the studio."""
+    plane, viewer = _plane(request), viewer_of(request)
+    try:
+        body = await request.json()
+    except ValueError:
+        body = None
+    body = body if isinstance(body, dict) else {}
+    pid, label = str(body.get("pid") or ""), str(body.get("label") or "").strip()[:200]
+    if not S.is_maker(viewer):
+        raise HTTPException(403, "Only the data team can build dashboards.")
+    row = next((b for b in _board_rows(plane, viewer) if b["pid"] == pid and (not body.get("dashboard_id") or b["dashboard_id"] == body["dashboard_id"])), None)
+    if row is None or not label:
+        raise HTTPException(400, "Choose a board and a figure to add.")
+
+    def go():
+        did = row["dashboard_id"]
+        rec = S._editor(plane, viewer, pid, did)
+        D.begin_edit(rec, viewer)
+        lay = S._layout(rec)
+        rows0 = lay["rows"]
+        r, c = S._first_free(lay)
+        if lay["rows"] != rows0:  # the grid was full: the new row is saved first so the slot exists
+            D._save(plane, rec)
+        w = _figure_widget(plane, pid, str(body.get("figure_id") or ""), label)
+        if w is None:  # no ready table to follow: the number as it stands, as a note, so it is never lost
+            text = str(body.get("text") or "").strip() or f"{label}: {body.get('value') or ''}".strip(": ")
+            w = {"kind": "note", "text": text}
+        placed = S.add_widget(plane, viewer, pid, did, w | {"row": r, "col": c})
+        H7.record_step(plane, viewer, pid, did, "", f"Added {placed['title']}")
+        return {"added": placed["title"], "kind": placed["kind"], "status": D.status_of(D._load(plane, pid, did)), "dashboard_id": did}
+    try:
+        return await run_in_threadpool(go)
     except Refused as e:
         raise HTTPException(e.status, e.message) from None
 

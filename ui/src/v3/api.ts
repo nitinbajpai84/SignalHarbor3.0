@@ -125,7 +125,10 @@ export interface Connection {
 export interface SetupStep { id: string; label: string; done: boolean; detail: string }
 export interface Setup { steps: SetupStep[]; pack: { id: string; label: string; intent_examples?: string[] } | null }
 export interface Tile { [key: string]: unknown }
-export interface Board { title: string; as_at: string; figures: Figure[]; tiles: Tile[] }
+export interface Board { title: string; as_at: string; figures: Figure[]; tiles: Tile[]; pid?: string; dashboard_id?: string; can_edit?: boolean }
+/** One board per live use case: `draft` is true while the studio holds a change that is not yet published. */
+export interface BoardRow { pid: string; dashboard_id: string; title: string; use_case: string; owner: string | null; refreshed: string | null; draft: boolean; status: string }
+export interface BoardAdded { added: string; kind: string; status: string; dashboard_id: string }
 export interface TraceStep { kind: string; label: string }
 export interface AskAnswer { answer: string; figure?: Figure; understood?: string; trace: TraceStep[]; used: string[]; rows?: { label: string; value: string }[] }
 export interface NoteFull { text: string; figures: Figure[]; history: { at: string; headline: string }[] }
@@ -152,7 +155,11 @@ export const getAccuracy = () => apiGet<{ rounds: AccuracyRound[] }>("/api/v3/ac
 export const getConnections = () => apiGet<{ connections: Connection[] }>("/api/v3/connections");
 export const getSetup = () => apiGet<Setup>("/api/v3/setup");
 export const setSetup = (pack: string) => apiSend<Setup>("POST", "/api/v3/setup", { pack });
-export const getBoard = () => apiGet<Board>("/api/v3/board");
+export const getBoard = (pid?: string) => apiGet<Board>(pid ? `/api/v3/board?pid=${encodeURIComponent(pid)}` : "/api/v3/board");
+export const getBoards = () => apiGet<{ can_edit: boolean; boards: BoardRow[] }>("/api/v3/boards");
+export const addToBoard = (body: { pid: string; dashboard_id?: string; figure_id?: string; label: string; value?: string; text?: string }) => apiSend<BoardAdded>("POST", "/api/v3/board/add", body);
+/** The 2.0 Dashboard studio of a project: where a board is edited, approved and published. */
+export const studioPath = (pid: string, did?: string) => `/centre/build/p/${encodeURIComponent(pid)}/studio${did ? `?d=${encodeURIComponent(did)}` : ""}`;
 export const ask = (text: string) => apiSend<AskAnswer>("POST", "/api/v3/ask", { text });
 export const getNote = () => apiGet<NoteFull>("/api/v3/note");
 export const getCase = (id: string) => apiGet<Case>(`/api/v3/cases/${encodeURIComponent(id)}`);

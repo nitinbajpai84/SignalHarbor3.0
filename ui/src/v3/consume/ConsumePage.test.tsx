@@ -5,7 +5,7 @@ import ConsumePage from "./ConsumePage";
 import * as api from "./consumeApi";
 
 vi.mock("../Frame", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock("../../useSession", () => ({ useSession: () => ({ user: { display_name: "Mei Tan" } }) }));
+vi.mock("../../useSession", () => ({ useSession: () => ({ user: { display_name: "Mei Tan", roles: ["analyst"] } }) }));
 vi.mock("../../v1/voice", () => ({ MicButton: () => <button type="button" aria-label="Speak to Lumen" /> }));
 vi.mock("./consumeApi", () => ({ getConsume: vi.fn(), askConsume: vi.fn() }));
 
@@ -83,4 +83,11 @@ test("a named headline shows what the number is, with the number big", async () 
   open();
   expect(await screen.findByText("Commitment for Cedarpoint Ventures III:")).toHaveClass("v3c-name");
   expect(screen.getByText("10,000,000")).toHaveClass("v3c-big");
+});
+
+test("a maker can add the answer's figure to a board and reach the boards list", async () => {
+  m.getConsume.mockResolvedValue(data());
+  open();
+  expect(await screen.findByRole("button", { name: "Add to board" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "All boards, owners and drafts" })).toHaveAttribute("href", "/v3/consume/boards");
 });
