@@ -19,7 +19,7 @@ EVENTS = {"shared": "shared with you", "refreshed": "refreshed"}
 def _dashboard(plane, project_id: str, dashboard_id: str) -> dict:
     """The dashboard as its audience sees it: the published version (DS1), or {} while nothing is published, so no card is made."""
     from sh_platform.v1.cx_dash import published_view
-    path = Path(plane.root) / "consume" / project_id / "dashboards" / f"{dashboard_id}.json"
+    path = plane.path("consume", project_id, "dashboards", f"{dashboard_id}.json")  # the plane's path: in production it reads the document from Postgres
     return published_view(json.loads(path.read_text(encoding="utf-8"))) or {}
 
 
