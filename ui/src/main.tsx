@@ -16,6 +16,7 @@ import "./styles/legacy/screens-e2.css"; // M2-P03: the as-is swimlane (Process 
 import "./styles/shell.css";
 import App from "./App";
 import ApproverPage from "./pages/ApproverPage"; // M1-P09
+import { registerServiceWorker } from "./pwa";
 import { ThemeProvider } from "./theme";
 
 const root = document.getElementById("root");
@@ -33,3 +34,5 @@ createRoot(root).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+registerServiceWorker(); // G5: the installable app keeps its shell and the last answers for offline

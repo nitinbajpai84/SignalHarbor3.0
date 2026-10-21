@@ -210,6 +210,8 @@ def _install_build_scheduler(app: FastAPI) -> None:
         b6_schedule.start(lambda: [store.plane_for(c) for c in store.list_company_ids()])
         from sh_platform.v1 import d1_delivery  # V5W-4: approved delivery channels go out on their schedule
         d1_delivery.start(lambda: [store.plane_for(c) for c in store.list_company_ids()])
+        from sh_platform.v1 import g5_portal  # G5: push for new cards and approvals, and the daily morning email
+        g5_portal.start(lambda: [store.plane_for(c) for c in store.list_company_ids()])
         _SCHEDULER_STARTED = True
 
     @app.on_event("shutdown")
@@ -218,3 +220,5 @@ def _install_build_scheduler(app: FastAPI) -> None:
         b6_schedule.stop()
         from sh_platform.v1 import d1_delivery
         d1_delivery.stop()
+        from sh_platform.v1 import g5_portal
+        g5_portal.stop()

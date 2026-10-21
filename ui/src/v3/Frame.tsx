@@ -4,6 +4,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useSession } from "../useSession";
 import ModeSwitch from "../v1/router/ModeSwitch";  // Testing or Real use models, the same company switch as 2.0
 import { getDesk } from "./api";
+import PersonMenu, { InstallBanner } from "./PersonMenu";
 import ThemePick from "./ThemePick";
 import "./v3.css";
 
@@ -51,8 +52,9 @@ export default function V3Frame({ children, back }: { children: ReactNode; back?
           <NavLink to="/v3/knowledge"><Ico d={KNOW} />Knowledge</NavLink>
         </nav>
         <span className="v3-mode"><ModeSwitch /><ThemePick /></span>
-        <span className="v3-mute">{user?.display_name ?? ""}</span>
+        <PersonMenu name={user?.display_name ?? ""} />
       </header>
+      <InstallBanner />
       {children}
     </div>
   );
