@@ -107,6 +107,7 @@ function Board() {
         <div>
           <h1>Use cases</h1>
           <p className="v3-mute">Every use case Harbor is building or has live. Three decisions each, then only exceptions.</p>
+          <p className="v3-mute"><Link to="/v3/build/api-keys">API keys</Link>: let your own tools read this office's figures and signals.</p>
         </div>
         <RoleSuggest />
         <Start />

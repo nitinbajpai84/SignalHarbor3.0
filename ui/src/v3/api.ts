@@ -173,3 +173,18 @@ export interface ReuseOffer { figure_id: string; name: string; built_from: { kin
 export const listFigures = () => apiGet<FigureRow[]>("/api/v3/figures");
 export const getFigure = (id: string) => apiGet<FigureRecord>(`/api/v3/figures/${encodeURIComponent(id)}`);
 export const rollbackFigure = (id: string, v: number) => apiSend<FigureRecord>("POST", `/api/v3/figures/${encodeURIComponent(id)}/rollback`, { v });
+
+// W6 public API: the keys an office admin makes for the client's own tools (docs/v3/API.md).
+export type ApiScope = "figures" | "ask" | "signals" | "documents";
+export interface ApiKey {
+  id: string; label: string; kind: "company" | "family"; member: string | null; scopes: ApiScope[]; entity_ids: string[]; rate_per_min: number;
+  created: string; created_by?: string | null; revoked: boolean; webhook: { url: string } | null;
+}
+export interface ApiCall { key: string; route: string; at: string; status: number }
+export interface ApiKeyMade extends ApiKey { key: string }
+export interface ApiKeyBody { label: string; scopes: ApiScope[]; kind: "company" | "family"; member?: string; entity_ids?: string[]; rate_per_min?: number }
+export const listApiKeys = () => apiGet<{ keys: ApiKey[]; scopes: ApiScope[]; calls: ApiCall[] }>("/api/v3/api-keys");
+export const makeApiKey = (body: ApiKeyBody) => apiSend<ApiKeyMade>("POST", "/api/v3/api-keys", body);
+export const revokeApiKey = (id: string) => apiSend<{ revoked: boolean }>("DELETE", `/api/v3/api-keys/${encodeURIComponent(id)}`);
+export const setApiWebhook = (id: string, url: string) => apiSend<{ url: string; secret: string; allowed: boolean }>("POST", `/api/v3/api-keys/${encodeURIComponent(id)}/webhook`, { url });
+export const clearApiWebhook = (id: string) => apiSend<{ cleared: boolean }>("DELETE", `/api/v3/api-keys/${encodeURIComponent(id)}/webhook`);

@@ -458,7 +458,17 @@ def evaluate(plane, ev: dict) -> dict:
                     "event": json.loads(json.dumps({k: ev[k] for k in ("trigger", "kind", "file", "doc", "facts", "subject") if k in ev}, default=str))}
             _put(plane, card)
         out["fired"].append(card)
+        _announce(plane, card)
     return out
+
+
+def _announce(plane, card: dict) -> None:
+    """W6: the public API's webhooks hear that a signal fired (v3_public_api.announce). Never stops the evaluation."""
+    try:
+        from sh_platform.v1 import v3_public_api
+        v3_public_api.announce(plane, card)
+    except Exception:  # noqa: BLE001
+        log.warning("the webhooks could not be told", exc_info=True)
 
 
 def on_document(plane, file: str, kind: str, values: dict) -> dict:
