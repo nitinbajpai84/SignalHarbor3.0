@@ -289,7 +289,10 @@ def ask(plane, kind: str, question: str, options: list, evidence, standard: str,
     letters = _letters(options, describe)  # both models get the very same system text and user text: the same evidence, the same options
     system = SYSTEM.format(standard=standard, examples=_examples(kind))
     user = json.dumps({"question": question, "options": letters, "evidence": evidence}, default=str, ensure_ascii=False)
-    ops = [_opinion(c, system, user, options, letters) for c in pair]
+    from concurrent.futures import ThreadPoolExecutor
+    from contextvars import copy_context
+    with ThreadPoolExecutor(max_workers=2) as pool:  # draft-speed: the two models are asked at once
+        ops = [f.result() for f in [pool.submit(copy_context().run, _opinion, c, system, user, options, letters) for c in pair]]
     cost = round(sum(o.pop("cost") for o in ops), 6)
     a, b = ops
     (_dir(plane) / "cache").mkdir(exist_ok=True)

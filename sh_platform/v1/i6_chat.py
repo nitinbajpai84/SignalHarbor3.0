@@ -1142,8 +1142,9 @@ def _waiting_steps(plane, iid: str) -> dict:
 
 
 def ask(model, plane, iid: str, thread: dict, sow: dict, files: list, latest: str, people: list[str], covered: list, pack, viewer=None,
-        info: dict | None = None) -> dict | None:
-    """The model's answer as {reply, sow_patch, process_steps, covered, ready, trace_id}, or None. `info` gets the run's status and trace id
+        info: dict | None = None, tools: bool = True) -> dict | None:
+    """The model's answer as {reply, sow_patch, process_steps, covered, ready, trace_id}, or None. `tools` False: one model call that drafts
+    straight into its JSON, with no tool to call first (Harbor's fill of the open parts, draft-speed). `info` gets the run's status and trace id
     either way (the caller then says honestly what happened and writes nothing)."""
     info = info if info is not None else {}
     goals = goals_of(plane, iid)
@@ -1194,7 +1195,9 @@ def ask(model, plane, iid: str, thread: dict, sow: dict, files: list, latest: st
     if model is not None:
         model = _Finisher(model, MAX_STEPS, bool(_DATA_Q.search(latest)) and "?" in latest and not meta, latest)
     reg, docs = DT.registry(OpenGate(), "m1_intent", plane, iid, viewer, ctx["facts"])  # D1: search_documents and read_document
-    if viewer is not None:  # LOOP-N: the shared read tools and North's own read and propose tools
+    if not tools:
+        reg = ToolRegistry(OpenGate())  # draft-speed: no round trip through a tool; the document chips still come from `docs`
+    elif viewer is not None:  # LOOP-N: the shared read tools and North's own read and propose tools
         from sh_platform.v1.agent_tools import tools_for
         tools_for(plane, viewer, "north", module_id="m1_intent", iid=iid, registry=reg)
         NT.register(reg, plane, viewer, iid)
@@ -1206,7 +1209,7 @@ def ask(model, plane, iid: str, thread: dict, sow: dict, files: list, latest: st
         wire.items = lambda: items() + [{"kind": "document", "id": p} for p in dict.fromkeys(paths)]  # A6: the documents North was shown
     with e6_trace.trace(e6_trace.turn_trace_id(plane, viewer, "north") if viewer is not None else None):  # the trace id carries a hashed person, never a name
         res = run_agent(model, reg, plane.company_id, "m1_intent", N.NORTH, system, ctx, question,
-                        max_steps=MAX_STEPS, recorder=wire.recorder(RunRegistry(plane)) if wire else RunRegistry(plane))
+                        max_steps=MAX_STEPS, recorder=wire.recorder(RunRegistry(plane)) if wire else RunRegistry(plane), require_tool=None if tools else False)
     if viewer is not None:  # W3: hand-offs are filed pending on the project; the other proposals fold into the draft
         from sh_platform.v1 import p1_project as P1
         res.proposals = HO.take(plane, viewer, (P1.for_intent(plane, iid) or {}).get("id"), res.proposals)
@@ -1598,7 +1601,7 @@ def apply_proposal(plane, iid: str, p: dict, who: str) -> None:
 
 # ---- the act ------------------------------------------------------------------------------------------------------------------
 
-def chat(plane, iid: str, viewer, text: str, files: list[dict] | None = None, *, model=None, pack=None) -> dict:
+def chat(plane, iid: str, viewer, text: str, files: list[dict] | None = None, *, model=None, pack=None, tools: bool = True) -> dict:
     """The person's message and North's reply. `files` are records already stored (i2_north.save_file / stored_file).
     Returns the thread, the SOW and the process map as they now stand."""
     from sh_platform.v1 import g1_access as G1; G1.check_agent(plane, iid, viewer, lambda m: N.Refused(403, m))  # G1: the agent reads a project's artefacts only for a person who may see it
@@ -1609,7 +1612,7 @@ def chat(plane, iid: str, viewer, text: str, files: list[dict] | None = None, *,
     with lock_for(N._path(plane, iid, "thread.json")):
         thread = N.read_thread(plane, iid)
         thread["turns"].append(N._turn("person", viewer.name, text, None, files))
-        ready = _reply(plane, iid, thread, viewer, model, pack)
+        ready = _reply(plane, iid, thread, viewer, model, pack, tools)
         _promote(plane, iid, thread, viewer, text)
     _handover(plane, iid, viewer, ready)
     return view(plane, iid)
@@ -1638,7 +1641,8 @@ def answer_pending(plane, iid: str, viewer, *, model=None, pack=None) -> dict:
     return view(plane, iid)
 
 
-def start(plane, viewer, line: str, files: list[dict] | None = None, *, model=None, pack=None, save=None, template_id: str | None = None) -> dict:
+def start(plane, viewer, line: str, files: list[dict] | None = None, *, model=None, pack=None, save=None, template_id: str | None = None,
+          tools: bool = True) -> dict:
     """A new intent from the first message, answered by North. `files`: raw uploads {name, data (bytes), kind}, saved once the
     intent exists (`save` defaults to i2_north.save_file)."""
     iid = create(plane, viewer, line, template_id)
@@ -1649,7 +1653,7 @@ def start(plane, viewer, line: str, files: list[dict] | None = None, *, model=No
             write_json_atomic(N._path(plane, iid, "thread.json"), {**N.read_thread(plane, iid), "landing": True})
     stored = [(save or N.save_file)(plane, iid, f["name"], f["data"], f.get("kind")) for f in files or []]
     _scan_in_background(plane, iid)  # the landing folders and documents go into the catalogue while the first turns run
-    return chat(plane, iid, viewer, line, stored, model=model, pack=pack)
+    return chat(plane, iid, viewer, line, stored, model=model, pack=pack, tools=tools)
 
 
 def _make_project(plane, iid: str, viewer, title: str | None = None) -> None:
@@ -1825,7 +1829,7 @@ def _guard_trace(plane, viewer, code: str) -> str | None:
         return None
 
 
-def _reply(plane, iid: str, thread: dict, viewer, model, pack) -> bool:
+def _reply(plane, iid: str, thread: dict, viewer, model, pack, tools: bool = True) -> bool:
     """North answers the thread's last (person) turn: model or fallback, SOW merged, thread written. Caller holds the thread lock.
     True when the SOW just became ready (the caller posts the hand-over once the lock is released)."""
     spath = N._path(plane, iid, "sow.json")
@@ -1860,7 +1864,7 @@ def _reply(plane, iid: str, thread: dict, viewer, model, pack) -> bool:
                 f"{text} (there was nothing waiting to accept; a bare yes does not answer a who, what or when question)")
     asked = thread.get("asked")
     info: dict = {}
-    got = ask(model, plane, iid, thread, N.read_sow(plane, iid), files, said, [viewer.name], covered, pack, viewer, info) if model else None
+    got = ask(model, plane, iid, thread, N.read_sow(plane, iid), files, said, [viewer.name], covered, pack, viewer, info, tools) if model else None
     if got and got.get("company_definition"):
         _record_collision(plane, iid, N.read_sow(plane, iid), viewer, got["company_definition"])
     name = N.NORTH if got else N.FALLBACK_NAME

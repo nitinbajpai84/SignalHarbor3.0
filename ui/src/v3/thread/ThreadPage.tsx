@@ -11,7 +11,7 @@ import FigureChecks from "./FigureChecks";
 import QuestionBlock from "./QuestionBlock";
 import Discard from "./Discard";
 import ReuseOffer from "./ReuseOffer";
-import { SignNote, confirmWhy, gapLine, openComposer, signAction } from "./SignOff";
+import { OpenQuestions, SignNote, confirmWhy, gapLine, openComposer, signAction } from "./SignOff";
 import { MicButton, combineText } from "../../v1/voice";
 
 const POLL_MS = 3000;
@@ -206,6 +206,7 @@ export default function ThreadPage() {
         )}
         <ReuseOffer offers={(t.reuse ?? []).filter((o) => o.suggest)} value={reuse} onChange={setReuse} />
         {gapLine(d.gaps, updating, t.signoff) && <p className="v3-gap">{gapLine(d.gaps, updating, t.signoff)}</p>}
+        <OpenQuestions gaps={d.gaps} updating={updating} box={() => composer.current} />
         <SignNote s={t.signoff} />
         <div className="v3-row">
           {signAction(t.signoff, "Confirm", busy || updating, () => void run(t.reuse?.length ? decide(id, 1, "confirm", undefined, Object.fromEntries(t.reuse.map((o) => [o.figure_id, reuse[o.figure_id] ?? null]))) : decide(id, 1, "confirm")), () => void run(sendForSignature(id)))}
