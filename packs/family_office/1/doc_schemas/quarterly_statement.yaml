@@ -1,0 +1,54 @@
+# Reading schema for a quarterly capital account statement. Source of the reader (rule: industry.md); a suggestion, not the company's own policy.
+doc_type: quarterly_statement
+title: Quarterly capital account statement
+markers:  # words that classify the document before any model is asked (lower case)
+  - quarterly statement
+  - capital account statement
+  - partner capital statement
+  - quarterly report
+  - statement of partner
+fields:
+  - name: fund
+    type: text
+    description: Name of the fund
+    required: true
+  - name: investor
+    type: text
+    description: Name of the investor
+    required: true
+  - name: period_end
+    type: date
+    description: Last day of the reporting period
+    required: true
+  - name: currency
+    type: currency
+    description: Three-letter currency code
+    required: true
+  - name: opening_balance
+    type: money
+    description: Capital account balance at the start of the period
+  - name: contributions
+    type: money
+    description: Capital contributed in the period
+    positive: true
+  - name: distributions
+    type: money
+    description: Amounts distributed in the period
+    positive: true
+  - name: net_gain
+    type: money
+    description: Net gain or loss for the period (negative allowed)
+  - name: closing_balance
+    type: money
+    description: Capital account balance at the end of the period
+    required: true
+  - name: unfunded_commitment
+    type: money
+    description: Commitment not yet called at period end
+    positive: true
+checks:
+  - kind: roll
+    total: closing_balance
+    add: [opening_balance, contributions, net_gain]
+    subtract: [distributions]
+    note: opening plus contributions plus gain less distributions equals closing

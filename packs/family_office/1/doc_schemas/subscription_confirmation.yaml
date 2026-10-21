@@ -1,0 +1,50 @@
+# Reading schema for a subscription confirmation. Source of the reader (rule: industry.md); a suggestion, not the company's own policy.
+doc_type: subscription_confirmation
+title: Subscription confirmation
+markers:  # words that classify the document before any model is asked (lower case)
+  - subscription confirmation
+  - confirmation of subscription
+  - subscription accepted
+  - subscription advice
+fields:
+  - name: fund
+    type: text
+    description: Name of the fund
+    required: true
+  - name: investor
+    type: text
+    description: Name of the subscribing investor
+    required: true
+  - name: share_class
+    type: text
+    description: Share or unit class
+  - name: currency
+    type: currency
+    description: Three-letter currency code
+    required: true
+  - name: subscription_amount
+    type: money
+    description: Amount subscribed
+    required: true
+    positive: true
+  - name: units_issued
+    type: number
+    description: Units or shares issued
+    positive: true
+  - name: price_per_unit
+    type: number
+    description: Price of one unit
+    positive: true
+  - name: trade_date
+    type: date
+    description: Date the subscription is dealt
+    required: true
+  - name: settlement_date
+    type: date
+    description: Date the money settles
+checks:
+  - kind: product
+    total: subscription_amount
+    factors: [units_issued, price_per_unit]
+    tolerance: 0.005
+    note: units times price equals the amount, within half a percent

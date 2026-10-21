@@ -1,0 +1,59 @@
+# Reading schema for a capital call notice. Source of the reader (rule: industry.md); a suggestion, not the company's own policy.
+doc_type: capital_call
+title: Capital call notice
+markers:  # words that classify the document before any model is asked (lower case)
+  - capital call
+  - call notice
+  - drawdown
+  - capital request
+  - contribution request
+  - notice of call
+fields:
+  - name: fund
+    type: text
+    description: Name of the fund or partnership issuing the call
+    required: true
+  - name: investor
+    type: text
+    description: Name of the investor (limited partner) the notice is addressed to
+    required: true
+  - name: call_number
+    type: integer
+    description: Number of this call in the fund's sequence
+    positive: true
+  - name: currency
+    type: currency
+    description: Three-letter currency code of the amounts
+    required: true
+  - name: amount_due
+    type: money
+    description: Total amount the investor must pay
+    required: true
+    positive: true
+  - name: investment_amount
+    type: money
+    description: Part of the amount that goes to investments
+    positive: true
+  - name: fee_amount
+    type: money
+    description: Part of the amount that goes to management fees and expenses
+    positive: true
+  - name: due_date
+    type: date
+    description: Date the payment is due
+    required: true
+  - name: notice_date
+    type: date
+    description: Date of the notice
+  - name: bank_account
+    type: text
+    description: Account (IBAN or number) the payment goes to
+checks:
+  - kind: sum
+    total: amount_due
+    parts: [investment_amount, fee_amount]
+    note: investment and fee add up to the amount due
+  - kind: not_before
+    field: due_date
+    after: notice_date
+    note: the due date is not before the notice date

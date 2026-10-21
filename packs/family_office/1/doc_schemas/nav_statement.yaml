@@ -1,0 +1,44 @@
+# Reading schema for a net asset value statement. Source of the reader (rule: industry.md); a suggestion, not the company's own policy.
+doc_type: nav_statement
+title: Net asset value statement
+markers:  # words that classify the document before any model is asked (lower case)
+  - net asset value
+  - nav statement
+  - nav per unit
+  - nav per share
+  - valuation statement
+fields:
+  - name: fund
+    type: text
+    description: Name of the fund
+    required: true
+  - name: share_class
+    type: text
+    description: Share or unit class
+  - name: valuation_date
+    type: date
+    description: Date the NAV is struck
+    required: true
+  - name: currency
+    type: currency
+    description: Three-letter currency code
+    required: true
+  - name: units_held
+    type: number
+    description: Number of units or shares held
+    positive: true
+  - name: nav_per_unit
+    type: number
+    description: Net asset value of one unit
+    positive: true
+  - name: nav_total
+    type: money
+    description: Net asset value of the holding (units times NAV per unit)
+    required: true
+    positive: true
+checks:
+  - kind: product
+    total: nav_total
+    factors: [units_held, nav_per_unit]
+    tolerance: 0.005
+    note: units times NAV per unit equals the total, within half a percent
