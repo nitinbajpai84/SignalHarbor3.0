@@ -95,7 +95,8 @@ def test_seeded_company_builds_the_map(env):
               (ids["Evergreen Family Trust"], ids["Growth Fund III"], "commits to"), (ids["Late statement"], ids["Evergreen Family Trust"], "waits on")]:
         assert e in es
     assert (ids["Bank statements"], ids["Unfunded commitments"], "feeds") in es  # one source in the brief: it feeds every figure
-    assert k["processes"] == [{"title": "Capital calls", "lanes": ["Data team", "Head of data"], "steps": [{"lane": "Data team", "text": "Collect statements"}, {"lane": "Head of data", "text": "Check balances"}]}]
+    assert [{k2: v for k2, v in p.items() if k2 != "map"} for p in k["processes"]] == [{"title": "Capital calls", "lanes": ["Data team", "Head of data"], "steps": [{"lane": "Data team", "text": "Collect statements"}, {"lane": "Head of data", "text": "Check balances"}]}]
+    assert len(k["processes"][0]["map"]["steps"]) == 2  # the full drafted map rides along, drawn as the swim lane
     assert all(e["label"] in {"decides", "reads", "feeds", "commits to", "uses", "waits on"} for e in k["edges"])
     assert {t["name"]: t["count"] for t in k["things"]}["Funds"] == 1
 

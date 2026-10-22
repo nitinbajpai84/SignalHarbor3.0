@@ -165,7 +165,8 @@ def _brief(g, th, sow, uc, bsrc, at, processes, signer) -> None:
             if _slug(nf.get("label")) == _slug(k["name"]) and nf.get("value"):
                 when = (th.get("events") or [{}])[-1].get("at", "")
                 g.fact(f, f"Latest {nf['value']}" + (f" ({nf['change']})" if nf.get("change") else ""), f"Note of {th['title']}", when)
-    steps = [s for s in (th.get("process") or sow.get("process") or {}).get("steps") or [] if isinstance(s, dict)]  # a process-only thread: the map filled from its documents
+    proc = th.get("process") or sow.get("process") or {}  # a process-only thread: the map filled from its documents; else North's drafted map
+    steps = [s for s in proc.get("steps") or [] if isinstance(s, dict)]
     if steps:
         lanes: list[str] = []
         out = []
@@ -173,7 +174,7 @@ def _brief(g, th, sow, uc, bsrc, at, processes, signer) -> None:
             lane = _t(s.get("who") or "The team", 60)
             lanes += [lane] * (lane not in lanes)
             out.append({"lane": lane, "text": _t(s.get("does") or s.get("name"), 200)})
-        processes.append({"title": th["title"], "lanes": lanes, "steps": out})
+        processes.append({"title": th["title"], "lanes": lanes, "steps": out, "map": {"steps": steps, "handovers": proc.get("handovers") or []}})  # map: drawn as the swim lane
 
 
 FILES_PER_SOURCE = 6  # the newest few files of a source are drawn; the rest are counted on the source

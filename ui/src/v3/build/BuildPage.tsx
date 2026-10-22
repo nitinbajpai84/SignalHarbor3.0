@@ -18,7 +18,7 @@ import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
 import IntentGraph, { BriefList } from "./IntentGraph";
 import { getSow, type SowView } from "../../v1/i4/api";
-import Swimlane from "../../v1/i6/Swimlane";
+import ProcessLane from "./ProcessLane";
 import "./build.css";
 
 const POLL_MS = 3000;
@@ -232,7 +232,6 @@ function Case({ id }: { id: string }) {
 
   // The brief's process as North drafted it (the signed intent's own map), drawn as the 2.0 swim lane. Refetched as the stage moves on.
   const [lane, setLane] = useState<SowView["process"] | null>(null);
-  const [laneStep, setLaneStep] = useState<number | null>(null);
   const iid = t?.iid;
   useEffect(() => {
     if (!iid) return;
@@ -442,7 +441,7 @@ function Case({ id }: { id: string }) {
             <section className="v3-card b3-lane" aria-label="The process">
               <h3>The process</h3>
               <p className="v3-mute">Who does each step and in which system, as North drafted it. Manual steps are flagged.</p>
-              <Swimlane map={lane} selected={laneStep} onSelect={(n) => setLaneStep(laneStep === n ? null : n)} />
+              <ProcessLane map={lane} title={t.title} />
             </section>
           ) : null}
           {record}

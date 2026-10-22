@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 
+import ProcessLane from "../../build/ProcessLane";
 import type { KEdge, KNode, Process, Thing } from "./api";
 import { KIND_LABEL, KIND_ONE, look } from "./Graph";
 import { fullPath } from "./kinds";
@@ -56,7 +57,7 @@ export function Processes({ items }: { items: Process[] }) {
   return <>{items.map((p, i) => (
     <section key={i} className="v3-card" aria-label={p.title}>
       <h2>{p.title}</h2>
-      {p.lanes.map((l) => (
+      {p.map?.steps?.length ? <ProcessLane map={p.map} title={p.title} /> : p.lanes.map((l) => (
         <div key={l} className="kg-lane" role="group" aria-label={l}>
           <b>{l}</b>
           <ol>{p.steps.map((s, j) => s.lane === l && <li key={j} value={j + 1}>{s.text}</li>)}</ol>
