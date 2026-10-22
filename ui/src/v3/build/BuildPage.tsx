@@ -17,6 +17,8 @@ import { Row } from "../thread/ThreadPage";
 import RoleSuggest from "../desk/RoleSuggest";
 import DropBand from "./DropBand";
 import IntentGraph, { BriefList } from "./IntentGraph";
+import { getSow, type SowView } from "../../v1/i4/api";
+import Swimlane from "../../v1/i6/Swimlane";
 import "./build.css";
 
 const POLL_MS = 3000;
@@ -228,6 +230,15 @@ function Case({ id }: { id: string }) {
     return () => clearInterval(h);
   }, [stage, load]);
 
+  // The brief's process as North drafted it (the signed intent's own map), drawn as the 2.0 swim lane. Refetched as the stage moves on.
+  const [lane, setLane] = useState<SowView["process"] | null>(null);
+  const [laneStep, setLaneStep] = useState<number | null>(null);
+  const iid = t?.iid;
+  useEffect(() => {
+    if (!iid) return;
+    getSow(iid).then((s) => setLane(s.process ?? null)).catch(() => setLane(null));  // not open to this person, or no brief yet: no lane
+  }, [iid, stage]);
+
   const run = (p: Promise<Thread>) => {
     setBusy(true);
     return p.then((r) => { setT(r); setErr(null); }).catch((e: Error) => setErr(e)).finally(() => setBusy(false));
@@ -427,6 +438,13 @@ function Case({ id }: { id: string }) {
           {nowLine}
           {act}
           <IntentGraph doc={doc} busy={busy} onSave={save} arrived={arrived} live={t.stage === "live"} />
+          {lane?.steps?.length ? (
+            <section className="v3-card b3-lane" aria-label="The process">
+              <h3>The process</h3>
+              <p className="v3-mute">Who does each step and in which system, as North drafted it. Manual steps are flagged.</p>
+              <Swimlane map={lane} selected={laneStep} onSelect={(n) => setLaneStep(laneStep === n ? null : n)} />
+            </section>
+          ) : null}
           {record}
         </aside>
       </div>

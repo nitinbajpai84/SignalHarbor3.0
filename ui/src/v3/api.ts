@@ -25,7 +25,7 @@ export interface SignOff {
   sent_at?: string; sent_by?: string; mine?: boolean; message?: string; gaps?: string[];
 }
 export interface ThreadRecord { started_by?: string | null; started_at?: string; sent_at?: string | null; line?: string | null; signed_by?: string; role?: string; signed_at?: string; version?: number; document?: string }
-export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; reuse?: ReuseOffer[]; figures?: ThreadFigure[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
+export interface Thread extends ThreadSummary { signoff?: SignOff | null; events: Event[]; decision: Decision | null; asked: number; harbor_steps: number; record?: ThreadRecord | null; started_by?: string | null; now?: { skill: string; name: string; text: string } | null; brief?: Brief | null; iid?: string | null; reuse?: ReuseOffer[]; figures?: ThreadFigure[]; process?: { title: string; steps: number; download: { docx: string; md: string } } | null }
 export interface CardAction { label: string; answer: string }
 export interface Card { kind: "decision" | "exception" | "question"; thread: string; title: string; text: string; actions: CardAction[] }
 export type Severity = "info" | "needs" | "problem";

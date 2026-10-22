@@ -219,7 +219,7 @@ def summary(th) -> dict:
 
 
 def view(th) -> dict:
-    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief"), "process": _P.view_of(th),
+    return {**summary(th), "events": th["events"], "decision": th.get("decision"), "asked": th.get("asked", 0), "harbor_steps": len(th["steps"]), "now": th.get("now"), "record": th.get("record"), "started_by": th.get("started_by"), "brief": th.get("brief"), "iid": th.get("iid"), "process": _P.view_of(th),
             "drafting": th["id"] in PASSES}
 
 
