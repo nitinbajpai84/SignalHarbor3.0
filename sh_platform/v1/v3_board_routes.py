@@ -349,14 +349,17 @@ def get_note(request: Request):
 
 
 def _boards(plane, viewer, th: dict | None) -> list[dict]:
-    if th is None:
-        return []
-    try:
-        S.adopt(plane, th["pid"])
-        return [{"id": d["id"], "title": d.get("title") or th["title"]} for d in D.list_for(plane, viewer, th["pid"]) if d.get("accepted")]
-    except Exception:  # noqa: BLE001 - boards that cannot be listed leave the list empty, never the page
-        log.info("consume boards unavailable", exc_info=True)
-        return []
+    """The published boards of every live use case this person may see (not only the newest one: when another use case went live, the
+    others' boards vanished from Consume although they were still published). `th` first, so the newest stays on top."""
+    out: list[dict] = []
+    for t in ([th] if th else []) + [t for t in _live_all(plane) if not th or t["id"] != th["id"]]:
+        try:
+            S.adopt(plane, t["pid"])
+            out += [{"id": d["id"], "title": t["title"] if (d.get("title") or "").startswith("Lumen's starter") else d.get("title") or t["title"]}
+                    for d in D.list_for(plane, viewer, t["pid"]) if d.get("accepted")]  # nine "starter dashboard"s read as nothing: name it by its use case
+        except Exception:  # noqa: BLE001 - one use case whose boards cannot be listed is skipped, never the page
+            log.info("consume boards unavailable for %s", t.get("id"), exc_info=True)
+    return out
 
 
 def precompute(plane, viewer) -> int:
