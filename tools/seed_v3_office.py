@@ -41,7 +41,31 @@ def main() -> None:
     emails = [a["email"] for a in json.loads(accounts.read_text(encoding="utf-8")) if a.get("email")]
     for email in emails:
         store.set_password(email, pw)
+    _set_in_postgres(root, emails, pw)
     log.info("v3 office: %d demo accounts sign in with SH_DEMO_PASSWORD", len(emails))
+
+
+def _set_in_postgres(root: Path, emails: list[str], pw: str) -> None:
+    """Production mode: the app reads accounts from Postgres, and the copy into Postgres never overwrites, so a password set (or changed)
+    after the first production boot must also be written there. On a first boot Postgres has no accounts yet: nothing to do here, the
+    copy that runs next carries the volume's (new) password across."""
+    from sh_platform import mode
+    if not mode.production():
+        return
+    from sh_platform.auth.accounts import AccountStore
+    from sh_platform.state import routing
+    routing.configure(root)
+    try:
+        routed = AccountStore(root)
+        for email in emails:
+            try:
+                routed.set_password(email, pw)
+            except ValueError:  # not in Postgres yet (first production boot)
+                log.info("v3 office: accounts are not in Postgres yet; the copy will carry the password")
+                return
+        log.info("v3 office: the demo password is set in Postgres too")
+    finally:
+        routing.release()
 
 
 if __name__ == "__main__":
